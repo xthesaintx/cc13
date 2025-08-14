@@ -1,0 +1,54 @@
+<form class="{{cssClass}} campaign-codex group-sheet" autocomplete="off">
+  <div class="sheet-container">
+    <div class="group-sheet-container">
+    
+      <aside class="group-sidebar">
+        <div class="sidebar-header">
+          <div class="sheet-image">
+            <img src="{{#if customImage}}{{customImage}}{{/if}}" 
+                 alt="{{document.name}}" 
+                 onerror="this.src='{{defaultImage}}'">
+          </div>
+          
+          <h1 class="sheet-title">{{document.name}}</h1>
+          <div class="sheet-type">{{sheetTypeLabel}}</div>
+          
+          <button class="image-change-btn" type="button">
+            <i class="fas fa-camera"></i>
+          </button>
+        </div>
+
+        <div class="group-tree-container">
+          {{{leftPanel}}}
+        </div>
+      </aside>
+      
+      <main class="group-main">
+        <nav class="group-tabs">
+          {{#each tabs}}
+            <div class="group-tab {{#if active}}active{{/if}}" data-tab="{{key}}">
+              <i class="{{icon}}"></i>
+              <span class="tab-label">{{label}}</span>
+              {{#if statistic}}
+                <span class="tab-stat">({{statistic.value}})</span>
+              {{/if}}
+            </div>
+          {{/each}}
+        </nav>
+
+        <div class="group-content-area">
+          {{#if isShowingSelectedView}}
+            {{{selectedSheetContent}}}
+          {{else}}
+            {{#each tabPanels}}
+              <section class="group-tab-panel {{#if active}}active{{/if}}" data-tab="{{key}}">
+                {{{this.content}}}
+              </section>
+            {{/each}}
+          {{/if}}
+        </div>
+      </main>
+      
+    </div>
+  </div>
+</form>

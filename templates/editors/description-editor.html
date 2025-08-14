@@ -1,0 +1,14 @@
+<form class="editable flexcol" autocomplete="off">
+    <div class="editor prosemirror{{#if_system 'dnd5e'}} dnd5e{{/if_system}}">
+          <div name="description" data-engine="prosemirror" data-collaborate="true" class="cc-editor editor-content{{#if_system 'dnd5e'}} dnd5e2-journal{{/if_system}}">
+            {{{description}}}
+
+        </div>
+    </div>
+    <footer class="sheet-footer flexrow">
+        <button type="submit" name="submit">
+            <i class="far fa-save"></i> Save Changes
+        </button>
+    </footer>
+</form>
+

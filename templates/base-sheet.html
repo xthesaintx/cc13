@@ -1,0 +1,75 @@
+<div class="campaign-codex {{sheetType}}-sheet">
+  <div class="sheet-container">
+    
+    {{!-- Sidebar --}}
+    <aside class="sheet-sidebar">
+      
+      {{!-- Header with Image and Title --}}
+      <div class="sidebar-header">
+        <div class="sheet-image">
+          <img src="{{#if customImage}}{{customImage}}{{/if}}" 
+               alt="{{document.name}}" 
+               onerror="this.src='{{defaultImage}}'">
+        </div>
+        
+        <h1 class="sheet-title">{{document.name}}</h1>
+        <div class="sheet-type">{{sheetTypeLabel}}</div>
+        
+        <button class="image-change-btn" type="button">
+          <i class="fas fa-camera"></i>
+        </button>
+        
+        {{!-- Custom header content --}}
+        {{{customHeaderContent}}}
+      </div>
+      
+
+      
+{{!-- Navigation Tabs with Integrated Statistics --}}
+<nav class="sidebar-tabs">
+  {{#each tabs}}
+    <div class="tab-item {{#if active}}active{{/if}}" data-tab="{{key}}">
+      <i class="{{icon}}"></i>
+      <span class="tab-label">{{label}}</span>
+      {{#if statistic}}
+        <span class="tab-stat" style="color: {{statistic.color}};">({{statistic.value}})</span>
+      {{/if}}
+    </div>
+  {{/each}}
+</nav>
+
+      {{!-- Quick Links --}}
+      {{#if quickLinks}}
+        <div class="sidebar-links">
+          <h3>Quicklinks</h3>
+          <div class="link-grid">
+            {{#each quickLinks}}
+              <div class="link-card {{type}}-link" data-{{type}}-uuid="{{uuid}}" title="{{name}}">
+                          <i class="{{getIcon type}} link-icon"></i>
+                <span class="link-name">{{name}}</span>
+              </div>
+            {{/each}}
+          </div>
+        </div>
+      {{/if}}
+      
+    </aside>
+    
+    {{!-- Main Content --}}
+    <main class="sheet-main">
+
+      <form class="sheet-form">
+        
+        {{!-- Tab Panels --}}
+        {{#each tabPanels}}
+          <section class="tab-panel {{#if active}}active{{/if}}" data-tab="{{key}}">
+            {{{content}}}
+          </section>
+        {{/each}}
+        
+      </form>
+    
+    </main>
+    
+  </div>
+</div>
