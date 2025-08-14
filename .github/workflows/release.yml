@@ -1,43 +1,54 @@
-name: Update and Release Manifest
+name: Create Zipped Release
 
 on:
   release:
     # Triggers when you publish a new release in GitHub
     types: [published]
 
-# This permission is required for the action to upload the file to your release
+# This permission is required for the action to upload files to your release
 permissions:
   contents: write
 
 jobs:
-  release-manifest:
+  build-and-release:
     runs-on: ubuntu-latest
     steps:
       # 1. Get your repository's code
       - name: Checkout repository code
         uses: actions/checkout@v4
 
-      # 2. Update the version number in module.json
-      - name: Update module.json version
+      # 2. Update module.json with the correct version and download URL
+      - name: Update module.json
+        id: version
         run: |
+          # Get tag from the release (e.g., "v0.8.0")
           TAG=${{ github.event.release.tag_name }}
+          # Strip the "v" prefix to get the version number (e.g., "0.8.0")
           VERSION=${TAG#v}
-          jq --arg new_version "$VERSION" '.version = $new_version' module.json > module.json.tmp && mv module.json.tmp module.json
-          echo "Updated module.json to version $VERSION"
+          # Construct the download URL for the zip file that will be created
+          DOWNLOAD_URL="https://github.com/${{ github.repository }}/releases/download/${TAG}/module.zip"
+          # Use jq to update BOTH the version and download fields
+          jq --arg version "$VERSION" --arg download "$DOWNLOAD_URL" \
+            '.version = $version | .download = $download' \
+            module.json > module.json.tmp && mv module.json.tmp module.json
 
-      # 3. Upload the updated module.json file to the release
-      - name: Upload updated manifest to release
+      # 3. Create the zip file with all necessary module assets
+      #    NOTE: Adjust the file list here to match your module's structure
+      - name: Create zip file
+        run: zip -r ./module.zip module.json styles/ src/ templates/ lang/ LICENSE README.md CHANGELOG.md
+
+      # 4. Upload BOTH the manifest and the zip file to the release
+      - name: Update Release with Assets
         uses: ncipollo/release-action@v1
         with:
-          artifacts: "./module.json"
+          # Provide a comma-separated list of files to upload
+          artifacts: "./module.json, ./module.zip"
           allowUpdates: true
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      # 4. NEW: Announce the new version to the Foundry VTT website
+      # 5. Announce the new version to the Foundry VTT website
       - name: Publish Module to FoundryVTT Website
         uses: cs96and/FoundryVTT-release-package@v1
         with:
-          # This requires the PACKAGE_TOKEN secret to be set in your repository
           package-token: ${{ secrets.PACKAGE_TOKEN }}
-          # This generates the URL to the manifest file you just uploaded
-          manifest-url: https://github.com/${{github.repository}}/releases/download/${{github.event.release.tag_name}}/module.json
+          manifest-url: "https://github.com/${{github.repository}}/releases/download/${{github.event.release.tag_name}}/module.json"
