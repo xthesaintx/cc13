@@ -1,7 +1,7 @@
 {
   "id": "campaign-codex",
   "title": "campaign-codex",
-  "version": "0.7.4",
+  "version": "version",
   "esmodules": ["scripts/main.js"],
   "compatibility": {
     "minimum": "13",
