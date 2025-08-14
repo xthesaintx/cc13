@@ -1,3 +1,8 @@
+## 0.7.4
+- Added journal sheets to the Create Journal Button 
+- Removed the sheet render on create and moved to addJournalDirectoryUI
+- Moved to GitHub
+
 ## 0.7.3
 - Updated Welcome Message to include github and fixed discord link
 - Fixed css interference
