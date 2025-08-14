@@ -1,3 +1,6 @@
+## 0.7.5
+- Fix Sheet Render on creation
+
 ## 0.7.4
 - Added journal sheets to the Create Journal Button 
 - Removed the sheet render on create and moved to addJournalDirectoryUI

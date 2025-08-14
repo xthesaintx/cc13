@@ -112,7 +112,6 @@ Hooks.on('preDeleteScene', async (scene, options, userId) => {
  Hooks.on('getJournalEntryContextOptions', (application, menuItems) => {
     if (!game.user.isGM) return;
     
-    // Add custom menu items to the end
     menuItems.push({
         name: "Export to Standard Journal",
         icon: '<i class="fas fa-book"></i>',
@@ -148,9 +147,16 @@ Hooks.on('preDeleteScene', async (scene, options, userId) => {
 });
 
 
+
 // Add to the Create Dialog Button on Journal Directory
 Hooks.on("renderDialogV2", (dialog, html, data) => {
     if (dialog.title !== "Create Journal Entry") return;
+
+    const form = html.querySelector("form");
+    if (!form) return;
+
+    form.insertAdjacentHTML('beforeend', '<input type="hidden" name="flags.core.sheetClass" value="">');
+    const hiddenSheetInput = form.querySelector('input[name="flags.core.sheetClass"]');
 
     const campaignCodexTypes = {
         region: "Campaign Codex: Region",
@@ -159,9 +165,6 @@ Hooks.on("renderDialogV2", (dialog, html, data) => {
         npc: "Campaign Codex: NPC",
         group: "Campaign Codex: Group Overview"
     };
-
-    const form = html.querySelector("form");
-    if (!form) return; // Exit if form is not found
 
     const nameInput = form.querySelector('input[name="name"]');
     if (!nameInput) return;
@@ -183,9 +186,22 @@ Hooks.on("renderDialogV2", (dialog, html, data) => {
     `;
 
     nameInput.closest(".form-group").insertAdjacentHTML('afterend', selectHTML);
-
     dialog.setPosition({ height: "auto" });
+
+    const typeSelect = form.querySelector('select[name="flags.campaign-codex.type"]');
+    if (typeSelect) {
+        typeSelect.addEventListener('change', (event) => {
+            const type = event.target.value;
+            let sheetClass = ""; 
+            if (type) {
+                // Map the type to its corresponding sheet class name
+                sheetClass = `campaign-codex.${type.charAt(0).toUpperCase() + type.slice(1)}Sheet`;
+            }
+            hiddenSheetInput.value = sheetClass;
+        });
+    }
 });
+
 
 
 
@@ -205,36 +221,12 @@ Hooks.on('createJournalEntry', async (document, options, userId) => {
     const journalType = document.getFlag("campaign-codex", "type");
     if (!journalType) return;
 
+    // The only remaining job is to move it to the correct folder.
     const folder = getCampaignCodexFolder(journalType); 
     if (folder) {
         await document.update({ folder: folder.id });
     }
-
-    let sheetClass = null;
-    switch (journalType) {
-        case "location": sheetClass = "campaign-codex.LocationSheet"; break;
-        case "shop":      sheetClass = "campaign-codex.ShopSheet";      break;
-        case "npc":       sheetClass = "campaign-codex.NPCSheet";      break;
-        case "region":    sheetClass = "campaign-codex.RegionSheet";    break;
-        case "group":     sheetClass = "campaign-codex.GroupSheet";     break;     
-    }
-    
-    if (sheetClass) {
-        await document.update({
-            "flags.core.sheetClass": sheetClass
-        });
-
-        // document.sheet.render(true);
-    }
-
-
-
-
-
-
-
 });
-
 
 Hooks.on('createScene', async (scene, options, userId) => {
     if (options.campaignCodexImport) {
