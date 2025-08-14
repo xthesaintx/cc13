@@ -28,7 +28,7 @@ jobs:
 
       # 3. Create a zip file with all required module files
       - name: Create Zip Archive
-        run: zip -r ./module.zip module.json LICENSE README.md CHANGELOG.md styles/ src/ templates/ lang/
+        run: zip -r ./module.zip module.json README.md ChangeLog.md styles/ scripts/ templates/ ui/
 
       # 4. Upload the zip and manifest to the release
       - name: Update Release with Files
