@@ -23,7 +23,7 @@ Each sheet includes several standard components:
 
 Campaign Codex provides five sheet types, each designed to address specific aspects of campaign management:
 
-NPC Sheets
+**NPC Sheets**
 
 Management system for non-player characters.
 
@@ -33,7 +33,7 @@ Management system for non-player characters.
 * Associates Tab: Link connected NPCs and display what Location and Entry they’re associated with.  
 * Notes Tab: Private Game Master annotations.
 
-Entry (Points of Interest) Sheets
+**Entry (Points of Interest) Sheets**
 
 For managing specific points of interest within campaigns, including commercial establishments, landmarks, quest locations, or encounters.
 
@@ -42,7 +42,7 @@ For managing specific points of interest within campaigns, including commercial 
 * NPCs Tab: Lists all NPCs directly associated with the point of interest (e.g., proprietors, guardians, quest providers).  
 * Notes Tab: Private Game Master annotations.
 
-Location Sheets
+**Location Sheets**
 
 For managing settlements, cities, dungeons, or defined geographical areas.
 
@@ -51,7 +51,7 @@ For managing settlements, cities, dungeons, or defined geographical areas.
 * Entries Tab: Lists all points of interest located within the area.  
 * Notes Tab: Private Game Master annotations.
 
-Region Sheets
+**Region Sheets**
 
 For organising extensive geographical areas, including continents, kingdoms, or large wilderness zones.
 
@@ -61,7 +61,7 @@ For organising extensive geographical areas, including continents, kingdoms, or 
 * Entries Tab: Automatically compiles all points of interest found throughout the region.  
 * Notes Tab: Private Game Master annotations.
 
-Group Sheets
+**Group Sheets**
 
 Organisational tool for combining various campaign elements into cohesive collections, suitable for specific adventures, ongoing storylines, or factions.
 
@@ -92,14 +92,14 @@ The Journal Directory buttons
 * Compendium Export: Initiates export processes for packaging complete campaign setups.  
 * Compendium Import: Imports complete campaign setups into the current worlds.
 
-Context Menu
+**Context Menu**
 
 The context menu when right-clicking journal entries within the Journal Directory has had two new options added:
 
 * Export to Standard Journal: This will convert a Campaign Codex journal sheet into a standard flat Foundry Journal.  
 * Add to Group: This will add the selected journal sheet to a group sheet.
 
-Automated Folder Management
+**Automated Folder Management**
 
 Campaign Codex creates and maintains dedicated folders for streamlined journal organisation:
 
@@ -109,7 +109,7 @@ Campaign Codex creates and maintains dedicated folders for streamlined journal o
 * Campaign Codex – NPCs  
 * Campaign Codex – Groups
 
-Settings
+**Settings**
 
 * Enable/Disable folder management to suit your preferred organisational style.  
 * Set a custom path for the system item currency for tailored system compatibility.
