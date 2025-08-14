@@ -124,6 +124,6 @@ For bug reports, feature requests or general chat about the module or other publ
 2. Click Install Module.  
 3. Paste the manifest URL for your Foundry version:  
    * Foundry v12: [https://www.wgtngm.com/modules/cc/12/module.json](https://www.wgtngm.com/modules/cc/12/module.json)  
-   * Foundry v13: [https://www.wgtngm.com/modules/cc/13/module.json](https://www.wgtngm.com/modules/cc/13/module.json)  
+   * Foundry v13: [https://github.com/xthesaintx/cc13/releases/latest/download/module.json](https://github.com/xthesaintx/cc13/releases/latest/download/module.json)
 4. Click Install.  
 5. Enable the module in your world.
