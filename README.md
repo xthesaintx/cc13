@@ -116,7 +116,7 @@ Campaign Codex creates and maintains dedicated folders for streamlined journal o
 
 ### Support & Community
 
-For bug reports, feature requests or general chat about the module or other publications, please join our community on [Discord](https://discord.gg/k3ZzWF7y).
+For bug reports, feature requests or general chat about the module or other publications, please join our community on [Discord](https://discord.gg/fycwH79s2y).
 
 ### Installation
 
