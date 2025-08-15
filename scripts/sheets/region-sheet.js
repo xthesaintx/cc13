@@ -155,9 +155,9 @@ export class RegionSheet extends CampaignCodexBaseSheet {
 // Add location to region from locations tab
   async _onCreateLocationJournal(event) {
     event.preventDefault();
-    const name = await promptForName("Entry");
+    const name = await promptForName("Location");
     if (name) {
-      const locationJournal = await game.campaignCodex.createShopJournal(name);
+      const locationJournal = await game.campaignCodex.createLocationJournal(name);
       if (locationJournal) {
         await game.campaignCodex.linkRegionToLocation(this.document, locationJournal);
         this.render(false);
@@ -179,7 +179,7 @@ export class RegionSheet extends CampaignCodexBaseSheet {
       ${TemplateComponents.entityGrid(data.linkedLocations, 'location')}
     `;
   }
-  
+
   _generateNPCsTab(data) {
     const refreshBtn = `
       <button type="button" class="refresh-btn refresh-npcs" title="Refresh auto-populated data">

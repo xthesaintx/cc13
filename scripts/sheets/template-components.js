@@ -86,9 +86,18 @@ static getAsset(assetType, entityType, currentImg = null) {
       return this.emptyState(type);
     }
 
+    // Sort Alpha
+    const alphaCards = game.settings.get("campaign-codex", "sortCardsAlpha");
+    console.log(entities)
+    // Conditionally sort a copy of the entities array
+    const entitiesToRender = alphaCards 
+      ? [...entities].sort((a, b) => a.name.localeCompare(b.name)) 
+      : entities;
+
+
     return `
       <div class="entity-grid">
-        ${entities.map(entity => this.entityCard(entity, type, showActorButton)).join('')}
+        ${entitiesToRender.map(entity => this.entityCard(entity, type, showActorButton)).join('')}
       </div>
     `;
   }
