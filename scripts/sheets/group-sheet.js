@@ -803,9 +803,9 @@ let sceneButtonHtml = '';
             <span class="tree-label ${clickableClass}"> ${node.name}</span>
             
             <div class="tree-actions">
-              <button type="button" class="btn-remove-member" data-sheet-uuid="${node.uuid}" title="Remove from Group">
+              ${game.user.isGM ? `<button type="button" class="btn-remove-member" data-sheet-uuid="${node.uuid}" title="Remove from Group">
                 <i class="fas fa-times"></i>
-              </button>
+              </button>` : ''}
             </div>
             <span class="tree-type">${node.type}</span>         
             <div class="tree-actions">
