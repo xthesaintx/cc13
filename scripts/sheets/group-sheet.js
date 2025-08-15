@@ -29,6 +29,7 @@ export class GroupSheet extends CampaignCodexBaseSheet {
 async getData() {
     const data = await super.getData();
     const groupData = this.document.getFlag("campaign-codex", "data") || {};
+  data.isGM = game.user.isGM;
 
     data.groupMembers = await GroupLinkers.getGroupMembers(groupData.members || []);
     data.nestedData = await GroupLinkers.getNestedData(data.groupMembers);
@@ -591,8 +592,8 @@ let sceneButtonHtml = '';
                 <span class="item-price">${item.quantity}x ${item.finalPrice}${item.currency}</span>
               </div>
               <div class="item-actions">
-                <button type="button" class="btn-send-to-player" data-sheet-uuid="${this._selectedSheet.uuid}" data-item-uuid="${item.itemUuid}" title="Send to Player">
-                  <i class="fas fa-paper-plane"></i> </button>
+                ${game.user.isGM ? `<button type="button" class="btn-send-to-player" data-sheet-uuid="${this._selectedSheet.uuid}" data-item-uuid="${item.itemUuid}" title="Send to Player">
+                  <i class="fas fa-paper-plane"></i> </button>` : ''}
                 <button type="button" class="btn-open-sheet" data-sheet-uuid="${item.itemUuid}" title="Open Item">
                   <i class="${TemplateComponents.getAsset('icon', 'item')}"></i> </button>
               </div>
@@ -894,7 +895,7 @@ let sceneButtonHtml = '';
         </div>
       </div>
       <div class="form-section">
-        ${TemplateComponents.dropZone('member', 'fas fa-plus-circle', 'Add Members', 'Drag regions, locations, entries, or NPCs here to add them to this group')}
+        ${game.user.isGM ? `${TemplateComponents.dropZone('member', 'fas fa-plus-circle', 'Add Members', 'Drag regions, locations, entries, or NPCs here to add them to this group')}` : ''}
       </div>
       ${TemplateComponents.richTextSection('Description', 'fas fa-align-left', data.sheetData.enrichedDescription, 'description')}
     `;

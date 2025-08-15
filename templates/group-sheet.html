@@ -13,9 +13,9 @@
           <h1 class="sheet-title">{{document.name}}</h1>
           <div class="sheet-type">{{sheetTypeLabel}}</div>
           
-          <button class="image-change-btn" type="button">
+          {{#if isGM}}<button class="image-change-btn" type="button">
             <i class="fas fa-camera"></i>
-          </button>
+          </button>{{/if}}
         </div>
 
         <div class="group-tree-container">

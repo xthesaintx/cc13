@@ -131,7 +131,7 @@ export class NPCSheet extends CampaignCodexBaseSheet {
     } else {
       actorSection = `
         <div class="form-section">
-          ${TemplateComponents.dropZone('actor', 'fas fa-user-plus', 'Link Actor', 'Drag an NPC actor here to link')}
+          ${game.user.isGM ? `${TemplateComponents.dropZone('actor', 'fas fa-user-plus', 'Link Actor', 'Drag an NPC actor here to link')}` : ''}
         </div>
       `;
     }
@@ -153,7 +153,7 @@ export class NPCSheet extends CampaignCodexBaseSheet {
 
     return `
       ${TemplateComponents.contentHeader('fas fa-map-marker-alt', 'Locations', refreshBtn)}
-      ${TemplateComponents.dropZone('location', 'fas fa-map-marker-alt', 'Add Locations', 'Drag location journals here to associate this NPC with them')}
+      ${game.user.isGM ? `${TemplateComponents.dropZone('location', 'fas fa-map-marker-alt', 'Add Locations', 'Drag location journals here to associate this NPC with them')}` : ''}
       ${this._generateLocationsBySource(data)}
     `;
   }
@@ -199,7 +199,7 @@ export class NPCSheet extends CampaignCodexBaseSheet {
   _generateShopsTab(data) {
     return `
       ${TemplateComponents.contentHeader('fas fa-book-open', 'Associated Entries')}
-      ${TemplateComponents.dropZone('shop', 'fas fa-book-open', 'Add Entries', 'Drag entry journals here to associate this NPC with them')}
+      ${game.user.isGM ? `${TemplateComponents.dropZone('shop', 'fas fa-book-open', 'Add Entries', 'Drag entry journals here to associate this NPC with them')}` : ''}
       ${TemplateComponents.entityGrid(data.linkedShops, 'shop')}
     `;
   }
@@ -207,7 +207,7 @@ export class NPCSheet extends CampaignCodexBaseSheet {
   _generateAssociatesTab(data) {
     return `
       ${TemplateComponents.contentHeader('fas fa-users', 'Associates & Contacts')}
-      ${TemplateComponents.dropZone('associate', 'fas fa-user-friends', 'Add Associates', 'Drag NPC journals or actors here to create relationships')}
+      ${game.user.isGM ? `${TemplateComponents.dropZone('associate', 'fas fa-user-friends', 'Add Associates', 'Drag NPC journals or actors here to create relationships')}` : ''}
       ${TemplateComponents.entityGrid(data.associates, 'associate', true)}
     `;
   }

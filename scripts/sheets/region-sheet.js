@@ -88,18 +88,19 @@ export class RegionSheet extends CampaignCodexBaseSheet {
         
         <span class="scene-name open-scene" data-scene-uuid="${data.linkedScene.uuid}" title="Open Scene"> <i class="fas fa-map"></i> ${data.linkedScene.name}</span>
 
-        <button type="button" class="scene-btn remove-scene" title="Unlink Scene">
+        ${game.user.isGM ? `<button type="button" class="scene-btn remove-scene" title="Unlink Scene">
           <i class="fas fa-unlink"></i>
-        </button>
+        </button>`:''}
       </div>
     `;
   }
   else
-  {   headerContent += `<div class="scene-info">
+  {   headerContent += `${game.user.isGM ? `<div class="scene-info">
         
         <span class="scene-name open-scene" style="text-align:center;"><i class="fas fa-link"></i> Drop scene to link</span>
 
-      </div>
+      </div>`:''}
+
     `;}
   
   if (headerContent) {
@@ -153,7 +154,7 @@ export class RegionSheet extends CampaignCodexBaseSheet {
   _generateLocationsTab(data) {
     return `
       ${TemplateComponents.contentHeader('fas fa-map-marker-alt', 'Locations in this Region')}
-      ${TemplateComponents.dropZone('location', 'fas fa-map-marker-alt', 'Add Locations', 'Drag location journals here to add them to this region')}
+      ${game.user.isGM ? `${TemplateComponents.dropZone('location', 'fas fa-map-marker-alt', 'Add Locations', 'Drag location journals here to add them to this region')}`:''}
       ${TemplateComponents.entityGrid(data.linkedLocations, 'location')}
     `;
   }

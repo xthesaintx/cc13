@@ -138,7 +138,6 @@ export class LocationSheet extends CampaignCodexBaseSheet {
   }
 
 
-
   _generateInfoTab(data) {
     let locationSection = '';
     
@@ -157,9 +156,9 @@ export class LocationSheet extends CampaignCodexBaseSheet {
               <button type="button" class="action-btn open-region" data-region-uuid="${data.linkedRegion.uuid}" title="Open Location">
                 <i class="fas fa-external-link-alt"></i>
               </button>
-              <button type="button" class="action-btn remove-location" title="Remove Location">
+              ${game.user.isGM ? `<button type="button" class="action-btn remove-location" title="Remove Location">
                 <i class="fas fa-unlink"></i>
-              </button>
+              </button>`:''}
             </div>
           </div>
         </div>
