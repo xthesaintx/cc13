@@ -48,7 +48,7 @@ export class NPCSheet extends CampaignCodexBaseSheet {
         value: data.associates.length,
         color: '#fd7e14'
       } },
-      { key: 'notes', label: 'Notes', icon: 'fas fa-sticky-note', active: this._currentTab === 'notes' }
+      ...(game.user.isGM ? [{ key: 'notes', label: 'Notes', icon: 'fas fa-sticky-note', active: this._currentTab === 'notes' }] : [])
     ];
     
     data.statistics = [
@@ -110,7 +110,7 @@ export class NPCSheet extends CampaignCodexBaseSheet {
     let dropToMapBtn = '';
 
 
-    dropToMapBtn = (canvas.scene && data.linkedActor) ? `
+    dropToMapBtn = (canvas.scene && data.linkedActor && game.user.isGM) ? `
     <button type="button" class="refresh-btn npcs-to-map-button" title="Drop to current scene">
       <i class="fas fa-map"></i>
       Drop NPC

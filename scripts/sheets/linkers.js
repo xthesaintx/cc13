@@ -697,74 +697,170 @@ static async getAllLocations(document, directLocationUuids) {
     return Array.from(shopMap.values());
   }
 
+static _getSystemSettings(systemId) {
+  // Check for custom overrides from settings.
+  const customPricePath = game.settings.get("campaign-codex", "itemPricePath");
+  const customDenominationPath = game.settings.get("campaign-codex", "itemDenominationPath");
+  const denominationOverride = game.settings.get("campaign-codex", "itemDenominationOverride");
   
-
-  static async getInventory(document, inventoryData) {
-    if (!inventoryData || !Array.isArray(inventoryData)) return [];
-    
-    const inventory = [];
-    const brokenItemUuids = [];
-    
-    for (const itemData of inventoryData) {
-      try {
-        const item = await fromUuid(itemData.itemUuid);
-        if (!item) {
-          console.warn(`Campaign Codex | Inventory item not found: ${itemData.itemUuid}`);
-          brokenItemUuids.push(itemData.itemUuid);
-          continue;
-        }
-        
-        const pricePath = game.settings.get("campaign-codex", "itemPricePath");
-        const denominationPath = game.settings.get("campaign-codex", "itemDenominationPath");
-      
-        const rawPrice = this.getValue(item, pricePath) || 0;
-        const basePrice = parseFloat(String(rawPrice).replace(/[^\d.]/g, '')) || 0;
-      
-        const currency = this.getValue(item, denominationPath) || "gp";
-
-        const weight = null;
-
-        const markup = document.getFlag("campaign-codex", "data.markup") || 1.0;
-        const finalPrice = itemData.customPrice ?? Math.round(basePrice * markup);
-
-
-        inventory.push({
-          itemId: item.id,
-          itemUuid: item.uuid,
-          name: item.name,
-          img: item.img,
-          basePrice: basePrice,
-          finalPrice: finalPrice,
-          currency: currency,
-          quantity: itemData.quantity === undefined ? 1 : itemData.quantity,
-          weight: weight
-        });
-      } catch (error) {
-        console.error(`Campaign Codex | Error processing inventory item:`, error);
-        brokenItemUuids.push(itemData.itemUuid);
-      }
-    }
-    
-    if (brokenItemUuids.length > 0) {
-      try {
-        const currentData = document.getFlag("campaign-codex", "data") || {};
-        const currentInventory = currentData.inventory || [];
-        const cleanedInventory = currentInventory.filter(item => !brokenItemUuids.includes(item.itemUuid));
-        
-        if (cleanedInventory.length !== currentInventory.length) {
-          currentData.inventory = cleanedInventory;
-          await document.setFlag("campaign-codex", "data", currentData);
-          
-          const removedCount = currentInventory.length - cleanedInventory.length;
-          ui.notifications.warn(`Removed ${removedCount} broken inventory items from ${document.name}`);
-        }
-      } catch (error) {
-        console.error(`Campaign Codex | Error cleaning broken inventory items:`, error);
-      }
-    }
-    
-    return inventory;
+  if (customPricePath && customPricePath !== "system.price.value") {
+      return {
+          pricePath: customPricePath,
+          denominationPath: customDenominationPath,
+          currency: denominationOverride || (customDenominationPath ? null : "gp")
+      };
   }
+
+  switch (systemId) {
+    case "dnd5e":
+      return {
+        pricePath: "system.price.value",
+        denominationPath: "system.price.denomination",
+        currency: null 
+      };
+    case "pf2e":
+      return {
+        pricePath: "system.price.value", 
+        denominationPath: null, 
+        currency: "gp"
+      };
+    case "sfrpg":
+      return {
+        pricePath: "system.price",
+        denominationPath: null,
+        currency: "c"
+      };
+    case "swade":
+      return {
+        pricePath: "system.price",
+        denominationPath: null,
+        currency: "c"
+      };
+    case "pf1":
+      return {
+        pricePath: "system.price",
+        denominationPath: null,
+        currency: "gp"
+      };
+    case "ose":
+      return {
+        pricePath: "system.cost",
+        denominationPath: null,
+        currency: "gp"
+      };
+    case "daggerheart":
+      return {
+        pricePath: "system.cost", 
+        denominationPath: null,
+        currency: "handfuls"
+      };
+    default:
+      return {
+        pricePath: "system.price.value",
+        denominationPath: "system.price.denomination",
+        currency: null
+      };
+  }
+}
+  
+static async getInventory(document, inventoryData) {
+  if (!inventoryData || !Array.isArray(inventoryData)) return [];
+  
+  const inventory = [];
+  const brokenItemUuids = [];
+  
+  const systemId = game.system.id;
+  const { pricePath, denominationPath, currency: defaultCurrency } = this._getSystemSettings(systemId);
+
+  const denominationOverride = game.settings.get("campaign-codex", "itemDenominationOverride");
+  const finalCurrency = denominationOverride || defaultCurrency;
+  
+  for (const itemData of inventoryData) {
+    try {
+      const item = await fromUuid(itemData.itemUuid);
+      if (!item) {
+        console.warn(`Campaign Codex | Inventory item not found: ${itemData.itemUuid}`);
+        brokenItemUuids.push(itemData.itemUuid);
+        continue;
+      }
+      
+      const rawPrice = this.getValue(item, pricePath) || 0;
+      let basePrice = parseFloat(String(rawPrice).replace(/[^\d.]/g, '')) || 0;
+      
+      let currency;
+      if (finalCurrency) {
+          currency = finalCurrency;
+      } else if (denominationPath) {
+          currency = this.getValue(item, denominationPath) || "gp";
+      } else {
+          currency = "gp"; // Fallback
+      }
+
+      // Special handling for Pathfinder 2e's price structure
+      if (systemId === "pf2e") {
+        // The price in PF2e is an object with different coin values.
+        const pf2ePrice = this.getValue(item, "system.price.value");
+        if (pf2ePrice) {
+          if (pf2ePrice.pp > 0) {
+            currency = "pp";
+            basePrice = pf2ePrice.pp;
+          } else if (pf2ePrice.gp > 0) {
+            currency = "gp";
+            basePrice = pf2ePrice.gp;
+          } else if (pf2ePrice.sp > 0) {
+            currency = "sp";
+            basePrice = pf2ePrice.sp;
+          } else {
+            currency = "cp";
+            basePrice = pf2ePrice.cp;
+          }
+        }
+      }
+
+      const weight = null;
+
+      const markup = document.getFlag("campaign-codex", "data.markup") || 1.0;
+      const finalPrice = itemData.customPrice ?? Math.round(basePrice * markup);
+
+
+      inventory.push({
+        itemId: item.id,
+        itemUuid: item.uuid,
+        name: item.name,
+        img: item.img,
+        basePrice: basePrice,
+        finalPrice: finalPrice,
+        currency: currency,
+        quantity: itemData.quantity === undefined ? 1 : itemData.quantity,
+        weight: weight
+      });
+    } catch (error) {
+      console.error(`Campaign Codex | Error processing inventory item:`, error);
+      brokenItemUuids.push(itemData.itemUuid);
+    }
+  }
+
+  // (The rest of your error handling code remains the same)
+  if (brokenItemUuids.length > 0) {
+    try {
+      const currentData = document.getFlag("campaign-codex", "data") || {};
+      const currentInventory = currentData.inventory || [];
+      const cleanedInventory = currentInventory.filter(item => !brokenItemUuids.includes(item.itemUuid));
+      
+      if (cleanedInventory.length !== currentInventory.length) {
+        currentData.inventory = cleanedInventory;
+        await document.setFlag("campaign-codex", "data", currentData);
+        
+        const removedCount = currentInventory.length - cleanedInventory.length;
+        ui.notifications.warn(`Removed ${removedCount} broken inventory items from ${document.name}`);
+      }
+    } catch (error) {
+      console.error(`Campaign Codex | Error cleaning broken inventory items:`, error);
+    }
+  }
+  
+  return inventory;
+}
 
 
 static getValue(obj, path) {

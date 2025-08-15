@@ -223,31 +223,45 @@ static getAsset(assetType, entityType, currentImg = null) {
 
   }
 
-
 static inventoryTable(inventory, isLootMode = false) {
+  const hideBase = game.settings.get("campaign-codex", "hideBaseCost");
+
   if (!inventory || inventory.length === 0) {
     return this.emptyState('item');
   }
 
-  const priceColumns = isLootMode ? '' : `
-    <div style="text-align:center">Base Price</div>
-    <div style="text-align:center">Final Price</div>
+  const sortButton = `<button type="button" class="sort-btn sort-inventory-alpha" title="Sort Inventory Alphabetically"><i class="fas fa-sort-alpha-down"></i></button>`;
+
+  const priceHeader = isLootMode || hideBase ? '' : `
+    <div style="text-align:center;align-content: center;">Base Price</div>
+    <div style="text-align:center;align-content: center;">Final Price</div>
   `;
+
+  const headerGridColumns = isLootMode ?
+    'grid-template-columns: 60px minmax(100px, 2fr) minmax(100px, 120px) 68px' :
+    (hideBase ?
+      'grid-template-columns: 60px minmax(100px, 2fr) minmax(80px, 100px) minmax(100px, 120px) 68px' :
+      'grid-template-columns: 60px minmax(100px, 2fr) minmax(80px, 100px) minmax(80px, 100px) minmax(100px, 120px) 68px'
+    );
 
   const inventoryRows = inventory.map(item => {
     const priceColumns = isLootMode ? '' : `
-      <div class="item-base-price" style="text-align:center">
-        ${item.basePrice} ${item.currency}
-      </div>
-      <div class="item-final-price" style="text-align:center">
+      ${!hideBase ? `
+        <div class="item-base-price" style="text-align:center;align-content: center;">
+          ${item.basePrice} ${item.currency}
+        </div>` : ''}
+      <div class="item-final-price" style="text-align:center;align-content: center;">
         <input type="number" class="price-input" data-item-uuid="${item.itemUuid}" value="${item.finalPrice}" step="0.01" min="0">
         <span class="price-currency">${item.currency}</span>
       </div>
     `;
 
-    const gridColumns = isLootMode ? 
-      'grid-template-columns: 60px minmax(100px, 2fr) minmax(100px, 120px) 68px' : 
-      'grid-template-columns: 60px minmax(100px, 2fr) minmax(80px, 100px) minmax(80px, 100px) minmax(100px, 120px) 68px';
+    const gridColumns = isLootMode ?
+      'grid-template-columns: 60px minmax(100px, 2fr) minmax(100px, 120px) 68px' :
+      (hideBase ?
+        'grid-template-columns: 60px minmax(100px, 2fr) minmax(80px, 100px) minmax(100px, 120px) 68px' :
+        'grid-template-columns: 60px minmax(100px, 2fr) minmax(80px, 100px) minmax(80px, 100px) minmax(100px, 120px) 68px'
+      );
 
     return `
       <div class="inventory-item" data-item-uuid="${item.itemUuid}" data-item-name="${item.name}" style="${gridColumns}">
@@ -282,23 +296,20 @@ static inventoryTable(inventory, isLootMode = false) {
     `;
   }).join('');
 
-  const headerGridColumns = isLootMode ? 
-      'grid-template-columns: 60px minmax(100px, 2fr) minmax(100px, 120px) 68px' : 
-      'grid-template-columns: 60px minmax(100px, 2fr) minmax(80px, 100px) minmax(80px, 100px) minmax(100px, 120px) 68px';
-
   return `
     <div class="inventory-table">
       <div class="table-header" style="${headerGridColumns}">
-        <div>Image</div>
-        <div>Item Name</div>
-        ${isLootMode ? '' : '<div style="text-align:center">Base Price</div><div style="text-align:center">Final Price</div>'}
-        <div style="text-align:center">Quantity</div>
-        <div style="text-align:center">Actions</div>
+        <div>${sortButton}</div>
+        <div style="align-content: center;">Item Name</div>
+        ${priceHeader}
+        <div style="text-align:center;align-content: center;">Quantity</div>
+        <div style="text-align:center;align-content: center;">Actions</div>
       </div>
       ${inventoryRows}
     </div>
   `;
 }
+
 
 
 
@@ -358,6 +369,9 @@ static inventoryTable(inventory, isLootMode = false) {
   }
 
   static markupControl(markup) {
+      if (!game.user.isGM) {
+    return '';
+  }
     return `
       <div class="markup-control">
         <h3><i class="fas fa-percentage"></i> Global Price Markup</h3>

@@ -60,7 +60,7 @@ export class RegionSheet extends CampaignCodexBaseSheet {
         value: Array.isArray(data.allShops) ? data.allShops.length : 0,
         color: '#6f42c1'
       }},
-      { key: 'notes', label: 'Notes', icon: 'fas fa-sticky-note', active: this._currentTab === 'notes' }
+      ...(game.user.isGM ? [{ key: 'notes', label: 'Notes', icon: 'fas fa-sticky-note', active: this._currentTab === 'notes' }] : [])
     ];
     
     data.statistics = [

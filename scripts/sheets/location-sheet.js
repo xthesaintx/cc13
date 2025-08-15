@@ -2,6 +2,7 @@ import { CampaignCodexBaseSheet } from './base-sheet.js';
 import { TemplateComponents } from './template-components.js';
 import { DescriptionEditor } from './editors/description-editor.js';
 import { CampaignCodexLinkers } from './linkers.js';
+import { promptForName} from "../helper.js";
 
 export class LocationSheet extends CampaignCodexBaseSheet {
   static get defaultOptions() {
@@ -48,7 +49,7 @@ export class LocationSheet extends CampaignCodexBaseSheet {
       { key: 'info', label: 'Info', icon: 'fas fa-info-circle', active: this._currentTab === 'info' },
       { key: 'npcs', label: 'NPCs', icon: 'fas fa-users', active: this._currentTab === 'npcs', statistic: {value: data.allNPCs.length,color: '#fd7e14'} },
       { key: 'shops', label: 'Entries', icon: 'fas fa-book-open', active: this._currentTab === 'shops', statistic: {value: data.linkedShops.length, color: '#6f42c1'} },
-      { key: 'notes', label: 'Notes', icon: 'fas fa-sticky-note', active: this._currentTab === 'notes' }
+      ...(game.user.isGM ? [{ key: 'notes', label: 'Notes', icon: 'fas fa-sticky-note', active: this._currentTab === 'notes' }] : [])
     ];
     
     
@@ -90,25 +91,25 @@ export class LocationSheet extends CampaignCodexBaseSheet {
         
         <span class="scene-name open-scene" data-scene-uuid="${data.linkedScene.uuid}" title="Open Scene"> <i class="fas fa-map"></i> ${data.linkedScene.name}</span>
 
-        <button type="button" class="scene-btn remove-scene" title="Unlink Scene">
+              ${game.user.isGM ? `<button type="button" class="scene-btn remove-scene" title="Unlink Scene">
           <i class="fas fa-unlink"></i>
-        </button>
+        </button>`:''}
       </div>
     `;
   }
   else
-  {   headerContent += `<div class="scene-info">
+  {   headerContent += `${game.user.isGM ? `<div class="scene-info">
         
         <span class="scene-name open-scene" style="text-align:center;"><i class="fas fa-link"></i> Drop scene to link</span>
 
-      </div>
+      </div>`:''}
     `;}
   
   if (headerContent) {
     data.customHeaderContent = headerContent;
   }
   
-      
+
     
     data.tabPanels = [
       {
@@ -166,7 +167,7 @@ export class LocationSheet extends CampaignCodexBaseSheet {
     } else {
       locationSection = `
       <div class="form-section">
-        ${TemplateComponents.dropZone('region', 'fas fa-globe', 'Set Region', 'Drag a region journal here to add this location to a region')}
+           ${game.user.isGM ? `${TemplateComponents.dropZone('region', 'fas fa-globe', 'Set Region', 'Drag a region journal here to add this location to a region')}`:''}
       </div>`;
     }
     
@@ -180,7 +181,7 @@ export class LocationSheet extends CampaignCodexBaseSheet {
 
 
 _generateNPCsTab(data) {
-  const dropToMapBtn = (canvas.scene && data.directNPCs && data.directNPCs.length > 0) ? `
+  const dropToMapBtn = (canvas.scene && data.directNPCs && game.user.isGM && data.directNPCs.length > 0) ? `
     <button type="button" class="refresh-btn npcs-to-map-button" title="Drop direct NPCs to current scene">
       <i class="fas fa-map"></i>
       Drop Direct NPCs
@@ -189,7 +190,7 @@ _generateNPCsTab(data) {
 
   let content = `
     ${TemplateComponents.contentHeader('fas fa-users', 'NPCs at this Location', dropToMapBtn)}
-    ${TemplateComponents.dropZone('npc', 'fas fa-user-plus', 'Add NPCs', 'Drag NPCs or actors here to add them directly to this location')}
+    ${game.user.isGM ? `${TemplateComponents.dropZone('npc', 'fas fa-user-plus', 'Add NPCs', 'Drag NPCs or actors here to add them directly to this location')}`:''}
   `;
 
   if (data.directNPCs.length > 0) {
@@ -224,16 +225,38 @@ _generateNPCsTab(data) {
   return content;
 }
 
+
   _generateShopsTab(data) {
+    const createShopBtn = game.user.isGM ? `
+      <button type="button" class="refresh-btn create-shop-button" title="Create New Entry">
+        <i class="fas fa-house-chimney-medical"></i>
+      </button>` : '';
+
     return `
-      ${TemplateComponents.contentHeader('fas fa-book-open', 'Entries at this Location')}
-      ${TemplateComponents.dropZone('shop', 'fas fa-book-open', 'Add Entries', 'Drag entry journals here to add them to this location')}
+      ${TemplateComponents.contentHeader('fas fa-book-open', 'Entries at this Location', createShopBtn)}
+      ${game.user.isGM ? `${TemplateComponents.dropZone('shop', 'fas fa-book-open', 'Add Entries', 'Drag entry journals here to add them to this location')}`:''}
       ${TemplateComponents.entityGrid(data.linkedShops, 'shop')}
     `;
   }
 
+  async _onCreateShopJournal(event) {
+    event.preventDefault();
+    const name = await promptForName("Entry");
+    if (name) {
+      const shopJournal = await game.campaignCodex.createShopJournal(name);
+      if (shopJournal) {
+        await game.campaignCodex.linkLocationToShop(this.document, shopJournal);
+        this.render(false);
+        shopJournal.sheet.render(true);
+      }
+    }
+  }
+
+
 
   _activateSheetSpecificListeners(html) {
+   html.querySelector('.create-shop-button')?.addEventListener('click', this._onCreateShopJournal.bind(this));
+
     html.querySelector('.remove-npc')?.addEventListener('click', async (e) => {
       const npcUuid = e.currentTarget.dataset.npcUuid;
       const npcCard = e.currentTarget.closest('.entity-card');

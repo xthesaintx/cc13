@@ -84,11 +84,13 @@ async getData() {
   }
 
   _setupNameEditing(html) {
+   if (game.user.isGM){
     html.querySelector('.sheet-title')?.addEventListener('click', this._onNameEdit.bind(this));
-    
-    html.addEventListener('blur', this._onNameSave.bind(this), true);
+     html.addEventListener('blur', this._onNameSave.bind(this), true);
     html.addEventListener('keypress', this._onNameKeypress.bind(this));
+    }
   }
+
 
   _setupImageChange(html) {
     const imageButton = html.querySelector('.image-change-btn');

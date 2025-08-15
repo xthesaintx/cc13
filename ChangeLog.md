@@ -1,3 +1,14 @@
+## 0.7.6
+- CSS Inventory List Item fix
+- Sort Inventory on Shop Sheet
+- Hide Drop NPC to Map for non GM on sheets
+- Hide Mark up and loot toggles from non GM users
+- Hide Notes from non GM users
+- Hide Base Price Setting added
+- Item price and denomination defaults added for Dungeons and Dragons 5e, Pathfinder 2e, Starfinder, Savage Worlds Adventure Edition, Pathfinder 1e, Old-School Essentials and Daggerheart
+- Override for Denomination added in settings
+- Added create entry from location
+
 ## 0.7.5
 - Fix Sheet Render on creation
 

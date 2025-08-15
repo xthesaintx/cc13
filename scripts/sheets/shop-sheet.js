@@ -64,7 +64,7 @@ export class ShopSheet extends CampaignCodexBaseSheet {
         value: data.linkedNPCs.length,
         color: '#fd7e14'
       } },
-      { key: 'notes', label: 'Notes', icon: 'fas fa-sticky-note', active: this._currentTab === 'notes' }
+      ...(game.user.isGM ? [{ key: 'notes', label: 'Notes', icon: 'fas fa-sticky-note', active: this._currentTab === 'notes' }] : [])
     ];
     
     
@@ -116,6 +116,7 @@ export class ShopSheet extends CampaignCodexBaseSheet {
       </div>
     `;}
 
+    if (game.user.isGM){
     headerContent += `
       <div class="shop-toggles" style="margin-top: 8px; display: flex; gap: 12px; align-items: center; justify-content: center;">
       <span class="stat-label">Hide Inventory</span>
@@ -123,7 +124,7 @@ export class ShopSheet extends CampaignCodexBaseSheet {
           <input type="checkbox" class="hide-inventory-toggle" ${data.hideInventory ? 'checked' : ''} style="margin: 0;"><span class="slider"></span>
         </label>
       </div>
-    `;
+    `;}
     
     data.customHeaderContent = headerContent;
   
@@ -200,28 +201,43 @@ export class ShopSheet extends CampaignCodexBaseSheet {
 
   _generateInventoryTab(data) {
   const markupSection = data.isLoot ? '' : TemplateComponents.markupControl(data.markup);
-  
   return `
     ${TemplateComponents.contentHeader('fas fa-boxes', data.isLoot ? 'Loot' : 'Inventory')}
-    <div class="shop-toggles">
+    ${game.user.isGM ? `<div class="shop-toggles">
       <span class="stat-label">Loot Mode</span>
       <label class="toggle-control">
         <input type="checkbox" class="shop-loot-toggle" ${data.isLoot ? 'checked' : ''} style="margin: 0;"><span class="slider"></span>
-      </label></div>
+      </label></div>`:''}
     ${TemplateComponents.dropZone('item', 'fas fa-plus-circle', 'Add Items', 'Drag items from the items directory to add them to inventory')}
     ${markupSection}
     ${TemplateComponents.inventoryTable(data.inventory, data.isLoot)}
   `;
 }
 
+async _onSortInventory(event) {
+  event.preventDefault();
+  
+  const currentData = this.document.getFlag("campaign-codex", "data") || {};
+  const inventory = await CampaignCodexLinkers.getInventory(this.document, currentData.inventory || []);
 
+  inventory.sort((a, b) => a.name.localeCompare(b.name));
+  
 
-
-
+  const sortedMinimalInventory = inventory.map(item => ({
+    customPrice: item.customPrice,
+    itemUuid: item.itemUuid,
+    quantity: item.quantity,
+  }));
+  
+  await this.document.setFlag("campaign-codex", "data", { ...currentData, inventory: sortedMinimalInventory });
+  
+  this.render(false);
+}
 
 
 _generateNPCsTab(data) {
-  const dropToMapBtn = canvas.scene ? `
+
+    const dropToMapBtn = canvas.scene && game.user.isGM ? `
     <button type="button" class="refresh-btn npcs-to-map-button" title="Drop NPCs to current scene">
       <i class="fas fa-map"></i>
       Drop to Map
@@ -267,6 +283,8 @@ _generateNPCsTab(data) {
     
     html.querySelectorAll('.location-link')?.forEach(element => element.addEventListener('click', async (e) => await this._onOpenDocument(e, 'location')));
     html.querySelectorAll('.npc-link')?.forEach(element => element.addEventListener('click', async (e) => await this._onOpenDocument(e, 'npc')));
+
+    html.querySelector('.sort-inventory-alpha')?.addEventListener('click', this._onSortInventory.bind(this));
 
     
     html.querySelectorAll('.inventory-item')?.forEach(element => {

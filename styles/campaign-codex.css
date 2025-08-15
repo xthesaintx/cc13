@@ -413,12 +413,16 @@
   color: #666;
 }
 
+
 .campaign-codex .action-btn:hover {
   background: var(--cc-accent);
   color: white;
   border-color: var(--cc-accent);
   transform: translateY(-1px);
 }
+
+
+
 
 .campaign-codex .action-btn.send-to-player {
   background: #28a745;
@@ -601,6 +605,19 @@
   color: #999;
   margin: 0;
 }
+
+/*sort button*/
+.campaign-codex .sort-btn {
+    background: none;
+    border: 0px;
+}
+.campaign-codex .sort-btn:hover {
+    background: none;
+    color: var(--cc-accent);
+    border: 0px;
+}
+
+
 
 /*
  * ---------------------------------------------
@@ -1007,7 +1024,7 @@
   flex: 1;
 }
 
-.campaign-codex .item-name {
+.campaign-codex .inventory-table .item-name {
   font-weight: 600;
   color: var(--cc-main-text);
   font-size: 14px;
