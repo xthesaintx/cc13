@@ -110,11 +110,11 @@ export class ShopSheet extends CampaignCodexBaseSheet {
     `;
   }
   else
-  {   headerContent += `<div class="scene-info">
+  {   headerContent += `${game.user.isGM ? `<div class="scene-info">
         
         <span class="scene-name open-scene" style="text-align:center;"><i class="fas fa-link"></i> Drop scene to link</span>
 
-      </div>
+      </div>`:''}
     `;}
 
     if (game.user.isGM){

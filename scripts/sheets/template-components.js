@@ -93,8 +93,6 @@ static getAsset(assetType, entityType, currentImg = null) {
     `;
   }
 
-// ${game.user.isGM ? `
-// `:''}
 
   static entityCard(entity, type, showActorButton = false) {
     const actorButton = showActorButton && entity.actor ? `
@@ -295,7 +293,7 @@ static inventoryTable(inventory, isLootMode = false) {
           </button>
           <button type="button" class="action-btn remove-item" data-item-uuid="${item.itemUuid}" title="Remove Item">
             <i class="fas fa-trash"></i>
-          </button>` : '';}
+          </button>` : ''}
         </div>
       </div>
     `;
@@ -422,7 +420,7 @@ static groupMemberCard(member, children = []) {
           </button>
           ${game.user.isGM ? `<button type="button" class="btn-remove-member" data-uuid="${member.uuid}" title="Remove from Group">
             <i class="fas fa-times"></i>
-          </button>` : '';}
+          </button>` : ''}
         </div>
       </div>
       
