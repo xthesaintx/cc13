@@ -271,6 +271,19 @@ Hooks.on('renderJournalEntry', async (journal, html, data) => {
 });
 
 Hooks.on('updateJournalEntry', async (document, changes, options, userId) => {
+    if (changes.name) {
+        for (const app of Object.values(ui.windows)) {
+            if (app.document?.getFlag("campaign-codex", "type") && app.document.uuid !== document.uuid) {
+                if (app._isRelatedDocument && await app._isRelatedDocument(document.uuid)) {
+                    console.log(`Campaign Codex | Refreshing ${app.document.name} due to name update in ${document.name}`);
+                    app.render(false);
+                }
+            }
+        }
+    }
+
+
+
     if (document._skipRelationshipUpdates || 
         options.skipRelationshipUpdates || 
         game.user.id !== userId) return;

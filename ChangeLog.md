@@ -16,15 +16,16 @@
 - Hiding toggles and buttons from non GM users.
 - Force enable of some buttons for player users foundry disables by default
 - Automatically sort alpha on cards (actors, locations), enable disable in settings
-
+- Create and link a location by dropping a scene onto the location tab of a region, scene links to location. Checks for duplicate (same loc name, same scene) and won't create.
+- Fixed names not updating on open linked journals until reopen
 
 ## 0.7.5
-- Fix Sheet Render on creation
+- Moved to GitHub
+- Fixed render on sheet creation
 
 ## 0.7.4
-- Added journal sheets to the Create Journal Button 
-- Removed the sheet render on create and moved to addJournalDirectoryUI
-- Moved to GitHub
+- main.js - 222 - Added to Create New Journal Dialog
+- Added CSS for Monk's Enhanced Journal
 
 ## 0.7.3
 - Updated Welcome Message to include github and fixed discord link
@@ -32,6 +33,7 @@
 
 ## 0.7.2
 - Changed manifest to point to different url
+- Fixed context menu not working in v12
 
 ## 0.7.1
 - Quick fix to CSS style for prosemirror editor for non D&D 5e Systems
