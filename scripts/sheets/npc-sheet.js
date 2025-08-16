@@ -2,6 +2,7 @@ import { CampaignCodexBaseSheet } from './base-sheet.js';
 import { TemplateComponents } from './template-components.js';
 import { DescriptionEditor } from './editors/description-editor.js';
 import { CampaignCodexLinkers } from './linkers.js';
+import { promptForName} from "../helper.js";
 
 
 export class NPCSheet extends CampaignCodexBaseSheet {
@@ -30,6 +31,26 @@ export class NPCSheet extends CampaignCodexBaseSheet {
     data.sheetTypeLabel = data.linkedActor?.type === 'character' ? "Player Journal" : "NPC Journal";
     data.defaultImage = TemplateComponents.getAsset('image','npc');
     data.customImage = this.document.getFlag("campaign-codex", "image") || data.linkedActor?.img || TemplateComponents.getAsset('image','npc');
+
+        // JOURNAL
+    data.linkedStandardJournal = null;
+    if (npcData.linkedStandardJournal) {
+        try {
+            const journal = await fromUuid(npcData.linkedStandardJournal);
+            if (journal) {
+                data.linkedStandardJournal = {
+                    uuid: journal.uuid,
+                    name: journal.name,
+                    img: journal.img || "icons/svg/book.svg" 
+                };
+            }
+        } catch (error) {
+            console.warn(`Campaign Codex | Linked standard journal not found: ${npcData.linkedStandardJournal}`);
+        }
+    }
+
+
+
     
     data.tabs = [
       { key: 'info', label: 'Info', icon: 'fas fa-info-circle', active: this._currentTab === 'info' },
@@ -109,6 +130,24 @@ export class NPCSheet extends CampaignCodexBaseSheet {
     let actorSection = '';
     let dropToMapBtn = '';
 
+    // Journal
+    let standardJournalSection = `
+        <div class="scene-info" style="margin-top: -24px;margin-bottom: 24px; height:40px">
+        <span class="scene-name" title="Open Journal">
+          <i class="fas fa-book"></i> Journal: Drag Standard Journal to link</span>
+        </div>
+      `;
+    if (data.linkedStandardJournal) {
+        standardJournalSection = `
+        <div class="scene-info" style="margin-top: -24px;margin-bottom: 24px; height:40px">
+        <span class="scene-name open-journal" data-journal-uuid="${data.linkedStandardJournal.uuid}" title="Open Journal">
+          <i class="fas fa-book"></i> Journal: ${data.linkedStandardJournal.name}</span>
+            ${game.user.isGM ? `<button class="scene-btn remove-standard-journal" title="Unlink Journal">
+              <i class="fas fa-unlink"></i>
+            </button>`:''}
+        </div>
+      `;
+    }
 
     dropToMapBtn = (canvas.scene && data.linkedActor && game.user.isGM) ? `
     <button type="button" class="refresh-btn npcs-to-map-button" title="Drop to current scene">
@@ -139,6 +178,8 @@ export class NPCSheet extends CampaignCodexBaseSheet {
     return `
       ${TemplateComponents.contentHeader('fas fas fa-info-circle', 'Information', dropToMapBtn)}
       ${actorSection}
+            ${standardJournalSection}
+
       ${TemplateComponents.richTextSection('Description', 'fas fa-align-left', data.sheetData.enrichedDescription, 'description')}
     `;
   }
@@ -255,8 +296,24 @@ export class NPCSheet extends CampaignCodexBaseSheet {
     html.querySelectorAll('.location-link')?.forEach(element => element.addEventListener('click', async (e) => await this._onOpenDocument(e, 'location')));
     html.querySelectorAll('.shop-link')?.forEach(element => element.addEventListener('click', async (e) => await this._onOpenDocument(e, 'shop')));
     html.querySelectorAll('.npc-link')?.forEach(element => element.addEventListener('click', async (e) => await this._onOpenDocument(e, 'npc')));
+
+   // JOURNAL
+    html.querySelector('.remove-standard-journal')?.addEventListener('click', this._onRemoveStandardJournal.bind(this));
+    html.querySelectorAll('.open-journal')?.forEach(element => element.addEventListener('click', async (e) => await this._onOpenDocument(e, 'journal')));
+    // END
   }
 
+// JOURNAL
+  async _onRemoveStandardJournal(event) {
+    event.preventDefault();
+    await this._saveFormData();
+    const currentData = this.document.getFlag("campaign-codex", "data") || {};
+    currentData.linkedStandardJournal = null;
+    await this.document.setFlag("campaign-codex", "data", currentData);
+    this.render(false);
+    ui.notifications.info("Unlinked journal");
+  }
+//END
 
 async _onRefreshLocations(event) {
   console.log(`Campaign Codex | Manual refresh requested for NPC: ${this.document.name}`);
@@ -317,11 +374,27 @@ for (const shopUuid of linkedShops) {
       return;
     }
     
+
+  
+
     const journal = await fromUuid(journalUuid);
     if (!journal || journal.id === this.document.id) return; 
 
     const journalType = journal.getFlag("campaign-codex", "type");
-    
+   
+// Journal
+  const dropOnInfoTab = event.target.closest('.tab-panel[data-tab="info"]');
+    if (!journalType && dropOnInfoTab) {
+    await this._saveFormData();
+    const locationData = this.document.getFlag("campaign-codex", "data") || {};
+    locationData.linkedStandardJournal = journal.uuid;
+    await this.document.setFlag("campaign-codex", "data", locationData);
+    ui.notifications.info(`Linked journal "${journal.name}".`);
+    this.render(false);
+    return;
+  }
+  // END
+
     if (journalType === "location") {
       await this._saveFormData();
       await game.campaignCodex.linkLocationToNPC(journal, this.document);

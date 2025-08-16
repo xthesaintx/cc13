@@ -391,7 +391,7 @@ async _handleJournalDrop(data, event) {
     const locationData = this.document.getFlag("campaign-codex", "data") || {};
     locationData.linkedStandardJournal = journal.uuid;
     await this.document.setFlag("campaign-codex", "data", locationData);
-    ui.notifications.info(`Linked journal "${journal.name}" to this location.`);
+    ui.notifications.info(`Linked journal "${journal.name}".`);
     this.render(false);
     return;
   }

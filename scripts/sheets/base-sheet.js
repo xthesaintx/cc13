@@ -231,7 +231,7 @@ async _onDrop(event) {
     }
 
     for (const app of sheetsToRefresh) {
-      console.log(`Campaign Codex | Refreshing sheet: ${app.document.name}`);
+      // console.log(`Campaign Codex | Refreshing sheet: ${app.document.name}`);
       app.render(false);
     }
     

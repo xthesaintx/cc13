@@ -2,6 +2,7 @@ import { CampaignCodexBaseSheet } from './base-sheet.js';
 import { TemplateComponents } from './template-components.js';
 import { DescriptionEditor } from './editors/description-editor.js';
 import { CampaignCodexLinkers } from './linkers.js';
+import { promptForName} from "../helper.js";
 
 export class ShopSheet extends CampaignCodexBaseSheet {
   static get defaultOptions() {
@@ -44,7 +45,22 @@ export class ShopSheet extends CampaignCodexBaseSheet {
     data.linkedNPCs = await CampaignCodexLinkers.getLinkedNPCs(this.document, shopData.linkedNPCs || []);
     data.linkedLocation = shopData.linkedLocation ? await CampaignCodexLinkers.getLinkedLocation(shopData.linkedLocation) : null;
     data.inventory = await CampaignCodexLinkers.getInventory(this.document, shopData.inventory || []);
-    
+        // JOURNAL
+    data.linkedStandardJournal = null;
+    if (shopData.linkedStandardJournal) {
+        try {
+            const journal = await fromUuid(shopData.linkedStandardJournal);
+            if (journal) {
+                data.linkedStandardJournal = {
+                    uuid: journal.uuid,
+                    name: journal.name,
+                    img: journal.img || "icons/svg/book.svg" 
+                };
+            }
+        } catch (error) {
+            console.warn(`Campaign Codex | Linked standard journal not found: ${shopData.linkedStandardJournal}`);
+        }
+    }
     
     data.sheetType = "shop";
     data.sheetTypeLabel = "Entry";
@@ -160,6 +176,25 @@ export class ShopSheet extends CampaignCodexBaseSheet {
   _generateInfoTab(data) {
     let locationSection = '';
     
+    // Journal
+    let standardJournalSection = `
+        <div class="scene-info" style="margin-top: -24px;margin-bottom: 24px; height:40px">
+        <span class="scene-name" title="Open Journal">
+          <i class="fas fa-book"></i> Journal: Drag Standard Journal to link</span>
+        </div>
+      `;
+    if (data.linkedStandardJournal) {
+        standardJournalSection = `
+        <div class="scene-info" style="margin-top: -24px;margin-bottom: 24px; height:40px">
+        <span class="scene-name open-journal" data-journal-uuid="${data.linkedStandardJournal.uuid}" title="Open Journal">
+          <i class="fas fa-book"></i> Journal: ${data.linkedStandardJournal.name}</span>
+            ${game.user.isGM ? `<button class="scene-btn remove-standard-journal" title="Unlink Journal">
+              <i class="fas fa-unlink"></i>
+            </button>`:''}
+        </div>
+      `;
+    }
+
     if (data.linkedLocation) {
       locationSection = `
         <div class="form-section">
@@ -196,6 +231,8 @@ export class ShopSheet extends CampaignCodexBaseSheet {
     return `
       ${TemplateComponents.contentHeader('fas fas fa-info-circle', 'Information')}
       ${locationSection}
+            ${standardJournalSection}
+
       ${TemplateComponents.richTextSection('Description', 'fas fa-align-left', data.sheetData.enrichedDescription, 'description')}
     `;
   }
@@ -297,7 +334,25 @@ _generateNPCsTab(data) {
     html.querySelector('.open-scene')?.addEventListener('click', this._onOpenScene.bind(this));
     html.querySelector('.remove-scene')?.addEventListener('click', this._onRemoveScene.bind(this));
 
+   // JOURNAL
+    html.querySelector('.remove-standard-journal')?.addEventListener('click', this._onRemoveStandardJournal.bind(this));
+    html.querySelectorAll('.open-journal')?.forEach(element => element.addEventListener('click', async (e) => await this._onOpenDocument(e, 'journal')));
+    // END
   }
+
+// JOURNAL
+  async _onRemoveStandardJournal(event) {
+    event.preventDefault();
+    await this._saveFormData();
+    const currentData = this.document.getFlag("campaign-codex", "data") || {};
+    currentData.linkedStandardJournal = null;
+    await this.document.setFlag("campaign-codex", "data", currentData);
+    this.render(false);
+    ui.notifications.info("Unlinked journal");
+  }
+//END
+
+
 async _onOpenScene(event) {
   event.preventDefault();
   await game.campaignCodex.openLinkedScene(this.document);
@@ -395,8 +450,21 @@ async _handleItemDrop(data, event) {
   async _handleJournalDrop(data, event) {
     const journal = await fromUuid(data.uuid);
     if (!journal || journal.id === this.document.id) return;
-
     const journalType = journal.getFlag("campaign-codex", "type");
+
+// Journal
+  const dropOnInfoTab = event.target.closest('.tab-panel[data-tab="info"]');
+    if (!journalType && dropOnInfoTab) {
+    await this._saveFormData();
+    const locationData = this.document.getFlag("campaign-codex", "data") || {};
+    locationData.linkedStandardJournal = journal.uuid;
+    await this.document.setFlag("campaign-codex", "data", locationData);
+    ui.notifications.info(`Linked journal "${journal.name}".`);
+    this.render(false);
+    return;
+  }
+  // END
+  
     
     if (journalType === "npc") {
             await this._saveFormData();

@@ -2,6 +2,7 @@ import { CampaignCodexBaseSheet } from './base-sheet.js';
 import { TemplateComponents } from './template-components.js';
 import { GroupLinkers } from './group-linkers.js';
 import { CampaignCodexLinkers } from './linkers.js';
+import { promptForName} from "../helper.js";
 
 export class GroupSheet extends CampaignCodexBaseSheet {
   constructor(document, options = {}) {
@@ -30,6 +31,24 @@ async getData() {
     const data = await super.getData();
     const groupData = this.document.getFlag("campaign-codex", "data") || {};
   data.isGM = game.user.isGM;
+
+        // JOURNAL
+    data.linkedStandardJournal = null;
+    if (groupData.linkedStandardJournal) {
+        try {
+            const journal = await fromUuid(groupData.linkedStandardJournal);
+            if (journal) {
+                data.linkedStandardJournal = {
+                    uuid: journal.uuid,
+                    name: journal.name,
+                    img: journal.img || "icons/svg/book.svg" 
+                };
+            }
+        } catch (error) {
+            console.warn(`Campaign Codex | Linked standard journal not found: ${groupData.linkedStandardJournal}`);
+        }
+    }
+
 
     data.groupMembers = await GroupLinkers.getGroupMembers(groupData.members || []);
     data.nestedData = await GroupLinkers.getNestedData(data.groupMembers);
@@ -112,7 +131,24 @@ async getData() {
 
     
     nativeHtml.querySelectorAll('.btn-send-to-player').forEach(element => element.addEventListener('click', this._onSendToPlayer.bind(this)));
+
+   // JOURNAL
+    nativeHtml.querySelector('.remove-standard-journal')?.addEventListener('click', this._onRemoveStandardJournal.bind(this));
+    nativeHtml.querySelectorAll('.open-journal')?.forEach(element => element.addEventListener('click', async (e) => await this._onOpenDocument(e, 'journal')));
+    // END
+
   }
+// JOURNAL
+  async _onRemoveStandardJournal(event) {
+    event.preventDefault();
+    await this._saveFormData();
+    const currentData = this.document.getFlag("campaign-codex", "data") || {};
+    currentData.linkedStandardJournal = null;
+    await this.document.setFlag("campaign-codex", "data", currentData);
+    this.render(false);
+    ui.notifications.info("Unlinked journal");
+  }
+//END
 
 
 _onToggleTreeItems(event) {
@@ -718,6 +754,23 @@ let sceneButtonHtml = '';
   async _handleDrop(data, event) {
     if (data.type === "JournalEntry") {
       const journal = await fromUuid(data.uuid);
+      const journalType = journal.getFlag("campaign-codex", "type");
+
+// Journal
+  const dropOnInfoTab = event.target.closest('.group-tab-panel[data-tab="info"]');
+    if (!journalType && dropOnInfoTab) {
+    await this._saveFormData();
+    const locationData = this.document.getFlag("campaign-codex", "data") || {};
+    locationData.linkedStandardJournal = journal.uuid;
+    await this.document.setFlag("campaign-codex", "data", locationData);
+    ui.notifications.info(`Linked journal "${journal.name}".`);
+    this.render(false);
+    return;
+  }
+  // END
+  
+
+
       if (journal && journal.getFlag("campaign-codex", "type")) {
         await this._addMemberToGroup(journal.uuid);
       }
@@ -861,7 +914,27 @@ let sceneButtonHtml = '';
 
   _generateInfoTab(data) {
     const stats = this._calculateGroupStats(data.nestedData);
-    
+ 
+        // Journal
+    let standardJournalSection = `
+        <div class="scene-info" style="margin-bottom: 24px; height:40px">
+        <span class="scene-name" title="Open Journal">
+          <i class="fas fa-book"></i> Journal: Drag Standard Journal to link</span>
+        </div>
+      `;
+    if (data.linkedStandardJournal) {
+        standardJournalSection = `
+        <div class="scene-info" style="margin-bottom: 24px; height:40px">
+        <span class="scene-name open-journal" data-journal-uuid="${data.linkedStandardJournal.uuid}" title="Open Journal">
+          <i class="fas fa-book"></i> Journal: ${data.linkedStandardJournal.name}</span>
+            ${game.user.isGM ? `<button class="scene-btn remove-standard-journal" title="Unlink Journal">
+              <i class="fas fa-unlink"></i>
+            </button>`:''}
+        </div>
+      `;
+    }
+
+
     return `
       <div class="group-stats-grid">
         <div class="stat-card">
@@ -901,7 +974,8 @@ let sceneButtonHtml = '';
       </div>
       <div class="form-section">
         ${game.user.isGM ? `${TemplateComponents.dropZone('member', 'fas fa-plus-circle', 'Add Members', 'Drag regions, locations, entries, or NPCs here to add them to this group')}` : ''}
-      </div>
+      </div>      ${standardJournalSection}
+
       ${TemplateComponents.richTextSection('Description', 'fas fa-align-left', data.sheetData.enrichedDescription, 'description')}
     `;
   }
