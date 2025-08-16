@@ -60,7 +60,7 @@ export class LocationSheet extends CampaignCodexBaseSheet {
     }
 
 
-    
+
     data.sheetType = "location";
     data.sheetTypeLabel = "Location";
     data.customImage = this.document.getFlag("campaign-codex", "image") || TemplateComponents.getAsset('image','location');
@@ -333,7 +333,7 @@ _generateNPCsTab(data) {
     html.querySelector('.refresh-npcs')?.addEventListener('click', this._onRefreshNPCs.bind(this));
    // JOURNAL
     html.querySelector('.remove-standard-journal')?.addEventListener('click', this._onRemoveStandardJournal.bind(this));
-    html.querySelectorAll('.open-journal')?.forEach(element => element.addEventListener('click', async (e) => await this._onOpenDocument(e, 'journal')));
+   html.querySelectorAll('.open-journal')?.forEach(element => element.addEventListener('click', async (e) => await this._onOpenDocument(e, 'journal')));
     // END
 
   }

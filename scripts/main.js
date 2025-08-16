@@ -260,14 +260,22 @@ Hooks.on('renderJournalEntry', async (journal, html, data) => {
             break;
     }
 
+
     if (targetSheet) {
-        await Promise.resolve(); 
-        
-        journal.sheet.close();
+        await journal.sheet.close();
+
         const sheet = new targetSheet(journal);
         sheet.render(true);
-        journal._campaignCodexSheet = sheet;
     }
+
+    // if (targetSheet) {
+    //     await Promise.resolve(); 
+        
+    //     journal.sheet.close();
+    //     const sheet = new targetSheet(journal);
+    //     sheet.render(true);
+    //     journal._campaignCodexSheet = sheet;
+    // }
 });
 
 Hooks.on('updateJournalEntry', async (document, changes, options, userId) => {
