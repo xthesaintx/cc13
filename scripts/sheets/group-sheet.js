@@ -785,8 +785,13 @@ let sceneButtonHtml = '';
   _generateTreeNodes(nodes, nestedData) {
     let html = '';
     if (!nodes) return html;
+    const alphaCards = game.settings.get("campaign-codex", "sortCardsAlpha");
+    const nodestoRender = alphaCards 
+      ? [...nodes].sort((a, b) => a.name.localeCompare(b.name)) 
+      : nodes;
 
-    for (const node of nodes) {
+
+    for (const node of nodestoRender) {
       const children = this._getChildrenForMember(node, nestedData);
       const hasChildren = children && children.length > 0;
       const isSelected = this._selectedSheet && this._selectedSheet.uuid === node.uuid;
@@ -955,7 +960,13 @@ let sceneButtonHtml = '';
 
 
   async _generateNPCCards(npcs) {
-    const cardPromises = npcs.map(async npc => {
+    const npcCards = game.settings.get("campaign-codex", "sortCardsAlpha");
+    const npcstoRender = npcCards 
+      ? [...npcs].sort((a, b) => a.name.localeCompare(b.name)) 
+      : npcs;
+
+
+    const cardPromises = npcstoRender.map(async npc => {
       const actor = await fromUuid(npc.actor?.uuid);
       const actorType = actor ? actor.type : '';
 
@@ -988,7 +999,13 @@ let sceneButtonHtml = '';
 
 
   _generateLocationCards(locations) {
-    return locations.map(location => `
+    const locationCards = game.settings.get("campaign-codex", "sortCardsAlpha");
+    const locationstoRender = locationCards 
+      ? [...locations].sort((a, b) => a.name.localeCompare(b.name)) 
+      : locations;
+
+
+    return locationstoRender.map(location => `
       <div class="group-location-card" data-sheet-uuid="${location.uuid}">
         <div class="location-image">
           <img class="card-image-clickable" data-sheet-uuid="${location.uuid}" src="${TemplateComponents.getAsset('image', location.type, location.img)}" alt="${location.name}">
@@ -1012,7 +1029,13 @@ let sceneButtonHtml = '';
     for (const [shopUuid, items] of Object.entries(nestedData.itemsByShop)) {
       const shop = nestedData.allShops.find(s => s.uuid === shopUuid);
       if (!shop || items.length === 0) continue;
-      const totalValue = items.reduce((sum, item) => sum + (item.finalPrice * item.quantity), 0);
+   
+    const itemCards = game.settings.get("campaign-codex", "sortCardsAlpha");
+    const itemCardstoRender = itemCards 
+      ? [...items].sort((a, b) => a.name.localeCompare(b.name)) 
+      : items;
+
+    const totalValue = itemCardstoRender.reduce((sum, item) => sum + (item.finalPrice * item.quantity), 0);
       
       html += `
         <div class="shop-inventory-section">
@@ -1020,7 +1043,7 @@ let sceneButtonHtml = '';
             <img src="${TemplateComponents.getAsset('image', shop.type, shop.img)}" alt="${shop.name}" class="shop-icon">
             <div class="shop-info">
               <h4 class="shop-name">${shop.name}</h4>
-              <div class="shop-stats">${items.length} items | ${totalValue}gp total</div>
+              <div class="shop-stats">${itemCardstoRender.length} items | ${totalValue}gp total</div>
             </div>
             <button type="button" class="btn-open-sheet" data-sheet-uuid="${shopUuid}">
               <i class="fas fa-external-link-alt"></i>
@@ -1028,7 +1051,7 @@ let sceneButtonHtml = '';
           </div>
           
           <div class="shop-items">
-            ${items.map(item => `
+            ${itemCardstoRender.map(item => `
               <div class="group-item-card">
                 <img src="${TemplateComponents.getAsset('image', 'item', item.img)}" alt="${item.name}" class="item-icon">
                 <div class="item-info">
@@ -1044,6 +1067,7 @@ let sceneButtonHtml = '';
     
     return html;
   }
+
 
   _calculateGroupStats(nestedData) {
     return {

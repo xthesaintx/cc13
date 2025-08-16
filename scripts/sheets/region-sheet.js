@@ -175,7 +175,7 @@ export class RegionSheet extends CampaignCodexBaseSheet {
 
     return `
       ${TemplateComponents.contentHeader('fas fa-map-marker-alt', 'Locations in this Region', createLocationBtn)}
-      ${game.user.isGM ? `${TemplateComponents.dropZone('location', 'fas fa-map-marker-alt', 'Add Locations', 'Drag location journals here to add them to this region')}`:''}
+      ${game.user.isGM ? `${TemplateComponents.dropZone('location', 'fas fa-map-marker-alt', 'Add Locations', 'Drag location journal or scene (creates location journal) here to add them to this region')}`:''}
       ${TemplateComponents.entityGrid(data.linkedLocations, 'location')}
     `;
   }
