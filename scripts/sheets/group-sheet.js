@@ -566,12 +566,27 @@ let sceneButtonHtml = '';
 
 
  
-  _generateSelectedInfoContent(selectedDoc, selectedData, enrichedDescription) {
-     const systemClass = game.system.id === 'dnd5e' ? ' dnd5e' : '';
+ async _generateSelectedInfoContent(selectedDoc, selectedData, enrichedDescription) {
+    const systemClass = game.system.id === 'dnd5e' ? ' dnd5e' : '';
     const journalClass = game.system.id === 'dnd5e' ? ' journal-entry-content' : ''; 
+    // Journal
+    const tabJournal = await fromUuid(selectedData.linkedStandardJournal);
+    console.log(tabJournal);
+
+    let standardJournalSection = ``;
+    if (tabJournal) {
+        standardJournalSection = `
+        <div class="scene-info" style="margin-top:-24px;margin-bottom: 24px; height:40px">
+        <span class="scene-name open-journal" data-journal-uuid="${tabJournal.uuid}" title="Open Journal">
+          <i class="fas fa-book"></i> Journal: ${tabJournal.name}</span>
+        </div>
+      `;
+    }
+
     return `
-      <div class="selected-content-section">
+      <div class="selected-content-section">${standardJournalSection}
         <div class="description-section${systemClass}">
+
           <h4><i class="fas fa-align-left"></i> Description</h4>
           <div class="rich-text-content${journalClass}">
             ${enrichedDescription || '<p><em>No description available.</em></p>'}
