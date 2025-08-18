@@ -19,6 +19,9 @@
 - Create and link a location by dropping a scene onto the location tab of a region, scene links to location. Checks for duplicate (same loc name, same scene) and won't create.
 - Fixed names not updating on open linked journals until reopen
 - Link a journal to an info tab of a sheet or group sheet
+- Added linked journals to export / import
+- Added clean up check for scenes and linked standard journals on export
+- Added clean up for linked journals on journal deletion
 
 ## 0.7.5
 - Moved to GitHub

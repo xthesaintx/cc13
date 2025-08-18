@@ -386,7 +386,9 @@ export class CleanUp {
       if (data.linkedActor) uuidsToCheck.push({ field: 'linkedActor', uuid: data.linkedActor });
       if (data.linkedLocation) uuidsToCheck.push({ field: 'linkedLocation', uuid: data.linkedLocation });
       if (data.parentRegion) uuidsToCheck.push({ field: 'parentRegion', uuid: data.parentRegion });
-
+      if (data.linkedScene) uuidsToCheck.push({ field: 'linkedScene', uuid: data.linkedScene }); 
+      if (data.linkedStandardJournal) uuidsToCheck.push({ field: 'linkedStandardJournal', uuid: data.linkedStandardJournal });
+      
       
       ['linkedNPCs', 'linkedShops', 'linkedLocations', 'associates', 'members'].forEach(field => {
         if (Array.isArray(data[field])) {
@@ -487,6 +489,32 @@ async cleanupSceneRelationships(deletedUuid, allDocuments) {
   return updatePromises;
 }
 
+async cleanupStandardJournalRelationships(deletedUuid, allDocuments) {
+    const updatePromises = [];
+    
+    for (const doc of allDocuments) {
+        const docData = doc.getFlag("campaign-codex", "data") || {};
+        
+        if (docData.linkedStandardJournal === deletedUuid) {
+            console.log(`Campaign Codex | Removing standard journal reference from: ${doc.name}`);
+            
+            const updatedData = foundry.utils.deepClone(docData);
+            updatedData.linkedStandardJournal = null;
 
+            // if ('linkedJournalPageId' in updatedData) {
+            //     updatedData.linkedJournalPageId = null;
+            // }
+            
+            updatePromises.push(
+                doc.setFlag("campaign-codex", "data", updatedData)
+                   .catch(err => console.warn(`Failed to update ${doc.name}:`, err))
+            );
+        }
+    }
+    
+    return updatePromises;
+}
+
+ 
   
 }

@@ -107,6 +107,23 @@ Hooks.on('preDeleteScene', async (scene, options, userId) => {
 });
 
 
+Hooks.on('preDeleteJournalEntry', async (journal, options, userId) => {
+    // Exit if this is a Campaign Codex journal, as it has its own cleanup.
+    if (journal.getFlag("campaign-codex", "type")) return;
+
+    try {
+        const allCCDocuments = game.journal.filter(j => j.getFlag("campaign-codex", "type"));
+        const updatePromises = await game.campaignCodexCleanup.cleanupStandardJournalRelationships(journal.uuid, allCCDocuments);
+        
+        if (updatePromises.length > 0) {
+            await Promise.allSettled(updatePromises);
+            console.log(`Campaign Codex | Standard journal link cleanup completed for: ${journal.name}`);
+        }
+    } catch (error) {
+        console.warn(`Campaign Codex | Standard journal link cleanup failed for ${journal.name}:`, error);
+    }
+});
+
 
 
  Hooks.on('getJournalEntryContextOptions', (application, menuItems) => {

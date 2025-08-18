@@ -29,11 +29,18 @@ export class RegionSheet extends CampaignCodexBaseSheet {
           name: scene.name,
           img: scene.thumb || "icons/svg/map.svg"
         };
-      }
-    } catch (error) {
-      console.warn(`Campaign Codex | Linked scene not found: ${regionData.linkedScene}`);
+      } else {
+            throw new Error(`Journal document not found for UUID.`);
+        }
+        } catch (error) {
+            console.warn(`Campaign Codex | Linked standard journal not found: ${regionData.linkedStandardJournal}`);
+            if (game.user.isGM) {
+            const updatedData = foundry.utils.deepClone(regionData);
+            updatedData.linkedStandardJournal = null;
+            await this.document.setFlag("campaign-codex", "data", updatedData);
+        }
+        }
     }
-  }
 
    
     data.linkedLocations = await CampaignCodexLinkers.getLinkedLocations(this.document,regionData.linkedLocations || []);

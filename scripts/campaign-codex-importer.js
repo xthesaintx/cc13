@@ -204,7 +204,13 @@ export class SimpleCampaignCodexImporter {
             processPack(compendiums.items, 'items'),
             processPack(compendiums.scenes, 'scenes'),
         ]);
-        importData.journals = new Set([...importData.journals].filter(j => j.getFlag(this.CONSTANTS.FLAG_SCOPE, this.CONSTANTS.FLAG_TYPE)));
+        // importData.journals = new Set([...importData.journals].filter(j => j.getFlag(this.CONSTANTS.FLAG_SCOPE, this.CONSTANTS.FLAG_TYPE)));
+// JOURNAL ADDITION
+        const hasCodexJournal = [...importData.journals].some(j => j.getFlag(this.CONSTANTS.FLAG_SCOPE, this.CONSTANTS.FLAG_TYPE));
+        if (!hasCodexJournal) {
+            importData.journals.clear(); 
+        }
+// JOURNAL ADDITION
         return importData;
     }
     
@@ -384,6 +390,8 @@ export class SimpleCampaignCodexImporter {
                     targetFolderId = folderMap.get(compendiumFolderId);
                 }
             }
+// JOURNAL ADDITION
+            const isCodexJournal = compendiumDoc.documentName === 'JournalEntry' && compendiumDoc.getFlag(this.CONSTANTS.FLAG_SCOPE, this.CONSTANTS.FLAG_TYPE);
 
             if (existingDoc) {
                 if (shouldSkip) {
@@ -392,12 +400,14 @@ export class SimpleCampaignCodexImporter {
                     }
                     return { document: existingDoc, action: 'skipped' };
                 }
-                if (canReplace) {
+// JOURNAL ADDITION
+                if (canReplace && isCodexJournal) {
                     const newDoc = await this._replaceDocument(existingDoc, compendiumDoc, targetFolderId);
                     return { document: newDoc, action: 'replaced' };
                 }
                 return { document: existingDoc, action: 'skipped' };
             }
+            
             
             const newDoc = await this._createDocument(compendiumDoc, targetFolderId);
             return { document: newDoc, action: 'imported' };
@@ -432,7 +442,7 @@ export class SimpleCampaignCodexImporter {
         const newCodexData = foundry.utils.deepClone(oldCodexData);
         const relink = (uuid) => uuidMap.get(uuid) || uuid;
 
-        ["linkedActor", "linkedLocation", "parentRegion", "linkedScene"].forEach(field => {
+        ["linkedActor", "linkedLocation", "parentRegion", "linkedScene", "linkedStandardJournal"].forEach(field => {
             if (newCodexData[field]) newCodexData[field] = relink(newCodexData[field]);
         });
         ["linkedNPCs", "linkedShops", "linkedLocations", "associates", "members"].forEach(field => {
@@ -455,6 +465,15 @@ export class SimpleCampaignCodexImporter {
 
     static async _confirmImport(importData, baseName, skipExisting) {
         return new Promise((resolve) => {
+// JOURNAL ADDITION
+            const codexJournals = [...importData.journals].filter(j => j.getFlag(this.CONSTANTS.FLAG_SCOPE, this.CONSTANTS.FLAG_TYPE));
+            const standardJournalsCount = importData.journals.size - codexJournals.length;
+            
+            let journalInfo = `<li><strong>${codexJournals.length}</strong> Campaign Codex journals</li>`;
+            if (standardJournalsCount > 0) {
+                journalInfo += `<li><strong>${standardJournalsCount}</strong> linked standard journals</li>`;
+            }
+//
             const sceneInfo = importData.scenes ? `<li><strong>${importData.scenes.size}</strong> scenes</li>` : '';
             const skipInfo = skipExisting ? '<p class="notes"><i class="fas fa-info-circle"></i> Existing actors and items will be skipped.</p>' : '';
             new Dialog({
@@ -463,6 +482,7 @@ export class SimpleCampaignCodexImporter {
                     <div class="flexcol">
                         <p>Ready to import from "<strong>${baseName}</strong>":</p>
                         <ul style="margin: 0.5rem 0;">
+                            ${journalInfo}
                             <li><strong>${importData.journals.size}</strong> Campaign Codex journals</li>
                             <li><strong>${importData.actors.size}</strong> actors</li>
                             <li><strong>${importData.items.size}</strong> items</li>

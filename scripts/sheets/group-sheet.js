@@ -43,13 +43,18 @@ async getData() {
                     name: journal.name,
                     img: journal.img || "icons/svg/book.svg" 
                 };
-            }
+            } else {
+            throw new Error(`Journal document not found for UUID.`);
+        }
         } catch (error) {
             console.warn(`Campaign Codex | Linked standard journal not found: ${groupData.linkedStandardJournal}`);
+            if (game.user.isGM) {
+            const updatedData = foundry.utils.deepClone(groupData);
+            updatedData.linkedStandardJournal = null;
+            await this.document.setFlag("campaign-codex", "data", updatedData);
+        }
         }
     }
-
-
     data.groupMembers = await GroupLinkers.getGroupMembers(groupData.members || []);
     data.nestedData = await GroupLinkers.getNestedData(data.groupMembers);
     data.sheetType = "group";

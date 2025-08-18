@@ -404,7 +404,7 @@ export class SimpleCampaignCodexExporter {
         const codexData = doc.getFlag(this.CONSTANTS.FLAG_SCOPE, this.CONSTANTS.FLAG_DATA) || {};
         const uuids = [];
 
-        const singleLinkFields = ["linkedActor", "linkedLocation", "parentRegion"];
+        const singleLinkFields = ["linkedActor", "linkedLocation", "parentRegion", "linkedStandardJournal"];
         if (exportScenes) {
             singleLinkFields.push("linkedScene");
         }
@@ -461,7 +461,23 @@ export class SimpleCampaignCodexExporter {
                 journalFolderId = newFolder.id;
             }
         }
+// JOURNAL ADDITION
+        let linkedJournalsFolderId = null;
+        const journalPack = compendiums.journals;
+        const linkedFolderName = "Linked Journals";
 
+        const existingLinkedFolder = journalPack.folders.find(f => f.name === linkedFolderName && f.folder?.id === journalFolderId);
+        if (existingLinkedFolder) {
+            linkedJournalsFolderId = existingLinkedFolder.id;
+        } else {
+            const newFolder = await Folder.create({
+                name: linkedFolderName,
+                type: "JournalEntry",
+                folder: journalFolderId
+            }, { pack: journalPack.collection });
+            linkedJournalsFolderId = newFolder.id;
+        }
+// JOURNAL ADDITION
         for (const actor of exportData.actors) {
             const newDoc = await this._exportOrUpdateDocument(actor, compendiums.actors);
             if (newDoc) uuidMap.set(actor.uuid, newDoc.uuid);
@@ -480,7 +496,14 @@ export class SimpleCampaignCodexExporter {
         }
 
         for (const journal of exportData.journals) {
-            const newDoc = await this._exportDocument(journal, compendiums.journals, compendiumFolders.journals, journalFolderId);
+            let exportFolderId = journalFolderId; 
+            // JOURNAL ADDITION
+            if (!journal.getFlag(this.CONSTANTS.FLAG_SCOPE, this.CONSTANTS.FLAG_TYPE)) {
+                exportFolderId = linkedJournalsFolderId;
+            }
+            const newDoc = await this._exportDocument(journal, compendiums.journals, compendiumFolders.journals, exportFolderId);
+            // JOURNAL ADDITION
+            // const newDoc = await this._exportDocument(journal, compendiums.journals, compendiumFolders.journals, journalFolderId);
             if (newDoc) uuidMap.set(journal.uuid, newDoc.uuid);
         }
         
@@ -609,7 +632,7 @@ export class SimpleCampaignCodexExporter {
 
         const relink = (uuid) => uuidMap.get(uuid) || uuid;
 
-        const singleLinkFields = ["linkedActor", "linkedLocation", "parentRegion", "linkedScene"];
+        const singleLinkFields = ["linkedActor", "linkedLocation", "parentRegion", "linkedScene", "linkedStandardJournal"];
         for (const field of singleLinkFields) {
             if (newCodexData[field]) newCodexData[field] = relink(newCodexData[field]);
         }
