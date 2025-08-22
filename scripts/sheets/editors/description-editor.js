@@ -37,7 +37,7 @@ export class DescriptionEditor extends FormApplication {
       })
   };
 
-  TextEditor.create({
+  foundry.applications.ux.TextEditor.implementation.create({
     target: targetElement,
     engine: "prosemirror",
     plugins: plugins
