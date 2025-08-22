@@ -20,10 +20,11 @@ export class SimpleCampaignCodexExporter {
             let hasRequiredTypes = true;
 
             for (const type of requiredTypes) {
-                const unlockedPack = game.packs.find(p =>
-                    p.metadata.packageName === module.id &&
-                    p.documentName === type &&
-                    !p.locked
+                const unlockedPack = game.packs.find(
+                    (p) =>
+                        p.metadata.packageName === module.id &&
+                        p.documentName === type &&
+                        !p.locked,
                 );
 
                 if (unlockedPack) {
@@ -35,10 +36,11 @@ export class SimpleCampaignCodexExporter {
             }
 
             if (hasRequiredTypes) {
-                const scenePack = game.packs.find(p =>
-                    p.metadata.packageName === module.id &&
-                    p.documentName === "Scene" &&
-                    !p.locked
+                const scenePack = game.packs.find(
+                    (p) =>
+                        p.metadata.packageName === module.id &&
+                        p.documentName === "Scene" &&
+                        !p.locked,
                 );
 
                 if (scenePack) {
@@ -49,7 +51,7 @@ export class SimpleCampaignCodexExporter {
                     id: module.id,
                     title: module.title,
                     packs: modulePacks,
-                    hasScenes: !!scenePack
+                    hasScenes: !!scenePack,
                 });
             }
         }
@@ -65,18 +67,30 @@ export class SimpleCampaignCodexExporter {
             if (config.performCleanup) {
                 ui.notifications.info("Performing cleanup before export...");
                 try {
-                    if (typeof CleanUp !== 'undefined' && CleanUp.performManualCleanup) {
+                    if (
+                        typeof CleanUp !== "undefined" &&
+                        CleanUp.performManualCleanup
+                    ) {
                         await CleanUp.performManualCleanup();
-                    } else if (game.campaignCodexCleanup?.constructor?.performManualCleanup) {
+                    } else if (
+                        game.campaignCodexCleanup?.constructor
+                            ?.performManualCleanup
+                    ) {
                         await game.campaignCodexCleanup.constructor.performManualCleanup();
                     } else {
-                        console.warn("Campaign Codex | Cleanup not available, skipping...");
-                        ui.notifications.warn("Cleanup functionality not available, continuing with export...");
+                        console.warn(
+                            "Campaign Codex | Cleanup not available, skipping...",
+                        );
+                        ui.notifications.warn(
+                            "Cleanup functionality not available, continuing with export...",
+                        );
                     }
                     ui.notifications.info("Cleanup completed successfully.");
                 } catch (error) {
                     console.error("Campaign Codex | Cleanup failed:", error);
-                    ui.notifications.warn("Cleanup encountered errors, but export will continue...");
+                    ui.notifications.warn(
+                        "Cleanup encountered errors, but export will continue...",
+                    );
                 }
             }
 
@@ -84,21 +98,41 @@ export class SimpleCampaignCodexExporter {
             if (!compendiums) return;
 
             ui.notifications.info("Collecting all linked documents...");
-            const exportData = await this._collectExportData(config.exportScenes);
+            const exportData = await this._collectExportData(
+                config.exportScenes,
+            );
             if (exportData.journals.size === 0) {
-                ui.notifications.warn("No Campaign Codex documents found to export!");
+                ui.notifications.warn(
+                    "No Campaign Codex documents found to export!",
+                );
                 return;
             }
 
-            const confirmed = await this._confirmExport(exportData, config.baseName, config.exportScenes, config.exportTarget);
+            const confirmed = await this._confirmExport(
+                exportData,
+                config.baseName,
+                config.exportScenes,
+                config.exportTarget,
+            );
             if (!confirmed) return;
 
-            ui.notifications.info(`Exporting ${exportData.journals.size} journals, ${exportData.actors.size} actors, ${exportData.items.size} items${config.exportScenes ? `, ${exportData.scenes?.size || 0} scenes` : ''}...`);
-            await this._performExport(exportData, compendiums, config.exportTarget);
+            ui.notifications.info(
+                `Exporting ${exportData.journals.size} journals, ${exportData.actors.size} actors, ${exportData.items.size} items${config.exportScenes ? `, ${exportData.scenes?.size || 0} scenes` : ""}...`,
+            );
+            await this._performExport(
+                exportData,
+                compendiums,
+                config.exportTarget,
+            );
 
-            const targetName = config.exportTarget === 'world' ? 'World' : game.modules.get(config.exportTarget)?.title || config.exportTarget;
-            ui.notifications.info(`Export complete! Documents exported to "${targetName}".`);
-
+            const targetName =
+                config.exportTarget === "world"
+                    ? "World"
+                    : game.modules.get(config.exportTarget)?.title ||
+                      config.exportTarget;
+            ui.notifications.info(
+                `Export complete! Documents exported to "${targetName}".`,
+            );
         } catch (error) {
             console.error("Campaign Codex | Export Error:", error);
             ui.notifications.error(`Export failed: ${error.message}`);
@@ -111,12 +145,19 @@ export class SimpleCampaignCodexExporter {
      * @returns {Promise<Object|null>}
      */
     static async _getOrCreateCompendiums(config) {
-        if (config.exportTarget === 'world') {
-            return await this._createCompendiumSet(config.baseName, config.exportScenes);
+        if (config.exportTarget === "world") {
+            return await this._createCompendiumSet(
+                config.baseName,
+                config.exportScenes,
+            );
         } else {
-            const module = this.findCompatibleModules(config.exportScenes).find(m => m.id === config.exportTarget);
+            const module = this.findCompatibleModules(config.exportScenes).find(
+                (m) => m.id === config.exportTarget,
+            );
             if (!module) {
-                ui.notifications.error(`Module "${config.exportTarget}" not found or doesn't have required unlocked compendiums!`);
+                ui.notifications.error(
+                    `Module "${config.exportTarget}" not found or doesn't have required unlocked compendiums!`,
+                );
                 return null;
             }
 
@@ -125,7 +166,7 @@ export class SimpleCampaignCodexExporter {
                 content: `<p>This will create a new folder for all journals within the compendium in module "<strong>${module.title}</strong>" to avoid overwriting existing documents. Existing Actors, Items, and Scenes with the same name will be overwritten.</p><p>Do you want to continue?</p>`,
                 yes: () => true,
                 no: () => false,
-                defaultYes: false
+                defaultYes: false,
             });
 
             if (!confirmed) return null;
@@ -133,7 +174,7 @@ export class SimpleCampaignCodexExporter {
             const compendiums = {
                 journals: module.packs["JournalEntry"],
                 actors: module.packs["Actor"],
-                items: module.packs["Item"]
+                items: module.packs["Item"],
             };
 
             if (config.exportScenes && module.packs["Scene"]) {
@@ -152,9 +193,10 @@ export class SimpleCampaignCodexExporter {
         const compatibleModules = this.findCompatibleModules();
         const hasCompatibleModules = compatibleModules.length > 0;
 
-        let moduleOptions = '<option value="world" data-has-scenes="true">World (Create New Compendiums)</option>';
+        let moduleOptions =
+            '<option value="world" data-has-scenes="true">World (Create New Compendiums)</option>';
         for (const module of compatibleModules) {
-            moduleOptions += `<option value="${module.id}" data-has-scenes="${module.hasScenes}">${module.title}${!module.hasScenes ? ' (no Scene compendium)' : ''}</option>`;
+            moduleOptions += `<option value="${module.id}" data-has-scenes="${module.hasScenes}">${module.title}${!module.hasScenes ? " (no Scene compendium)" : ""}</option>`;
         }
 
         return new Promise((resolve) => {
@@ -167,17 +209,21 @@ export class SimpleCampaignCodexExporter {
                             <select name="exportTarget">
                                 ${moduleOptions}
                             </select>
-                            ${!hasCompatibleModules ? `
+                            ${
+                                !hasCompatibleModules
+                                    ? `
                                 <p class="warning-text">
                                     <i class="fas fa-exclamation-triangle"></i>
                                     No active modules found with all required unlocked compendiums (JournalEntry, Actor, Item).
                                 </p>
-                            ` : `
+                            `
+                                    : `
                                 <p class="help-text">
                                     <i class="fas fa-info-circle"></i>
                                     Select "World" to create new compendiums, or choose a module to export to its existing compendiums.
                                 </p>
-                            `}
+                            `
+                            }
                         </div>
                         <div class="form-group" id="baseNameGroup">
                             <label>Compendium Set Name:</label>
@@ -218,71 +264,103 @@ export class SimpleCampaignCodexExporter {
                         label: "Export",
                         callback: (html) => {
                             const form = html[0] || html;
-                            const exportTarget = form.querySelector('select[name="exportTarget"]').value;
-                            const baseName = form.querySelector('input[name="baseName"]').value.trim();
-                            const performCleanup = form.querySelector('input[name="performCleanup"]').checked;
-                            const exportScenes = form.querySelector('input[name="exportScenes"]').checked;
+                            const exportTarget = form.querySelector(
+                                'select[name="exportTarget"]',
+                            ).value;
+                            const baseName = form
+                                .querySelector('input[name="baseName"]')
+                                .value.trim();
+                            const performCleanup = form.querySelector(
+                                'input[name="performCleanup"]',
+                            ).checked;
+                            const exportScenes = form.querySelector(
+                                'input[name="exportScenes"]',
+                            ).checked;
 
                             resolve({
                                 exportTarget: exportTarget,
-                                baseName: exportTarget === 'world' ? (baseName || "My Campaign") : null,
+                                baseName:
+                                    exportTarget === "world"
+                                        ? baseName || "My Campaign"
+                                        : null,
                                 performCleanup: performCleanup,
-                                exportScenes: exportScenes
+                                exportScenes: exportScenes,
                             });
-                        }
+                        },
                     },
                     cancel: {
                         icon: '<i class="fas fa-times"></i>',
                         label: "Cancel",
-                        callback: () => resolve(null)
-                    }
+                        callback: () => resolve(null),
+                    },
                 },
                 default: "export",
                 render: (html) => {
                     const form = html[0] || html;
-                    const exportTargetSelect = form.querySelector('select[name="exportTarget"]');
-                    const baseNameGroup = form.querySelector('#baseNameGroup');
-                    const exportScenesCheckbox = form.querySelector('#exportScenesCheckbox');
-                    const scenesHelpText = form.querySelector('#scenesHelpText');
-                    const scenesWarningText = form.querySelector('#scenesWarningText');
-                    
-                    const dialogButtons = form.closest('.app').querySelector('footer.window-footer');
+                    const exportTargetSelect = form.querySelector(
+                        'select[name="exportTarget"]',
+                    );
+                    const baseNameGroup = form.querySelector("#baseNameGroup");
+                    const exportScenesCheckbox = form.querySelector(
+                        "#exportScenesCheckbox",
+                    );
+                    const scenesHelpText =
+                        form.querySelector("#scenesHelpText");
+                    const scenesWarningText =
+                        form.querySelector("#scenesWarningText");
+
+                    const dialogButtons = form
+                        .closest(".app")
+                        .querySelector("footer.window-footer");
 
                     function updateFormState() {
-                        const selectedOption = exportTargetSelect.options[exportTargetSelect.selectedIndex];
-                        const hasScenes = selectedOption.dataset.hasScenes === 'true';
-                        const isWorld = exportTargetSelect.value === 'world';
+                        const selectedOption =
+                            exportTargetSelect.options[
+                                exportTargetSelect.selectedIndex
+                            ];
+                        const hasScenes =
+                            selectedOption.dataset.hasScenes === "true";
+                        const isWorld = exportTargetSelect.value === "world";
 
-                        const baseNameInput = baseNameGroup.querySelector('input[name="baseName"]');
+                        const baseNameInput = baseNameGroup.querySelector(
+                            'input[name="baseName"]',
+                        );
                         if (isWorld) {
-                            baseNameGroup.classList.remove('disabled');
-                            baseNameGroup.style.minHeight = 'auto';
+                            baseNameGroup.classList.remove("disabled");
+                            baseNameGroup.style.minHeight = "auto";
                             baseNameInput.disabled = false;
                         } else {
-                            baseNameGroup.classList.add('disabled');
-                            baseNameGroup.style.minHeight = '0';
+                            baseNameGroup.classList.add("disabled");
+                            baseNameGroup.style.minHeight = "0";
                             baseNameInput.disabled = true;
                         }
-                        
+
                         exportScenesCheckbox.disabled = !hasScenes;
                         if (!hasScenes) {
                             exportScenesCheckbox.checked = false;
-                            scenesHelpText.style.display = 'none';
-                            scenesWarningText.style.display = 'block';
+                            scenesHelpText.style.display = "none";
+                            scenesWarningText.style.display = "block";
                         } else {
-                            scenesHelpText.style.display = 'block';
-                            scenesWarningText.style.display = 'none';
+                            scenesHelpText.style.display = "block";
+                            scenesWarningText.style.display = "none";
                         }
 
                         if (dialogButtons) {
-                            const totalVisibleButtons = dialogButtons.querySelectorAll('button:not([style*="display: none"])').length;
-                            dialogButtons.style.width = totalVisibleButtons === 1 ? '50%' : '100%';
+                            const totalVisibleButtons =
+                                dialogButtons.querySelectorAll(
+                                    'button:not([style*="display: none"])',
+                                ).length;
+                            dialogButtons.style.width =
+                                totalVisibleButtons === 1 ? "50%" : "100%";
                         }
                     }
 
-                    exportTargetSelect.addEventListener('change', updateFormState);
-                    updateFormState(); 
-                }
+                    exportTargetSelect.addEventListener(
+                        "change",
+                        updateFormState,
+                    );
+                    updateFormState();
+                },
             });
             dialog.render(true);
         });
@@ -296,13 +374,21 @@ export class SimpleCampaignCodexExporter {
      * @param {string} exportTarget - The target for export (world or module id)
      * @returns {Promise<boolean>}
      */
-    static async _confirmExport(exportData, baseName, exportScenes = false, exportTarget = 'world') {
-        const targetName = exportTarget === 'world'
-            ? `"<strong>${baseName}</strong>" compendium set`
-            : `module "<strong>${game.modules.get(exportTarget)?.title || exportTarget}</strong>"`;
+    static async _confirmExport(
+        exportData,
+        baseName,
+        exportScenes = false,
+        exportTarget = "world",
+    ) {
+        const targetName =
+            exportTarget === "world"
+                ? `"<strong>${baseName}</strong>" compendium set`
+                : `module "<strong>${game.modules.get(exportTarget)?.title || exportTarget}</strong>"`;
 
         return new Promise((resolve) => {
-            const sceneInfo = exportScenes ? `<li><strong>${exportData.scenes?.size || 0}</strong> linked scenes</li>` : '';
+            const sceneInfo = exportScenes
+                ? `<li><strong>${exportData.scenes?.size || 0}</strong> linked scenes</li>`
+                : "";
 
             new Dialog({
                 title: "Confirm Export",
@@ -316,14 +402,22 @@ export class SimpleCampaignCodexExporter {
                             ${sceneInfo}
                         </ul>
                         <p><em>All relationships and folders will be preserved.</em></p>
-                        ${exportTarget !== 'world' ? '<p class="warning-text"><i class="fas fa-exclamation-triangle"></i> Warning: Existing documents with the same name (except for journals) will be overwritten.</p>' : ''}
+                        ${exportTarget !== "world" ? '<p class="warning-text"><i class="fas fa-exclamation-triangle"></i> Warning: Existing documents with the same name (except for journals) will be overwritten.</p>' : ""}
                     </div>
                 `,
                 buttons: {
-                    confirm: { icon: '<i class="fas fa-check"></i>', label: "Export Now", callback: () => resolve(true) },
-                    cancel: { icon: '<i class="fas fa-times"></i>', label: "Cancel", callback: () => resolve(false) }
+                    confirm: {
+                        icon: '<i class="fas fa-check"></i>',
+                        label: "Export Now",
+                        callback: () => resolve(true),
+                    },
+                    cancel: {
+                        icon: '<i class="fas fa-times"></i>',
+                        label: "Cancel",
+                        callback: () => resolve(false),
+                    },
                 },
-                default: "confirm"
+                default: "confirm",
             }).render(true);
         });
     }
@@ -345,13 +439,24 @@ export class SimpleCampaignCodexExporter {
 
         const processedUuids = new Set();
 
-        const rootJournals = game.journal.filter(j => {
-            const type = j.getFlag(this.CONSTANTS.FLAG_SCOPE, this.CONSTANTS.FLAG_TYPE);
-            return type && ['region', 'location', 'shop', 'npc', 'group'].includes(type);
+        const rootJournals = game.journal.filter((j) => {
+            const type = j.getFlag(
+                this.CONSTANTS.FLAG_SCOPE,
+                this.CONSTANTS.FLAG_TYPE,
+            );
+            return (
+                type &&
+                ["region", "location", "shop", "npc", "group"].includes(type)
+            );
         });
 
         for (const journal of rootJournals) {
-            await this._recursivelyFindDocuments(journal.uuid, documents, processedUuids, exportScenes);
+            await this._recursivelyFindDocuments(
+                journal.uuid,
+                documents,
+                processedUuids,
+                exportScenes,
+            );
         }
 
         return documents;
@@ -363,7 +468,12 @@ export class SimpleCampaignCodexExporter {
      * @param {object} documents - The main object holding Sets of journals, actors, and items.
      * @param {Set<string>} processedUuids - A set of already-handled UUIDs to avoid redundant work.
      */
-    static async _recursivelyFindDocuments(uuid, documents, processedUuids, exportScenes = false) {
+    static async _recursivelyFindDocuments(
+        uuid,
+        documents,
+        processedUuids,
+        exportScenes = false,
+    ) {
         if (!uuid || processedUuids.has(uuid)) {
             return;
         }
@@ -371,7 +481,9 @@ export class SimpleCampaignCodexExporter {
 
         const doc = await fromUuid(uuid);
         if (!doc) {
-            console.warn(`Campaign Codex | Linked document not found for UUID: ${uuid}`);
+            console.warn(
+                `Campaign Codex | Linked document not found for UUID: ${uuid}`,
+            );
             return;
         }
 
@@ -387,7 +499,12 @@ export class SimpleCampaignCodexExporter {
 
         const linkedUuids = this._extractUuidsFromDocument(doc, exportScenes);
         for (const linkedUuid of linkedUuids) {
-            await this._recursivelyFindDocuments(linkedUuid, documents, processedUuids, exportScenes);
+            await this._recursivelyFindDocuments(
+                linkedUuid,
+                documents,
+                processedUuids,
+                exportScenes,
+            );
         }
     }
 
@@ -401,21 +518,40 @@ export class SimpleCampaignCodexExporter {
             return [];
         }
 
-        const codexData = doc.getFlag(this.CONSTANTS.FLAG_SCOPE, this.CONSTANTS.FLAG_DATA) || {};
+        const codexData =
+            doc.getFlag(this.CONSTANTS.FLAG_SCOPE, this.CONSTANTS.FLAG_DATA) ||
+            {};
         const uuids = [];
 
-        const singleLinkFields = ["linkedActor", "linkedLocation", "parentRegion", "linkedStandardJournal"];
+        const singleLinkFields = [
+            "linkedActor",
+            "linkedLocation",
+            "parentRegion",
+            "linkedStandardJournal",
+        ];
         if (exportScenes) {
             singleLinkFields.push("linkedScene");
         }
 
         for (const field of singleLinkFields) {
             if (codexData[field]) {
-                uuids.push(codexData[field]);
+                if (field === "linkedStandardJournal") {
+                    const journalUuid =
+                        codexData[field].split(".JournalEntryPage.")[0];
+                    uuids.push(journalUuid);
+                } else {
+                    uuids.push(codexData[field]);
+                }
             }
         }
 
-        const multiLinkFields = ["linkedNPCs", "linkedShops", "linkedLocations", "associates", "members"];
+        const multiLinkFields = [
+            "linkedNPCs",
+            "linkedShops",
+            "linkedLocations",
+            "associates",
+            "members",
+        ];
         for (const field of multiLinkFields) {
             if (Array.isArray(codexData[field])) {
                 uuids.push(...codexData[field]);
@@ -432,81 +568,74 @@ export class SimpleCampaignCodexExporter {
 
         return uuids.filter(Boolean);
     }
-
-    /**
-     * Exports all collected documents and updates their links.
-     * @param {object} exportData - The object containing Sets of documents to export.
-     * @param {object} compendiums - The object containing the created compendium packs.
-     * @param {string} exportTarget - The target for export (world or module id)
-     */
     static async _performExport(exportData, compendiums, exportTarget) {
         const uuidMap = new Map();
         const compendiumFolders = {
             journals: new Map(),
             actors: new Map(),
             items: new Map(),
-            scenes: new Map()
+            scenes: new Map(),
         };
 
         let journalFolderId = null;
-        if (exportTarget !== 'world') {
+        // If exporting to a module, create a timestamped root folder for journals
+        if (exportTarget !== "world") {
             const now = new Date();
             const folderName = `${game.world.id} - ${now.getHours()}${now.getMinutes()}${now.getSeconds()} - ${now.getMonth() + 1}${now.getDate()}${String(now.getFullYear()).slice(2)}`;
             const journalPack = compendiums.journals;
-            const existingFolder = journalPack.folders.find(f => f.name === folderName);
+            const existingFolder = journalPack.folders.find(
+                (f) => f.name === folderName,
+            );
             if (existingFolder) {
                 journalFolderId = existingFolder.id;
             } else {
-                const newFolder = await Folder.create({ name: folderName, type: "JournalEntry" }, { pack: journalPack.collection });
+                const newFolder = await Folder.create(
+                    { name: folderName, type: "JournalEntry" },
+                    { pack: journalPack.collection },
+                );
                 journalFolderId = newFolder.id;
             }
         }
-// JOURNAL ADDITION
-        let linkedJournalsFolderId = null;
-        const journalPack = compendiums.journals;
-        const linkedFolderName = "Linked Journals";
 
-        const existingLinkedFolder = journalPack.folders.find(f => f.name === linkedFolderName && f.folder?.id === journalFolderId);
-        if (existingLinkedFolder) {
-            linkedJournalsFolderId = existingLinkedFolder.id;
-        } else {
-            const newFolder = await Folder.create({
-                name: linkedFolderName,
-                type: "JournalEntry",
-                folder: journalFolderId
-            }, { pack: journalPack.collection });
-            linkedJournalsFolderId = newFolder.id;
-        }
-// JOURNAL ADDITION
+        // Export Actors, Items, and Scenes
         for (const actor of exportData.actors) {
-            const newDoc = await this._exportOrUpdateDocument(actor, compendiums.actors);
+            const newDoc = await this._exportOrUpdateDocument(
+                actor,
+                compendiums.actors,
+            );
             if (newDoc) uuidMap.set(actor.uuid, newDoc.uuid);
         }
 
         for (const item of exportData.items) {
-            const newDoc = await this._exportOrUpdateDocument(item, compendiums.items);
+            const newDoc = await this._exportOrUpdateDocument(
+                item,
+                compendiums.items,
+            );
             if (newDoc) uuidMap.set(item.uuid, newDoc.uuid);
         }
 
         if (exportData.scenes && compendiums.scenes) {
             for (const scene of exportData.scenes) {
-                const newDoc = await this._exportOrUpdateDocument(scene, compendiums.scenes);
+                const newDoc = await this._exportOrUpdateDocument(
+                    scene,
+                    compendiums.scenes,
+                );
                 if (newDoc) uuidMap.set(scene.uuid, newDoc.uuid);
             }
         }
 
+        // Export all journals, preserving their original folder structure
         for (const journal of exportData.journals) {
-            let exportFolderId = journalFolderId; 
-            // JOURNAL ADDITION
-            if (!journal.getFlag(this.CONSTANTS.FLAG_SCOPE, this.CONSTANTS.FLAG_TYPE)) {
-                exportFolderId = linkedJournalsFolderId;
-            }
-            const newDoc = await this._exportDocument(journal, compendiums.journals, compendiumFolders.journals, exportFolderId);
-            // JOURNAL ADDITION
-            // const newDoc = await this._exportDocument(journal, compendiums.journals, compendiumFolders.journals, journalFolderId);
+            const newDoc = await this._exportDocument(
+                journal,
+                compendiums.journals,
+                compendiumFolders.journals,
+                journalFolderId, // Use the main export folder as the parent
+            );
             if (newDoc) uuidMap.set(journal.uuid, newDoc.uuid);
         }
-        
+
+        // Update all links in the newly exported journals
         const updates = [];
         for (const journal of exportData.journals) {
             const newJournalUuid = uuidMap.get(journal.uuid);
@@ -519,11 +648,11 @@ export class SimpleCampaignCodexExporter {
         }
 
         if (updates.length > 0) {
-            await JournalEntry.updateDocuments(updates, { pack: compendiums.journals.collection });
+            await JournalEntry.updateDocuments(updates, {
+                pack: compendiums.journals.collection,
+            });
         }
     }
-    
-
 
     /**
      * Exports a single document to a target compendium, optionally in a specific folder hierarchy.
@@ -533,23 +662,38 @@ export class SimpleCampaignCodexExporter {
      * @param {string|null} parentFolderId - Optional ID of a parent folder to export into.
      * @returns {Promise<Document>} The newly created document in the compendium.
      */
-    static async _exportDocument(doc, targetPack, folderMap, parentFolderId = null) {
+    static async _exportDocument(
+        doc,
+        targetPack,
+        folderMap,
+        parentFolderId = null,
+    ) {
         const exportData = doc.toObject();
         delete exportData._id;
-        foundry.utils.setProperty(exportData, `flags.${this.CONSTANTS.FLAG_SCOPE}.originalUuid`, doc.uuid);
+        foundry.utils.setProperty(
+            exportData,
+            `flags.${this.CONSTANTS.FLAG_SCOPE}.originalUuid`,
+            doc.uuid,
+        );
 
         let finalFolderId = parentFolderId;
         if (doc.folder) {
-            finalFolderId = await this._getOrCreateFolderRecursive(doc.folder, targetPack, folderMap, parentFolderId);
+            finalFolderId = await this._getOrCreateFolderRecursive(
+                doc.folder,
+                targetPack,
+                folderMap,
+                parentFolderId,
+            );
         }
-        
+
         if (finalFolderId) {
             exportData.folder = finalFolderId;
         }
 
-        return await targetPack.importDocument(doc.clone(exportData, { "keepId": false }));
+        return await targetPack.importDocument(
+            doc.clone(exportData, { keepId: false }),
+        );
     }
-
 
     /**
      * Recursively creates a folder hierarchy in a compendium based on a world folder.
@@ -559,7 +703,12 @@ export class SimpleCampaignCodexExporter {
      * @param {string|null} parentCompendiumFolderId - The ID of the parent compendium folder.
      * @returns {Promise<string>} The ID of the final folder in the compendium.
      */
-    static async _getOrCreateFolderRecursive(worldFolder, targetPack, folderMap, parentCompendiumFolderId = null) {
+    static async _getOrCreateFolderRecursive(
+        worldFolder,
+        targetPack,
+        folderMap,
+        parentCompendiumFolderId = null,
+    ) {
         // Build the folder path from the root down
         const folderPath = [];
         let currentFolder = worldFolder;
@@ -567,22 +716,25 @@ export class SimpleCampaignCodexExporter {
             folderPath.unshift(currentFolder);
             currentFolder = currentFolder.folder;
         }
-        
+
         let currentParentId = parentCompendiumFolderId;
 
         // Iterate through the path to create folders one by one
         for (const folder of folderPath) {
-            const folderKey = `${currentParentId || 'root'}-${folder.name}`;
+            const folderKey = `${currentParentId || "root"}-${folder.name}`;
             let targetFolderId = folderMap.get(folderKey);
 
             if (!targetFolderId) {
-                const newFolder = await Folder.create({
-                    name: folder.name,
-                    type: folder.type,
-                    sorting: folder.sorting,
-                    color: folder.color,
-                    folder: currentParentId 
-                }, { pack: targetPack.collection });
+                const newFolder = await Folder.create(
+                    {
+                        name: folder.name,
+                        type: folder.type,
+                        sorting: folder.sorting,
+                        color: folder.color,
+                        folder: currentParentId,
+                    },
+                    { pack: targetPack.collection },
+                );
 
                 targetFolderId = newFolder.id;
                 folderMap.set(folderKey, targetFolderId);
@@ -600,23 +752,31 @@ export class SimpleCampaignCodexExporter {
      * @returns {Promise<Document|null>} The newly created or updated document.
      */
     static async _exportOrUpdateDocument(doc, targetPack) {
-        const existingDoc = targetPack.index.find(d => d.name === doc.name);
+        const existingDoc = targetPack.index.find((d) => d.name === doc.name);
         const exportData = doc.toObject();
         delete exportData._id;
 
-        foundry.utils.setProperty(exportData, `flags.${this.CONSTANTS.FLAG_SCOPE}.originalUuid`, doc.uuid);
+        foundry.utils.setProperty(
+            exportData,
+            `flags.${this.CONSTANTS.FLAG_SCOPE}.originalUuid`,
+            doc.uuid,
+        );
 
         if (existingDoc) {
             // ui.notifications.info(`Updating existing document "${doc.name}" in compendium "${targetPack.metadata.label}".`);
             exportData._id = existingDoc._id;
-            const updateResult = await targetPack.documentClass.updateDocuments([exportData], { pack: targetPack.collection });
+            const updateResult = await targetPack.documentClass.updateDocuments(
+                [exportData],
+                { pack: targetPack.collection },
+            );
             return updateResult[0];
         } else {
             // ui.notifications.info(`Importing new document "${doc.name}" into compendium "${targetPack.metadata.label}".`);
-            return await targetPack.importDocument(doc.clone(exportData, { "keepId": false }));
+            return await targetPack.importDocument(
+                doc.clone(exportData, { keepId: false }),
+            );
         }
     }
-
 
     /**
      * Creates a data object for updating a journal in the compendium with relinked UUIDs.
@@ -627,17 +787,52 @@ export class SimpleCampaignCodexExporter {
     static _prepareJournalUpdate(journal, uuidMap) {
         const updateData = { _id: journal.id };
 
-        const oldCodexData = journal.getFlag(this.CONSTANTS.FLAG_SCOPE, this.CONSTANTS.FLAG_DATA) || {};
+        const oldCodexData =
+            journal.getFlag(
+                this.CONSTANTS.FLAG_SCOPE,
+                this.CONSTANTS.FLAG_DATA,
+            ) || {};
         const newCodexData = foundry.utils.deepClone(oldCodexData);
 
         const relink = (uuid) => uuidMap.get(uuid) || uuid;
 
-        const singleLinkFields = ["linkedActor", "linkedLocation", "parentRegion", "linkedScene", "linkedStandardJournal"];
+        const singleLinkFields = [
+            "linkedActor",
+            "linkedLocation",
+            "parentRegion",
+            "linkedScene",
+            "linkedStandardJournal",
+        ];
         for (const field of singleLinkFields) {
-            if (newCodexData[field]) newCodexData[field] = relink(newCodexData[field]);
+            if (newCodexData[field]) {
+                if (field === "linkedStandardJournal") {
+                    const parts =
+                        newCodexData[field].split(".JournalEntryPage.");
+                    const oldJournalUuid = parts[0];
+                    const newJournalUuid = uuidMap.get(oldJournalUuid);
+
+                    if (newJournalUuid) {
+                        if (parts.length > 1) {
+                            const pageIdPart = parts[1];
+                            newCodexData[field] =
+                                `${newJournalUuid}.JournalEntryPage.${pageIdPart}`;
+                        } else {
+                            newCodexData[field] = newJournalUuid;
+                        }
+                    }
+                } else {
+                    newCodexData[field] = relink(newCodexData[field]);
+                }
+            }
         }
 
-        const multiLinkFields = ["linkedNPCs", "linkedShops", "linkedLocations", "associates", "members"];
+        const multiLinkFields = [
+            "linkedNPCs",
+            "linkedShops",
+            "linkedLocations",
+            "associates",
+            "members",
+        ];
         for (const field of multiLinkFields) {
             if (Array.isArray(newCodexData[field])) {
                 newCodexData[field] = newCodexData[field].map(relink);
@@ -645,20 +840,38 @@ export class SimpleCampaignCodexExporter {
         }
 
         if (Array.isArray(newCodexData.inventory)) {
-            newCodexData.inventory.forEach(item => {
+            newCodexData.inventory.forEach((item) => {
                 if (item.itemUuid) item.itemUuid = relink(item.itemUuid);
             });
         }
 
-        foundry.utils.setProperty(updateData, `flags.${this.CONSTANTS.FLAG_SCOPE}.${this.CONSTANTS.FLAG_DATA}`, newCodexData);
+        foundry.utils.setProperty(
+            updateData,
+            `flags.${this.CONSTANTS.FLAG_SCOPE}.${this.CONSTANTS.FLAG_DATA}`,
+            newCodexData,
+        );
 
-        const newPages = journal.pages.map(page => {
+        const newPages = journal.pages.map((page) => {
             const pageData = page.toObject();
             if (pageData.text?.content) {
-                pageData.text.content = pageData.text.content.replace(/@UUID\[([^\]]+)\]/g, (match, oldUuid) => {
-                    const newUuid = uuidMap.get(oldUuid);
-                    return newUuid ? `@UUID[${newUuid}]` : match;
-                });
+                pageData.text.content = pageData.text.content.replace(
+                    /@UUID\[([^\]]+)\]/g,
+                    (match, oldUuid) => {
+                        if (oldUuid.includes(".JournalEntryPage.")) {
+                            const parts = oldUuid.split(".JournalEntryPage.");
+                            const oldJournalUuid = parts[0];
+                            const newJournalUuid = uuidMap.get(oldJournalUuid);
+
+                            if (newJournalUuid) {
+                                const pageIdPart = parts[1];
+                                return `@UUID[${newJournalUuid}.JournalEntryPage.${pageIdPart}]`;
+                            }
+                        }
+
+                        const newUuid = uuidMap.get(oldUuid);
+                        return newUuid ? `@UUID[${newUuid}]` : match;
+                    },
+                );
             }
             return pageData;
         });
@@ -675,24 +888,42 @@ export class SimpleCampaignCodexExporter {
     static async _createCompendiumSet(baseName, exportScenes = false) {
         try {
             const FOLDER_NAME = "Campaign Codex Exports";
-            let compendiumFolder = game.folders.find(f => f.name === FOLDER_NAME && f.type === "Compendium");
+            let compendiumFolder = game.folders.find(
+                (f) => f.name === FOLDER_NAME && f.type === "Compendium",
+            );
             if (!compendiumFolder) {
                 compendiumFolder = await Folder.create({
                     name: FOLDER_NAME,
                     type: "Compendium",
                     color: "#198556",
-                    sorting: "a"
+                    sorting: "a",
                 });
             }
 
             const compendiums = {
-                journals: await this._createCompendium(`${baseName} - CC Journals`, "JournalEntry", compendiumFolder.id),
-                actors: await this._createCompendium(`${baseName} - CC Actors`, "Actor", compendiumFolder.id),
-                items: await this._createCompendium(`${baseName} - CC Items`, "Item", compendiumFolder.id)
+                journals: await this._createCompendium(
+                    `${baseName} - CC Journals`,
+                    "JournalEntry",
+                    compendiumFolder.id,
+                ),
+                actors: await this._createCompendium(
+                    `${baseName} - CC Actors`,
+                    "Actor",
+                    compendiumFolder.id,
+                ),
+                items: await this._createCompendium(
+                    `${baseName} - CC Items`,
+                    "Item",
+                    compendiumFolder.id,
+                ),
             };
 
             if (exportScenes) {
-                compendiums.scenes = await this._createCompendium(`${baseName} - CC Scenes`, "Scene", compendiumFolder.id);
+                compendiums.scenes = await this._createCompendium(
+                    `${baseName} - CC Scenes`,
+                    "Scene",
+                    compendiumFolder.id,
+                );
             }
 
             return compendiums;
@@ -721,10 +952,12 @@ export class SimpleCampaignCodexExporter {
                 content: `<p>A compendium named "<strong>${name}</strong>" already exists. Do you want to delete and recreate it? This cannot be undone.</p>`,
                 yes: () => true,
                 no: () => false,
-                defaultYes: false
+                defaultYes: false,
             });
             if (!confirmed) {
-                throw new Error(`User cancelled overwrite of compendium: ${name}`);
+                throw new Error(
+                    `User cancelled overwrite of compendium: ${name}`,
+                );
             }
             await existing.deleteCompendium();
             ui.notifications.info(`Recreating compendium: ${name}`);
@@ -737,7 +970,7 @@ export class SimpleCampaignCodexExporter {
             label: name,
             name: slug,
             pack: packId,
-            system: game.system.id
+            system: game.system.id,
         });
 
         if (folderId) {

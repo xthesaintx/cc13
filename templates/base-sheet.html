@@ -31,8 +31,10 @@
     <div class="tab-item {{#if active}}active{{/if}}" data-tab="{{key}}">
       <i class="{{icon}}"></i>
       <span class="tab-label">{{label}}</span>
-      {{#if statistic}}
-        <span class="tab-stat" style="color: {{statistic.color}};">({{statistic.value}})</span>
+      {{#if ../isGM}}
+        {{#if statistic}}
+          <span class="tab-stat" style="color: {{statistic.color}};">({{statistic.value}})</span>
+        {{/if}}
       {{/if}}
     </div>
   {{/each}}
