@@ -356,14 +356,38 @@ export class ShopSheet extends CampaignCodexBaseSheet {
   `
         : "";
 
+    const createNPCBtn = data.isGM
+      ? `
+      <button type="button" class="refresh-btn create-npc-button" style="margin-left:12px; height:46px" title="Create New NPC">
+        <i class="fas fa-user-plus"></i>
+      </button>`
+      : "";
+    const npcBtn = dropToMapBtn +  createNPCBtn;
     return `
-    ${TemplateComponents.contentHeader("fas fa-users", "NPCs", dropToMapBtn)}
+    ${TemplateComponents.contentHeader("fas fa-users", "NPCs", npcBtn)}
     ${game.user.isGM ? `${TemplateComponents.dropZone("npc", "fas fa-user-plus", "Add NPCs", "Drag NPCs or actors here to associate them with this location")}` : ""}
     ${await TemplateComponents.entityGrid(preparedNPCs, "npc", true)}
   `;
   }
 
+  async _onCreateNPCJournal(event) {
+    event.preventDefault();
+    const name = await promptForName("NPC");
+    if (name) {
+      const npcJournal = await game.campaignCodex.createNPCJournal(null, name);
+      if (npcJournal) {
+        await game.campaignCodex.linkShopToNPC(this.document, npcJournal);
+        this.render(false);
+        npcJournal.sheet.render(true);
+      }
+    }
+  }
   _activateSheetSpecificListeners(html) {
+    html
+      .querySelector(".create-npc-button")
+      ?.addEventListener("click", this._onCreateNPCJournal.bind(this));
+
+
     html
       .querySelector(".markup-input")
       ?.addEventListener("change", this._onMarkupChange.bind(this));
