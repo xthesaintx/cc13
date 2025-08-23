@@ -305,7 +305,7 @@ export class RegionSheet extends CampaignCodexBaseSheet {
         <div class="npc-section">
           <h3 style="color: var(--cc-main-text); font-family: var(--cc-font-heading); font-size: 18px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin: 24px 0 16px 0; border-bottom: 1px solid var(--cc-border-light); padding-bottom: 8px;">
             <i class="fas fa-map-marker-alt" style="color: var(--cc-accent); margin-right: 8px;"></i>
-            Location NPCs (${directNPCs.length})
+            Location NPCs ${data.isGM ? `(${directNPCs.length})` : ""}
           </h3>
           ${await TemplateComponents.entityGrid(directNPCs, "npc", true)}
         </div>
@@ -317,7 +317,7 @@ export class RegionSheet extends CampaignCodexBaseSheet {
         <div class="npc-section">
           <h3 style="color: var(--cc-main-text); font-family: var(--cc-font-heading); font-size: 18px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin: 24px 0 16px 0; border-bottom: 1px solid var(--cc-border-light); padding-bottom: 8px;">
             <i class="fas fa-book-open" style="color: var(--cc-accent); margin-right: 8px;"></i>
-            Entry NPCs (${shopNPCs.length})
+            Entry NPCs ${data.isGM ? `(${shopNPCs.length})` : ""}
           </h3>
           ${await TemplateComponents.entityGrid(shopNPCs, "npc", true)}
         </div>

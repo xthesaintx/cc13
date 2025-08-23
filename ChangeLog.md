@@ -26,6 +26,7 @@
 - Ability to create and link a location from a region sheet  
 - Ability to create and link an entry from a location sheet  
 - Ability to create and link an entry from a NPC sheet  
+- Ability to create and link an NPC from a entry sheet  
 - Create and link a location by dropping a scene onto the location tab of a region, and the scene links to the location. Checks for duplicates (same location name, same scene) and won't create  
 - "Create Journal Entry" menu integration
 

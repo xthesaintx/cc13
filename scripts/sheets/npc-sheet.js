@@ -256,7 +256,7 @@ export class NPCSheet extends CampaignCodexBaseSheet {
         <div class="location-section">
           <h3 style="color: var(--cc-main-text); font-family: var(--cc-font-heading); font-size: 18px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin: 24px 0 16px 0; border-bottom: 1px solid var(--cc-border-light); padding-bottom: 8px;">
             <i class="fas fa-map-marker-alt" style="color: var(--cc-accent); margin-right: 8px;"></i>
-            Direct Locations (${directLocations.length})
+            Direct Locations ${data.isGM ? `(${directLocations.length})` : ""}
           </h3>
           ${await TemplateComponents.entityGrid(directLocations, "location")}
         </div>
@@ -268,7 +268,7 @@ export class NPCSheet extends CampaignCodexBaseSheet {
         <div class="location-section">
           <h3 style="color: var(--cc-main-text); font-family: var(--cc-font-heading); font-size: 18px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin: 24px 0 16px 0; border-bottom: 1px solid var(--cc-border-light); padding-bottom: 8px;">
             <i class="fas fa-book-open" style="color: var(--cc-accent); margin-right: 8px;"></i>
-            Shop Locations (${shopLocations.length})
+            Shop Locations ${data.isGM ? `(${shopLocations.length})` : ""}
           </h3>
           ${TemplateComponents.infoBanner("Locations where this NPC works through shop associations.")}
           ${TemplateComponents.entityGrid(shopLocations, "location")}
