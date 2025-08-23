@@ -52,6 +52,7 @@
 - Bug Fix: Fix one editor window resetting to the last saved state when another editor is saved or sheet updates.  
 - Fix CSS for main images on sheet so landscape images are centred and portraits are centred top third (object-position: 50% 25%;)  
 - Fixed names not updating on open linked journals until reopened
+- v13: Fixed the DnD5e journal styling
 
 
 ## 0.7.5

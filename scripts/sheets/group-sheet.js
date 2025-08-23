@@ -769,9 +769,9 @@ export class GroupSheet extends CampaignCodexBaseSheet {
     selectedData,
     enrichedDescription,
   ) {
-    const systemClass = game.system.id === "dnd5e" ? " dnd5e" : "";
+    const systemClass = game.system.id === "dnd5e" ? " dnd5e2" : "";
     const journalClass =
-      game.system.id === "dnd5e" ? " journal-entry-content" : "";
+      game.system.id === "dnd5e" ? " journal-entry-content dnd5e2 themed theme-light" : "";
     // Journal
     const tabJournal = await fromUuid(selectedData.linkedStandardJournal);
     // console.log(tabJournal);
