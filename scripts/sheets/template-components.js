@@ -307,9 +307,8 @@ export class TemplateComponents {
     const sortButton = `<button type="button" class="sort-btn sort-inventory-alpha" title="Sort Inventory Alphabetically"><i class="fas fa-sort-alpha-down"></i></button>`;
 
     const priceHeader =
-      isLootMode || hideBase
-        ? ""
-        : `
+      isLootMode ? "" : hideBase ? `<div style="text-align:center;align-content: center;">Price</div>` 
+      : `
     <div style="text-align:center;align-content: center;">Base Price</div>
     <div style="text-align:center;align-content: center;">Final Price</div>
   `;
