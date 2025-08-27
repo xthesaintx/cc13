@@ -2650,6 +2650,8 @@
     border-radius: 8px;
     background: var(--cc-border);
     border: none;
+        padding-left: 4px;
+            padding-right: 4px;
     color: white;
 }
 
