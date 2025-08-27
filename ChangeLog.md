@@ -1,3 +1,7 @@
+## 0.7.61
+- Inventory column header row fix when base price is disabled
+- Fixed the Secret block reveal/hide button not working or appearing
+
 ## 0.7.6
 - Sort Inventory A-Z on Shop Sheet  
 - Link a journal or page to an information tab of a sheet or group sheet
