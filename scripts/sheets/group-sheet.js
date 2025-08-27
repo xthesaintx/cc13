@@ -506,11 +506,11 @@ export class GroupSheet extends CampaignCodexBaseSheet {
 
       case "notes":
         return `
-          <div class="selected-content-section${systemClass}">
-           <div class="rich-text-content${journalClass}">
+          <article class="selected-content-section cc-enriched cc-hidden-secrets${systemClass}">
+           <section class="rich-text-content journal-entry-content" name="cc.secret.content.notes">
               ${enrichedNotes || "<p><em>No GM notes available.</em></p>"}
-            </div>
-            </div>
+            </section>
+            </article>
         `;
 
       default:
@@ -786,15 +786,15 @@ export class GroupSheet extends CampaignCodexBaseSheet {
     }
 
     return `
-      <div class="selected-content-section">${standardJournalSection}
-        <div class="description-section${systemClass}">
+      <article class="selected-content-section cc-enriched">${standardJournalSection}
+        <section class="description-section journal-entry-page cc-secret-content cc-hidden-secrets${systemClass}"  name="cc.secret.content.description" document-uuid="${selectedDoc.uuid}">
 
           <h4><i class="fas fa-align-left"></i> Description</h4>
-          <div class="rich-text-content${journalClass}">
+          <div class="rich-text-content journal-page-content">
             ${enrichedDescription || "<p><em>No description available.</em></p>"}
           </div>
-        </div>
-      </div>
+        </section>
+      </article>
     `;
   }
 

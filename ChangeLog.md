@@ -1,3 +1,6 @@
+## 0.7.62
+- Hot fix to hide buttons on secrets in selected group sheets until I can fix
+
 ## 0.7.61
 - Inventory column header row fix when base price is disabled
 - Fixed the Secret block reveal/hide button not working or appearing

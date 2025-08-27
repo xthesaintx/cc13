@@ -2663,7 +2663,9 @@
   padding: 0px 4px 0px 4px;
 }
 
-.campaign-codex section.secret l {
+.campaign-codex section.secret {
     margin-top: 20px;
 }
-
+.campaign-codex .cc-hidden-secrets section.secret > button.reveal {
+  display: none;
+}
