@@ -142,7 +142,7 @@ export class LocationSheet extends CampaignCodexBaseSheet {
       headerContent += `
       <div class="scene-info">
         
-        <span class="scene-name${data.canViewScene ? ` open-scene" data-scene-uuid="${data.linkedScene.uuid}"` : '"'}" title="Open Scene"> <i class="fas fa-map"></i> ${data.linkedScene.name}</span>
+        <span class="scene-name${data.canViewScene ? ` open-scene" data-scene-uuid="${data.linkedScene.uuid}"` : '"'} title="Open Scene"> <i class="fas fa-map"></i> ${data.linkedScene.name}</span>
 
               ${
                 data.isGM

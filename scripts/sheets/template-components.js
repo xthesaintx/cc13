@@ -61,9 +61,9 @@ export class TemplateComponents {
     editlocation,
     isOwner = false,
   ) {
-    const systemClass = game.system.id === "dnd5e" ? " dnd5e2" : "";
+    const systemClass = game.system.id === "dnd5e" ? " dnd5e2-journal" : "";
     const journalClass =
-      game.system.id === "dnd5e" ? "journal-entry-content dnd5e2 themed theme-light" : "";
+      game.system.id === "dnd5e" ? "journal-page-content" : "";
 
     if (!isOwner)
       return `
@@ -79,16 +79,19 @@ export class TemplateComponents {
     `;
 
     return `
-      <div class="form-section${systemClass}" name="proseedited">
+      <section class="form-section cc-enriched" name="proseedited">
         <label class="form-label">
           <i class="${icon}"></i>
           ${label}
           <a class="cc-edit-${editlocation}" title="Edit"><i class="fas fa-edit" style="margin-left: 8px; cursor: pointer;"></i></a>
         </label>
-      <div class="${journalClass}">
+      <article class="journal-entry-page${systemClass}" name="proseedited">
+      <section class="journal-page-content">
       ${enrichedValue}
-      </div>
-      </div>
+      </section>
+      </article>
+      </section>
+
     `;
   }
 
@@ -306,9 +309,11 @@ export class TemplateComponents {
 
     const sortButton = `<button type="button" class="sort-btn sort-inventory-alpha" title="Sort Inventory Alphabetically"><i class="fas fa-sort-alpha-down"></i></button>`;
 
-    const priceHeader =
-      isLootMode ? "" : hideBase ? `<div style="text-align:center;align-content: center;">Price</div>` 
-      : `
+    const priceHeader = isLootMode
+      ? ""
+      : hideBase
+        ? `<div style="text-align:center;align-content: center;">Price</div>`
+        : `
     <div style="text-align:center;align-content: center;">Base Price</div>
     <div style="text-align:center;align-content: center;">Final Price</div>
   `;
@@ -575,9 +580,9 @@ export class TemplateComponents {
     </div>
   `;
   }
-static standardJournalSection(data) {
-  if (data.linkedStandardJournal && data.canViewJournal) {
-    return `
+  static standardJournalSection(data) {
+    if (data.linkedStandardJournal && data.canViewJournal) {
+      return `
       <div class="scene-info" style="margin-top: -24px;margin-bottom: 24px; height:40px">
       <span class="scene-name open-journal" data-journal-uuid="${data.linkedStandardJournal.uuid}" title="Open Journal">
         <i class="fas fa-book"></i> Journal: ${data.linkedStandardJournal.name}</span>
@@ -590,15 +595,14 @@ static standardJournalSection(data) {
           }
       </div>
     `;
-  } else if (data.isGM) {
-    return `
+    } else if (data.isGM) {
+      return `
       <div class="scene-info" style="margin-top: -24px;margin-bottom: 24px; height:40px">
         <span class="scene-name" title="Open Journal">
           <i class="fas fa-book"></i> Journal: Drag Standard Journal to link</span>
       </div>
     `;
+    }
+    return "";
   }
-  return "";
-}
-  
 }

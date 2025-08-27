@@ -2641,3 +2641,15 @@
     align-self: flex-end;
   }
 }
+
+.campaign-codex section.secret > button.reveal{
+    position: relative;
+    left: 50%;
+    top: -10px;
+    transform: translateX(-50%);
+    border-radius: 8px;
+    background: var(--cc-border);
+    border: none;
+    color: white;
+}
+

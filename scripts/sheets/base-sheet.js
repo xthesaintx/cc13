@@ -6,6 +6,14 @@ export class CampaignCodexBaseSheet extends foundry.appv1.sheets.JournalSheet {
   constructor(document, options = {}) {
     super(document, options);
     this._currentTab = "info";
+
+    this.secrets = new foundry.applications.ux.HTMLSecret({
+      parentSelector: ".cc-enriched[name='proseedited']",
+      callbacks: {
+        content: this._getSecretContent.bind(this),
+        update: this._updateSecret.bind(this),
+      },
+    });
   }
 
   static get defaultOptions() {
@@ -120,6 +128,7 @@ export class CampaignCodexBaseSheet extends foundry.appv1.sheets.JournalSheet {
         button.disabled = false;
       });
     }
+    this.secrets.bind(nativeHtml);
 
     this._activateTabs(nativeHtml);
     this._setupDropZones(nativeHtml);
@@ -141,6 +150,11 @@ export class CampaignCodexBaseSheet extends foundry.appv1.sheets.JournalSheet {
     nativeHtml
       .querySelector(".npcs-to-map-button")
       ?.addEventListener("click", this._onDropNPCsToMapClick.bind(this));
+    if (!game.user.isGM) {
+      nativeHtml.querySelectorAll("button.reveal").forEach((btn) => {
+        btn.style.display = "none";
+      });
+    }
   }
 
   _activateJournalListeners(html) {
@@ -213,7 +227,44 @@ export class CampaignCodexBaseSheet extends foundry.appv1.sheets.JournalSheet {
       .querySelector(".save-data")
       ?.addEventListener("click", this._onSaveData.bind(this));
   }
-  
+  /**
+   * Retrieves the raw, un-enriched source content for a secret block.
+   * @param {HTMLElement} secret The secret element.
+   * @returns {string|null}      The raw content string from the document flag.
+   * @protected
+   */
+  _getSecretContent(secret) {
+    // Find the parent rich-text section to identify which field we're in (e.g., "description" or "notes").
+    const editor = secret.closest('.cc-enriched[name="proseedited"]');
+    const editButton = editor?.querySelector('[class*="cc-edit-"]');
+    if (!editButton) return null;
+
+    // The field name is the last part of the class name (e.g., "cc-edit-description" -> "description")
+    const fieldName = editButton.className.split("-").pop();
+    const data = this.document.getFlag("campaign-codex", "data") || {};
+    return data[fieldName];
+  }
+
+  /**
+   * Updates the document flag with new content after a secret's state has been toggled.
+   * @param {HTMLElement} secret      The secret element.
+   * @param {string} modifiedContent  The updated raw content string.
+   * @returns {Promise<Document>}     The updated JournalEntry document.
+   * @protected
+   */
+  async _updateSecret(secret, modifiedContent) {
+    const editor = secret.closest('.cc-enriched[name="proseedited"]');
+    const editButton = editor?.querySelector('[class*="cc-edit-"]');
+    if (!editButton) return;
+
+    const fieldName = editButton.className.split("-").pop();
+    const data = foundry.utils.deepClone(
+      this.document.getFlag("campaign-codex", "data") || {},
+    );
+    data[fieldName] = modifiedContent;
+    return this.document.setFlag("campaign-codex", "data", data);
+  }
+
   async _onRemoveStandardJournal(event) {
     event.preventDefault();
     await this._saveFormData();
