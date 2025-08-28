@@ -61,7 +61,7 @@ export class TemplateComponents {
     editlocation,
     isOwner = false,
   ) {
-    const systemClass = game.system.id === "dnd5e" ? " dnd5e2-journal" : "";
+  const systemClass = game.system.id === "dnd5e" ? " dnd5e2-journal themed theme-light" : "";
     const journalClass =
       game.system.id === "dnd5e" ? "journal-page-content" : "";
 
@@ -72,7 +72,7 @@ export class TemplateComponents {
           <i class="${icon}"></i>
           ${label}
         </label>
-      <div class="${journalClass}">
+      <div class="journal-page-content">
       ${enrichedValue}
       </div>
       </div>

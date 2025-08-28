@@ -456,7 +456,7 @@ export class GroupSheet extends CampaignCodexBaseSheet {
       );
     const systemClass = game.system.id === "dnd5e" ? " dnd5e" : "";
     const journalClass =
-      game.system.id === "dnd5e" ? " journal-entry-content" : "";
+      game.system.id === "dnd5e" ? " dnd5e2-journal themed theme-light" : "";
     const enrichedNotes =
       await foundry.applications.ux.TextEditor.implementation.enrichHTML(
         selectedData.notes || "",
@@ -506,8 +506,8 @@ export class GroupSheet extends CampaignCodexBaseSheet {
 
       case "notes":
         return `
-          <article class="selected-content-section cc-enriched cc-hidden-secrets${systemClass}">
-           <section class="rich-text-content journal-entry-content" name="cc.secret.content.notes">
+          <article class="selected-content-section cc-enriched cc-hidden-secrets journal-entry-page${systemClass}">
+           <section class="rich-text-content journal-page-content" name="cc.secret.content.notes">
               ${enrichedNotes || "<p><em>No GM notes available.</em></p>"}
             </section>
             </article>
@@ -769,7 +769,7 @@ export class GroupSheet extends CampaignCodexBaseSheet {
     selectedData,
     enrichedDescription,
   ) {
-    const systemClass = game.system.id === "dnd5e" ? " dnd5e2" : "";
+    const systemClass = game.system.id === "dnd5e" ? " dnd5e2-journal themed theme-light" : "";
     const journalClass =
       game.system.id === "dnd5e" ? " journal-entry-content dnd5e2 themed theme-light" : "";
     // Journal

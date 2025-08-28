@@ -2669,3 +2669,27 @@
 .campaign-codex .cc-hidden-secrets section.secret > button.reveal {
   display: none;
 }
+
+/*
+ * ---------------------------------------------
+ * Override the DND5e Editor-Content Font nonsense
+ * ---------------------------------------------
+ */
+
+
+.campaign-codex .dnd5e2-journal .editor-content h1,
+.campaign-codex .dnd5e2-journal .editor-content h2,
+.campaign-codex .dnd5e2-journal .editor-content h3 {
+  font-family: var(--dnd5e-font-modesto);
+  font-weight: bold;
+  border-bottom: none;
+}
+.campaign-codex .dnd5e2-journal .editor-content h1 {
+  font-size:2em;
+}
+.campaign-codex .dnd5e2-journal .editor-content h2 {
+  font-size:1.4em;
+}
+.campaign-codex .dnd5e2-journal .editor-content h3 {
+  font-size:1.25em;
+}
