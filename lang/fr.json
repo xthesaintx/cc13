@@ -1,0 +1,21 @@
+{
+    "CAMPAIGN_CODEX.settings.itemPricePath.name": "Personnalisé le chemin de prix de l'objet",
+    "CAMPAIGN_CODEX.settings.itemPricePath.hint": "Chemin vers la valeur du prix de l'objet (par ex. 'system.price.value' pour D&D5e). Laissez vide pour utiliser le système détecté.",
+    "CAMPAIGN_CODEX.settings.itemDenominationPath.name": "Personnalisé le chemin de la devise de l'objet",
+    "CAMPAIGN_CODEX.settings.itemDenominationPath.hint": "Chemin vers la dénomination de la devise de l'objet (par ex. 'system.price.denomination' pour D&D5e). Laissez vide pour utiliser le système détecté.",
+    "CAMPAIGN_CODEX.settings.itemDenominationOverride.name": "Personnalisé la dénomination de la devise",
+    "CAMPAIGN_CODEX.settings.itemDenominationOverride.hint": "Dénomination de la devise (par ex. crédits, po, unités). Laissez vide pour utiliser le Chemin de la devise de l'objet ou le système détecté. Campaign Codex détectera automatiquement la valeur et la dénomination des objets en fonction du système de jeu actif (par ex. Dungeons and Dragons 5e, Pathfinder 2e, Starfinder, Savage Worlds Adventure Edition, Pathfinder 1e, Old-School Essentials et Daggerheart).",
+    "CAMPAIGN_CODEX.settings.hideBaseCost.name": "Masquer la colonne du coût de base",
+    "CAMPAIGN_CODEX.settings.hideBaseCost.hint": "Si vous ne souhaitez pas que le coût de base soit visible, ou si le système n'a pas de chemin de prix, vous pouvez masquer cette colonne dans l'onglet inventaire. Fermez et rouvrez les fiches pour mettre à jour.",
+    "CAMPAIGN_CODEX.settings.sortCardsAlpha.name": "Trier automatiquement les fiches par ordre alphabétique",
+    "CAMPAIGN_CODEX.settings.sortCardsAlpha.hint": "Si activé, les fiches seront affichées de A à Z",
+    "CAMPAIGN_CODEX.settings.runonlyonce.name": "Message de bienvenue - Désactivé",
+    "CAMPAIGN_CODEX.settings.runonlyonce.hint": "Si activé, vous ne verrez pas le message de bienvenue",
+    "CAMPAIGN_CODEX.settings.useOrganizedFolders.name": "Organiser en dossiers",
+    "CAMPAIGN_CODEX.settings.useOrganizedFolders.hint": "Créer et organiser automatiquement les journaux Campaign Codex dans des dossiers",
+    "CAMPAIGN_CODEX.settings.hideByPermission.name": "Masquer les fiches par propriété",
+    "CAMPAIGN_CODEX.settings.hideByPermission.hint": "Masquer les fiches si l'utilisateur n'a pas la propriété 'Observateur' ou supérieure du journal ou de l'objet",
+    "CAMPAIGN_CODEX.settings.resetItemPathsButton.name": "Réinitialiser les chemins d'objets aux valeurs par défaut",
+    "CAMPAIGN_CODEX.settings.resetItemPathsButton.hint": "Activez cette option et enregistrez pour réinitialiser les chemins de prix et de devise des objets aux valeurs par défaut de D&D5e (system.price.value et system.price.denomination)",
+    "CAMPAIGN_CODEX.notifications.itemPricePathsReset": "Les chemins de prix des objets ont été réinitialisés aux valeurs par défaut de D&D5e"
+}
