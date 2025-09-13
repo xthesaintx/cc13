@@ -33,18 +33,12 @@ export class CampaignCodexBaseSheet extends foundry.appv1.sheets.JournalSheet {
   static isObserverOrHigher(doc) {
     if (!doc) return false;
     // testUserPermission automatically returns true for GMs
-    return doc.testUserPermission(
-      game.user,
-      CONST.DOCUMENT_OWNERSHIP_LEVELS.OBSERVER,
-    );
+    return doc.testUserPermission(game.user, CONST.DOCUMENT_OWNERSHIP_LEVELS.OBSERVER);
   }
   static isOwnerOrHigher(doc) {
     if (!doc) return false;
     // testUserPermission automatically returns true for GMs
-    return doc.testUserPermission(
-      game.user,
-      CONST.DOCUMENT_OWNERSHIP_LEVELS.OWNER,
-    );
+    return doc.testUserPermission(game.user, CONST.DOCUMENT_OWNERSHIP_LEVELS.OWNER);
   }
   async getData() {
     const data = await super.getData();
@@ -58,16 +52,11 @@ export class CampaignCodexBaseSheet extends foundry.appv1.sheets.JournalSheet {
       notes: sheetData.notes || "",
     };
 
-    data.sheetData.enrichedDescription =
-      await foundry.applications.ux.TextEditor.implementation.enrichHTML(
-        data.sheetData.description,
-        { async: true, secrets: this.document.isOwner },
-      );
-    data.sheetData.enrichedNotes =
-      await foundry.applications.ux.TextEditor.implementation.enrichHTML(
-        data.sheetData.notes,
-        { async: true, secrets: this.document.isOwner },
-      );
+    data.sheetData.enrichedDescription = await foundry.applications.ux.TextEditor.implementation.enrichHTML(data.sheetData.description, {
+      async: true,
+      secrets: this.document.isOwner,
+    });
+    data.sheetData.enrichedNotes = await foundry.applications.ux.TextEditor.implementation.enrichHTML(data.sheetData.notes, { async: true, secrets: this.document.isOwner });
 
     data.canEdit = this.document.canUserModify(game.user, "update");
     data.currentTab = this._currentTab;
@@ -95,16 +84,11 @@ export class CampaignCodexBaseSheet extends foundry.appv1.sheets.JournalSheet {
               name: displayName,
               img: journal.img || "icons/svg/book.svg",
             };
-            data.canViewJournal = await this.constructor.canUserView(
-              data.linkedStandardJournal.uuid,
-            );
+            data.canViewJournal = await this.constructor.canUserView(data.linkedStandardJournal.uuid);
           }
         }
       } catch (error) {
-        console.warn(
-          `Campaign Codex | Linked standard journal not found: ${sheetData.linkedStandardJournal}`,
-          error,
-        );
+        console.warn(`Campaign Codex | Linked standard journal not found: ${sheetData.linkedStandardJournal}`, error);
         if (game.user.isGM) {
           const updatedData = foundry.utils.deepClone(sheetData);
           updatedData.linkedStandardJournal = null;
@@ -121,9 +105,7 @@ export class CampaignCodexBaseSheet extends foundry.appv1.sheets.JournalSheet {
     super.activateListeners(html);
 
     if (!game.user.isGM) {
-      const safeButtons = nativeHtml.querySelectorAll(
-        '[class*="open-"], .btn-expand-all, .btn-collapse-all, .toggle-tree-items, .filter-btn',
-      );
+      const safeButtons = nativeHtml.querySelectorAll('[class*="open-"], .btn-expand-all, .btn-collapse-all, .toggle-tree-items, .filter-btn');
       safeButtons.forEach((button) => {
         button.disabled = false;
       });
@@ -137,19 +119,9 @@ export class CampaignCodexBaseSheet extends foundry.appv1.sheets.JournalSheet {
     this._setupSaveButton(nativeHtml);
     this._activateJournalListeners(nativeHtml);
     this._activateSheetSpecificListeners(nativeHtml);
-    nativeHtml
-      .querySelector(".cc-edit-description")
-      ?.addEventListener("click", (event) =>
-        this._onEditDescription(event, "description"),
-      );
-    nativeHtml
-      .querySelector(".cc-edit-notes")
-      ?.addEventListener("click", (event) =>
-        this._onEditDescription(event, "notes"),
-      );
-    nativeHtml
-      .querySelector(".npcs-to-map-button")
-      ?.addEventListener("click", this._onDropNPCsToMapClick.bind(this));
+    nativeHtml.querySelector(".cc-edit-description")?.addEventListener("click", (event) => this._onEditDescription(event, "description"));
+    nativeHtml.querySelector(".cc-edit-notes")?.addEventListener("click", (event) => this._onEditDescription(event, "notes"));
+    nativeHtml.querySelector(".npcs-to-map-button")?.addEventListener("click", this._onDropNPCsToMapClick.bind(this));
     if (!game.user.isGM) {
       nativeHtml.querySelectorAll("button.reveal").forEach((btn) => {
         btn.style.display = "none";
@@ -158,17 +130,8 @@ export class CampaignCodexBaseSheet extends foundry.appv1.sheets.JournalSheet {
   }
 
   _activateJournalListeners(html) {
-    html
-      .querySelector(".remove-standard-journal")
-      ?.addEventListener("click", this._onRemoveStandardJournal.bind(this));
-    html
-      .querySelectorAll(".open-journal")
-      ?.forEach((element) =>
-        element.addEventListener(
-          "click",
-          async (e) => await this._onOpenDocument(e, "journal"),
-        ),
-      );
+    html.querySelector(".remove-standard-journal")?.addEventListener("click", this._onRemoveStandardJournal.bind(this));
+    html.querySelectorAll(".open-journal")?.forEach((element) => element.addEventListener("click", async (e) => await this._onOpenDocument(e, "journal")));
   }
 
   _activateTabs(html) {
@@ -184,19 +147,11 @@ export class CampaignCodexBaseSheet extends foundry.appv1.sheets.JournalSheet {
   }
 
   _showTab(tabName, html) {
-    html
-      .querySelectorAll(".sidebar-tabs .tab-item")
-      .forEach((tab) => tab.classList.remove("active"));
-    html
-      .querySelectorAll(".tab-panel")
-      .forEach((panel) => panel.classList.remove("active"));
+    html.querySelectorAll(".sidebar-tabs .tab-item").forEach((tab) => tab.classList.remove("active"));
+    html.querySelectorAll(".tab-panel").forEach((panel) => panel.classList.remove("active"));
 
-    html
-      .querySelector(`.sidebar-tabs .tab-item[data-tab="${tabName}"]`)
-      ?.classList.add("active");
-    html
-      .querySelector(`.tab-panel[data-tab="${tabName}"]`)
-      ?.classList.add("active");
+    html.querySelector(`.sidebar-tabs .tab-item[data-tab="${tabName}"]`)?.classList.add("active");
+    html.querySelector(`.tab-panel[data-tab="${tabName}"]`)?.classList.add("active");
   }
 
   _setupDropZones(html) {
@@ -206,9 +161,7 @@ export class CampaignCodexBaseSheet extends foundry.appv1.sheets.JournalSheet {
 
   _setupNameEditing(html) {
     if (game.user.isGM) {
-      html
-        .querySelector(".sheet-title")
-        ?.addEventListener("click", this._onNameEdit.bind(this));
+      html.querySelector(".sheet-title")?.addEventListener("click", this._onNameEdit.bind(this));
       html.addEventListener("blur", this._onNameSave.bind(this), true);
       html.addEventListener("keypress", this._onNameKeypress.bind(this));
     }
@@ -223,9 +176,7 @@ export class CampaignCodexBaseSheet extends foundry.appv1.sheets.JournalSheet {
   }
 
   _setupSaveButton(html) {
-    html
-      .querySelector(".save-data")
-      ?.addEventListener("click", this._onSaveData.bind(this));
+    html.querySelector(".save-data")?.addEventListener("click", this._onSaveData.bind(this));
   }
   /**
    * Retrieves the raw, un-enriched source content for a secret block.
@@ -256,11 +207,8 @@ export class CampaignCodexBaseSheet extends foundry.appv1.sheets.JournalSheet {
     const editor = secret.closest('.cc-enriched[name="proseedited"]');
     const editButton = editor?.querySelector('[class*="cc-edit-"]');
     if (!editButton) return;
-
     const fieldName = editButton.className.split("-").pop();
-    const data = foundry.utils.deepClone(
-      this.document.getFlag("campaign-codex", "data") || {},
-    );
+    const data = foundry.utils.deepClone(this.document.getFlag("campaign-codex", "data") || {});
     data[fieldName] = modifiedContent;
     return this.document.setFlag("campaign-codex", "data", data);
   }
@@ -320,10 +268,7 @@ export class CampaignCodexBaseSheet extends foundry.appv1.sheets.JournalSheet {
   }
 
   async _onNameKeypress(event) {
-    if (
-      event.key === "Enter" &&
-      event.target.classList.contains("name-input")
-    ) {
+    if (event.key === "Enter" && event.target.classList.contains("name-input")) {
       event.preventDefault();
       event.target.blur();
     }
@@ -333,8 +278,7 @@ export class CampaignCodexBaseSheet extends foundry.appv1.sheets.JournalSheet {
     event.preventDefault();
     event.stopPropagation();
 
-    const current =
-      this.document.getFlag("campaign-codex", "image") || this.document.img;
+    const current = this.document.getFlag("campaign-codex", "image") || this.document.img;
     const fp = new FilePicker({
       type: "image",
       current: current,
@@ -388,11 +332,7 @@ export class CampaignCodexBaseSheet extends foundry.appv1.sheets.JournalSheet {
         if (!app.document?.getFlag || app === this) continue;
 
         const appType = app.document.getFlag("campaign-codex", "type");
-        if (
-          appType &&
-          app._isRelatedDocument &&
-          (await app._isRelatedDocument(myDocUuid))
-        ) {
+        if (appType && app._isRelatedDocument && (await app._isRelatedDocument(myDocUuid))) {
           sheetsToRefresh.add(app);
         }
       }
@@ -411,8 +351,7 @@ export class CampaignCodexBaseSheet extends foundry.appv1.sheets.JournalSheet {
   async _onSaveData(event) {
     event.preventDefault();
 
-    const nativeElement =
-      this.element instanceof jQuery ? this.element[0] : this.element;
+    const nativeElement = this.element instanceof jQuery ? this.element[0] : this.element;
     const form = nativeElement.querySelector("form");
     const formData = new foundry.applications.ux.FormDataExtended(form);
     const data = formData.object;
@@ -423,18 +362,16 @@ export class CampaignCodexBaseSheet extends foundry.appv1.sheets.JournalSheet {
     };
 
     const proseEditedFields = new Set();
-    nativeElement
-      .querySelectorAll('[name="proseedited"]')
-      .forEach(function (element) {
-        const editBtn = element.querySelector('[class^="cc-edit-"]');
-        if (editBtn) {
-          const className = editBtn.className;
-          const fieldMatch = className.match(/cc-edit-(\w+)/);
-          if (fieldMatch) {
-            proseEditedFields.add(fieldMatch[1]);
-          }
+    nativeElement.querySelectorAll('[name="proseedited"]').forEach(function (element) {
+      const editBtn = element.querySelector('[class^="cc-edit-"]');
+      if (editBtn) {
+        const className = editBtn.className;
+        const fieldMatch = className.match(/cc-edit-(\w+)/);
+        if (fieldMatch) {
+          proseEditedFields.add(fieldMatch[1]);
         }
-      });
+      }
+    });
 
     Object.keys(data).forEach((fieldName) => {
       if (!proseEditedFields.has(fieldName)) {
@@ -444,9 +381,7 @@ export class CampaignCodexBaseSheet extends foundry.appv1.sheets.JournalSheet {
 
     try {
       await this.document.setFlag("campaign-codex", "data", updatedData);
-      ui.notifications.info(
-        `${this.constructor.name.replace("Sheet", "")} saved successfully!`,
-      );
+      ui.notifications.info(`${this.constructor.name.replace("Sheet", "")} saved successfully!`);
 
       const saveBtn = event.currentTarget;
       saveBtn.classList.add("success");
@@ -462,33 +397,29 @@ export class CampaignCodexBaseSheet extends foundry.appv1.sheets.JournalSheet {
   }
 
   async _saveFormData() {
-    const nativeElement =
-      this.element instanceof jQuery ? this.element[0] : this.element;
+    const nativeElement = this.element instanceof jQuery ? this.element[0] : this.element;
     const form = nativeElement?.querySelector("form");
     if (form) {
       try {
         const formData = new foundry.applications.ux.FormDataExtended(form);
         const data = formData.object;
-        const currentData =
-          this.document.getFlag("campaign-codex", "data") || {};
+        const currentData = this.document.getFlag("campaign-codex", "data") || {};
 
         const updatedData = {
           ...currentData,
         };
 
         const proseEditedFields = new Set();
-        nativeElement
-          .querySelectorAll('[name="proseedited"]')
-          .forEach(function (element) {
-            const editBtn = element.querySelector('[class^="cc-edit-"]');
-            if (editBtn) {
-              const className = editBtn.className;
-              const fieldMatch = className.match(/cc-edit-(\w+)/);
-              if (fieldMatch) {
-                proseEditedFields.add(fieldMatch[1]);
-              }
+        nativeElement.querySelectorAll('[name="proseedited"]').forEach(function (element) {
+          const editBtn = element.querySelector('[class^="cc-edit-"]');
+          if (editBtn) {
+            const className = editBtn.className;
+            const fieldMatch = className.match(/cc-edit-(\w+)/);
+            if (fieldMatch) {
+              proseEditedFields.add(fieldMatch[1]);
             }
-          });
+          }
+        });
 
         Object.keys(data).forEach((fieldName) => {
           if (!proseEditedFields.has(fieldName)) {
@@ -505,11 +436,7 @@ export class CampaignCodexBaseSheet extends foundry.appv1.sheets.JournalSheet {
 
   async _onOpenDocument(event, type) {
     event.stopPropagation();
-    const uuid =
-      event.currentTarget.dataset[`${type}Uuid`] ||
-      event.currentTarget.closest(`[data-${type}-uuid]`)?.dataset[
-        `${type}Uuid`
-      ];
+    const uuid = event.currentTarget.dataset[`${type}Uuid`] || event.currentTarget.closest(`[data-${type}-uuid]`)?.dataset[`${type}Uuid`];
 
     if (!uuid) {
       console.warn(`Campaign Codex | No UUID found for ${type}`);
@@ -535,33 +462,20 @@ export class CampaignCodexBaseSheet extends foundry.appv1.sheets.JournalSheet {
 
   async _onRemoveFromList(event, listName) {
     await this._saveFormData();
-
-    const itemUuid =
-      event.currentTarget.dataset[Object.keys(event.currentTarget.dataset)[0]];
+    const itemUuid = event.currentTarget.dataset[Object.keys(event.currentTarget.dataset)[0]];
     const myDoc = this.document;
     const myData = myDoc.getFlag("campaign-codex", "data") || {};
     const myType = myDoc.getFlag("campaign-codex", "type");
-
     if (!myData[listName]) return;
 
-    const originalLength = Array.isArray(myData[listName])
-      ? myData[listName].length
-      : myData[listName]
-        ? 1
-        : 0;
-
+    const originalLength = Array.isArray(myData[listName]) ? myData[listName].length : myData[listName] ? 1 : 0;
     if (Array.isArray(myData[listName])) {
       myData[listName] = myData[listName].filter((uuid) => uuid !== itemUuid);
     } else {
       myData[listName] = null;
     }
 
-    const newLength = Array.isArray(myData[listName])
-      ? myData[listName].length
-      : myData[listName]
-        ? 1
-        : 0;
-
+    const newLength = Array.isArray(myData[listName]) ? myData[listName].length : myData[listName] ? 1 : 0;
     if (originalLength === newLength) {
       this.render(false);
       return;
@@ -609,10 +523,7 @@ export class CampaignCodexBaseSheet extends foundry.appv1.sheets.JournalSheet {
 
       if (reverseLink) {
         targetDoc = await fromUuid(itemUuid);
-        if (
-          !targetDoc ||
-          targetDoc.getFlag("campaign-codex", "type") !== reverseLink.targetType
-        ) {
+        if (!targetDoc || targetDoc.getFlag("campaign-codex", "type") !== reverseLink.targetType) {
           return;
         }
 
@@ -622,9 +533,7 @@ export class CampaignCodexBaseSheet extends foundry.appv1.sheets.JournalSheet {
 
         if (reverseLink.isArray) {
           const originalTargetLength = (targetData[reverseField] || []).length;
-          targetData[reverseField] = (targetData[reverseField] || []).filter(
-            (uuid) => uuid !== myDoc.uuid,
-          );
+          targetData[reverseField] = (targetData[reverseField] || []).filter((uuid) => uuid !== myDoc.uuid);
           if (targetData[reverseField].length < originalTargetLength) {
             targetUpdated = true;
           }
@@ -672,25 +581,19 @@ export class CampaignCodexBaseSheet extends foundry.appv1.sheets.JournalSheet {
 
     switch (sheetType) {
       case "location": {
-        const npcJournal =
-          await game.campaignCodex.findOrCreateNPCJournalForActor(actor);
+        const npcJournal = await game.campaignCodex.findOrCreateNPCJournalForActor(actor);
         if (npcJournal) {
           await game.campaignCodex.linkLocationToNPC(this.document, npcJournal);
-          ui.notifications.info(
-            `Linked "${actor.name}" to location "${this.document.name}"`,
-          );
+          ui.notifications.info(`Linked "${actor.name}" to location "${this.document.name}"`);
         }
         break;
       }
 
       case "shop": {
-        const npcJournal =
-          await game.campaignCodex.findOrCreateNPCJournalForActor(actor);
+        const npcJournal = await game.campaignCodex.findOrCreateNPCJournalForActor(actor);
         if (npcJournal) {
           await game.campaignCodex.linkShopToNPC(this.document, npcJournal);
-          ui.notifications.info(
-            `Linked "${actor.name}" to shop "${this.document.name}"`,
-          );
+          ui.notifications.info(`Linked "${actor.name}" to shop "${this.document.name}"`);
         }
         break;
       }
@@ -703,34 +606,21 @@ export class CampaignCodexBaseSheet extends foundry.appv1.sheets.JournalSheet {
           const myData = this.document.getFlag("campaign-codex", "data") || {};
           myData.linkedActor = actor.uuid;
           await this.document.setFlag("campaign-codex", "data", myData);
-          ui.notifications.info(
-            `Linked actor "${actor.name}" to this journal.`,
-          );
+          ui.notifications.info(`Linked actor "${actor.name}" to this journal.`);
         } else if (dropType === "associate") {
-          const associateJournal =
-            await game.campaignCodex.findOrCreateNPCJournalForActor(actor);
-          if (
-            associateJournal &&
-            associateJournal.uuid !== this.document.uuid
-          ) {
-            await game.campaignCodex.linkNPCToNPC(
-              this.document,
-              associateJournal,
-            );
+          const associateJournal = await game.campaignCodex.findOrCreateNPCJournalForActor(actor);
+          if (associateJournal && associateJournal.uuid !== this.document.uuid) {
+            await game.campaignCodex.linkNPCToNPC(this.document, associateJournal);
             ui.notifications.info(`Linked "${actor.name}" as an associate.`);
           } else if (associateJournal.uuid === this.document.uuid) {
-            ui.notifications.warn(
-              "Cannot link an NPC to itself as an associate.",
-            );
+            ui.notifications.warn("Cannot link an NPC to itself as an associate.");
           }
         }
         break;
       }
 
       default:
-        ui.notifications.warn(
-          `Actor drop not configured for "${sheetType}" sheets.`,
-        );
+        ui.notifications.warn(`Actor drop not configured for "${sheetType}" sheets.`);
         return;
     }
 
@@ -768,24 +658,16 @@ export class CampaignCodexBaseSheet extends foundry.appv1.sheets.JournalSheet {
 
     const regionData = regionDoc.getFlag("campaign-codex", "data") || {};
     if (regionData.linkedLocations) {
-      regionData.linkedLocations = regionData.linkedLocations.filter(
-        (uuid) => uuid !== locationDoc.uuid,
-      );
+      regionData.linkedLocations = regionData.linkedLocations.filter((uuid) => uuid !== locationDoc.uuid);
       await regionDoc.setFlag("campaign-codex", "data", regionData);
     }
 
     await locationDoc.unsetFlag("campaign-codex", "data.parentRegion");
 
-    ui.notifications.info(
-      `Removed "${locationDoc.name}" from region "${regionDoc.name}"`,
-    );
+    ui.notifications.info(`Removed "${locationDoc.name}" from region "${regionDoc.name}"`);
 
     for (const app of Object.values(ui.windows)) {
-      if (
-        app.document &&
-        (app.document.uuid === regionDoc.uuid ||
-          app.document.uuid === locationDoc.uuid)
-      ) {
+      if (app.document && (app.document.uuid === regionDoc.uuid || app.document.uuid === locationDoc.uuid)) {
         app.render(false);
       }
     }
@@ -866,17 +748,12 @@ export class CampaignCodexBaseSheet extends foundry.appv1.sheets.JournalSheet {
         }
       }
     } catch (error) {
-      console.warn(
-        `Campaign Codex | Could not resolve UUID ${changedDocUuid}:`,
-        error,
-      );
+      console.warn(`Campaign Codex | Could not resolve UUID ${changedDocUuid}:`, error);
       return false;
     }
 
     if (myType === "location") {
-      const allRegions = game.journal.filter(
-        (j) => j.getFlag("campaign-codex", "type") === "region",
-      );
+      const allRegions = game.journal.filter((j) => j.getFlag("campaign-codex", "type") === "region");
       for (const region of allRegions) {
         if (region.uuid === changedDocUuid) {
           const regionData = region.getFlag("campaign-codex", "data") || {};
@@ -916,23 +793,16 @@ export class CampaignCodexBaseSheet extends foundry.appv1.sheets.JournalSheet {
     }
 
     try {
-      const result = await game.campaignCodexNPCDropper.dropNPCsToScene(
-        npcs,
-        options,
-      );
+      const result = await game.campaignCodexNPCDropper.dropNPCsToScene(npcs, options);
 
       if (result && result.success > 0) {
-        console.log(
-          `Campaign Codex | Successfully dropped ${result.success} NPCs to scene`,
-        );
+        console.log(`Campaign Codex | Successfully dropped ${result.success} NPCs to scene`);
       }
 
       return result;
     } catch (error) {
       console.error("Campaign Codex | Error dropping NPCs to map:", error);
-      ui.notifications.error(
-        "Failed to drop NPCs to map. Check console for details.",
-      );
+      ui.notifications.error("Failed to drop NPCs to map. Check console for details.");
     }
   }
 
@@ -940,9 +810,7 @@ export class CampaignCodexBaseSheet extends foundry.appv1.sheets.JournalSheet {
     event.preventDefault();
 
     const sheetType = this.getSheetType();
-    ui.notifications.warn(
-      `Drop to map not implemented for ${sheetType} sheets`,
-    );
+    ui.notifications.warn(`Drop to map not implemented for ${sheetType} sheets`);
   }
 
   /**
@@ -957,15 +825,9 @@ export class CampaignCodexBaseSheet extends foundry.appv1.sheets.JournalSheet {
     try {
       const doc = await fromUuid(uuid);
       if (!doc) return false;
-      return doc.testUserPermission(
-        game.user,
-        CONST.DOCUMENT_OWNERSHIP_LEVELS.OBSERVER,
-      );
+      return doc.testUserPermission(game.user, CONST.DOCUMENT_OWNERSHIP_LEVELS.OBSERVER);
     } catch (error) {
-      console.warn(
-        `Campaign Codex | Could not resolve UUID for permission check: ${uuid}`,
-        error,
-      );
+      console.warn(`Campaign Codex | Could not resolve UUID for permission check: ${uuid}`, error);
       return false;
     }
   }
