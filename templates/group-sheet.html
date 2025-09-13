@@ -11,11 +11,13 @@
           </div>
           
           <h1 class="sheet-title">{{document.name}}</h1>
-          <div class="sheet-type">{{sheetTypeLabel}}</div>
+          <!-- <div class="sheet-type">{{sheetTypeLabel}}</div> -->
           
-          {{#if isGM}}<button class="image-change-btn" type="button">
+          {{#if isGM}}<button class="image-change-btn refresh-btn" type="button">
             <i class="fas fa-camera"></i>
           </button>{{/if}}
+                  {{!-- Custom header content --}}
+        {{{customHeaderContent}}}
         </div>
 
         <div class="group-tree-container">
@@ -29,9 +31,9 @@
             <div class="group-tab {{#if active}}active{{/if}}" data-tab="{{key}}">
               <i class="{{icon}}"></i>
               <span class="tab-label">{{label}}</span>
-              {{#if statistic}}
+<!--               {{#if statistic}}
                 <span class="tab-stat">({{statistic.value}})</span>
-              {{/if}}
+              {{/if}} -->
             </div>
           {{/each}}
         </nav>
@@ -41,7 +43,7 @@
             {{{selectedSheetContent}}}
           {{else}}
             {{#each tabPanels}}
-              <section class="group-tab-panel {{#if active}}active{{/if}}" data-tab="{{key}}">
+              <section class="group-tab-panel {{#if active}}active{{/if}} scrollable" data-tab="{{key}}">
                 {{{this.content}}}
               </section>
             {{/each}}

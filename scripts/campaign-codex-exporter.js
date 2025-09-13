@@ -527,23 +527,39 @@ export class SimpleCampaignCodexExporter {
             "linkedActor",
             "linkedLocation",
             "parentRegion",
-            "linkedStandardJournal",
+            // "linkedStandardJournal",
         ];
         if (exportScenes) {
             singleLinkFields.push("linkedScene");
         }
 
+        // for (const field of singleLinkFields) {
+        //     if (codexData[field]) {
+        //         if (field === "linkedStandardJournal") {
+        //             const journalUuid =
+        //                 codexData[field].split(".JournalEntryPage.")[0];
+        //             uuids.push(journalUuid);
+        //         } else {
+        //             uuids.push(codexData[field]);
+        //         }
+        //     }
+        // }
+
         for (const field of singleLinkFields) {
             if (codexData[field]) {
-                if (field === "linkedStandardJournal") {
-                    const journalUuid =
-                        codexData[field].split(".JournalEntryPage.")[0];
-                    uuids.push(journalUuid);
-                } else {
-                    uuids.push(codexData[field]);
-                }
+                uuids.push(codexData[field]);
             }
         }
+
+        // HANDLE LINKED STANDARD JOURNALS ARRAY
+        if (Array.isArray(codexData.linkedStandardJournals)) {
+            for (const journalUuid of codexData.linkedStandardJournals) {
+                // For pages, we only want to export the parent journal, not the page itself
+                const parentJournalUuid = journalUuid.split(".JournalEntryPage.")[0];
+                uuids.push(parentJournalUuid);
+            }
+        }
+
 
         const multiLinkFields = [
             "linkedNPCs",
@@ -763,7 +779,6 @@ export class SimpleCampaignCodexExporter {
         );
 
         if (existingDoc) {
-            // ui.notifications.info(`Updating existing document "${doc.name}" in compendium "${targetPack.metadata.label}".`);
             exportData._id = existingDoc._id;
             const updateResult = await targetPack.documentClass.updateDocuments(
                 [exportData],
@@ -771,7 +786,6 @@ export class SimpleCampaignCodexExporter {
             );
             return updateResult[0];
         } else {
-            // ui.notifications.info(`Importing new document "${doc.name}" into compendium "${targetPack.metadata.label}".`);
             return await targetPack.importDocument(
                 doc.clone(exportData, { keepId: false }),
             );
@@ -801,30 +815,57 @@ export class SimpleCampaignCodexExporter {
             "linkedLocation",
             "parentRegion",
             "linkedScene",
-            "linkedStandardJournal",
+            // "linkedStandardJournal",
         ];
+        // for (const field of singleLinkFields) {
+        //     if (newCodexData[field]) {
+        //         if (field === "linkedStandardJournal") {
+        //             const parts =
+        //                 newCodexData[field].split(".JournalEntryPage.");
+        //             const oldJournalUuid = parts[0];
+        //             const newJournalUuid = uuidMap.get(oldJournalUuid);
+
+        //             if (newJournalUuid) {
+        //                 if (parts.length > 1) {
+        //                     const pageIdPart = parts[1];
+        //                     newCodexData[field] =
+        //                         `${newJournalUuid}.JournalEntryPage.${pageIdPart}`;
+        //                 } else {
+        //                     newCodexData[field] = newJournalUuid;
+        //                 }
+        //             }
+        //         } else {
+        //             newCodexData[field] = relink(newCodexData[field]);
+        //         }
+        //     }
+        // }
         for (const field of singleLinkFields) {
             if (newCodexData[field]) {
-                if (field === "linkedStandardJournal") {
-                    const parts =
-                        newCodexData[field].split(".JournalEntryPage.");
-                    const oldJournalUuid = parts[0];
-                    const newJournalUuid = uuidMap.get(oldJournalUuid);
-
-                    if (newJournalUuid) {
-                        if (parts.length > 1) {
-                            const pageIdPart = parts[1];
-                            newCodexData[field] =
-                                `${newJournalUuid}.JournalEntryPage.${pageIdPart}`;
-                        } else {
-                            newCodexData[field] = newJournalUuid;
-                        }
-                    }
-                } else {
-                    newCodexData[field] = relink(newCodexData[field]);
-                }
+                newCodexData[field] = relink(newCodexData[field]);
             }
         }
+
+        // HANDLE LINKED STANDARD JOURNALS ARRAY
+        if (Array.isArray(newCodexData.linkedStandardJournals)) {
+            newCodexData.linkedStandardJournals = newCodexData.linkedStandardJournals.map(oldUuid => {
+                const parts = oldUuid.split(".JournalEntryPage.");
+                const oldJournalUuid = parts[0];
+                const newJournalUuid = uuidMap.get(oldJournalUuid);
+
+                if (newJournalUuid) {
+                    // If it's a page link, reconstruct it with the new parent UUID
+                    if (parts.length > 1) {
+                        const pageIdPart = parts[1];
+                        return `${newJournalUuid}.JournalEntryPage.${pageIdPart}`;
+                    }
+                    // Otherwise, just return the new journal UUID
+                    return newJournalUuid;
+                }
+                // If no new UUID was found, keep the old one
+                return oldUuid;
+            });
+        }
+        
 
         const multiLinkFields = [
             "linkedNPCs",

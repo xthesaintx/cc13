@@ -123,6 +123,7 @@ export class CleanUp {
 
   async cleanupRegionRelationships(deletedUuid, allDocuments) {
     const updatePromises = [];
+    let needsUpdate = false;
 
     for (const doc of allDocuments) {
       const docType = doc.getFlag("campaign-codex", "type");
@@ -136,10 +137,47 @@ export class CleanUp {
           doc
             .unsetFlag("campaign-codex", "data.parentRegion")
             .catch((err) =>
-              console.warn(`Failed to update location ${doc.name}:`, err),
+              console.warn(`Failed to update:  ${doc.name}:`, err),
             ),
         );
       }
+
+      if (docType === "shop" && docData.linkedLocation === deletedUuid) {
+        console.log(
+          `Campaign Codex | Removing region reference from shop: ${doc.name}`,
+        );
+        updatePromises.push(
+          doc
+            .unsetFlag("campaign-codex", "data.linkedLocation")
+            .catch((err) =>
+              console.warn(`Failed to update: ${doc.name}:`, err),
+            ),
+        );
+      }
+
+// 
+      if (docType === "npc")
+      {
+        if (docData.linkedLocations && docData.linkedLocations.includes(deletedUuid))
+         {
+          console.log(`Campaign Codex | Removing location from NPC: ${doc.name}`,);
+          const updatedData = { ...docData };
+          updatedData.linkedLocations = updatedData.linkedLocations.filter((uuid) => uuid !== deletedUuid,);
+          needsUpdate = true;
+          if (needsUpdate) 
+          {
+              updatePromises.push(
+                doc
+                  .setFlag("campaign-codex", "data", updatedData)
+                  .catch((err) =>
+                    console.warn(`Failed to update ${docType} ${doc.name}:`, err),
+                  ),
+              );
+          }
+        }
+       } 
+// 
+
 
       if (
         docType === "group" &&
@@ -155,7 +193,7 @@ export class CleanUp {
           doc
             .setFlag("campaign-codex", "data", updatedData)
             .catch((err) =>
-              console.warn(`Failed to update group ${doc.name}:`, err),
+              console.warn(`Failed to update: ${doc.name}:`, err),
             ),
         );
       }
@@ -251,6 +289,21 @@ export class CleanUp {
       const updatedData = { ...docData };
 
       switch (docType) {
+        case "region":
+          if (
+            docData.linkedShops &&
+            docData.linkedShops.includes(deletedUuid)
+          ) {
+            console.log(
+              `Campaign Codex | Removing shop from region: ${doc.name}`,
+            );
+            updatedData.linkedShops = updatedData.linkedShops.filter(
+              (uuid) => uuid !== deletedUuid,
+            );
+            needsUpdate = true;
+          }
+          break;
+
         case "location":
           if (
             docData.linkedShops &&
@@ -316,6 +369,18 @@ export class CleanUp {
       const updatedData = { ...docData };
 
       switch (docType) {
+        case "region":
+          if (docData.linkedNPCs && docData.linkedNPCs.includes(deletedUuid)) {
+            console.log(
+              `Campaign Codex | Removing NPC from region: ${doc.name}`,
+            );
+            updatedData.linkedNPCs = updatedData.linkedNPCs.filter(
+              (uuid) => uuid !== deletedUuid,
+            );
+            needsUpdate = true;
+          }
+          break;
+
         case "location":
           if (docData.linkedNPCs && docData.linkedNPCs.includes(deletedUuid)) {
             console.log(

@@ -1,10 +1,13 @@
 import { CampaignCodexBaseSheet } from "./base-sheet.js";
 import { TemplateComponents } from "./template-components.js";
-import { DescriptionEditor } from "./editors/description-editor.js";
 import { CampaignCodexLinkers } from "./linkers.js";
-import { promptForName } from "../helper.js";
+import { promptForName, localize, format } from "../helper.js";
 
 export class RegionSheet extends CampaignCodexBaseSheet {
+  // =========================================================================
+  // Foundry VTT Overrides
+  // =========================================================================
+
   static get defaultOptions() {
     return foundry.utils.mergeObject(super.defaultOptions, {
       classes: [...super.defaultOptions.classes, "region-sheet"],
@@ -15,406 +18,394 @@ export class RegionSheet extends CampaignCodexBaseSheet {
     return "modules/campaign-codex/templates/base-sheet.html";
   }
 
-  async getData() {
-    const data = await super.getData();
+  async _processRegionData() {
     const regionData = this.document.getFlag("campaign-codex", "data") || {};
-
-    data.linkedScene = null;
+    
+    let linkedScene = null;
     if (regionData.linkedScene) {
       try {
         const scene = await fromUuid(regionData.linkedScene);
         if (scene) {
-          data.linkedScene = {
-            uuid: scene.uuid,
-            name: scene.name,
-            img: scene.thumb || "icons/svg/map.svg",
-          };
+          linkedScene = { uuid: scene.uuid, name: scene.name, img: scene.thumb || "icons/svg/map.svg" };
         }
       } catch (error) {
-        console.warn(
-          `Campaign Codex | Linked scene not found: ${regionData.linkedScene}`,
-        );
+        console.warn(`Campaign Codex | Linked scene not found: ${regionData.linkedScene}`);
       }
     }
-    const rawNPCs = await CampaignCodexLinkers.getAllNPCs(
-      regionData.linkedLocations || [],
-    );
-    data.allNPCs =
-      await TemplateComponents.prepareEntitiesWithPermissions(rawNPCs);
 
-    const rawShops = await CampaignCodexLinkers.getAllShops(
-      regionData.linkedLocations || [],
-    );
-    data.allShops =
-      await TemplateComponents.prepareEntitiesWithPermissions(rawShops);
+    const locationUuids = regionData.linkedLocations || [];
+    const shopUuids = regionData.linkedShops || [];
 
-    const rawLocations = await CampaignCodexLinkers.getLinkedLocations(
-      this.document,
-      regionData.linkedLocations || [],
-    );
-    data.linkedLocations =
-      await TemplateComponents.prepareEntitiesWithPermissions(rawLocations);
+    const [
+      rawLinkedNPCs,
+      rawLocations,
+      rawNPCs,
+      rawShops,
+      rawdirectShops,
+      rawShopNPCs,
+      canViewScene
+    ] = await Promise.all([
+      CampaignCodexLinkers.getLinkedNPCs(this.document, regionData.linkedNPCs || []),
+      CampaignCodexLinkers.getLinkedLocations(this.document, locationUuids),
+      CampaignCodexLinkers.getAllNPCs(locationUuids),
+      CampaignCodexLinkers.getAllShops(locationUuids),
+      CampaignCodexLinkers.getLinkedShops(this.document, shopUuids),
+      CampaignCodexLinkers.getShopNPCs(this.document, regionData.linkedShops),
+      this.constructor.canUserView(regionData.linkedScene)
+    ]);
+    
+    return { regionData, rawLinkedNPCs, rawLocations, rawNPCs, rawShops, rawdirectShops, rawShopNPCs, linkedScene, canViewScene };
+  }
 
-    data.canViewScene = await this.constructor.canUserView(
-      data.linkedScene?.uuid,
-    );
+  async getData() {
+    const data = await super.getData();
+    if (!this._processedData) {
+      this._processedData = await this._processRegionData();
+    }
+    const { regionData, rawLinkedNPCs, rawLocations, rawNPCs, rawShops, rawdirectShops, rawShopNPCs, linkedScene, canViewScene } = this._processedData;
+    
+    // --- Assign fetched data ---
+    data.linkedLocations = rawLocations;
+    data.allShops = rawShops;
+    data.linkedShops = rawdirectShops;
+    data.shopNPCs = rawShopNPCs;
+    data.allNPCs = rawNPCs;
+    data.linkedNPCs = rawLinkedNPCs;
+    data.linkedScene = linkedScene;
+    data.canViewScene = canViewScene;
 
+    // const regionData = this.document.getFlag("campaign-codex", "data") || {};
 
+    // --- Basic Sheet Info ---
     data.sheetType = "region";
-    data.sheetTypeLabel = "Region";
-    data.customImage =
-      this.document.getFlag("campaign-codex", "image") ||
-      TemplateComponents.getAsset("image", "region");
+    data.sheetTypeLabel = localize("names.region");
+    data.customImage = this.document.getFlag("campaign-codex", "image") || TemplateComponents.getAsset("image", "region");
 
+    // --- Linked Tagged NPCs and All Linked NPCs (for clean up) ---
+    // const rawLinkedNPCs = await CampaignCodexLinkers.getLinkedNPCs(this.document, regionData.linkedNPCs || []);
+
+    // --- Linked Data Fetching ---
+    const locationUuids = regionData.linkedLocations || [];
+    const shopUuids = regionData.linkedShops || [];
+
+    // const rawLocations = await CampaignCodexLinkers.getLinkedLocations(this.document, locationUuids);
+    // const rawNPCs = await CampaignCodexLinkers.getAllNPCs(locationUuids);
+    // const rawShops = await CampaignCodexLinkers.getAllShops(locationUuids);
+    // const rawdirectShops = await CampaignCodexLinkers.getLinkedShops(this.document, shopUuids);
+    // const rawShopNPCs = await CampaignCodexLinkers.getShopNPCs(this.document, regionData.linkedShops);
+
+    // --- Permissions Processing ---
+    // data.linkedLocations = rawLocations;
+    // data.allShops = rawShops;
+    // data.linkedShops = rawdirectShops;
+    // data.shopNPCs = rawShopNPCs;
+    // data.allNPCs = rawNPCs;
+    // data.linkedNPCs = rawLinkedNPCs;
+
+    //tags
+    data.taggedNPCs = data.linkedNPCs.filter((npc) => npc.tag === true);
+    data.linkedNPCsWithoutTaggedNPCs = data.linkedNPCs.filter((npc) => npc.tag !== true);
+    data.shopNPCsWithoutTaggedNPCs = data.shopNPCs.filter((npc) => npc.tag !== true);
+    data.allNPCsWithoutTaggedNPCs = data.allNPCs.filter((npc) => npc.tag !== true);
+
+    // De DUPE
+    const directUuids = new Set(data.linkedNPCsWithoutTaggedNPCs.map((npc) => npc.uuid));
+    data.shopNPCsWithoutTaggedNPCsnoDirect = data.shopNPCsWithoutTaggedNPCs.filter((associate) => !directUuids.has(associate.uuid));
+    data.allNPCsWithoutTaggedNPCsnoDirect = data.allNPCsWithoutTaggedNPCs.filter((associate) => !directUuids.has(associate.uuid));
+    const directEntryUuids = new Set(data.shopNPCsWithoutTaggedNPCsnoDirect.map((npc) => npc.uuid));
+    data.shopNPCsWithoutTaggedNPCsnoDirectnoShop = data.allNPCsWithoutTaggedNPCsnoDirect.filter((associate) => !directEntryUuids.has(associate.uuid));
+
+    // // --- Linked Scene ---
+    // data.linkedScene = null;
+    // if (regionData.linkedScene) {
+    //   try {
+    //     const scene = await fromUuid(regionData.linkedScene);
+    //     if (scene) {
+    //       data.linkedScene = { uuid: scene.uuid, name: scene.name, img: scene.thumb || "icons/svg/map.svg" };
+    //     }
+    //   } catch (error) {
+    //     console.warn(`Campaign Codex | Linked scene not found: ${regionData.linkedScene}`);
+    //   }
+    // }
+    // data.canViewScene = await this.constructor.canUserView(data.linkedScene?.uuid);
+
+    // --- UI Component Data ---
     data.tabs = [
-      {
-        key: "info",
-        label: "Info",
-        icon: "fas fa-info-circle",
-        active: this._currentTab === "info",
-      },
+      { key: "info", label: localize("names.info"), icon: "fas fa-info-circle" },
       {
         key: "locations",
-        label: "Locations",
-        icon: "fas fa-map-marker-alt",
-        active: this._currentTab === "locations",
-        statistic: {
-          value: Array.isArray(data.linkedLocations)
-            ? data.linkedLocations.length
-            : 0,
-          color: "#28a745",
-        },
+        label: localize("names.locations"),
+        icon: TemplateComponents.getAsset("icon", "location"),
+        statistic: { value: data.linkedLocations.length, color: "#28a745" },
       },
       {
         key: "npcs",
-        label: "NPCs",
-        icon: "fas fa-users",
-        active: this._currentTab === "npcs",
-        statistic: {
-          value: Array.isArray(data.allNPCs) ? data.allNPCs.length : 0,
-          color: "#fd7e14",
-        },
+        label: localize("names.npcs"),
+        icon: TemplateComponents.getAsset("icon", "npc"),
+        statistic: { value: data.allNPCs.length + data.shopNPCs.length, color: "#fd7e14" },
       },
       {
         key: "shops",
-        label: "Entries",
-        icon: "fas fa-book-open",
-        active: this._currentTab === "shops",
-        statistic: {
-          value: Array.isArray(data.allShops) ? data.allShops.length : 0,
-          color: "#6f42c1",
-        },
+        label: localize("names.shops"),
+        icon: TemplateComponents.getAsset("icon", "shop"),
+        statistic: { value: data.allShops.length + data.linkedShops.length, color: "#6f42c1" },
       },
-      ...(game.user.isGM
-        ? [
-            {
-              key: "notes",
-              label: "Notes",
-              icon: "fas fa-sticky-note",
-              active: this._currentTab === "notes",
-            },
-          ]
-        : []),
-    ];
+      { key: "journals", label: localize("names.journals"), icon: "fas fa-book"},
 
-    data.statistics = [
-      {
-        icon: "fas fa-map-marker-alt",
-        value: data.linkedLocations.length,
-        label: "LOCATIONS",
-        color: "#28a745",
-      },
-      {
-        icon: "fas fa-users",
-        value: data.allNPCs.length,
-        label: "NPCS",
-        color: "#fd7e14",
-      },
-      {
-        icon: "fas fa-book-open",
-        value: data.allShops.length,
-        label: "ENTRIES",
-        color: "#6f42c1",
-      },
-    ];
+      ...(data.isGM ? [{ key: "notes", label: localize("names.note"), icon: "fas fa-sticky-note" }] : []),
+    ].map((tab) => ({ ...tab, active: this._currentTab === tab.key }));
 
-    const sources = [{ data: data.linkedLocations, type: "location" }];
+    data.quickLinks = CampaignCodexLinkers.createQuickLinks([
+      { data: data.linkedLocations, type: "location" },
+      { data: data.linkedShops, type: "shop" },
+      { data: data.linkedNPCsWithoutTaggedNPCs, type: "npc" },
+    ]);
+    data.quickTags = CampaignCodexLinkers.createQuickTags(data.taggedNPCs);
 
-    data.quickLinks = CampaignCodexLinkers.createQuickLinks(sources);
-
-    let headerContent = "";
-
+    // --- Custom Header ---
     if (data.linkedScene) {
-      headerContent += `
-      <div class="scene-info">
-        
-        <span class="scene-name${data.canViewScene ? ` open-scene" data-scene-uuid="${data.linkedScene.uuid}"` : '"'} title="Open Scene"> <i class="fas fa-map"></i> ${data.linkedScene.name}</span>
-
-              ${
-                data.isGM
-                  ? `<button type="button" class="scene-btn remove-scene" title="Unlink Scene">
-          <i class="fas fa-unlink"></i>
-        </button>`
-                  : ""
-              }
-      </div>
-    `;
-    } else {
-      headerContent += `${
-        data.isGM
-          ? `<div class="scene-info">
-        
-        <span class="scene-name open-scene" style="text-align:center;"><i class="fas fa-link"></i> Drop scene to link</span>
-
-      </div>`
-          : ""
-      }
-    `;
+      data.customHeaderContent = `<div class="scene-info"><span class="scene-name ${data.canViewScene ? `open-scene" data-scene-uuid="${data.linkedScene.uuid}"` : '"'} title="${format("message.open", { type: localize("names.scene") })}"><i class="fas fa-map"></i> ${data.linkedScene.name}</span>${data.isGM ? `<button type="button" class="scene-btn remove-scene" title="${format("message.unlink", { type: localize("names.scene") })}"><i class="fas fa-unlink"></i></button>` : ""}</div>`;
+    } else if (data.isGM) {
+      data.customHeaderContent = `<div class="scene-info"><span class="scene-name open-scene"><i class="fas fa-link"></i> ${format("dropzone.link", { type: localize("names.scene") })}</span></div>`;
     }
 
-    if (headerContent) {
-      data.customHeaderContent = headerContent;
-    }
-
+    // --- Tab Panels ---
     data.tabPanels = [
-      {
-        key: "info",
-        active: this._currentTab === "info",
-        content: this._generateInfoTab(data),
-      },
-      {
-        key: "locations",
-        active: this._currentTab === "locations",
-        content: await this._generateLocationsTab(data),
-      },
-      {
-        key: "npcs",
-        active: this._currentTab === "npcs",
-        content: await this._generateNPCsTab(data),
-      },
-      {
-        key: "shops",
-        active: this._currentTab === "shops",
-        content: await this._generateShopsTab(data),
-      },
-      {
-        key: "notes",
-        active: this._currentTab === "notes",
-        content: CampaignCodexBaseSheet.generateNotesTab(data),
-      },
+      { key: "info", active: this._currentTab === "info", content: this._generateInfoTab(data) },
+      { key: "locations", active: this._currentTab === "locations", content: await this._generateLocationsTab(data) },
+      { key: "npcs", active: this._currentTab === "npcs", content: await this._generateNPCsTab(data) },
+      { key: "shops", active: this._currentTab === "shops", content: await this._generateShopsTab(data) },
+      { key: "journals", active: this._currentTab === "journals", content:  `${TemplateComponents.contentHeader("fas fa-book", "Journals")}${TemplateComponents.standardJournalGrid(data.linkedStandardJournals)}` },
+      { key: "notes", active: this._currentTab === "notes", content: CampaignCodexBaseSheet.generateNotesTab(this.document, data) },
     ];
 
     return data;
   }
 
+  _activateSheetSpecificListeners(html) {
+    const nativeHtml = html instanceof jQuery ? html[0] : html;
+
+    // --- Listeners for single, non-repeating elements ---
+    const singleActionMap = {
+      ".create-npc-button": this._onCreateNPCJournal,
+      ".create-location-button": this._onCreateLocationJournal,
+      ".refresh-npcs, .refresh-shops": this._onRefreshData,
+      ".open-scene": this._onOpenScene,
+      ".remove-scene": this._onRemoveScene,
+      ".create-shop-button": this._onCreateShopJournal,
+    };
+
+    for (const [selector, handler] of Object.entries(singleActionMap)) {
+      nativeHtml.querySelector(selector)?.addEventListener("click", handler.bind(this));
+    }
+
+    // --- Listeners for multiple elements without flags ---
+    const multiActionMap = {
+      ".remove-location": this._onRemoveFromRegion,
+    };
+
+    for (const [selector, handler] of Object.entries(multiActionMap)) {
+      nativeHtml.querySelectorAll(selector).forEach((el) => {
+        el.addEventListener("click", (e) => {
+          e.stopPropagation();
+          handler.call(this, e);
+        });
+      });
+    }
+
+    // --- Listeners for opening different document types ---
+    const documentOpenMap = {
+      ".open-location, .location-link": { flag: "location", handler: this._onOpenDocument },
+      ".open-npc, .npc-link": { flag: "npc", handler: this._onOpenDocument },
+      ".open-shop, .shop-link": { flag: "shop", handler: this._onOpenDocument },
+      ".open-actor": { flag: "actor", handler: this._onOpenDocument },
+    };
+
+    for (const [selector, { flag, handler }] of Object.entries(documentOpenMap)) {
+      nativeHtml.querySelectorAll(selector).forEach((el) => {
+        el.addEventListener("click", (e) => handler.call(this, e, flag));
+      });
+    }
+
+    // --- Listeners for actions on lists that require a flag ---
+    const listActionMap = {
+      ".remove-shop": { flag: "linkedShops", handler: this._onRemoveFromList },
+      ".remove-npc": { flag: "linkedNPCs", handler: this._onRemoveFromList },
+    };
+
+    for (const [selector, { flag, handler }] of Object.entries(listActionMap)) {
+      nativeHtml.querySelectorAll(selector).forEach((el) => {
+        el.addEventListener("click", async (e) => {
+          e.stopPropagation();
+          await handler.call(this, e, flag);
+        });
+      });
+    }
+  }
+
+  async _handleDrop(data, event) {
+    if (data.type === "Scene") {
+      await this._handleSceneDrop(data, event);
+    } else if (data.type === "JournalEntry" || data.type === "JournalEntryPage") {
+      await this._handleJournalDrop(data, event);
+    } else if (data.type === "Actor") {
+      await this._handleActorDrop(data, event);
+    }
+  }
+
+  getSheetType() {
+    return "region";
+  }
+
+  // =========================================================================
+  // Tab Generation
+  // =========================================================================
+
   _generateInfoTab(data) {
-    // Journal
-    let standardJournalSection = `${
-      data.isGM
-        ? `<div class="scene-info" style="margin-top: -24px;margin-bottom: 24px; height:40px">
-        <span class="scene-name" title="Open Journal">
-          <i class="fas fa-book"></i> Journal: Drag Standard Journal to link</span>
-        </div>`
-        : ""
-    }
-      `;
-    if (data.linkedStandardJournal && data.canViewJournal) {
-      standardJournalSection = `
-        <div class="scene-info" style="margin-top: -24px;margin-bottom: 24px; height:40px">
-        <span class="scene-name open-journal" data-journal-uuid="${data.linkedStandardJournal.uuid}" title="Open Journal">
-          <i class="fas fa-book"></i> Journal: ${data.linkedStandardJournal.name}</span>
-            ${
-              game.user.isGM
-                ? `<button class="scene-btn remove-standard-journal" title="Unlink Journal">
-              <i class="fas fa-unlink"></i>
-            </button>`
-                : ""
-            }
-        </div>
-      `;
-    }
-
     return `
-      ${TemplateComponents.contentHeader("fas fas fa-info-circle", "Information")}
-            ${standardJournalSection}
-
-      ${TemplateComponents.richTextSection("Description", "fas fa-align-left", data.sheetData.enrichedDescription, "description", data.isOwnerOrHigher)}
+      ${TemplateComponents.contentHeader("fas fa-info-circle", localize("names.information"))}
+      ${TemplateComponents.richTextSection(this.document, data.sheetData.enrichedDescription, "description", data.isOwnerOrHigher)}
     `;
   }
 
-  // Add location to region from locations tab
-  async _onCreateLocationJournal(event) {
-    event.preventDefault();
-    const name = await promptForName("Location");
-    if (name) {
-      const locationJournal =
-        await game.campaignCodex.createLocationJournal(name);
-      if (locationJournal) {
-        await game.campaignCodex.linkRegionToLocation(
-          this.document,
-          locationJournal,
-        );
-        this.render(false);
-        locationJournal.sheet.render(true);
-      }
-    }
-  }
-
   async _generateLocationsTab(data) {
-    const preparedLocation =
-      await TemplateComponents.prepareEntitiesWithPermissions(
-        data.linkedLocations,
-      );
-
-    const createLocationBtn = game.user.isGM
-      ? `
-      <button type="button" class="refresh-btn create-location-button" title="Create New Entry">
-        <i class="fas fa-map-marker-alt"><span style="font-size:14px">+</span></i>
-      </button>`
+    const createLocationBtn = data.isGM
+      ? `<button type="button" class="refresh-btn create-location-button" title="${format("button.title", { type: localize("names.location") })}"><i class="fas fa-circle-plus"></i></button>`
       : "";
-
     return `
-      ${TemplateComponents.contentHeader("fas fa-map-marker-alt", "Locations in this Region", createLocationBtn)}
-      ${game.user.isGM ? `${TemplateComponents.dropZone("location", "fas fa-map-marker-alt", "Add Locations", "Drag location journal or scene (creates location journal) here to add them to this region")}` : ""}
-      ${TemplateComponents.entityGrid(preparedLocation, "location")}
+      ${TemplateComponents.contentHeader(TemplateComponents.getAsset("icon", "location"), localize("names.locations"), createLocationBtn)}
+      ${data.isGM ? TemplateComponents.dropZone("location", TemplateComponents.getAsset("icon", "location"), "", "") : ""}
+      ${TemplateComponents.entityGrid(data.linkedLocations, "location")}
+
     `;
   }
 
   async _generateNPCsTab(data) {
-    const refreshBtn = `
-      <button type="button" class="refresh-btn refresh-npcs" title="Refresh auto-populated data">
-        <i class="fas fa-sync-alt"></i>
-        Refresh
-      </button>
-    `;
-
+    const dropToMapBtn =
+      canvas.scene && game.user.isGM && data.linkedNPCsWithoutTaggedNPCs.length > 0
+        ? `
+    <button type="button" class="refresh-btn npcs-to-map-button" title="${format("button.droptoscene", { type: localize("names.npc") })}">
+      <i class="fas fa-street-view"></i></button> `
+        : "";
+    const createNPCBtn = data.isGM
+      ? `
+      <button type="button" class="refresh-btn create-npc-button"  title="${format("button.title", { type: localize("names.npc") })}">
+        <i class="fas fa-user-plus"></i>
+      </button>`
+      : "";
+    const refreshBtn = `<button type="button" class="refresh-btn refresh-npcs" title="${localize("info.refresh")}"><i class="fas fa-sync-alt"></i></button>`;
+    const npcBtn = dropToMapBtn + createNPCBtn + refreshBtn;
     return `
-      ${TemplateComponents.contentHeader("fas fa-users", "NPCs in this Region", refreshBtn)}
-      ${TemplateComponents.infoBanner("NPCs are automatically populated from all locations and entries in this region.")}
+      ${TemplateComponents.contentHeader(TemplateComponents.getAsset("icon", "npc"), localize("names.npcs"), npcBtn)}
       ${await this._generateNPCsBySource(data)}
     `;
   }
 
   async _generateNPCsBySource(data) {
-    const directNPCs = data.allNPCs.filter((npc) => npc.source === "location");
-    const shopNPCs = data.allNPCs.filter((npc) => npc.source === "shop");
+    const directNPCs = data.shopNPCsWithoutTaggedNPCsnoDirectnoShop.filter((npc) => npc.source === "location");
+    const shopNPCs = data.shopNPCsWithoutTaggedNPCsnoDirectnoShop.filter((npc) => npc.source === "shop");
+    const directShopNPCs = data.shopNPCsWithoutTaggedNPCsnoDirect.filter((npc) => npc.source === "shop");
     let content = "";
-    // console.log(directNPCs);
+
+    if (data.linkedNPCsWithoutTaggedNPCs.length > 0) {
+      content += `<div class="npc-section">${TemplateComponents.entityGrid(data.linkedNPCsWithoutTaggedNPCs, "npc", true, false)}</div>`;
+    }
+
+    if (directShopNPCs.length > 0) {
+      content += `<div class="npc-section"><h3><i class="${TemplateComponents.getAsset("icon", "shop")}"></i> ${localize("names.shop")} ${localize("names.npcs")}</h3>${TemplateComponents.entityGrid(directShopNPCs, "npc", true, true)}</div>`;
+    }
+
     if (directNPCs.length > 0) {
-      content += `
-        <div class="npc-section">
-          <h3 style="color: var(--cc-main-text); font-family: var(--cc-font-heading); font-size: 18px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin: 24px 0 16px 0; border-bottom: 1px solid var(--cc-border-light); padding-bottom: 8px;">
-            <i class="fas fa-map-marker-alt" style="color: var(--cc-accent); margin-right: 8px;"></i>
-            Location NPCs ${data.isGM ? `(${directNPCs.length})` : ""}
-          </h3>
-          ${await TemplateComponents.entityGrid(directNPCs, "npc", true)}
-        </div>
-      `;
+      content += `<div class="npc-section"><h3><i class="${TemplateComponents.getAsset("icon", "location")}"></i>${localize("names.location")} ${localize("names.npcs")}</h3>${TemplateComponents.entityGrid(directNPCs, "npc", true, true)}</div>`;
     }
 
     if (shopNPCs.length > 0) {
-      content += `
-        <div class="npc-section">
-          <h3 style="color: var(--cc-main-text); font-family: var(--cc-font-heading); font-size: 18px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin: 24px 0 16px 0; border-bottom: 1px solid var(--cc-border-light); padding-bottom: 8px;">
-            <i class="fas fa-book-open" style="color: var(--cc-accent); margin-right: 8px;"></i>
-            Entry NPCs ${data.isGM ? `(${shopNPCs.length})` : ""}
-          </h3>
-          ${await TemplateComponents.entityGrid(shopNPCs, "npc", true)}
-        </div>
-      `;
+      content += `<div class="npc-section"><h3><i class="${TemplateComponents.getAsset("icon", "shop")}"></i> ${localize("names.location")} - ${localize("names.shop")} ${localize("names.npcs")}</h3>${TemplateComponents.entityGrid(shopNPCs, "npc", true, true)}</div>`;
     }
-
-    if (data.allNPCs.length === 0) {
+    if (data.allNPCsWithoutTaggedNPCsnoDirect.length + directShopNPCs.length + data.linkedNPCsWithoutTaggedNPCs.length === 0) {
       content = TemplateComponents.emptyState("npc");
     }
-
     return content;
   }
 
   async _generateShopsTab(data) {
-    const preparedShops =
-      await TemplateComponents.prepareEntitiesWithPermissions(data.allShops);
+    let buttons = "";
+    if (data.isGM) {
+      buttons += `<button type="button" class="refresh-btn create-shop-button"  title="${format("button.title", { type: localize("names.shop") })}"><i class="fas fa-house-chimney-medical"></i></button>`;
+    }
+    buttons += `<button type="button" class="refresh-btn refresh-shops"  title="${localize("info.refresh")}"><i class="fas fa-sync-alt"></i></button>`;
+    let content = TemplateComponents.contentHeader(TemplateComponents.getAsset("icon", "region"), localize("names.shops"), buttons);
+    if (data.isGM) {
+      content += TemplateComponents.dropZone("shop", TemplateComponents.getAsset("icon", "shop"), format("dropzone.link", { type: localize("names.shops") }), "");
+    }
 
-    const refreshBtn = `
-      <button type="button" class="refresh-btn refresh-shops" title="Refresh auto-populated data">
-        <i class="fas fa-sync-alt"></i>
-        Refresh
-      </button>
-    `;
+    if (data.linkedShops.length > 0) {
+      content += `<div class="npc-section">${TemplateComponents.entityGrid(data.linkedShops, "shop", false, false)}</div>`;
+    }
+    if (data.allShops.length > 0) {
+      content += `<div class="npc-section"><h3><i class="${TemplateComponents.getAsset("icon", "location")}"></i> ${localize("names.location")} ${localize("names.shops")}</h3>${TemplateComponents.entityGrid(data.allShops, "shop", false, true)}</div>`;
+    }
 
-    return `
-      ${TemplateComponents.contentHeader("fas fa-book-open", "Entries in this Region", refreshBtn)}
-      ${TemplateComponents.infoBanner("Entries are automatically populated from all locations in this region.")}
-      ${TemplateComponents.entityGrid(preparedShops, "shop")}
-    `;
+    if (data.allShops.length + data.linkedShops.length === 0) {
+      content += TemplateComponents.emptyState("shop");
+    }
+    return content;
   }
 
-  _activateSheetSpecificListeners(html) {
-    html
-      .querySelector(".create-location-button")
-      ?.addEventListener("click", this._onCreateLocationJournal.bind(this));
+  // =========================================================================
+  // Event Handlers
+  // =========================================================================
 
-    html
-      .querySelectorAll(".remove-location")
-      ?.forEach((element) =>
-        element.addEventListener("click", this._onRemoveFromRegion.bind(this)),
-      );
+  async _onCreateLocationJournal(event) {
+    event.preventDefault();
+    const name = await promptForName(localize("names.location"));
+    if (name) {
+      const locationJournal = await game.campaignCodex.createLocationJournal(name);
+      if (locationJournal) {
+        await game.campaignCodex.linkRegionToLocation(this.document, locationJournal);
+        this.render(true);
+        locationJournal.sheet.render(true);
+      }
+    }
+  }
 
-    html
-      .querySelectorAll(".open-location")
-      ?.forEach((element) =>
-        element.addEventListener(
-          "click",
-          async (e) => await this._onOpenDocument(e, "location"),
-        ),
-      );
-    html
-      .querySelectorAll(".open-npc")
-      ?.forEach((element) =>
-        element.addEventListener(
-          "click",
-          async (e) => await this._onOpenDocument(e, "npc"),
-        ),
-      );
-    html
-      .querySelectorAll(".open-shop")
-      ?.forEach((element) =>
-        element.addEventListener(
-          "click",
-          async (e) => await this._onOpenDocument(e, "shop"),
-        ),
-      );
-    html
-      .querySelectorAll(".open-actor")
-      ?.forEach((element) =>
-        element.addEventListener(
-          "click",
-          async (e) => await this._onOpenDocument(e, "actor"),
-        ),
-      );
+  async _onCreateShopJournal(event) {
+    event.preventDefault();
+    const name = await promptForName(localize("names.shop"));
+    if (name) {
+      const shopJournal = await game.campaignCodex.createShopJournal(name);
+      if (shopJournal) {
+        await game.campaignCodex.linkRegionToShop(this.document, shopJournal);
+        this.render(true);
+        shopJournal.sheet.render(true);
+      }
+    }
+  }
 
-    html
-      .querySelector(".refresh-npcs")
-      ?.addEventListener("click", this._onRefreshData.bind(this));
-    html
-      .querySelector(".refresh-shops")
-      ?.addEventListener("click", this._onRefreshData.bind(this));
+  async _onCreateNPCJournal(event) {
+    event.preventDefault();
+    const name = await promptForName("NPC");
+    if (name) {
+      const npcJournal = await game.campaignCodex.createNPCJournal(null, name);
+      if (npcJournal) {
+        await game.campaignCodex.linkRegionToNPC(this.document, npcJournal);
+        this.render(true);
+        npcJournal.sheet.render(true);
+      }
+    }
+  }
 
-    html
-      .querySelectorAll(".location-link")
-      ?.forEach((element) =>
-        element.addEventListener(
-          "click",
-          async (e) => await this._onOpenDocument(e, "location"),
-        ),
-      );
+  async _onDropNPCsToMapClick(event) {
+    event.preventDefault();
+    const locationData = this.document.getFlag("campaign-codex", "data") || {};
+    const rawDirectNPCs = await CampaignCodexLinkers.getLinkedNPCs(this.document, locationData.linkedNPCs || []);
+    const directNPCs = rawDirectNPCs.filter((npc) => npc.tag !== true);
 
-    html
-      .querySelector(".open-scene")
-      ?.addEventListener("click", this._onOpenScene.bind(this));
-    html
-      .querySelector(".remove-scene")
-      ?.addEventListener("click", this._onRemoveScene.bind(this));
+    if (directNPCs?.length > 0) {
+      await this._onDropNPCsToMap(directNPCs, { title: format("message.droptomap", { type: this.document.name }) });
+    } else {
+      ui.notifications.warn(localize("warn.invaliddrop"));
+    }
   }
 
   async _onOpenScene(event) {
@@ -425,113 +416,14 @@ export class RegionSheet extends CampaignCodexBaseSheet {
   async _onRemoveScene(event) {
     event.preventDefault();
     await this._saveFormData();
-    const currentData = this.document.getFlag("campaign-codex", "data") || {};
-    currentData.linkedScene = null;
-    await this.document.setFlag("campaign-codex", "data", currentData);
-    this.render(false);
+    await this.document.setFlag("campaign-codex", "data", { ...this.document.getFlag("campaign-codex", "data"), linkedScene: null });
+    this.render(true);
     ui.notifications.info("Unlinked scene");
-  }
-  async _handleDrop(data, event) {
-    if (data.type === "Scene") {
-      await this._handleSceneDrop(data, event);
-    } else if (data.type === "JournalEntry" || data.type === "JournalEntryPage") {
-      await this._handleJournalDrop(data, event);
-    }
-  }
-
-async _handleSceneDrop(data, event) {
-  const scene = await fromUuid(data.uuid);
-  if (!scene) {
-    ui.notifications.warn("Could not find the dropped scene.");
-    return;
-  }
-
-  const locationsTab = event.target.closest(
-    '.tab-panel[data-tab="locations"]',
-  );
-
-  if (locationsTab) {
-    const allLocationJournals = game.journal.filter(
-      (j) => j.getFlag("campaign-codex", "type") === "location",
-    );
-
-    for (const existingLocation of allLocationJournals) {
-      const nameMatch =
-        existingLocation.name.toLowerCase() === scene.name.toLowerCase();
-      const existingLocationData =
-        existingLocation.getFlag("campaign-codex", "data") || {};
-      const sceneMatch = existingLocationData.linkedScene === scene.uuid;
-
-      if (nameMatch && sceneMatch) {
-        ui.notifications.info(
-          `Found existing location "${existingLocation.name}". Linking it to this region.`,
-        );
-        await game.campaignCodex.linkRegionToLocation(
-          this.document,
-          existingLocation,
-        );
-        this.render(false);
-        return; 
-      }
-    }
-    const locationJournal = await game.campaignCodex.createLocationJournal(
-      scene.name,
-    );
-    if (locationJournal) {
-      await game.campaignCodex.linkRegionToLocation(
-        this.document,
-        locationJournal,
-      );
-      await game.campaignCodex.linkSceneToDocument(scene, locationJournal);
-      ui.notifications.info(
-        `Created and linked new location "${locationJournal.name}" from the scene.`,
-      );
-      this.render(false);
-      locationJournal.sheet.render(true);
-    }
-  } else {
-    await this._saveFormData();
-    await game.campaignCodex.linkSceneToDocument(scene, this.document);
-    ui.notifications.info(
-      `Linked scene "${scene.name}" to ${this.document.name}`,
-    );
-    this.render(false);
-  }
-}
-
-  async _handleJournalDrop(data, event) {
-    const journal = await fromUuid(data.uuid);
-    if (!journal || journal.uuid === this.document.uuid) return;
-    const journalType = journal.getFlag("campaign-codex", "type");
-
-    // Journal
-    const dropOnInfoTab = event.target.closest('.tab-panel[data-tab="info"]');
-    if (((data.type === "JournalEntry" && !journalType) || data.type === "JournalEntryPage") && dropOnInfoTab) {
-      await this._saveFormData();
-      const locationData =
-        this.document.getFlag("campaign-codex", "data") || {};
-      locationData.linkedStandardJournal = journal.uuid;
-      await this.document.setFlag("campaign-codex", "data", locationData);
-      ui.notifications.info(`Linked journal "${journal.name}".`);
-      this.render(false);
-      return;
-    }
-    // END
-
-    if (journalType === "location") {
-      await this._saveFormData();
-      await game.campaignCodex.linkRegionToLocation(this.document, journal);
-      this.render(false);
-    }
   }
 
   async _onRefreshData(event) {
-    this.render(false);
+    this.render(true);
     ui.notifications.info("Region data refreshed!");
-  }
-
-  getSheetType() {
-    return "region";
   }
 
   async _onDropToMap(event) {
@@ -540,5 +432,83 @@ async _handleSceneDrop(data, event) {
       title: `Drop ${this.document.name} NPCs to Map`,
       showHiddenToggle: true,
     });
+  }
+
+  // =========================================================================
+  // Drop Logic
+  // =========================================================================
+
+  async _handleSceneDrop(data, event) {
+    const scene = await fromUuid(data.uuid);
+    if (!scene) {
+      ui.notifications.warn("Could not find the dropped scene.");
+      return;
+    }
+
+    const locationsTab = event.target.closest('.tab-panel[data-tab="locations"]');
+
+    if (locationsTab) {
+      const allLocationJournals = game.journal.filter((j) => j.getFlag("campaign-codex", "type") === "location");
+
+      for (const existingLocation of allLocationJournals) {
+        const nameMatch = existingLocation.name.toLowerCase() === scene.name.toLowerCase();
+        const existingLocationData = existingLocation.getFlag("campaign-codex", "data") || {};
+        const sceneMatch = existingLocationData.linkedScene === scene.uuid;
+
+        if (nameMatch && sceneMatch) {
+          ui.notifications.info(format("info.linkfound", { type: existingLocation.name }));
+          await game.campaignCodex.linkRegionToLocation(this.document, existingLocation);
+          this.render(true);
+          return;
+        }
+      }
+      const locationJournal = await game.campaignCodex.createLocationJournal(scene.name);
+      if (locationJournal) {
+        await game.campaignCodex.linkRegionToLocation(this.document, locationJournal);
+        await game.campaignCodex.linkSceneToDocument(scene, locationJournal);
+        ui.notifications.info(format("info.linkfound", { type: locationJournal.name }));
+        this.render(true);
+        locationJournal.sheet.render(true);
+      }
+    } else {
+      await this._saveFormData();
+      await game.campaignCodex.linkSceneToDocument(scene, this.document);
+      ui.notifications.info(format("info.linked", { type: localize("scene.name") }));
+      this.render(true);
+    }
+  }
+
+  async _handleJournalDrop(data, event) {
+    const journal = await fromUuid(data.uuid);
+    if (!journal || journal.uuid === this.document.uuid) return;
+
+    const journalType = journal.getFlag("campaign-codex", "type");
+    const dropOnInfoTab = event.target.closest('.tab-panel[data-tab="info"]');
+
+    await this._saveFormData();
+
+    if (((!journalType && data.type === "JournalEntry") || data.type === "JournalEntryPage")) {
+        const locationData = this.document.getFlag("campaign-codex", "data") || {};
+        // Ensure linkedStandardJournals is an array
+        locationData.linkedStandardJournals = locationData.linkedStandardJournals || [];
+
+        // Avoid adding duplicates
+        if (!locationData.linkedStandardJournals.includes(journal.uuid)) {
+            locationData.linkedStandardJournals.push(journal.uuid);
+            await this.document.setFlag("campaign-codex", "data", locationData);
+            ui.notifications.info(`Linked journal "${journal.name}".`);
+        } else {
+            ui.notifications.warn(`Journal "${journal.name}" is already linked.`);
+        }
+      } else if (journalType === "location") {
+      await game.campaignCodex.linkRegionToLocation(this.document, journal);
+    } else if (journalType === "npc") {
+      await game.campaignCodex.linkRegionToNPC(this.document, journal);
+    } else if (journalType === "shop") {
+      await game.campaignCodex.linkRegionToShop(this.document, journal);
+    } else {
+      return; // Not a valid drop type for this context
+    }
+    this.render(true);
   }
 }

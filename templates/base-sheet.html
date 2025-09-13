@@ -1,4 +1,4 @@
-<div class="campaign-codex {{sheetType}}-sheet">
+<div class="campaign-codex {{sheetType}}-sheet cc-scroll-fix">
   <div class="sheet-container">
     
     {{!-- Sidebar --}}
@@ -15,7 +15,7 @@
         <h1 class="sheet-title">{{document.name}}</h1>
         <div class="sheet-type">{{sheetTypeLabel}}</div>
         
-        {{#if isGM}}<button class="image-change-btn" type="button">
+        {{#if isGM}}<button class="image-change-btn refresh-btn" type="button">
           <i class="fas fa-camera"></i>
         </button>{{/if}}
         
@@ -26,25 +26,43 @@
 
       
 {{!-- Navigation Tabs with Integrated Statistics --}}
+<div class="cc-scroll-group scrollable">
 <nav class="sidebar-tabs">
   {{#each tabs}}
     <div class="tab-item {{#if active}}active{{/if}}" data-tab="{{key}}">
       <i class="{{icon}}"></i>
       <span class="tab-label">{{label}}</span>
-      {{#if ../isGM}}
+<!--       {{#if ../isGM}}
         {{#if statistic}}
           <span class="tab-stat" style="color: {{statistic.color}};">({{statistic.value}})</span>
         {{/if}}
       {{/if}}
-    </div>
+ -->    </div>
   {{/each}}
 </nav>
+      {{!-- Tags --}}
+      {{#if quickTags}}
+        <div class="sidebar-links">
+          <h3>Tags</h3>
+          <div class="link-tags">
+            {{#each quickTags}}
+              <div class="link-card npc-link tag-card" data-npc-uuid="{{uuid}}" title="{{name}}">
+                  <i class="fas fa-user-tag link-icon"></i>
+                <span class="link-name">{{name}}</span>
+                {{#if ../isGM}}<button class="remove-npc" data-npc-uuid="{{uuid}}" type="button">
+          <i class="fas fa-times"></i>
+        </button>{{/if}}
+              </div>
+            {{/each}}
+          </div>
+        </div>
+      {{/if}}
 
       {{!-- Quick Links --}}
       {{#if quickLinks}}
         <div class="sidebar-links">
           <h3>Quicklinks</h3>
-          <div class="link-grid">
+          <div class="link-tags">
             {{#each quickLinks}}
               <div class="link-card {{type}}-link" data-{{type}}-uuid="{{uuid}}" title="{{name}}">
                           <i class="{{getIcon type}} link-icon"></i>
@@ -54,7 +72,7 @@
           </div>
         </div>
       {{/if}}
-      
+   </div>   
     </aside>
     
     {{!-- Main Content --}}
@@ -64,7 +82,7 @@
         
         {{!-- Tab Panels --}}
         {{#each tabPanels}}
-          <section class="tab-panel {{#if active}}active{{/if}}" data-tab="{{key}}">
+          <section class="tab-panel {{#if active}}active{{/if}} scrollable" data-tab="{{key}}">
             {{{content}}}
           </section>
         {{/each}}

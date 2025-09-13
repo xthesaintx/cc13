@@ -3,14 +3,29 @@ import { TemplateComponents } from "./template-components.js";
 import { GroupLinkers } from "./group-linkers.js";
 import { CampaignCodexLinkers } from "./linkers.js";
 import { promptForName } from "../helper.js";
+import { localize, format } from "../helper.js";
 
 export class GroupSheet extends CampaignCodexBaseSheet {
+  // =========================================================================
+  // Foundry VTT Overrides
+  // =========================================================================
+
   constructor(document, options = {}) {
     super(document, options);
     this._selectedSheet = null;
     this._selectedSheetTab = "info";
     this._expandedNodes = new Set();
     this._showTreeItems = false;
+    this._showTreeNPCs = true;
+    this._showTreeTags = false;
+    this._processedData = null;
+  }
+ 
+  async _render(force, options) {
+    if (force) {
+      this._processedData = null;
+    }
+    return super._render(force, options);
   }
 
   static get defaultOptions() {
@@ -25,58 +40,66 @@ export class GroupSheet extends CampaignCodexBaseSheet {
     return "modules/campaign-codex/templates/group-sheet.html";
   }
 
+  async _processGroupData() {
+    const groupData = this.document.getFlag("campaign-codex", "data") || {};
+    const groupMembers = await GroupLinkers.getGroupMembers(groupData.members || []);
+    const nestedData = await GroupLinkers.getNestedData(groupMembers);
+    const treeTagNodes = await GroupLinkers.buildTagTree(nestedData);
+    return { groupMembers, nestedData, treeTagNodes };
+  }
+
   async getData() {
     const data = await super.getData();
-    const groupData = this.document.getFlag("campaign-codex", "data") || {};
+    // const groupData = this.document.getFlag("campaign-codex", "data") || {};
     data.isGM = game.user.isGM;
-
-    data.groupMembers = await GroupLinkers.getGroupMembers(
-      groupData.members || [],
-    );
-    data.nestedData = await GroupLinkers.getNestedData(data.groupMembers);
+    if (!this._processedData) {
+      this._processedData = await this._processGroupData();
+    }
+    const { groupMembers, nestedData, treeTagNodes } = this._processedData;
+    data.groupMembers = groupMembers;
+    data.nestedData = nestedData;
+    data.treeTagNodes = treeTagNodes;
+    // data.groupMembers = await GroupLinkers.getGroupMembers(groupData.members || []);
+    // data.nestedData = await GroupLinkers.getNestedData(data.groupMembers);
     data.sheetType = "group";
-    data.sheetTypeLabel = "Group Overview";
-    data.customImage =
-      this.document.getFlag("campaign-codex", "image") ||
-      TemplateComponents.getAsset("image", "group");
-    data.leftPanel = this._generateLeftPanel(
-      data.groupMembers,
-      data.nestedData,
-    );
-
+    data.sheetTypeLabel = localize("names.group");
+    data.customImage = this.document.getFlag("campaign-codex", "image") || TemplateComponents.getAsset("image", "group");
+    // data.treeTagNodes = await GroupLinkers.buildTagTree(data.nestedData);
+    data.leftPanel = await this._generateLeftPanel(data.groupMembers, data.nestedData, data.treeTagNodes);
     data.tabs = [
       {
         key: "info",
-        label: "Overview",
+        label: localize("names.information"),
         icon: "fas fa-info-circle",
         active: !this._selectedSheet && this._currentTab === "info",
       },
       {
         key: "npcs",
-        label: "NPCs",
+        label: localize("names.npcs"),
         icon: TemplateComponents.getAsset("icon", "npc"),
         active: !this._selectedSheet && this._currentTab === "npcs",
         statistic: { value: data.nestedData.allNPCs.length },
       },
       {
         key: "inventory",
-        label: "Inventory",
+        label: localize("names.inventory"),
         icon: "fas fa-boxes",
         active: !this._selectedSheet && this._currentTab === "inventory",
         statistic: { value: data.nestedData.allItems.length },
       },
       {
         key: "locations",
-        label: "Locations",
+        label: localize("names.locations"),
         icon: TemplateComponents.getAsset("icon", "location"),
         active: !this._selectedSheet && this._currentTab === "locations",
         statistic: { value: data.nestedData.allLocations.length },
       },
+      { key: "journals", label: localize("names.journals"), icon: "fas fa-book", active: !this._selectedSheet && this._currentTab === "journals"},
       ...(game.user.isGM
         ? [
             {
               key: "notes",
-              label: "Notes",
+              label: localize("names.note"),
               icon: "fas fa-sticky-note",
               active: this._currentTab === "notes",
             },
@@ -111,10 +134,11 @@ export class GroupSheet extends CampaignCodexBaseSheet {
           active: this._currentTab === "locations",
           content: this._generateLocationsTab(data),
         },
+        { key: "journals", active: this._currentTab === "journals", content:  TemplateComponents.standardJournalGrid(data.linkedStandardJournals) },
         {
           key: "notes",
           active: this._currentTab === "notes",
-          content: CampaignCodexBaseSheet.generateNotesTab(data),
+          content: TemplateComponents.richTextSection(this.document, data.sheetData.enrichedNotes, "notes", data.isOwnerOrHigher),
         },
       ];
     }
@@ -129,100 +153,1306 @@ export class GroupSheet extends CampaignCodexBaseSheet {
     const nativeHtml = html instanceof jQuery ? html[0] : html;
     super.activateListeners(html);
 
-    nativeHtml
-      .querySelectorAll(".expand-toggle")
-      .forEach((element) =>
-        element.addEventListener("click", this._onToggleTreeNode.bind(this)),
-      );
-    nativeHtml
-      .querySelector(".btn-expand-all")
-      ?.addEventListener("click", this._onExpandAll.bind(this));
-    nativeHtml
-      .querySelector(".btn-collapse-all")
-      ?.addEventListener("click", this._onCollapseAll.bind(this));
-    nativeHtml
-      .querySelectorAll(".tree-label.clickable")
-      .forEach((element) =>
-        element.addEventListener("click", this._onSelectSheet.bind(this)),
-      );
-    nativeHtml
-      .querySelector(".toggle-tree-items")
-      ?.addEventListener("click", this._onToggleTreeItems.bind(this));
+    // if (this._sidebarScrollTop) {
+    //   const treeContent = nativeHtml.querySelector(".tree-content");
+    //   if (treeContent) {
+    //     treeContent.scrollTop = this._sidebarScrollTop;
+    //   }
+    //   // Reset the stored value so it doesn't get reapplied on other renders
+    //   this._sidebarScrollTop = 0; 
+    // }
 
-    nativeHtml
-      .querySelectorAll(".selected-sheet-tab")
-      .forEach((element) =>
-        element.addEventListener(
-          "click",
-          this._onSelectedSheetTabChange.bind(this),
-        ),
-      );
-    nativeHtml
-      .querySelector(".btn-close-selected")
-      ?.addEventListener("click", this._onCloseSelectedSheet.bind(this));
 
-    nativeHtml
-      .querySelector(".btn-open-scene")
-      ?.addEventListener("click", this._onOpenScene.bind(this));
+    const singleActionMap = {
+      ".btn-expand-all": this._onExpandAll,
+      ".btn-collapse-all": this._onCollapseAll,
+      ".toggle-tree-items": this._onToggleTreeItems,
+      ".toggle-tree-npcs": this._onToggleTreeNPC,
+      ".toggle-tree-tags": this._onToggleTreeTags,
+      ".btn-close-selected": this._onCloseSelectedSheet,
+      ".btn-open-scene": this._onOpenScene,
+    };
 
-    nativeHtml
-      .querySelectorAll(".btn-open-sheet")
-      .forEach((element) =>
-        element.addEventListener("click", (e) =>
-          this._onOpenDocument(e, "sheet"),
-        ),
-      );
-    nativeHtml
-      .querySelectorAll(".btn-open-actor")
-      .forEach((element) =>
-        element.addEventListener("click", (e) =>
-          this._onOpenDocument(e, "actor"),
-        ),
-      );
-    nativeHtml
-      .querySelectorAll(".group-location-card")
-      .forEach((element) =>
-        element.addEventListener("click", (e) =>
-          this._onOpenDocument(e, "sheet"),
-        ),
-      );
-    nativeHtml.querySelectorAll(".card-image-clickable").forEach((element) =>
-      element.addEventListener("click", (e) => {
-        e.stopPropagation();
-        this._onOpenDocument(e, "sheet");
-      }),
-    );
+    for (const [selector, handler] of Object.entries(singleActionMap)) {
+      nativeHtml.querySelector(selector)?.addEventListener("click", handler.bind(this));
+    }
 
-    nativeHtml
-      .querySelectorAll(".btn-remove-member")
-      .forEach((element) =>
-        element.addEventListener("click", this._onRemoveMember.bind(this)),
-      );
-    nativeHtml
-      .querySelectorAll(".btn-focus-item")
-      .forEach((element) =>
-        element.addEventListener("click", this._onFocusItem.bind(this)),
-      );
+    const multiActionMap = {
+      ".expand-toggle": this._onToggleTreeNode,
+      ".tree-label.clickable": this._onSelectSheet,
+      ".selected-sheet-tab": this._onSelectedSheetTabChange,
+      ".btn-remove-member": this._onRemoveMember,
+      ".btn-focus-item": this._onFocusItem,
+      ".filter-btn": this._onFilterChange,
+      ".group-tab": this._onTabChange,
+      ".btn-send-to-player": this._onSendToPlayer,
+      ".btn-npc-to-scene": this._onDropSingleNPCToMapClick,
+    };
 
-    nativeHtml
-      .querySelectorAll(".filter-btn")
-      .forEach((element) =>
-        element.addEventListener("click", this._onFilterChange.bind(this)),
-      );
+    for (const [selector, handler] of Object.entries(multiActionMap)) {
+      nativeHtml.querySelectorAll(selector).forEach((el) => el.addEventListener("click", handler.bind(this)));
+    }
 
-    nativeHtml
-      .querySelectorAll(".group-tab")
-      .forEach((element) =>
-        element.addEventListener("click", this._onTabChange.bind(this)),
-      );
+    const documentOpenMap = {
+      ".btn-open-sheet, .group-location-card": { flag: "sheet", handler: this._onOpenDocument },
+      ".open-location": { flag: "location", handler: this._onOpenDocument },
+      ".open-shop": { flag: "shop", handler: this._onOpenDocument },
+      ".open-associate": { flag: "associate", handler: this._onOpenDocument },
+      ".btn-open-actor": { flag: "actor", handler: this._onOpenDocument },
+    };
 
-    nativeHtml
-      .querySelectorAll(".btn-send-to-player")
-      .forEach((element) =>
-        element.addEventListener("click", this._onSendToPlayer.bind(this)),
-      );
+    for (const [selector, { flag, handler }] of Object.entries(documentOpenMap)) {
+      nativeHtml.querySelectorAll(selector).forEach((el) => {
+        el.addEventListener("click", (e) => handler.call(this, e, flag));
+      });
+    }
+
+    // // Stop images being clickable
+    // nativeHtml.querySelectorAll(".card-image-clickable").forEach((element) =>
+    //   element.addEventListener("click", (e) => {
+    //     e.stopPropagation();
+    //     this._onOpenDocument(e, "sheet");
+    //   }),
+    // );
+
+    nativeHtml.querySelector(".tag-mode-toggle")?.addEventListener("change", this._onTagToggle.bind(this));
   }
 
+  // =========================================================================
+  // Selected Sheet Generation
+  // =========================================================================
+
+  async _generateTagsContent(data) {
+    const hideByPermission = game.settings.get("campaign-codex", "hideByPermission");
+
+    const allPossibleNpcs = [...(data.associates || []), ...(data.linkedNPCs || [])];
+    const uniqueUuids = [...new Set(allPossibleNpcs)];
+    const linkedTags = await CampaignCodexLinkers.getTaggedNPCs(uniqueUuids);
+
+    const visibleTags = linkedTags.filter((tag) => !hideByPermission || tag.canView);
+
+    if (visibleTags.length === 0) {
+      return "";
+    }
+
+    return `
+      <div class="entity-locations tag-mode-tags">
+        <i class="fas fa-tag"></i>
+        ${visibleTags.map((tag) => `<span class="location-tag tag-mode">${tag.name}</span>`).join("")}
+      </div>
+    `;
+  }
+
+  async _generateSelectedSheetTab() {
+    if (!this._selectedSheet) return "";
+    const hideByPermission = game.settings.get("campaign-codex", "hideByPermission");
+
+    const selectedDoc = await fromUuid(this._selectedSheet.uuid);
+    if (!selectedDoc) {
+      this._selectedSheet = null;
+      return "<p>Selected sheet not found. Please re-select from the tree.</p>";
+    }
+
+    const selectedData = selectedDoc.getFlag("campaign-codex", "data") || {};
+    let actorButtonHtml = "";
+    if (this._selectedSheet.type === "npc" && selectedData.linkedActor && (await CampaignCodexBaseSheet.canUserView(selectedData.linkedActor))) {
+      actorButtonHtml = `
+<button type="button" class="btn-open-actor" data-actor-uuid="${selectedData.linkedActor}" title="${localize("title.open.actor")}">
+          <i class="fas fa-user"></i>
+        </button>
+      `;
+    }
+    let dropButtonHtml = "";
+    if (this._selectedSheet.type === "npc" && selectedData.linkedActor && canvas.scene && game.user.isGM) {
+      dropButtonHtml = `
+      <button type="button" class="refresh-btn btn-npc-to-scene" data-sheet-uuid="${this._selectedSheet.uuid}" title="${localize("message.drop")}">
+        <i class="fas fa-street-view"></i>
+      </button>
+    `;
+    }
+    let sceneButtonHtml = "";
+    if (
+      (this._selectedSheet.type === "location" || this._selectedSheet.type === "region" || this._selectedSheet.type === "shop") &&
+      selectedData.linkedScene &&
+      (!hideByPermission || selectedData.linkedScene.canView)
+    ) {
+      sceneButtonHtml = `
+      <button type="button" class="btn-open-scene" data-doc-uuid="${selectedDoc.uuid}" title="${format("message.open", { type: localize("names.scene") })}">
+        <i class="fas fa-map"></i>
+      </button>
+        `;
+    }
+
+    let calculatedCounts = {};
+
+    const subTabs = this._getSelectedSheetSubTabs(this._selectedSheet.type, selectedData, calculatedCounts);
+    return `
+      <div class="selected-sheet-container">
+        <div class="selected-sheet-header">
+          <div class="selected-sheet-info">
+            <i class="${TemplateComponents.getAsset("icon", selectedData.tagMode ? "tag" : this._selectedSheet.type)}"></i> 
+            <div class="selected-sheet-details">
+              <h2>${this._selectedSheet.name}</h2>
+            </div>
+          ${await this._generateTagsContent(selectedData)}
+          </div>
+          <div class="selected-sheet-actions">
+          ${dropButtonHtml}
+          ${sceneButtonHtml}
+          ${actorButtonHtml}
+            <button type="button" class="btn-open-sheet" data-sheet-uuid="${this._selectedSheet.uuid}" title="${localize("title.open.sheet")}">
+              <i class="fas fa-external-link-alt"></i>
+            </button>
+          </div>
+        </div>
+
+        <nav class="selected-sheet-tabs">
+          ${subTabs
+            .map(
+              (tab) => `
+            <div class="selected-sheet-tab ${tab.key === this._selectedSheetTab ? "active" : ""}" data-tab="${tab.key}">
+              <i class="${tab.icon}"></i>
+              <span>${tab.label}</span>
+            </div>
+          `,
+            )
+            .join("")}
+        </nav>
+
+        <div class="selected-sheet-content scrollable">
+          ${await this._generateSelectedSheetContent(selectedDoc, selectedData, this._selectedSheetTab)}
+        </div>
+      </div>
+    `;
+  }
+  _getSelectedSheetSubTabs(type, data, calculatedCounts = {}) {
+    const baseTabs = [
+      { key: "info", label: localize("names.information"), icon: "fas fa-info-circle" },
+      { key: "journals", label: localize("names.journals"), icon: "fas fa-book" },
+      ...(game.user.isGM ? [{ key: "notes", label: localize("names.note"), icon: "fas fa-sticky-note" }] : []),
+    ];
+
+    switch (type) {
+      case "npc":
+        baseTabs.splice(
+          1,
+          0,
+          {
+            key: "associates",
+            label: data.tagMode ? localize("names.members") : localize("names.associates"),
+            icon: "fas fa-users",
+            count: (data.associates || []).length,
+          },
+          {
+            key: "tags",
+            label: localize("names.tags"),
+            icon: "fas fa-user-tag",
+          },
+          {
+            key: "shops",
+            label: localize("names.shops"),
+            icon: TemplateComponents.getAsset("icon", "shop"),
+            count: (data.linkedShops || []).length,
+          },
+        );
+        break;
+
+      case "shop":
+        baseTabs.splice(
+          1,
+          0,
+          {
+            key: "npcs",
+            label: localize("names.npcs"),
+            icon: TemplateComponents.getAsset("icon", "npc"),
+            count: (data.linkedNPCs || []).length,
+          },
+          {
+            key: "tags",
+            label: localize("names.tags"),
+            icon: "fas fa-user-tag",
+          },
+          {
+            key: "inventory",
+            label: localize("names.inventory"),
+            icon: "fas fa-boxes",
+            count: (data.inventory || []).length,
+          },
+        );
+        break;
+
+      case "location":
+        baseTabs.splice(
+          1,
+          0,
+          {
+            key: "npcs",
+            label: localize("names.npcs"),
+            icon: TemplateComponents.getAsset("icon", "npc"),
+            count: calculatedCounts.totalNPCs ?? (data.linkedNPCs || []).length,
+          },
+          {
+            key: "tags",
+            label: localize("names.tags"),
+            icon: "fas fa-user-tag",
+          },
+          {
+            key: "shops",
+            label: localize("names.shops"),
+            icon: TemplateComponents.getAsset("icon", "shop"),
+            count: (data.linkedShops || []).length,
+          },
+        );
+        break;
+
+      case "region":
+        baseTabs.splice(
+          1,
+          0,
+          {
+            key: "locations",
+            label: localize("names.locations"),
+            icon: TemplateComponents.getAsset("icon", "location"),
+            count: (data.linkedLocations || []).length,
+          },
+          {
+            key: "npcs",
+            label: localize("names.npc"),
+            icon: TemplateComponents.getAsset("icon", "npc"),
+            count: calculatedCounts.totalNPCs ?? (data.linkedNPCs || []).length,
+          },
+          {
+            key: "tags",
+            label: localize("names.tags"),
+            icon: "fas fa-user-tag",
+          },
+          {
+            key: "shops",
+            label: localize("names.shops"),
+            icon: TemplateComponents.getAsset("icon", "shop"),
+            count: (data.linkedShops || []).length,
+          },
+        );
+        break;
+    }
+
+    return baseTabs;
+  }
+
+  async _generateSelectedSheetContent(selectedDoc, selectedData, activeTab) {
+    const enrichedDescription = await foundry.applications.ux.TextEditor.implementation.enrichHTML(selectedData.description || "", {
+      async: true,
+      secrets: selectedDoc.isOwner,
+    });
+    const systemClass = game.system.id === "dnd5e" ? " dnd5e2-journal themed theme-light" : "";
+    const enrichedNotes = await foundry.applications.ux.TextEditor.implementation.enrichHTML(selectedData.notes || "", {
+      async: true,
+      secrets: selectedDoc.isOwner,
+    });
+
+    switch (activeTab) {
+      case "info":
+        return this._generateSelectedInfoContent(selectedDoc, selectedData, enrichedDescription);
+
+      case "npcs":
+        return await this._generateSelectedNPCsContent(selectedDoc, selectedData);
+
+      case "associates":
+        return await this._generateSelectedAssociatesContent(selectedDoc, selectedData);
+
+      case "inventory":
+        return await this._generateSelectedInventoryContent(selectedDoc, selectedData);
+
+      case "tags":
+        return await this._generateSelectedTagsContent(selectedDoc, selectedData);
+
+      case "shops":
+        return await this._generateSelectedShopsContent(selectedDoc, selectedData);
+
+      case "locations":
+        return await this._generateSelectedLocationsContent(selectedDoc, selectedData);
+      
+      case "notes":
+        return `
+          <article class="selected-content-section cc-enriched cc-hidden-secrets${systemClass}">
+           <section class="rich-text-content journal-entry-content" name="cc.secret.content.notes">
+              ${enrichedNotes || ""}
+            </section>
+            </article>
+        `;
+
+    case "journals": {
+        const processedJournals = await GroupLinkers.processJournalLinks(selectedData.linkedStandardJournals);
+        return `<div class="selected-sheet-journals">${TemplateComponents.standardJournalGrid(processedJournals, true)}</div>`;
+    }
+      default:
+        return "<p></p>";
+    }
+  }
+
+  async _generateSelectedTagsContent(selectedDoc, selectedData) {
+    if (this._selectedSheet.type === "location") {
+      const [directNPCs, shopNPCs] = await Promise.all([
+        CampaignCodexLinkers.getDirectNPCs(selectedDoc, selectedData.linkedNPCs || []),
+        CampaignCodexLinkers.getShopNPCs(selectedDoc, selectedData.linkedShops || []),
+      ]);
+
+      const allNPCs = [...directNPCs, ...shopNPCs];
+
+      const taggedNpcMap = allNPCs.reduce((acc, npc) => {
+        if (npc.tag === true) {
+          acc.set(npc.uuid, npc);
+        }
+        return acc;
+      }, new Map());
+
+      const taggedNPCs = [...taggedNpcMap.values()];
+      if (taggedNPCs.length === 0) {
+        return '<div class="selected-content-section"><p><em>No NPCs linked.</em></p></div>';
+      }
+
+      let content = `
+        <div class="selected-content-section">
+      `;
+
+      if (taggedNPCs.length > 0) {
+        content += `
+          <div class="npc-section">
+            <div class="npc-list">
+               ${TemplateComponents.entityGrid(taggedNPCs, "associate", true, true)}
+            </div>
+          </div>
+        `;
+      }
+
+      content += "</div>";
+      return content;
+    }
+
+    const npcs = await CampaignCodexLinkers.getLinkedNPCs(selectedDoc, selectedData.linkedNPCs || []);
+    const associates = await CampaignCodexLinkers.getAssociates(selectedDoc, selectedData.associates || []);
+    const preparedNPCs = npcs;
+    const preparedAssociates = associates;
+
+    const preparedAllNPCs = [...preparedAssociates, ...preparedNPCs];
+    const taggedNpcMap = preparedAllNPCs.reduce((acc, npc) => {
+      if (npc.tag === true) {
+        acc.set(npc.uuid, npc);
+      }
+      return acc;
+    }, new Map());
+
+    const taggedNPCs = [...taggedNpcMap.values()];
+
+    if (taggedNPCs.length === 0) {
+      return "";
+    }
+
+    return `
+      <div class="selected-content-section">
+        <div class="npc-list">
+         ${TemplateComponents.entityGrid(taggedNPCs, "associate", true, true)}
+        </div>
+      </div>
+    `;
+  }
+
+  async _generateSelectedNPCsContent(selectedDoc, selectedData) {
+    const dropToMapBtn =
+      canvas.scene && game.user.isGM
+        ? `
+        <button type="button" class="refresh-btn npcs-to-map-button" title="${format("button.droptoscene", { type: localize("names.npc") })}" data-sheet-uuid="${this._selectedSheet.uuid}">
+          <i class="fas fa-street-view"></i></button>
+      `
+        : "";
+
+    if (this._selectedSheet.type === "location" || "region") {
+      const [directNPCs, shopNPCs] = await Promise.all([
+        CampaignCodexLinkers.getDirectNPCs(selectedDoc, selectedData.linkedNPCs || []),
+        CampaignCodexLinkers.getShopNPCs(selectedDoc, selectedData.linkedShops || []),
+      ]);
+      const allNPCs = [...directNPCs, ...shopNPCs];
+
+      const categorized = allNPCs.reduce(
+        (acc, npc) => {
+          if (npc.tag === true) {
+            acc.tagged.set(npc.uuid, npc);
+          } else if (npc.source === "shop") {
+            acc.untaggedShop.push(npc);
+          } else {
+            acc.untaggedDirect.push(npc);
+          }
+          return acc;
+        },
+        { tagged: new Map(), untaggedShop: [], untaggedDirect: [] },
+      );
+
+      const taggedNPCs = [...categorized.tagged.values()];
+      const untaggedNPCsShop = categorized.untaggedShop;
+      const untaggedNPCsDirect = categorized.untaggedDirect;
+      const untaggedNPCs = [...untaggedNPCsDirect, ...untaggedNPCsShop];
+
+      if (allNPCs.length === 0) {
+        return '<div class="selected-content-section"><p><em>No NPCs linked.</em></p></div>';
+      }
+
+      let content = `
+        <div class="selected-content-section">
+          <div class="selected-actions">
+            ${dropToMapBtn}
+          </div>
+      `;
+
+      if (untaggedNPCsDirect.length > 0) {
+        content += `
+          <div class="npc-section">
+            <div class="npc-list">
+                ${TemplateComponents.entityGrid(untaggedNPCsDirect, "associate", true, true)}
+            </div>
+          </div>
+        `;
+      }
+
+      if (untaggedNPCsShop.length > 0) {
+        content += `
+          <div class="npc-section">
+            <h3 class="section-heading">
+              <i class="${TemplateComponents.getAsset("icon", "shop")}"></i>
+              ${localize("names.shops")} 
+            </h3>
+            <div class="npc-list">
+               ${TemplateComponents.entityGrid(untaggedNPCsShop, "associate", true, true)}
+            </div>
+          </div>
+        `;
+      }
+
+      content += "</div>";
+      return content;
+    }
+
+    const npcs = await CampaignCodexLinkers.getLinkedNPCs(selectedDoc, selectedData.linkedNPCs || []);
+    const preparedNPCs = npcs;
+
+    const taggedNpcMap = preparedNPCs.reduce((acc, npc) => {
+      if (npc.tag === false) {
+        acc.set(npc.uuid, npc);
+      }
+      return acc;
+    }, new Map());
+
+    const untaggedNPCs = [...taggedNpcMap.values()];
+
+    if (untaggedNPCs.length === 0) {
+      return "";
+    }
+
+    return `
+      <div class="selected-content-section">
+        <div class="selected-actions">
+          ${dropToMapBtn}
+        </div>
+        <div class="npc-list">
+               ${TemplateComponents.entityGrid(untaggedNPCs, "associate", true, true)}
+        </div>
+      </div>
+    `;
+  }
+
+  async _generateSelectedShopsContent(selectedDoc, selectedData) {
+    const shops = await CampaignCodexLinkers.getLinkedShops(selectedDoc, selectedData.linkedShops || []);
+    const preparedShops = shops;
+    if (preparedShops.length === 0) {
+      return "";
+    }
+
+    return `
+      <div class="selected-content-section">
+        <div class="shops-list">
+         ${TemplateComponents.entityGrid(preparedShops, "shop", false, false)}
+        </div>
+      </div>
+    `;
+  }
+
+  async _generateSelectedLocationsContent(selectedDoc, selectedData) {
+    const locations = await CampaignCodexLinkers.getLinkedLocations(selectedDoc, selectedData.linkedLocations || []);
+    const preparedLocations = locations;
+    if (preparedLocations.length === 0) {
+      return "";
+    }
+
+    return `
+      <div class="selected-content-section">
+        <div class="locations-list">
+          ${TemplateComponents.entityGrid(preparedLocations, "location", false, false)}
+        </div>
+      </div>
+    `;
+  }
+
+  async _generateSelectedInfoContent(selectedDoc, selectedData, enrichedDescription) {
+    const systemClass = game.system.id === "dnd5e" ? " dnd5e2-journal themed theme-light" : "";
+    return `
+    <article class="selected-content-section cc-enriched cc-hidden-secrets${systemClass}">
+        <section class="rich-text-content journal-entry-content" name="cc.secret.content.notes">
+        ${enrichedDescription || ""}
+        </section>
+    </article>
+  `;
+  }
+
+  async _generateSelectedAssociatesContent(selectedDoc, selectedData) {
+    const associates = await CampaignCodexLinkers.getAssociates(selectedDoc, selectedData.associates || []);
+    const preparedassociates = associates;
+    const dropToMapBtn =
+      canvas.scene && game.user.isGM
+        ? `
+          <div class="selected-actions">
+          <button type="button" class="refresh-btn npcs-to-map-button" title="${format("button.droptoscene", { type: localize("names.npc") })}" data-sheet-uuid="${this._selectedSheet.uuid}">
+          <i class="fas fa-street-view"></i></button></div>
+      `
+        : "";
+
+    const taggedNpcMap = preparedassociates.reduce((acc, npc) => {
+      if (npc.tag === false) {
+        acc.set(npc.uuid, npc);
+      }
+      return acc;
+    }, new Map());
+
+    const untaggedNPCs = [...taggedNpcMap.values()];
+
+    if (untaggedNPCs.length === 0) {
+      return "";
+    }
+
+    return `
+      <div class="selected-content-section">
+        ${dropToMapBtn}
+        <div class="associates-list">
+                ${TemplateComponents.entityGrid(untaggedNPCs, "associate", true, true)}
+        </div>
+      </div>
+    `;
+  }
+
+  async _generateSelectedInventoryContent(selectedDoc, selectedData) {
+    const inventory = await CampaignCodexLinkers.getInventory(selectedDoc, selectedData.inventory || []);
+
+    if (inventory.length === 0) {
+      return '<div class="selected-content-section"><p><em>No inventory items.</em></p></div>';
+    }
+
+    return `
+      <div class="selected-content-section">
+        <div class="inventory-list">
+          ${inventory
+            .map(
+              (item) => `
+            <div class="selected-inventory-item btn-open-sheet" data-sheet-uuid="${item.itemUuid}">
+              <img src="${TemplateComponents.getAsset("image", "item", item.img)}" alt="${item.name}" class="item-icon">
+              <div class="item-info">
+                <h5>${item.name}</h5>
+                <span class="item-price">${item.quantity}x ${item.finalPrice}${item.currency}</span>
+              </div>
+              <div class="item-actions">
+                ${
+                  game.user.isGM
+                    ? `<button type="button" class="btn-send-to-player refresh-btn" data-sheet-uuid="${this._selectedSheet.uuid}" data-item-uuid="${item.itemUuid}" title="Send to Player">
+                  <i class="fas fa-paper-plane"></i> </button>`
+                    : ""
+                }
+              </div>
+            </div>
+          `,
+            )
+            .join("")}
+        </div>
+      </div>
+    `;
+  }
+
+  // =========================================================================
+  // Main Sheet Tree Generation
+  // =========================================================================
+
+  async _generateLeftPanel(groupMembers, nestedData, tagNodes) {
+    const toggleClass = this._showTreeItems ? "active" : "";
+    const toggleClassNPC = this._showTreeNPCs ? "active" : "";
+    const toggleClassTag = this._showTreeTags ? "active" : "";
+    return `
+      <div class="group-tree">
+        <div class="tree-header">
+
+          <h3><i class="fas fa-sitemap"></i> Structure</h3>
+          <button type="button" class="btn-expand-all" title="Expand All" style="width:32px">
+            <i class="fas fa-expand-arrows-alt"></i>
+          </button>
+          <button type="button" class="btn-collapse-all" title="Collapse All" style="width:32px">
+            <i class="fas fa-compress-arrows-alt"></i>
+          </button>
+          ${
+            !this._showTreeTags
+              ? `
+          <button type="button" class="toggle-tree-items ${toggleClass}" title="Hide/Show Inventory Items" style="width:32px">
+            <i class="fas fa-boxes"></i>
+          </button>
+          <button type="button" class="toggle-tree-npcs ${toggleClassNPC}" title="Hide/Show NPCs" style="width:32px">
+            <i class="fas fa-user"></i>
+          </button>`
+              : "<div></div><div></div>"
+          }
+          <button type="button" class="toggle-tree-tags ${toggleClassTag}" title="Tag Only Mode" style="width:32px">
+            <i class="fas fa-tag"></i>
+          </button>
+        </div>
+        <div class="tree-content scrollable">
+          ${this._showTreeTags ? this._generateTreeTagNodes(tagNodes) : this._generateTreeNodes(groupMembers, nestedData)}
+        </div>
+      </div>
+    `;
+  }
+
+  _generateTreeTagNodes(nodes) {
+    if (!nodes || nodes.length === 0) return "";
+    const hideByPermission = game.settings.get("campaign-codex", "hideByPermission");
+
+    // 1. Define the desired order for sorting by type.
+    const typeOrder = {
+      tag: 1,
+      group: 2,
+      region: 3,
+      location: 4,
+      shop: 5,
+      npc: 6,
+      associate: 6, // Associates are NPCs, so they get the same priority
+    };
+
+    // 2. Filter nodes based on permissions first.
+    const filteredNodes = nodes.filter((child) => !hideByPermission || child.canView);
+
+    // 3. Sort the filtered nodes using the custom multi-level sort.
+    const sortedNodes = [...filteredNodes].sort((a, b) => {
+      const typeA = typeOrder[a.type] || 99; // Get numeric order for type A
+      const typeB = typeOrder[b.type] || 99; // Get numeric order for type B
+
+      // If types are different, sort by the defined type order
+      if (typeA !== typeB) {
+        return typeA - typeB;
+      }
+
+      // If types are the same, sort alphabetically by name
+      return a.name.localeCompare(b.name);
+    });
+
+    // 4. Map the sorted nodes to HTML.
+    return sortedNodes
+    // if (!nodes || nodes.length === 0) return "";
+    // const hideByPermission = game.settings.get("campaign-codex", "hideByPermission");
+
+    // const alphaCards = game.settings.get("campaign-codex", "sortCardsAlpha");
+    // const nodestoRender = alphaCards ? [...nodes].sort((a, b) => a.name.localeCompare(b.name)) : nodes;
+
+    // const filteredNodesToRender = nodestoRender.filter((child) => !hideByPermission || child.canView);
+    // return filteredNodesToRender
+      .map((node) => {
+        const children = node.associates ? [...node.associates, ...node.locations, ...node.shops, ...node.regions] : [];
+        const hasChildren = children.length > 0;
+        const isSelected = this._selectedSheet && this._selectedSheet.uuid === node.uuid;
+        const isExpanded = this._expandedNodes.has(node.uuid);
+        const isClickable = true;
+        const clickableClass = isClickable ? "clickable" : "";
+
+        return `
+      <div class="tree-node ${isSelected ? "selected" : ""}" data-type="${node.type}" data-sheet-uuid="${node.uuid}">
+        <div class="tree-node-header ${hasChildren ? "expandable" : ""}">
+          ${hasChildren ? `<i class="fas ${isExpanded ? "fa-chevron-down" : "fa-chevron-right"} expand-icon expand-toggle"></i>` : '<i class="tree-spacer"></i>'}
+          <i class="${TemplateComponents.getAsset("icon", node.tag ? "tag" : node.type)} node-icon"" alt="${node.name}">&nbsp;</i>
+          <span class="tree-label ${clickableClass}"> ${node.name}</span>
+          <div class="tree-actions">
+            <button type="button" class="btn-open-sheet" data-sheet-type="${node.type}" data-sheet-uuid="${node.uuid}" title="Open Sheet">
+              <i class="fas fa-external-link-alt"></i>
+            </button>
+          </div>
+        </div>
+        ${
+          hasChildren
+            ? `
+          <div class="tree-children" style="display: ${isExpanded ? "block" : "none"};">
+            ${this._generateTreeTagNodes(children)}
+          </div>`
+            : ""
+        }
+      </div>
+    `;
+      })
+      .join("");
+  }
+
+  _generateTreeNodes(nodes, nestedData) {
+    // let html = "";
+    // if (!nodes) return html;
+    // const alphaCards = game.settings.get("campaign-codex", "sortCardsAlpha");
+    // const nodestoRender = alphaCards ? [...nodes].sort((a, b) => a.name.localeCompare(b.name)) : nodes;
+    // const hideByPermission = game.settings.get("campaign-codex", "hideByPermission");
+
+    // return nodestoRender
+    //   .map((node) => {
+    //     if (node.type === "npc" && !this._showTreeNPCs) {
+    //       return "";
+    //     }
+
+    if (!nodes) return "";
+
+    // 1. Define the desired order for sorting by type.
+    const typeOrder = {
+      group: 1,
+      region: 2,
+      location: 3,
+      shop: 4,
+      npc: 5,
+    };
+
+    // 2. Sort the nodes using a custom compare function.
+    const sortedNodes = [...nodes].sort((a, b) => {
+      const typeA = typeOrder[a.type] || 99; // Get the numeric order for type A
+      const typeB = typeOrder[b.type] || 99; // Get the numeric order for type B
+
+      // If the types are different, sort by type order
+      if (typeA !== typeB) {
+        return typeA - typeB;
+      }
+
+      // If types are the same, sort alphabetically by name
+      return a.name.localeCompare(b.name);
+    });
+
+    const hideByPermission = game.settings.get("campaign-codex", "hideByPermission");
+
+    // 3. Map the now sorted nodes to HTML.
+    return sortedNodes
+      .map((node) => {
+        if (node.type === "npc" && !this._showTreeNPCs) {
+          return "";
+        }
+
+        const children = this._getChildrenForMember(node, nestedData);
+        const hasChildren = children && children.length > 0;
+        const isSelected = this._selectedSheet && this._selectedSheet.uuid === node.uuid;
+        const isExpanded = this._expandedNodes.has(node.uuid);
+        const isClickable = node.type !== "item";
+        const clickableClass = isClickable ? "clickable" : "";
+        return !node?.tag && (!hideByPermission || node.canView)
+          ? ` 
+       
+        <div class="tree-node ${isSelected ? "selected" : ""}" data-type="${node.type}" data-sheet-uuid="${node.uuid}">
+          <div class="tree-node-header ${hasChildren ? "expandable" : ""}">
+            ${hasChildren ? `<i class="fas ${isExpanded ? "fa-chevron-down" : "fa-chevron-right"} expand-icon expand-toggle"></i>` : '<i class="tree-spacer"></i>'}
+            <i class="${TemplateComponents.getAsset("icon", node.tag ? "tag" : node.type)} node-icon" alt="${node.name}">&nbsp;</i>
+            <span class="tree-label ${clickableClass}"> ${node.name}</span>
+            
+            <div class="tree-actions">
+              ${
+                game.user.isGM
+                  ? `<button type="button" class="btn-remove-member" data-sheet-uuid="${node.uuid}" title="Remove from Group">
+                <i class="fas fa-times"></i>
+              </button>`
+                  : ""
+              }
+            </div>
+            <div class="tree-actions">
+              <button type="button" class="btn-open-sheet" data-sheet-uuid="${node.uuid}" title="Open Sheet">
+                <i class="fas fa-external-link-alt"></i>
+              </button>
+            </div>
+          </div>
+          
+          ${
+            hasChildren
+              ? `
+            <div class="tree-children" style="display: ${isExpanded ? "block" : "none"};">
+              ${this._generateTreeNodes(children, nestedData)}
+            </div>
+          `
+              : ""
+          }
+        </div>
+      `
+          : "";
+      })
+      .join("");
+  }
+
+  _getChildrenForMember(member, nestedData) {
+    const hideByPermission = game.settings.get("campaign-codex", "hideByPermission");
+    let children = [];
+    switch (member.type) {
+      case "group":
+        children.push(...(nestedData.membersByGroup[member.uuid] || []));
+        break;
+      case "region":
+        children.push(...(nestedData.locationsByRegion[member.uuid] || []));
+        children.push(...(nestedData.shopsByRegion[member.uuid] || []));
+        if (this._showTreeNPCs) {
+          children.push(...(nestedData.npcsByRegion[member.uuid] || []));
+        }
+        break;
+      case "location":
+        children.push(...(nestedData.shopsByLocation[member.uuid] || []));
+        if (this._showTreeNPCs) {
+          children.push(...(nestedData.npcsByLocation[member.uuid] || []));
+        }
+        break;
+      case "shop":
+        if (this._showTreeNPCs) {
+          children.push(...(nestedData.npcsByShop[member.uuid] || []));
+        }
+        if (this._showTreeItems) {
+          children.push(...(nestedData.itemsByShop[member.uuid] || []));
+        }
+        break;
+      case "npc":
+        break;
+    }
+
+    return children.filter((child) => {
+      const isNotTaggedNpc = !(child.type === "npc" && child.tag === true);
+      const isViewable = !hideByPermission || child.canView;
+      return isNotTaggedNpc && isViewable;
+    });
+  }
+
+  // =========================================================================
+  // Main Sheet Tab Generation
+  // =========================================================================
+
+  _generateInfoTab(data) {
+        const standardJournalGrid = TemplateComponents.standardJournalGrid(data.linkedStandardJournals);
+      // ${TemplateComponents.standardJournalSection(data)}
+
+    return `
+
+
+      <div class="form-section" style="margin-bottom: 48px; display:none;">
+        ${game.user.isGM ? `${TemplateComponents.dropZone("member", "fas fa-plus-circle", "", "")}` : ""}
+      </div>
+     ${TemplateComponents.richTextSection(this.document, data.sheetData.enrichedDescription, "description", data.isOwnerOrHigher)}
+    `;
+  }
+
+  _generateInventoryTab(data) {
+    return `
+      <div class="inventory-by-shop">
+        ${this._generateInventoryByShop(data.nestedData)}
+      </div>
+    `;
+  }
+
+  _generateLocationsTab(data) {
+    const locReg = [...data.nestedData.allLocations, ...data.nestedData.allRegions];
+
+    return `
+      <div class="locations-grid">
+       ${this._generateLocationCards(locReg)}
+      </div>
+    `;
+  }
+
+  // =========================================================================
+  // Filtered NPC Tab Generation
+  // =========================================================================
+
+  async _generateNPCsTab(data) {
+    const preparedNPCs = data.nestedData.allNPCs;
+
+    return `
+    
+      <div class="npc-filters">
+        <button type="button" class="filter-btn refresh-btn npcs-all active" data-filter="all" title="${localize("title.all")}"><i class="fas fa-users"></i></button>
+        <button type="button" class="filter-btn refresh-btn npcs-location" data-filter="location" title="${localize("names.location")}"><i class="${TemplateComponents.getAsset("icon", "location")}"></i></button>
+        <button type="button" class="filter-btn refresh-btn npcs-shop" data-filter="shop" title="${localize("names.shop")}"><i class="${TemplateComponents.getAsset("icon", "shop")}"></i></button>
+        <button type="button" class="filter-btn refresh-btn npcs-tag" data-filter="tag" title="${localize("names.tag")}"><i class="fas fa-user-tag"></i></button>
+        <button type="button" class="filter-btn refresh-btn npcs-player" data-filter="character" title="${localize("names.player")}"><i class="fas fa-user-secret"></i></button>
+      </div>
+      
+      <div class="npc-grid-container">
+        ${await this._generateNPCCards(preparedNPCs)}
+      </div>
+    `;
+  }
+  async _generateNPCCards(npcs) {
+    const npcCards = game.settings.get("campaign-codex", "sortCardsAlpha");
+    const npcstoRender = npcCards ? [...npcs].sort((a, b) => a.name.localeCompare(b.name)) : npcs;
+
+    const cardPromises = npcstoRender.map(async (npc) => {
+      const sourcesArray = [];
+      if (npc.locations.length > 0) {
+        sourcesArray.push("location");
+      }
+      if (npc.shops.length > 0) {
+        sourcesArray.push("shop");
+      }
+      if (npc.tag) {
+        sourcesArray.push("tag");
+      }
+      const sources = sourcesArray.join(" ");
+      const actorType = npc.actor?.type ?? "";
+
+      const customData = { "data-filter": `${sources} ${actorType}` };
+
+      return TemplateComponents.entityCard(npc, "associate", true, true, customData);
+    });
+
+    const htmlCards = await Promise.all(cardPromises);
+    return htmlCards.join("");
+  }
+
+  _onFilterChange(event) {
+    const nativeElement = this.element instanceof jQuery ? this.element[0] : this.element;
+    const filter = event.currentTarget.dataset.filter;
+    const cards = nativeElement.querySelectorAll(".entity-card");
+
+    nativeElement.querySelectorAll(".filter-btn").forEach((btn) => btn.classList.remove("active"));
+    event.currentTarget.classList.add("active");
+
+    cards.forEach((card) => {
+      const cardFilter = card.dataset.filter;
+      if (filter === "all" || cardFilter.includes(filter)) {
+        card.style.display = "flex";
+      } else {
+        card.style.display = "none";
+      }
+    });
+  }
+
+  // =========================================================================
+
+  _generateLocationCards(locations) {
+    const locationCards = game.settings.get("campaign-codex", "sortCardsAlpha");
+    const locationstoRender = locationCards ? [...locations].sort((a, b) => a.name.localeCompare(b.name)) : locations;
+    const hideByPermission = game.settings.get("campaign-codex", "hideByPermission");
+    return locationstoRender
+      .map((location) =>
+        hideByPermission && !location.canView
+          ? ""
+          : `
+        <div class="group-location-card" data-sheet-uuid="${location.uuid}">
+        <div class="location-image">
+          <img class="card-image-clickable" data-sheet-uuid="${location.uuid}" src="${TemplateComponents.getAsset("image", location.type, location.img)}" alt="${location.name}">
+        </div>
+        <div class="location-info">
+          <h4 class="location-name"><i class="${TemplateComponents.getAsset("icon", location.type === "region" ? "region" : "location")}"></i> ${location.name}</h4>
+          ${
+            location.region
+              ? `
+            <div class="entity-locations">
+              <i class="${TemplateComponents.getAsset("icon", "region")}"></i>
+              <span class="location-tag">${location.region}</span>
+            </div>
+            `
+              : ""
+          }
+          ${
+            location.shops && location.shops.length > 0
+              ? `
+            <div class="entity-locations shop-tags">
+              <i class="${TemplateComponents.getAsset("icon", "shop")}"></i>
+              ${location.shops.map((shop) => `<span class="location-tag shop-tag">${shop}</span>`).join("")}
+            </div>
+          `
+              : ""
+          }
+          ${
+            location.tags && location.tags.length > 0
+              ? `
+            <div class="entity-locations tag-mode-tags">
+              <i class="fas fa-tag"></i>
+              ${location.tags.map((tag) => `<span class="location-tag tag-mode">${tag}</span>`).join("")}
+            </div>
+          `
+              : ""
+          }  
+          ${
+            location.npcs && location.npcs.length > 0
+              ? `
+            <div class="entity-locations tag-mode-tags">
+              <i class="${TemplateComponents.getAsset("icon", "npc")}"></i>
+              ${location.npcs.map((npc) => `<span class="location-tag">${npc}</span>`).join("")}
+            </div>
+          `
+              : ""
+          }              
+        </div>
+      </div>`,
+      )
+      .join("");
+  }
+
+  _generateInventoryByShop(nestedData) {
+    let html = "";
+    const hideInventoryByPermission = game.settings.get("campaign-codex", "hideInventoryByPermission");
+    const hideByPermission = game.settings.get("campaign-codex", "hideByPermission");
+
+    for (const [shopUuid, items] of Object.entries(nestedData.itemsByShop)) {
+      const shop = nestedData.allShops.find((s) => s.uuid === shopUuid);
+      if (!shop || items.length === 0) continue;
+
+      const itemCards = game.settings.get("campaign-codex", "sortCardsAlpha");
+      const itemCardstoRender = itemCards ? [...items].sort((a, b) => a.name.localeCompare(b.name)) : items;
+
+      html +=
+        hideByPermission && !shop.canView
+          ? ""
+          : `
+        <div class="shop-inventory-section">
+          <div class="shop-header btn-open-sheet" data-sheet-uuid="${shopUuid}">
+            <img src="${TemplateComponents.getAsset("image", shop.type, shop.img)}" alt="${shop.name}" class="shop-icon">
+            <div class="shop-info">
+              <h4 class="shop-name">${shop.name}</h4>
+              ${shop?.tags.length > 0 ? `<i class="fas fa-tag"></i> ` : ""}${shop?.tags.map((tag) => `<span class="location-tag tag-mode">${tag}</span>`).join("")}
+            </div>
+          </div>
+          
+          <div class="shop-items">
+            ${itemCardstoRender
+              .map((item) =>
+                hideInventoryByPermission && !item.canView
+                  ? ""
+                  : `
+              <div class="group-item-card btn-open-sheet" data-sheet-uuid="${item.uuid}">
+                <img src="${TemplateComponents.getAsset("image", "item", item.img)}" alt="${item.name}" class="item-icon">
+                <div class="item-info">
+                  <span class="item-name">${item.name}</span>
+                  <span class="item-price">${item.quantity}x ${item.finalPrice}${item.currency}</span>
+                </div>
+              </div>
+            `,
+              )
+              .join("")}
+          </div>
+        </div>
+      `;
+    }
+
+    return html;
+  }
+
+  // =========================================================================
+  // Event Handlers
+  // =========================================================================
+
+  async _onTagToggle(event) {
+    const tagToggle = event.target.checked;
+    const currentData = this.document.getFlag("campaign-codex", "data") || {};
+    currentData.tagToggle = tagToggle;
+    await this.document.setFlag("campaign-codex", "data", currentData);
+    
+  }
+
+  _calculateGroupStats(nestedData) {
+    return {
+      regions: nestedData.allRegions.length,
+      locations: nestedData.allLocations.length,
+      shops: nestedData.allShops.length,
+      npcs: nestedData.allNPCs.length,
+      items: nestedData.allItems.length,
+    };
+  }
+
+  async _addMemberToGroup(newMemberUuid) {
+    if (newMemberUuid === this.document.uuid) {
+      ui.notifications.warn();
+      return;
+    }
+
+    const newMemberDoc = await fromUuid(newMemberUuid);
+    if (!newMemberDoc) {
+      ui.notifications.error(localize("group.self"));
+      return;
+    }
+
+    // Check for and prevent circular dependencies
+    if (newMemberDoc.getFlag("campaign-codex", "type") === "group.notfound") {
+      const membersOfNewGroup = await GroupLinkers.getGroupMembers(newMemberDoc.getFlag("campaign-codex", "data")?.members || []);
+      const nestedDataOfNewGroup = await GroupLinkers.getNestedData(membersOfNewGroup);
+
+      if (nestedDataOfNewGroup.allGroups.some((g) => g.uuid === this.document.uuid)) {
+        ui.notifications.warn(`Cannot add "${newMemberDoc.name}" as it would create a circular dependency.`);
+        return;
+      }
+    }
+
+    const groupData = this.document.getFlag("campaign-codex", "data") || {};
+    let currentMembers = groupData.members || [];
+
+    // Prevent adding a member that is already included as a child of another member
+    const existingMembers = await GroupLinkers.getGroupMembers(currentMembers);
+    const nestedData = await GroupLinkers.getNestedData(existingMembers);
+    const allExistingNestedUuids = new Set([
+      ...nestedData.allGroups.map((i) => i.uuid),
+      ...nestedData.allRegions.map((i) => i.uuid),
+      ...nestedData.allLocations.map((i) => i.uuid),
+      ...nestedData.allShops.map((i) => i.uuid),
+      ...nestedData.allNPCs.map((i) => i.uuid),
+    ]);
+
+    if (allExistingNestedUuids.has(newMemberUuid)) {
+      ui.notifications.warn(`"${newMemberDoc.name}" is already included in this group as a child of another member.`);
+      return;
+    }
+
+    // Get all nested children of the NEW member
+    const newMemberAsGroupMember = [
+      {
+        uuid: newMemberUuid,
+        type: newMemberDoc.getFlag("campaign-codex", "type"),
+      },
+    ];
+    const nestedDataOfNewMember = await GroupLinkers.getNestedData(newMemberAsGroupMember);
+    const allNestedUuidsOfNewMember = new Set([
+      ...nestedDataOfNewMember.allGroups.map((i) => i.uuid),
+      ...nestedDataOfNewMember.allRegions.map((i) => i.uuid),
+      ...nestedDataOfNewMember.allLocations.map((i) => i.uuid),
+      ...nestedDataOfNewMember.allShops.map((i) => i.uuid),
+      ...nestedDataOfNewMember.allNPCs.map((i) => i.uuid),
+    ]);
+
+    // Filter the current members list, removing any that are children of the new member
+    const membersToRemove = currentMembers.filter((memberUuid) => allNestedUuidsOfNewMember.has(memberUuid));
+    let updatedMembers = currentMembers.filter((memberUuid) => !allNestedUuidsOfNewMember.has(memberUuid));
+
+    // Add the new member to the cleaned list
+    updatedMembers.push(newMemberUuid);
+    groupData.members = updatedMembers;
+    await this.document.setFlag("campaign-codex", "data", groupData);
+
+    this._processedData = null;
+    this.render(true);
+
+    let notification = `Added "${newMemberDoc.name}" to the group.`;
+    if (membersToRemove.length > 0) {
+      notification += ` Removed ${membersToRemove.length} redundant top-level member(s).`;
+    }
+    ui.notifications.info(notification);
+  }
+
+  async _onRemoveMember(event) {
+    const memberUuid = event.currentTarget.dataset.sheetUuid;
+    await this._saveFormData();
+
+    const groupData = this.document.getFlag("campaign-codex", "data") || {};
+    groupData.members = (groupData.members || []).filter((uuid) => uuid !== memberUuid);
+    await this.document.setFlag("campaign-codex", "data", groupData);
+    this._processedData = null;
+    this.render(true);
+    ui.notifications.info("Removed member from group");
+  }
+
+  _onToggleTreeNode(event) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    const expandIcon = event.currentTarget;
+    const treeNode = expandIcon.closest(".tree-node");
+    const children = treeNode.querySelector(".tree-children");
+    const uuid = treeNode.dataset.sheetUuid;
+
+    if (children) {
+      const isExpanding = children.style.display === "none" || children.style.display === "";
+      if (isExpanding) {
+        children.style.display = "block";
+        expandIcon.classList.remove("fa-chevron-right");
+        expandIcon.classList.add("fa-chevron-down");
+        this._expandedNodes.add(uuid);
+      } else {
+        children.style.display = "none";
+        expandIcon.classList.remove("fa-chevron-down");
+        expandIcon.classList.add("fa-chevron-right");
+        this._expandedNodes.delete(uuid);
+      }
+    }
+  }
+
+  _onExpandAll(event) {
+    const nativeElement = this.element instanceof jQuery ? this.element[0] : this.element;
+    nativeElement.querySelectorAll(".tree-node").forEach((el) => {
+      const uuid = el.dataset.sheetUuid;
+      if (uuid && el.querySelector(".tree-children")) {
+        this._expandedNodes.add(uuid);
+      }
+    });
+    this.render(false);
+  }
+
+  _onCollapseAll(event) {
+    this._expandedNodes.clear();
+    this.render(false);
+  }
+
+  _onFocusItem(event) {
+    const uuid = event.currentTarget.dataset.sheetUuid;
+  }
+
+  _onTabChange(event) {
+    event.preventDefault();
+    const tab = event.currentTarget.dataset.tab;
+
+    if (this._selectedSheet) {
+      this._selectedSheet = null;
+    }
+
+    this._currentTab = tab;
+    this.render(false);
+  }
+
+  getSheetType() {
+    return "group";
+  }
+
+  async _isRelatedDocument(changedDocUuid) {
+    if (!this.document.getFlag) return false;
+    
+    // PERFORMANCE: Use the cache if it exists, otherwise get fresh data.
+    // This makes the check much faster after the initial render.
+    if (!this._processedData) {
+        this._processedData = await this._processGroupData();
+    }
+    const nestedData = this._processedData.nestedData;
+
+    const allUuids = new Set([
+      ...nestedData.allGroups.map((i) => i.uuid),
+      ...nestedData.allRegions.map((i) => i.uuid),
+      ...nestedData.allLocations.map((i) => i.uuid),
+      ...nestedData.allShops.map((i) => i.uuid),
+      ...nestedData.allNPCs.map((i) => i.uuid),
+      ...nestedData.allItems.map((i) => i.uuid),
+    ]);
+
+    if (allUuids.has(changedDocUuid)) {
+      return true;
+    }
+
+    for (const npc of nestedData.allNPCs) {
+      if (npc.actor && npc.actor.uuid === changedDocUuid) {
+        return true;
+      }
+    }
+
+    return await super._isRelatedDocument(changedDocUuid);
+  }
+
+  _onToggleTreeNPC(event) {
+    event.preventDefault();
+    this._showTreeNPCs = !this._showTreeNPCs;
+    this.render(false);
+  }
+
+  _onToggleTreeTags(event) {
+    event.preventDefault();
+    this._showTreeTags = !this._showTreeTags;
+    this.render(false);
+  }
 
   _onToggleTreeItems(event) {
     event.preventDefault();
@@ -233,7 +1463,6 @@ export class GroupSheet extends CampaignCodexBaseSheet {
   _onSelectSheet(event) {
     event.preventDefault();
     event.stopPropagation();
-
     if (
       event.target.classList.contains("expand-toggle") ||
       event.target.closest(".tree-actions") ||
@@ -242,6 +1471,13 @@ export class GroupSheet extends CampaignCodexBaseSheet {
     ) {
       return;
     }
+    
+    // const nativeElement = this.element instanceof jQuery ? this.element[0] : this.element;
+    // const treeContent = nativeElement.querySelector(".tree-content")
+
+    // if (treeContent) {
+    //   this._sidebarScrollTop = treeContent.scrollTop;
+    // }
 
     const treeNode = event.currentTarget.closest(".tree-node");
     const uuid = treeNode.dataset.sheetUuid;
@@ -268,7 +1504,6 @@ export class GroupSheet extends CampaignCodexBaseSheet {
     this.render(false);
   }
 
-  // ADD to v13
   async _onOpenScene(event) {
     event.preventDefault();
     const button = event.currentTarget;
@@ -280,599 +1515,6 @@ export class GroupSheet extends CampaignCodexBaseSheet {
       return;
     }
     await game.campaignCodex.openLinkedScene(doc);
-  }
-  //
-
-  async _generateSelectedSheetTab() {
-    if (!this._selectedSheet) return "";
-
-    const selectedDoc = await fromUuid(this._selectedSheet.uuid);
-    if (!selectedDoc) {
-      this._selectedSheet = null;
-      return "<p>Selected sheet not found. Please re-select from the tree.</p>";
-    }
-
-    const selectedData = selectedDoc.getFlag("campaign-codex", "data") || {};
-
-    let actorButtonHtml = "";
-    if (this._selectedSheet.type === "npc" && selectedData.linkedActor) {
-      actorButtonHtml = `
-      <button type="button" class="btn-open-actor" data-actor-uuid="${selectedData.linkedActor}" title="Open Actor Sheet">
-        <i class="fas fa-user"></i>
-      </button>
-    `;
-    }
-    // ADD to v13
-    let sceneButtonHtml = "";
-    if (
-      (this._selectedSheet.type === "location" ||
-        this._selectedSheet.type === "region" ||
-        this._selectedSheet.type === "shop") &&
-      selectedData.linkedScene
-    ) {
-      sceneButtonHtml = `
-      <button type="button" class="btn-open-scene" data-doc-uuid="${selectedDoc.uuid}" title="Open Scene">
-        <i class="fas fa-map"></i>
-      </button>
-        `;
-    }
-    //
-
-    let calculatedCounts = {};
-    if (this._selectedSheet.type === "location") {
-      const directNPCs = await CampaignCodexLinkers.getDirectNPCs(
-        selectedDoc,
-        selectedData.linkedNPCs || [],
-      );
-      const shopNPCs = await CampaignCodexLinkers.getShopNPCs(
-        selectedDoc,
-        selectedData.linkedShops || [],
-      );
-      calculatedCounts.totalNPCs = directNPCs.length + shopNPCs.length;
-    }
-
-    const subTabs = this._getSelectedSheetSubTabs(
-      this._selectedSheet.type,
-      selectedData,
-      calculatedCounts,
-    );
-
-    return `
-      <div class="selected-sheet-container">
-        <div class="selected-sheet-header">
-          <div class="selected-sheet-info">
-            <i class="${TemplateComponents.getAsset("icon", this._selectedSheet.type)}"></i> 
-            <div class="selected-sheet-details">
-              <h2>${this._selectedSheet.name}</h2>
-            </div>
-          </div>
-          <div class="selected-sheet-actions">
-          ${sceneButtonHtml}
-          ${actorButtonHtml}
-            <button type="button" class="btn-open-sheet" data-sheet-uuid="${this._selectedSheet.uuid}" title="Open Full Sheet">
-              <i class="fas fa-external-link-alt"></i>
-            </button>
-          </div>
-        </div>
-
-        <nav class="selected-sheet-tabs">
-          ${subTabs
-            .map(
-              (tab) => `
-            <div class="selected-sheet-tab ${tab.key === this._selectedSheetTab ? "active" : ""}" data-tab="${tab.key}">
-              <i class="${tab.icon}"></i>
-              <span>${tab.label}</span>
-              ${tab.count !== undefined ? `<span class="tab-count">(${tab.count})</span>` : ""}
-            </div>
-          `,
-            )
-            .join("")}
-        </nav>
-
-        <div class="selected-sheet-content">
-          ${await this._generateSelectedSheetContent(selectedDoc, selectedData, this._selectedSheetTab)}
-        </div>
-      </div>
-    `;
-  }
-
-  _getSelectedSheetSubTabs(type, data, calculatedCounts = {}) {
-    const baseTabs = [
-      { key: "info", label: "Information", icon: "fas fa-info-circle" },
-      ...(game.user.isGM
-        ? [{ key: "notes", label: "GM Notes", icon: "fas fa-sticky-note" }]
-        : []),
-    ];
-
-    switch (type) {
-      case "npc":
-        baseTabs.splice(1, 0, {
-          key: "associates",
-          label: "Associates",
-          icon: "fas fa-users",
-          count: (data.associates || []).length,
-        });
-        break;
-
-      case "shop":
-        baseTabs.splice(
-          1,
-          0,
-          {
-            key: "npcs",
-            label: "NPCs",
-            icon: TemplateComponents.getAsset("icon", "npc"),
-            count: (data.linkedNPCs || []).length,
-          },
-          {
-            key: "inventory",
-            label: "Inventory",
-            icon: "fas fa-boxes",
-            count: (data.inventory || []).length,
-          },
-        );
-        break;
-
-      case "location":
-        baseTabs.splice(
-          1,
-          0,
-          {
-            key: "npcs",
-            label: "NPCs",
-            icon: TemplateComponents.getAsset("icon", "npc"),
-            count: calculatedCounts.totalNPCs ?? (data.linkedNPCs || []).length,
-          },
-          {
-            key: "shops",
-            label: "Entries",
-            icon: TemplateComponents.getAsset("icon", "shop"),
-            count: (data.linkedShops || []).length,
-          },
-        );
-        break;
-
-      case "region":
-        baseTabs.splice(1, 0, {
-          key: "locations",
-          label: "Locations",
-          icon: TemplateComponents.getAsset("icon", "location"),
-          count: (data.linkedLocations || []).length,
-        });
-        break;
-    }
-
-    return baseTabs;
-  }
-
-  async _generateSelectedSheetContent(selectedDoc, selectedData, activeTab) {
-    const enrichedDescription =
-      await foundry.applications.ux.TextEditor.implementation.enrichHTML(
-        selectedData.description || "",
-        {
-          async: true,
-          secrets: selectedDoc.isOwner,
-        },
-      );
-    const systemClass = game.system.id === "dnd5e" ? " dnd5e" : "";
-    const journalClass =
-      game.system.id === "dnd5e" ? " dnd5e2-journal themed theme-light" : "";
-    const enrichedNotes =
-      await foundry.applications.ux.TextEditor.implementation.enrichHTML(
-        selectedData.notes || "",
-        {
-          async: true,
-          secrets: selectedDoc.isOwner,
-        },
-      );
-
-    switch (activeTab) {
-      case "info":
-        return this._generateSelectedInfoContent(
-          selectedDoc,
-          selectedData,
-          enrichedDescription,
-        );
-
-      case "npcs":
-        return await this._generateSelectedNPCsContent(
-          selectedDoc,
-          selectedData,
-        );
-
-      case "associates":
-        return await this._generateSelectedAssociatesContent(
-          selectedDoc,
-          selectedData,
-        );
-
-      case "inventory":
-        return await this._generateSelectedInventoryContent(
-          selectedDoc,
-          selectedData,
-        );
-
-      case "shops":
-        return await this._generateSelectedShopsContent(
-          selectedDoc,
-          selectedData,
-        );
-
-      case "locations":
-        return await this._generateSelectedLocationsContent(
-          selectedDoc,
-          selectedData,
-        );
-
-      case "notes":
-        return `
-          <article class="selected-content-section cc-enriched cc-hidden-secrets journal-entry-page${systemClass}">
-           <section class="rich-text-content journal-page-content" name="cc.secret.content.notes">
-              ${enrichedNotes || "<p><em>No GM notes available.</em></p>"}
-            </section>
-            </article>
-        `;
-
-      default:
-        return "<p>Content not available.</p>";
-    }
-  }
-
-  async _generateSelectedNPCsContent(selectedDoc, selectedData) {
-    if (this._selectedSheet.type === "location") {
-      const directNPCs = await CampaignCodexLinkers.getDirectNPCs(
-        selectedDoc,
-        selectedData.linkedNPCs || [],
-      );
-      const shopNPCs = await CampaignCodexLinkers.getShopNPCs(
-        selectedDoc,
-        selectedData.linkedShops || [],
-      );
-      const allNPCs = [...directNPCs, ...shopNPCs];
-
-      if (allNPCs.length === 0) {
-        return '<div class="selected-content-section"><p><em>No NPCs linked.</em></p></div>';
-      }
-
-      const dropToMapBtn =
-        canvas.scene && game.user.isGM
-          ? `
-        <button type="button" class="refresh-btn npcs-to-map-button" data-sheet-uuid="${this._selectedSheet.uuid}">
-          <i class="fas fa-map"></i> Drop Direct NPCs to Map
-        </button>
-      `
-          : "";
-
-      let content = `
-        <div class="selected-content-section">
-          <div class="selected-actions">
-            ${dropToMapBtn}
-          </div>
-      `;
-
-      if (directNPCs.length > 0) {
-        content += `
-          <div class="npc-section">
-            <h4 style="color: var(--cc-main-text); font-size: 16px; font-weight: 600; margin: 16px 0 12px 0; border-bottom: 1px solid #dee2e6; padding-bottom: 4px;">
-              <i class="fas fa-user" style="color: var(--cc-accent); margin-right: 8px;"></i>
-              Direct NPCs (${directNPCs.length})
-            </h4>
-            <div class="npc-list">
-              ${directNPCs
-                .map(
-                  (npc) => `
-                <div class="selected-npc-card">
-                  <img src="${TemplateComponents.getAsset("image", "npc", npc.img)}" alt="${npc.name}" class="npc-avatar">
-                  <div class="npc-info">
-                    <h5>${npc.name}</h5>
-                    ${npc.actor ? `<span class="npc-type">${npc.actor.type}</span>` : ""}
-                  </div>
-                  <div class="npc-actions">
-                    <button type="button" class="btn-open-sheet" data-sheet-uuid="${npc.uuid}" title="Open NPC Sheet">
-                      <i class="fas fa-external-link-alt"></i>
-                    </button>
-                    ${
-                      npc.actor
-                        ? `
-                      <button type="button" class="btn-open-actor" data-actor-uuid="${npc.actor.uuid}" title="Open Actor Sheet">
-                        <i class="fas fa-user"></i>
-                      </button>
-                    `
-                        : ""
-                    }
-                  </div>
-                </div>
-              `,
-                )
-                .join("")}
-            </div>
-          </div>
-        `;
-      }
-
-      if (shopNPCs.length > 0) {
-        content += `
-          <div class="npc-section">
-            <h4 style="color: var(--cc-main-text); font-size: 16px; font-weight: 600; margin: 16px 0 12px 0; border-bottom: 1px solid #dee2e6; padding-bottom: 4px;">
-              <i class="fas fa-book-open" style="color: var(--cc-accent); margin-right: 8px;"></i>
-              Entry NPCs (${shopNPCs.length})
-            </h4>
-            <div class="npc-list">
-              ${shopNPCs
-                .map(
-                  (npc) => `
-                <div class="selected-npc-card">
-                  <img src="${TemplateComponents.getAsset("image", "npc", npc.img)}" alt="${npc.name}" class="npc-avatar">
-                  <div class="npc-info">
-                    <h5>${npc.name}</h5>
-                    ${npc.actor ? `<span class="npc-type">${npc.actor.type}</span>` : ""}
-                    <div class="npc-source-info" style="font-size: 11px; color: #6c757d; font-style: italic;">
-                      ${npc.shops && npc.shops.length > 0 ? `From: ${npc.shops.join(", ")}` : ""}
-                    </div>
-                  </div>
-                  <div class="npc-actions">
-                    <button type="button" class="btn-open-sheet" data-sheet-uuid="${npc.uuid}" title="Open NPC Sheet">
-                      <i class="fas fa-external-link-alt"></i>
-                    </button>
-                    ${
-                      npc.actor
-                        ? `
-                      <button type="button" class="btn-open-actor" data-actor-uuid="${npc.actor.uuid}" title="Open Actor Sheet">
-                        <i class="fas fa-user"></i>
-                      </button>
-                    `
-                        : ""
-                    }
-                  </div>
-                </div>
-              `,
-                )
-                .join("")}
-            </div>
-          </div>
-        `;
-      }
-
-      content += "</div>";
-      return content;
-    }
-
-    const npcs = await CampaignCodexLinkers.getLinkedNPCs(
-      selectedDoc,
-      selectedData.linkedNPCs || [],
-    );
-
-    if (npcs.length === 0) {
-      return '<div class="selected-content-section"><p><em>No NPCs linked.</em></p></div>';
-    }
-
-    const dropToMapBtn =
-      canvas.scene && game.user.isGM
-        ? `
-      <button type="button" class="npcs-to-map-button" data-sheet-uuid="${this._selectedSheet.uuid}">
-        <i class="fas fa-map"></i> Drop NPCs to Map
-      </button>
-    `
-        : "";
-
-    return `
-      <div class="selected-content-section">
-        <div class="selected-actions">
-          ${dropToMapBtn}
-        </div>
-        
-        <div class="npc-list">
-          ${npcs
-            .map(
-              (npc) => `
-            <div class="selected-npc-card">
-              <img src="${TemplateComponents.getAsset("image", "npc", npc.img)}" alt="${npc.name}" class="npc-avatar">
-              <div class="npc-info">
-                <h5>${npc.name}</h5>
-                ${npc.actor ? `<span class="npc-type">${npc.actor.type}</span>` : ""}
-              </div>
-              <div class="npc-actions">
-                <button type="button" class="btn-open-sheet" data-sheet-uuid="${npc.uuid}" title="Open NPC Sheet">
-                  <i class="fas fa-external-link-alt"></i>
-                </button>
-                ${
-                  npc.actor
-                    ? `
-                  <button type="button" class="btn-open-actor" data-actor-uuid="${npc.actor.uuid}" title="Open Actor Sheet">
-                    <i class="fas fa-user"></i>
-                  </button>
-                `
-                    : ""
-                }
-              </div>
-            </div>
-          `,
-            )
-            .join("")}
-        </div>
-      </div>
-    `;
-  }
-
-  async _generateSelectedShopsContent(selectedDoc, selectedData) {
-    const shops = await CampaignCodexLinkers.getLinkedShops(
-      selectedDoc,
-      selectedData.linkedShops || [],
-    );
-
-    if (shops.length === 0) {
-      return '<div class="selected-content-section"><p><em>No entries linked.</em></p></div>';
-    }
-
-    return `
-      <div class="selected-content-section">
-        <div class="shops-list">
-          ${shops
-            .map(
-              (shop) => `
-            <div class="selected-shop-card">
-              <img src="${TemplateComponents.getAsset("image", "shop", shop.img)}" alt="${shop.name}" class="shop-icon">
-              <div class="shop-info">
-                <h5>${shop.name}</h5>
-              </div>
-              <div class="shop-actions">
-                <button type="button" class="btn-open-sheet" data-sheet-uuid="${shop.uuid}" title="Open Entry Sheet">
-                  <i class="fas fa-external-link-alt"></i>
-                </button>
-              </div>
-            </div>
-          `,
-            )
-            .join("")}
-        </div>
-      </div>
-    `;
-  }
-
-  async _generateSelectedLocationsContent(selectedDoc, selectedData) {
-    const locations = await CampaignCodexLinkers.getLinkedLocations(
-      selectedDoc,
-      selectedData.linkedLocations || [],
-    );
-
-    if (locations.length === 0) {
-      return '<div class="selected-content-section"><p><em>No locations linked.</em></p></div>';
-    }
-
-    return `
-      <div class="selected-content-section">
-        <div class="locations-list">
-          ${locations
-            .map(
-              (location) => `
-            <div class="selected-location-card">
-              <img src="${TemplateComponents.getAsset("image", "location", location.img)}" alt="${location.name}" class="location-icon">
-              <div class="location-info">
-                <h5>${location.name}</h5>
-              </div>
-              <div class="location-actions">
-                <button type="button" class="btn-open-sheet" data-sheet-uuid="${location.uuid}" title="Open Location Sheet">
-                  <i class="fas fa-external-link-alt"></i>
-                </button>
-              </div>
-            </div>
-          `,
-            )
-            .join("")}
-        </div>
-      </div>
-    `;
-  }
-
-  async _generateSelectedInfoContent(
-    selectedDoc,
-    selectedData,
-    enrichedDescription,
-  ) {
-    const systemClass = game.system.id === "dnd5e" ? " dnd5e2-journal themed theme-light" : "";
-    const journalClass =
-      game.system.id === "dnd5e" ? " journal-entry-content dnd5e2 themed theme-light" : "";
-    // Journal
-    const tabJournal = await fromUuid(selectedData.linkedStandardJournal);
-    // console.log(tabJournal);
-    let standardJournalSection = ``;
-    if (tabJournal) {
-      standardJournalSection = `
-        <div class="scene-info" style="margin-top:-24px;margin-bottom: 24px; height:40px">
-        <span class="scene-name open-journal" data-journal-uuid="${tabJournal.uuid}" title="Open Journal">
-          <i class="fas fa-book"></i> Journal: ${tabJournal.name}</span>
-        </div>
-      `;
-    }
-
-    return `
-      <article class="selected-content-section cc-enriched">${standardJournalSection}
-        <section class="description-section journal-entry-page cc-secret-content cc-hidden-secrets${systemClass}"  name="cc.secret.content.description" document-uuid="${selectedDoc.uuid}">
-
-          <h4><i class="fas fa-align-left"></i> Description</h4>
-          <div class="rich-text-content journal-page-content">
-            ${enrichedDescription || "<p><em>No description available.</em></p>"}
-          </div>
-        </section>
-      </article>
-    `;
-  }
-
-  async _generateSelectedAssociatesContent(selectedDoc, selectedData) {
-    const associates = await CampaignCodexLinkers.getAssociates(
-      selectedDoc,
-      selectedData.associates || [],
-    );
-
-    if (associates.length === 0) {
-      return '<div class="selected-content-section"><p><em>No associates linked.</em></p></div>';
-    }
-
-    return `
-      <div class="selected-content-section">
-        <div class="associates-list">
-          ${associates
-            .map(
-              (associate) => `
-            <div class="selected-associate-card">
-              <img src="${TemplateComponents.getAsset("image", "npc", associate.img)}" alt="${associate.name}" class="associate-avatar">
-              <div class="associate-info">
-                <h5>${associate.name}</h5>
-                <span class="associate-relationship">${associate.relationship || "Associate"}</span>
-              </div>
-              <div class="associate-actions">
-                <button type="button" class="btn-open-sheet" data-sheet-uuid="${associate.uuid}" title="Open Associate Sheet">
-                  <i class="fas fa-external-link-alt"></i>
-                </button>
-              </div>
-            </div>
-          `,
-            )
-            .join("")}
-        </div>
-      </div>
-    `;
-  }
-
-  async _generateSelectedInventoryContent(selectedDoc, selectedData) {
-    const inventory = await CampaignCodexLinkers.getInventory(
-      selectedDoc,
-      selectedData.inventory || [],
-    );
-
-    if (inventory.length === 0) {
-      return '<div class="selected-content-section"><p><em>No inventory items.</em></p></div>';
-    }
-
-    return `
-      <div class="selected-content-section">
-        <div class="inventory-list">
-          ${inventory
-            .map(
-              (item) => `
-            <div class="selected-inventory-item">
-              <img src="${TemplateComponents.getAsset("image", "item", item.img)}" alt="${item.name}" class="item-icon">
-              <div class="item-info">
-                <h5>${item.name}</h5>
-                <span class="item-price">${item.quantity}x ${item.finalPrice}${item.currency}</span>
-              </div>
-              <div class="item-actions">
-                ${
-                  game.user.isGM
-                    ? `<button type="button" class="btn-send-to-player" data-sheet-uuid="${this._selectedSheet.uuid}" data-item-uuid="${item.itemUuid}" title="Send to Player">
-                  <i class="fas fa-paper-plane"></i> </button>`
-                    : ""
-                }
-                <button type="button" class="btn-open-sheet" data-sheet-uuid="${item.itemUuid}" title="Open Item">
-                  <i class="${TemplateComponents.getAsset("icon", "item")}"></i> </button>
-              </div>
-            </div>
-          `,
-            )
-            .join("")}
-        </div>
-      </div>
-    `;
   }
 
   async _onSendToPlayer(event) {
@@ -889,12 +1531,9 @@ export class GroupSheet extends CampaignCodexBaseSheet {
       return;
     }
 
-    TemplateComponents.createPlayerSelectionDialog(
-      itemDoc.name,
-      async (targetActor) => {
-        await this._transferItemToActor(itemDoc, targetActor, shopDoc);
-      },
-    );
+    TemplateComponents.createPlayerSelectionDialog(itemDoc.name, async (targetActor) => {
+      await this._transferItemToActor(itemDoc, targetActor, shopDoc);
+    });
   }
 
   async _transferItemToActor(item, targetActor, shopDoc) {
@@ -915,17 +1554,13 @@ export class GroupSheet extends CampaignCodexBaseSheet {
         shopItem.quantity -= 1;
         await shopDoc.setFlag("campaign-codex", "data", currentData);
       } else {
-        currentData.inventory = inventory.filter(
-          (i) => i.itemUuid !== item.uuid,
-        );
+        currentData.inventory = inventory.filter((i) => i.itemUuid !== item.uuid);
         await shopDoc.setFlag("campaign-codex", "data", currentData);
       }
 
       ui.notifications.info(`Sent "${item.name}" to ${targetActor.name}`);
 
-      const targetUser = game.users.find(
-        (u) => u.character?.id === targetActor.id,
-      );
+      const targetUser = game.users.find((u) => u.character?.id === targetActor.id);
       if (targetUser && targetUser.active) {
         ChatMessage.create({
           content: `<p><strong>${game.user.name}</strong> sent you <strong>${item.name}</strong> from ${shopDoc.name}!</p>`,
@@ -940,43 +1575,54 @@ export class GroupSheet extends CampaignCodexBaseSheet {
     }
   }
 
-  async _onDropNPCsToMapClick(event) {
+  async _onDropSingleNPCToMapClick(event) {
     event.preventDefault();
-
     const sheetUuid = event.currentTarget.dataset.sheetUuid;
-    if (!sheetUuid) {
-      const data = await this.getData();
-      if (data.nestedData.allNPCs && data.nestedData.allNPCs.length > 0) {
-        await this._onDropNPCsToMap(data.nestedData.allNPCs, {
-          title: `Drop ${this.document.name} NPCs to Map`,
-        });
-      } else {
-        ui.notifications.warn("No NPCs with linked actors found to drop!");
-      }
-      return;
-    }
-
     try {
       const selectedDoc = await fromUuid(sheetUuid);
       if (!selectedDoc) {
         ui.notifications.warn("Selected sheet not found");
         return;
       }
+      const npcData = selectedDoc.getFlag("campaign-codex", "data") || {};
+      if (!npcData.linkedActor) return ui.notifications.warn("This NPC has no linked actor to drop!");
+      const linkedActor = await fromUuid(npcData.linkedActor);
+      if (!linkedActor) return ui.notifications.warn(localize("warn.actornotfound"));
+      const npcForDrop = {
+        id: selectedDoc.id,
+        uuid: selectedDoc.uuid,
+        name: selectedDoc.name,
+        img: selectedDoc.getFlag("campaign-codex", "image") || linkedActor.img,
+        actor: linkedActor,
+      };
+      await this._onDropNPCsToMap([npcForDrop], {
+        title: `Drop ${this.document.name} to Map`,
+        showHiddenToggle: true,
+      });
+    } catch (error) {
+      console.error("Campaign Codex | Error dropping NPC to map:", error);
+      ui.notifications.error(localize("warn.failedtodrop"));
+    }
+  }
 
+  async _onDropNPCsToMapClick(event) {
+    event.preventDefault();
+    const sheetUuid = event.currentTarget.dataset.sheetUuid;
+    try {
+      const selectedDoc = await fromUuid(sheetUuid);
+      if (!selectedDoc) {
+        ui.notifications.warn("Selected sheet not found");
+        return;
+      }
       const selectedData = selectedDoc.getFlag("campaign-codex", "data") || {};
       const selectedType = this._selectedSheet.type;
-
       let npcsToMap = [];
-
-      if (selectedType === "npc") {
-        if (selectedData.linkedActor) {
-          npcsToMap = [selectedDoc];
-        }
+      if (selectedType === "npc" && selectedData.associates) {
+        const associates = await CampaignCodexLinkers.getAssociates(selectedDoc, selectedData.associates || []);
+        const filteredAssociates = associates.filter((npc) => npc.actor);
+        npcsToMap.push(...filteredAssociates);
       } else if (selectedType === "shop" || selectedType === "location") {
-        const npcs = await CampaignCodexLinkers.getLinkedNPCs(
-          selectedDoc,
-          selectedData.linkedNPCs || [],
-        );
+        const npcs = await CampaignCodexLinkers.getLinkedNPCs(selectedDoc, selectedData.linkedNPCs || []);
         npcsToMap = npcs.filter((npc) => npc.actor);
       }
 
@@ -985,50 +1631,53 @@ export class GroupSheet extends CampaignCodexBaseSheet {
           title: `Drop ${this._selectedSheet.name} NPCs to Map`,
         });
       } else {
-        ui.notifications.warn("No NPCs with linked actors found to drop!");
+        ui.notifications.warn(localize("warn.invaliddrop"));
       }
     } catch (error) {
       console.error("Campaign Codex | Error dropping NPCs to map:", error);
-      ui.notifications.error("Failed to drop NPCs to map");
+      ui.notifications.error(localize("warn.failedtodrop"));
     }
   }
 
+  // =========================================================================
+  // Drop Logic
+  // =========================================================================
+  async _handleDrop(data, event) {
+    if (data.type === "JournalEntry" || data.type === "JournalEntryPage") {
+      const doc = await fromUuid(data.uuid);
+      if (!doc) return;
 
-async _handleDrop(data, event) {
-  if (data.type === "JournalEntry" || data.type === "JournalEntryPage") {
-    const doc = await fromUuid(data.uuid);
-    if (!doc) return;
+      const journal = doc instanceof JournalEntryPage ? doc.parent : doc;
+      const journalType = journal ? journal.getFlag("campaign-codex", "type") : undefined;
 
-    const journal = (doc instanceof JournalEntryPage) ? doc.parent : doc;
-    const journalType = journal ? journal.getFlag("campaign-codex", "type") : undefined;
+      const dropOnInfoTab = event.target.closest('.group-tab-panel[data-tab="info"]');
 
-    const dropOnInfoTab = event.target.closest(
-      '.group-tab-panel[data-tab="info"]',
-    );
+    if (((!journalType && data.type === "JournalEntry") || data.type === "JournalEntryPage")) {
+        const locationData = this.document.getFlag("campaign-codex", "data") || {};
+        // Ensure linkedStandardJournals is an array
+        locationData.linkedStandardJournals = locationData.linkedStandardJournals || [];
 
-    if ((doc instanceof JournalEntryPage || (doc instanceof JournalEntry && !journalType)) && dropOnInfoTab) {
-      await this._saveFormData();
-      const currentData = this.document.getFlag("campaign-codex", "data") || {};
-      currentData.linkedStandardJournal = doc.uuid;
-      await this.document.setFlag("campaign-codex", "data", currentData);
-      ui.notifications.info(`Linked journal "${doc.name}".`);
-      this.render(false);
-      return;
-    }
+        // Avoid adding duplicates
+        if (!locationData.linkedStandardJournals.includes(journal.uuid)) {
+            locationData.linkedStandardJournals.push(journal.uuid);
+            await this.document.setFlag("campaign-codex", "data", locationData);
+            ui.notifications.info(`Linked journal "${journal.name}".`);
+        } else {
+            ui.notifications.warn(`Journal "${journal.name}" is already linked.`);
+        }
+      }
 
-    if (journal && journalType) {
-      await this._addMemberToGroup(journal.uuid);
-    }
-
-  } else if (data.type === "Actor") {
-    const actor = await fromUuid(data.uuid);
-    const npcJournal =
-      await game.campaignCodex.findOrCreateNPCJournalForActor(actor);
-    if (npcJournal) {
-      await this._addMemberToGroup(npcJournal.uuid);
+      if (journal && journalType) {
+        await this._addMemberToGroup(journal.uuid);
+      }
+    } else if (data.type === "Actor") {
+      const actor = await fromUuid(data.uuid);
+      const npcJournal = await game.campaignCodex.findOrCreateNPCJournalForActor(actor);
+      if (npcJournal) {
+        await this._addMemberToGroup(npcJournal.uuid);
+      }
     }
   }
-}
 
   async _onDrop(event) {
     event.preventDefault();
@@ -1044,8 +1693,9 @@ async _handleDrop(data, event) {
     }
 
     try {
+      this._processedData = null;
       await this._handleDrop(data, event);
-      this.render(false);
+      this.render(true);
     } catch (error) {
       console.error("Campaign Codex | Error handling group drop:", error);
     } finally {
@@ -1056,567 +1706,5 @@ async _handleDrop(data, event) {
   _onDragOver(event) {
     event.preventDefault();
     event.dataTransfer.dropEffect = "link";
-  }
-
-  _generateLeftPanel(groupMembers, nestedData) {
-    const toggleClass = this._showTreeItems ? "active" : "";
-
-    return `
-      <div class="group-tree">
-        <div class="tree-header">
-          <h3><i class="fas fa-sitemap"></i> Group Structure</h3>
-          <button type="button" class="btn-expand-all" title="Expand All" style="width:32px">
-            <i class="fas fa-expand-arrows-alt"></i>
-          </button>
-          <button type="button" class="btn-collapse-all" title="Collapse All" style="width:32px">
-            <i class="fas fa-compress-arrows-alt"></i>
-          </button>
-          <button type="button" class="toggle-tree-items ${toggleClass}" title="Hide/Show Inventory Items" style="width:32px">
-            <i class="fas fa-tag"></i>
-          </button>
-        </div>
-        <div class="tree-content">
-          ${this._generateTreeNodes(groupMembers, nestedData)}
-        </div>
-      </div>
-    `;
-  }
-
-  _generateTreeNodes(nodes, nestedData) {
-    let html = "";
-    if (!nodes) return html;
-    const alphaCards = game.settings.get("campaign-codex", "sortCardsAlpha");
-    const nodestoRender = alphaCards
-      ? [...nodes].sort((a, b) => a.name.localeCompare(b.name))
-      : nodes;
-
-    for (const node of nodestoRender) {
-      const children = this._getChildrenForMember(node, nestedData);
-      const hasChildren = children && children.length > 0;
-      const isSelected =
-        this._selectedSheet && this._selectedSheet.uuid === node.uuid;
-      const isExpanded = this._expandedNodes.has(node.uuid);
-
-      const isClickable = node.type !== "item";
-      const clickableClass = isClickable ? "clickable" : "";
-
-      html += `
-        <div class="tree-node ${isSelected ? "selected" : ""}" data-type="${node.type}" data-sheet-uuid="${node.uuid}">
-          <div class="tree-node-header ${hasChildren ? "expandable" : ""}">
-            ${hasChildren ? `<i class="fas ${isExpanded ? "fa-chevron-down" : "fa-chevron-right"} expand-icon expand-toggle"></i>` : '<i class="tree-spacer"></i>'}
-            <i class="${TemplateComponents.getAsset("icon", node.type)} node-icon" alt="${node.name}">&nbsp;</i>
-            <span class="tree-label ${clickableClass}"> ${node.name}</span>
-            
-            <div class="tree-actions">
-              ${
-                game.user.isGM
-                  ? `<button type="button" class="btn-remove-member" data-sheet-uuid="${node.uuid}" title="Remove from Group">
-                <i class="fas fa-times"></i>
-              </button>`
-                  : ""
-              }
-            </div>
-            <span class="tree-type">${node.type}</span>         
-            <div class="tree-actions">
-              <button type="button" class="btn-open-sheet" data-sheet-uuid="${node.uuid}" title="Open Sheet">
-                <i class="fas fa-external-link-alt"></i>
-              </button>
-            </div>
-          </div>
-          
-          ${
-            hasChildren
-              ? `
-            <div class="tree-children" style="display: ${isExpanded ? "block" : "none"};">
-              ${this._generateTreeNodes(children, nestedData)}
-            </div>
-          `
-              : ""
-          }
-        </div>
-      `;
-    }
-
-    return html;
-  }
-
-  _getChildrenForMember(member, nestedData) {
-    const children = [];
-
-    switch (member.type) {
-      case "group":
-        children.push(...(nestedData.membersByGroup[member.uuid] || []));
-        break;
-      case "region":
-        children.push(...(nestedData.locationsByRegion[member.uuid] || []));
-        break;
-      case "location":
-        children.push(...(nestedData.shopsByLocation[member.uuid] || []));
-        children.push(...(nestedData.npcsByLocation[member.uuid] || []));
-        break;
-      case "shop":
-        children.push(...(nestedData.npcsByShop[member.uuid] || []));
-        if (this._showTreeItems) {
-          children.push(...(nestedData.itemsByShop[member.uuid] || []));
-        }
-        break;
-      case "npc":
-        break;
-    }
-
-    return children;
-  }
-
-  _generateInfoTab(data) {
-    const stats = this._calculateGroupStats(data.nestedData);
-    return `
-      <div class="group-stats-grid">
-        <div class="stat-card">
-          <div class="stat-icon"><i class="${TemplateComponents.getAsset("icon", "region")}"></i></div>
-          <div class="stat-content">
-            <div class="stat-number">${stats.regions}</div>
-            </div>
-        </div>
-        
-        <div class="stat-card">
-          <div class="stat-icon"><i class="${TemplateComponents.getAsset("icon", "location")}"></i></div>
-          <div class="stat-content">
-            <div class="stat-number">${stats.locations}</div>
-          </div>
-        </div>
-        
-        <div class="stat-card">
-          <div class="stat-icon"><i class="${TemplateComponents.getAsset("icon", "shop")}"></i></div>
-          <div class="stat-content">
-            <div class="stat-number">${stats.shops}</div>
-          </div>
-        </div>
-        
-        <div class="stat-card">
-          <div class="stat-icon"><i class="${TemplateComponents.getAsset("icon", "npc")}"></i></div>
-          <div class="stat-content">
-            <div class="stat-number">${stats.npcs}</div>
-          </div>
-        </div>
-        
-        <div class="stat-card">
-          <div class="stat-icon"><i class="${TemplateComponents.getAsset("icon", "item")}"></i></div>
-          <div class="stat-content">
-            <div class="stat-number">${stats.items}</div>
-          </div>
-        </div>
-      </div>
-      <div class="form-section" style="margin-bottom: 48px;">
-        ${game.user.isGM ? `${TemplateComponents.dropZone("member", "fas fa-plus-circle", "Add Members", "Drag regions, locations, entries, or NPCs here to add them to this group")}` : ""}
-      </div>
-      ${TemplateComponents.standardJournalSection(data)}
-      ${TemplateComponents.richTextSection("Description", "fas fa-align-left", data.sheetData.enrichedDescription, "description", data.isOwnerOrHigher)}
-    `;
-  }
-
-  async _generateNPCsTab(data) {
-    return `
-      ${TemplateComponents.contentHeader("fas fa-users", "All NPCs in Group")}
-      
-      <div class="npc-filters">
-        <button type="button" class="filter-btn active" data-filter="all">All NPCs</button>
-        <button type="button" class="filter-btn" data-filter="location">Location NPCs</button>
-        <button type="button" class="filter-btn" data-filter="shop">Entry NPCs</button>
-        <button type="button" class="filter-btn" data-filter="character">Player Characters</button>
-      </div>
-      
-      <div class="npc-grid-container">
-        ${await this._generateNPCCards(data.nestedData.allNPCs)}
-      </div>
-    `;
-  }
-
-  _generateInventoryTab(data) {
-    return `
-      ${TemplateComponents.contentHeader("fas fa-boxes", "All Inventory in Group")}
-      
-      <div class="inventory-summary">
-        <div class="summary-stat">
-          <span class="stat-value">${data.nestedData.allShops.length}</span>
-          <span class="stat-label">Total Entries</span>
-        </div>
-        <div class="summary-stat">
-          <span class="stat-value">${data.nestedData.allItems.length}</span>
-          <span class="stat-label">Total Items</span>
-        </div>
-        <div class="summary-stat">
-          <span class="stat-value">${data.nestedData.totalValue}</span>
-          <span class="stat-label">Total Value</span>
-        </div>
-      </div>
-      
-      <div class="inventory-by-shop">
-        ${this._generateInventoryByShop(data.nestedData)}
-      </div>
-    `;
-  }
-
-  _generateLocationsTab(data) {
-    return `
-      ${TemplateComponents.contentHeader("fas fa-map-marker-alt", "All Locations in Group")}
-      
-      <div class="locations-grid">
-       ${this._generateLocationCards(data.nestedData.allLocations)}
-      </div>
-    `;
-  }
-
-  async _generateNPCCards(npcs) {
-    const npcCards = game.settings.get("campaign-codex", "sortCardsAlpha");
-    const npcstoRender = npcCards
-      ? [...npcs].sort((a, b) => a.name.localeCompare(b.name))
-      : npcs;
-
-    const cardPromises = npcstoRender.map(async (npc) => {
-      const actor = await fromUuid(npc.actor?.uuid);
-      const actorType = actor ? actor.type : "";
-
-      return `
-        <div class="group-npc-card" data-filter="${npc.source} ${actorType}" data-sheet-uuid="${npc.uuid}">
-          <div class="npc-avatar">
-            <img src="${TemplateComponents.getAsset("image", "npc", npc.img)}" alt="${npc.name}">
-          </div>
-          <div class="npc-info">
-            <h4 class="npc-name">${npc.name}</h4>
-            <div class="npc-source">${npc.sourceLocation || npc.sourceShop || "Direct"}</div>
-          </div>
-          <div class="npc-actions">
-            <button type="button" class="btn-open-sheet" data-sheet-uuid="${npc.uuid}">
-              <i class="fas fa-external-link-alt"></i>
-            </button>
-            ${
-              npc.actor
-                ? `
-              <button type="button" class="btn-open-actor" data-actor-uuid="${npc.actor.uuid}">
-                <i class="fas fa-user"></i>
-              </button>
-            `
-                : ""
-            }
-          </div>
-        </div>
-      `;
-    });
-
-    const htmlCards = await Promise.all(cardPromises);
-    return htmlCards.join("");
-  }
-
-  _generateLocationCards(locations) {
-    const locationCards = game.settings.get("campaign-codex", "sortCardsAlpha");
-    const locationstoRender = locationCards
-      ? [...locations].sort((a, b) => a.name.localeCompare(b.name))
-      : locations;
-
-    return locationstoRender
-      .map(
-        (location) => `
-      <div class="group-location-card" data-sheet-uuid="${location.uuid}">
-        <div class="location-image">
-          <img class="card-image-clickable" data-sheet-uuid="${location.uuid}" src="${TemplateComponents.getAsset("image", location.type, location.img)}" alt="${location.name}">
-        </div>
-        <div class="location-info">
-          <h4 class="location-name">${location.name}</h4>
-          <div class="location-stats">
-            ${location.npcCount || 0} NPCs | ${location.shopCount || 0} Entries
-          </div>
-          ${location.region ? `<div class="location-region">Region: ${location.region}</div>` : ""}
-        </div>
-      </div>
-    `,
-      )
-      .join("");
-  }
-
-  _generateInventoryByShop(nestedData) {
-    let html = "";
-
-    for (const [shopUuid, items] of Object.entries(nestedData.itemsByShop)) {
-      const shop = nestedData.allShops.find((s) => s.uuid === shopUuid);
-      if (!shop || items.length === 0) continue;
-
-      const itemCards = game.settings.get("campaign-codex", "sortCardsAlpha");
-      const itemCardstoRender = itemCards
-        ? [...items].sort((a, b) => a.name.localeCompare(b.name))
-        : items;
-
-      const totalValue = itemCardstoRender.reduce(
-        (sum, item) => sum + item.finalPrice * item.quantity,
-        0,
-      );
-
-      html += `
-        <div class="shop-inventory-section">
-          <div class="shop-header">
-            <img src="${TemplateComponents.getAsset("image", shop.type, shop.img)}" alt="${shop.name}" class="shop-icon">
-            <div class="shop-info">
-              <h4 class="shop-name">${shop.name}</h4>
-              <div class="shop-stats">${itemCardstoRender.length} items | ${totalValue}gp total</div>
-            </div>
-            <button type="button" class="btn-open-sheet" data-sheet-uuid="${shopUuid}">
-              <i class="fas fa-external-link-alt"></i>
-            </button>
-          </div>
-          
-          <div class="shop-items">
-            ${itemCardstoRender
-              .map(
-                (item) => `
-              <div class="group-item-card">
-                <img src="${TemplateComponents.getAsset("image", "item", item.img)}" alt="${item.name}" class="item-icon">
-                <div class="item-info">
-                  <span class="item-name">${item.name}</span>
-                  <span class="item-price">${item.quantity}x ${item.finalPrice}${item.currency}</span>
-                </div>
-              </div>
-            `,
-              )
-              .join("")}
-          </div>
-        </div>
-      `;
-    }
-
-    return html;
-  }
-
-  _calculateGroupStats(nestedData) {
-    return {
-      regions: nestedData.allRegions.length,
-      locations: nestedData.allLocations.length,
-      shops: nestedData.allShops.length,
-      npcs: nestedData.allNPCs.length,
-      items: nestedData.allItems.length,
-    };
-  }
-
-  async _addMemberToGroup(newMemberUuid) {
-    // Prevent a group from being added to itself
-    if (newMemberUuid === this.document.uuid) {
-      ui.notifications.warn("A group cannot be added to itself.");
-      return;
-    }
-
-    const newMemberDoc = await fromUuid(newMemberUuid);
-    if (!newMemberDoc) {
-      ui.notifications.error(
-        "The item you are trying to add could not be found.",
-      );
-      return;
-    }
-
-    // Check for and prevent circular dependencies
-    if (newMemberDoc.getFlag("campaign-codex", "type") === "group") {
-      const membersOfNewGroup = await GroupLinkers.getGroupMembers(
-        newMemberDoc.getFlag("campaign-codex", "data")?.members || [],
-      );
-      const nestedDataOfNewGroup =
-        await GroupLinkers.getNestedData(membersOfNewGroup);
-
-      if (
-        nestedDataOfNewGroup.allGroups.some(
-          (g) => g.uuid === this.document.uuid,
-        )
-      ) {
-        ui.notifications.warn(
-          `Cannot add "${newMemberDoc.name}" as it would create a circular dependency.`,
-        );
-        return;
-      }
-    }
-
-    const groupData = this.document.getFlag("campaign-codex", "data") || {};
-    let currentMembers = groupData.members || [];
-
-    // Prevent adding a member that is already included as a child of another member
-    const existingMembers = await GroupLinkers.getGroupMembers(currentMembers);
-    const nestedData = await GroupLinkers.getNestedData(existingMembers);
-    const allExistingNestedUuids = new Set([
-      ...nestedData.allGroups.map((i) => i.uuid),
-      ...nestedData.allRegions.map((i) => i.uuid),
-      ...nestedData.allLocations.map((i) => i.uuid),
-      ...nestedData.allShops.map((i) => i.uuid),
-      ...nestedData.allNPCs.map((i) => i.uuid),
-    ]);
-
-    if (allExistingNestedUuids.has(newMemberUuid)) {
-      ui.notifications.warn(
-        `"${newMemberDoc.name}" is already included in this group as a child of another member.`,
-      );
-      return;
-    }
-
-    // Get all nested children of the NEW member
-    const newMemberAsGroupMember = [
-      {
-        uuid: newMemberUuid,
-        type: newMemberDoc.getFlag("campaign-codex", "type"),
-      },
-    ];
-    const nestedDataOfNewMember = await GroupLinkers.getNestedData(
-      newMemberAsGroupMember,
-    );
-    const allNestedUuidsOfNewMember = new Set([
-      ...nestedDataOfNewMember.allGroups.map((i) => i.uuid),
-      ...nestedDataOfNewMember.allRegions.map((i) => i.uuid),
-      ...nestedDataOfNewMember.allLocations.map((i) => i.uuid),
-      ...nestedDataOfNewMember.allShops.map((i) => i.uuid),
-      ...nestedDataOfNewMember.allNPCs.map((i) => i.uuid),
-    ]);
-
-    // Filter the current members list, removing any that are children of the new member
-    const membersToRemove = currentMembers.filter((memberUuid) =>
-      allNestedUuidsOfNewMember.has(memberUuid),
-    );
-    let updatedMembers = currentMembers.filter(
-      (memberUuid) => !allNestedUuidsOfNewMember.has(memberUuid),
-    );
-
-    // Add the new member to the cleaned list
-    updatedMembers.push(newMemberUuid);
-    groupData.members = updatedMembers;
-    await this.document.setFlag("campaign-codex", "data", groupData);
-
-    this.render(false);
-
-    let notification = `Added "${newMemberDoc.name}" to the group.`;
-    if (membersToRemove.length > 0) {
-      notification += ` Removed ${membersToRemove.length} redundant top-level member(s).`;
-    }
-    ui.notifications.info(notification);
-  }
-
-  async _onRemoveMember(event) {
-    const memberUuid = event.currentTarget.dataset.sheetUuid;
-    await this._saveFormData();
-
-    const groupData = this.document.getFlag("campaign-codex", "data") || {};
-    groupData.members = (groupData.members || []).filter(
-      (uuid) => uuid !== memberUuid,
-    );
-    await this.document.setFlag("campaign-codex", "data", groupData);
-
-    this.render(false);
-    ui.notifications.info("Removed member from group");
-  }
-
-  _onToggleTreeNode(event) {
-    event.preventDefault();
-    event.stopPropagation();
-
-    const expandIcon = event.currentTarget;
-    const treeNode = expandIcon.closest(".tree-node");
-    const children = treeNode.querySelector(".tree-children");
-    const uuid = treeNode.dataset.sheetUuid;
-
-    if (children) {
-      const isExpanding =
-        children.style.display === "none" || children.style.display === "";
-      if (isExpanding) {
-        children.style.display = "block";
-        expandIcon.classList.remove("fa-chevron-right");
-        expandIcon.classList.add("fa-chevron-down");
-        this._expandedNodes.add(uuid);
-      } else {
-        children.style.display = "none";
-        expandIcon.classList.remove("fa-chevron-down");
-        expandIcon.classList.add("fa-chevron-right");
-        this._expandedNodes.delete(uuid);
-      }
-    }
-  }
-
-  _onExpandAll(event) {
-    const nativeElement =
-      this.element instanceof jQuery ? this.element[0] : this.element;
-    nativeElement.querySelectorAll(".tree-node").forEach((el) => {
-      const uuid = el.dataset.sheetUuid;
-      if (uuid && el.querySelector(".tree-children")) {
-        this._expandedNodes.add(uuid);
-      }
-    });
-    this.render(false);
-  }
-
-  _onCollapseAll(event) {
-    this._expandedNodes.clear();
-    this.render(false);
-  }
-
-  _onFocusItem(event) {
-    const uuid = event.currentTarget.dataset.sheetUuid;
-  }
-
-  _onFilterChange(event) {
-    const nativeElement =
-      this.element instanceof jQuery ? this.element[0] : this.element;
-    const filter = event.currentTarget.dataset.filter;
-    const cards = nativeElement.querySelectorAll(".group-npc-card");
-
-    nativeElement
-      .querySelectorAll(".filter-btn")
-      .forEach((btn) => btn.classList.remove("active"));
-    event.currentTarget.classList.add("active");
-
-    cards.forEach((card) => {
-      const cardFilter = card.dataset.filter;
-      if (filter === "all" || cardFilter.includes(filter)) {
-        card.style.display = "flex";
-      } else {
-        card.style.display = "none";
-      }
-    });
-  }
-
-  _onTabChange(event) {
-    event.preventDefault();
-    const tab = event.currentTarget.dataset.tab;
-
-    if (this._selectedSheet) {
-      this._selectedSheet = null;
-    }
-
-    this._currentTab = tab;
-    this.render(false);
-  }
-
-  getSheetType() {
-    return "group";
-  }
-
-  async _isRelatedDocument(changedDocUuid) {
-    if (!this.document.getFlag) return false;
-
-    const groupData = this.document.getFlag("campaign-codex", "data") || {};
-    const groupMembers = await GroupLinkers.getGroupMembers(
-      groupData.members || [],
-    );
-    const nestedData = await GroupLinkers.getNestedData(groupMembers);
-
-    const allUuids = new Set([
-      ...nestedData.allGroups.map((i) => i.uuid),
-      ...nestedData.allRegions.map((i) => i.uuid),
-      ...nestedData.allLocations.map((i) => i.uuid),
-      ...nestedData.allShops.map((i) => i.uuid),
-      ...nestedData.allNPCs.map((i) => i.uuid),
-      ...nestedData.allItems.map((i) => i.uuid),
-    ]);
-
-    if (allUuids.has(changedDocUuid)) {
-      return true;
-    }
-
-    for (const npc of nestedData.allNPCs) {
-      if (npc.actor && npc.actor.uuid === changedDocUuid) {
-        return true;
-      }
-    }
-
-    return await super._isRelatedDocument(changedDocUuid);
   }
 }

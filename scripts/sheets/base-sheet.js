@@ -1,20 +1,11 @@
-import { DescriptionEditor } from "./editors/description-editor.js";
 import { CampaignCodexLinkers } from "./linkers.js";
 import { TemplateComponents } from "./template-components.js";
+import { localize, format } from "../helper.js";
 
 export class CampaignCodexBaseSheet extends foundry.appv1.sheets.JournalSheet {
-  constructor(document, options = {}) {
-    super(document, options);
-    this._currentTab = "info";
-
-    this.secrets = new foundry.applications.ux.HTMLSecret({
-      parentSelector: ".cc-enriched[name='proseedited']",
-      callbacks: {
-        content: this._getSecretContent.bind(this),
-        update: this._updateSecret.bind(this),
-      },
-    });
-  }
+  // =========================================================================
+  // Static Methods & Configuration
+  // =========================================================================
 
   static get defaultOptions() {
     return foundry.utils.mergeObject(super.defaultOptions, {
@@ -25,6 +16,7 @@ export class CampaignCodexBaseSheet extends foundry.appv1.sheets.JournalSheet {
       minimizable: true,
     });
   }
+
   /**
    * Checks if the current user is an Observer, Owner, or GM for a document.
    * @param {Document} doc - The document to check.
@@ -32,14 +24,75 @@ export class CampaignCodexBaseSheet extends foundry.appv1.sheets.JournalSheet {
    */
   static isObserverOrHigher(doc) {
     if (!doc) return false;
-    // testUserPermission automatically returns true for GMs
     return doc.testUserPermission(game.user, CONST.DOCUMENT_OWNERSHIP_LEVELS.OBSERVER);
   }
+
+  /**
+   * Checks if the current user is an Owner or GM for a document.
+   * @param {Document} doc - The document to check.
+   * @returns {boolean}
+   */
   static isOwnerOrHigher(doc) {
     if (!doc) return false;
-    // testUserPermission automatically returns true for GMs
     return doc.testUserPermission(game.user, CONST.DOCUMENT_OWNERSHIP_LEVELS.OWNER);
   }
+
+  /**
+   * Checks if the current user has Observer permission or higher for a document from its UUID.
+   * @param {string} uuid The UUID of the document to check.
+   * @returns {Promise<boolean>} True if the user can view, otherwise false.
+   */
+  static async canUserView(uuid) {
+    if (game.user.isGM) return true;
+    if (!uuid) return false;
+
+    try {
+      const doc = await fromUuid(uuid);
+      if (!doc) return false;
+      return doc.testUserPermission(game.user, CONST.DOCUMENT_OWNERSHIP_LEVELS.OBSERVER);
+    } catch (error) {
+      console.warn(`Campaign Codex | Could not resolve UUID for permission check: ${uuid}`, error);
+      return false;
+    }
+  }
+
+  /**
+   * Generates the HTML for the GM Notes tab.
+   * @param {Document} doc - The document entity.
+   * @param {object} data - The sheet's prepared data.
+   * @returns {string}
+   */
+  static generateNotesTab(doc, data) {
+    return `
+      ${TemplateComponents.contentHeader("fas fa-sticky-note", "GM Notes")}
+      ${TemplateComponents.richTextSection(doc, data.sheetData.enrichedNotes, "notes", data.isOwnerOrHigher)}
+    `;
+  }
+
+  // =========================================================================
+  // Core Application Lifecycle
+  // =========================================================================
+
+  constructor(document, options = {}) {
+    super(document, options);
+    this._currentTab = "info";
+    this._processedData = null;
+    this.secrets = new foundry.applications.ux.HTMLSecret({
+      parentSelector: ".cc-enriched",
+      callbacks: {
+        content: this._getSecretContent.bind(this),
+        update: this._updateSecret.bind(this),
+      },
+    });
+  }
+
+async _render(force, options) {
+  if (force) {
+    this._processedData = null;
+  }
+  return super._render(force, options);
+}
+
   async getData() {
     const data = await super.getData();
     const sheetData = this.document.getFlag("campaign-codex", "data") || {};
@@ -52,51 +105,63 @@ export class CampaignCodexBaseSheet extends foundry.appv1.sheets.JournalSheet {
       notes: sheetData.notes || "",
     };
 
-    data.sheetData.enrichedDescription = await foundry.applications.ux.TextEditor.implementation.enrichHTML(data.sheetData.description, {
-      async: true,
-      secrets: this.document.isOwner,
-    });
-    data.sheetData.enrichedNotes = await foundry.applications.ux.TextEditor.implementation.enrichHTML(data.sheetData.notes, { async: true, secrets: this.document.isOwner });
+    // Enrich Description
+    let description = data.sheetData.description;
+    if (Array.isArray(description)) {
+      description = description[0] || "";
+    }
+    data.sheetData.enrichedDescription = await foundry.applications.ux.TextEditor.implementation.enrichHTML(description, { async: true, secrets: this.document.isOwner });
+
+    // Enrich Notes
+    let notes = data.sheetData.notes;
+    if (Array.isArray(notes)) {
+      notes = notes[0] || "";
+    }
+    data.sheetData.enrichedNotes = await foundry.applications.ux.TextEditor.implementation.enrichHTML(notes, { async: true, secrets: this.document.isOwner });
 
     data.canEdit = this.document.canUserModify(game.user, "update");
     data.currentTab = this._currentTab;
-    // Journal
-    data.linkedStandardJournal = null;
-    if (sheetData.linkedStandardJournal) {
-      try {
-        const document = await fromUuid(sheetData.linkedStandardJournal);
-        if (document) {
-          let journal;
-          let displayName;
 
-          if (document instanceof JournalEntryPage) {
-            journal = document.parent;
-            displayName = `${journal.name}: ${document.name}`;
-          } else {
-            // Assume it's a Journal Entry
-            journal = document;
-            displayName = journal.name;
-          }
+    // Process Linked Journal
+  data.linkedStandardJournals = []; // Plural
+  if (sheetData.linkedStandardJournals && Array.isArray(sheetData.linkedStandardJournals)) {
+    const journalPromises = sheetData.linkedStandardJournals.map(async (uuid) => {
+        try {
+            const document = await fromUuid(uuid);
+            if (!document) {
+                console.warn(`Campaign Codex | Linked standard journal not found: ${uuid}`);
+                return null;
+            }
 
-          if (journal) {
-            data.linkedStandardJournal = {
-              uuid: document.uuid,
-              name: displayName,
-              img: journal.img || "icons/svg/book.svg",
-            };
-            data.canViewJournal = await this.constructor.canUserView(data.linkedStandardJournal.uuid);
-          }
+            let journal;
+            let displayName;
+
+            if (document instanceof JournalEntryPage) {
+                journal = document.parent;
+                displayName = `${journal.name}: ${document.name}`;
+            } else {
+                journal = document; // Assume it's a Journal Entry
+                displayName = journal.name;
+            }
+
+            if (journal) {
+                return {
+                    uuid: document.uuid,
+                    name: displayName,
+                    img: journal.img || "icons/svg/book.svg",
+                    canView: await this.constructor.canUserView(document.uuid),
+                };
+            }
+            return null;
+        } catch (error) {
+            console.warn(`Campaign Codex | Error processing linked journal ${uuid}:`, error);
+            return null;
         }
-      } catch (error) {
-        console.warn(`Campaign Codex | Linked standard journal not found: ${sheetData.linkedStandardJournal}`, error);
-        if (game.user.isGM) {
-          const updatedData = foundry.utils.deepClone(sheetData);
-          updatedData.linkedStandardJournal = null;
-          await this.document.setFlag("campaign-codex", "data", updatedData);
-        }
-      }
-    }
-    //
+    });
+
+    const resolvedJournals = await Promise.all(journalPromises);
+    data.linkedStandardJournals = resolvedJournals.filter(j => j && j.canView);
+  }
     return data;
   }
 
@@ -104,35 +169,49 @@ export class CampaignCodexBaseSheet extends foundry.appv1.sheets.JournalSheet {
     const nativeHtml = html instanceof jQuery ? html[0] : html;
     super.activateListeners(html);
 
-    if (!game.user.isGM) {
-      const safeButtons = nativeHtml.querySelectorAll('[class*="open-"], .btn-expand-all, .btn-collapse-all, .toggle-tree-items, .filter-btn');
-      safeButtons.forEach((button) => {
-        button.disabled = false;
-      });
-    }
+    // Bind all listeners
     this.secrets.bind(nativeHtml);
-
     this._activateTabs(nativeHtml);
     this._setupDropZones(nativeHtml);
     this._setupNameEditing(nativeHtml);
     this._setupImageChange(nativeHtml);
-    this._setupSaveButton(nativeHtml);
     this._activateJournalListeners(nativeHtml);
-    this._activateSheetSpecificListeners(nativeHtml);
-    nativeHtml.querySelector(".cc-edit-description")?.addEventListener("click", (event) => this._onEditDescription(event, "description"));
-    nativeHtml.querySelector(".cc-edit-notes")?.addEventListener("click", (event) => this._onEditDescription(event, "notes"));
-    nativeHtml.querySelector(".npcs-to-map-button")?.addEventListener("click", this._onDropNPCsToMapClick.bind(this));
+    this._activateEditorListeners(nativeHtml);
+    this._addClassToEditorContent(nativeHtml);
+    this._activateSheetSpecificListeners(nativeHtml); // For subclasses
+
+    // Specific button listeners
+    nativeHtml.querySelectorAll(".npcs-to-map-button").forEach((element) => element.addEventListener("click", this._onDropNPCsToMapClick.bind(this)));
+
+    // Handle non-GM permissions
     if (!game.user.isGM) {
+      const safeButtons = nativeHtml.querySelectorAll('[class*="open-"], .btn-expand-all, .btn-collapse-all, [class*="toggle-tree-"], .filter-btn');
+      safeButtons.forEach((button) => {
+        button.disabled = false;
+      });
       nativeHtml.querySelectorAll("button.reveal").forEach((btn) => {
         btn.style.display = "none";
       });
     }
   }
 
-  _activateJournalListeners(html) {
-    html.querySelector(".remove-standard-journal")?.addEventListener("click", this._onRemoveStandardJournal.bind(this));
-    html.querySelectorAll(".open-journal")?.forEach((element) => element.addEventListener("click", async (e) => await this._onOpenDocument(e, "journal")));
+  async close(options = {}) {
+    if (this._forceClose) {
+      return super.close(options);
+    }
+
+    const documentExists = this.document && game.journal.get(this.document.id);
+
+    if (documentExists && !this.document._pendingDeletion) {
+      await this._saveFormData();
+    }
+
+    return super.close(options);
   }
+
+  // =========================================================================
+  // Listener Activation & Setup
+  // =========================================================================
 
   _activateTabs(html) {
     html.querySelectorAll(".sidebar-tabs .tab-item").forEach((tab) => {
@@ -146,14 +225,6 @@ export class CampaignCodexBaseSheet extends foundry.appv1.sheets.JournalSheet {
     this._showTab(this._currentTab, html);
   }
 
-  _showTab(tabName, html) {
-    html.querySelectorAll(".sidebar-tabs .tab-item").forEach((tab) => tab.classList.remove("active"));
-    html.querySelectorAll(".tab-panel").forEach((panel) => panel.classList.remove("active"));
-
-    html.querySelector(`.sidebar-tabs .tab-item[data-tab="${tabName}"]`)?.classList.add("active");
-    html.querySelector(`.tab-panel[data-tab="${tabName}"]`)?.classList.add("active");
-  }
-
   _setupDropZones(html) {
     html.addEventListener("drop", this._onDrop.bind(this));
     html.addEventListener("dragover", this._onDragOver.bind(this));
@@ -161,7 +232,8 @@ export class CampaignCodexBaseSheet extends foundry.appv1.sheets.JournalSheet {
 
   _setupNameEditing(html) {
     if (game.user.isGM) {
-      html.querySelector(".sheet-title")?.addEventListener("click", this._onNameEdit.bind(this));
+      const titleElement = html.querySelector(".sheet-title");
+      titleElement?.addEventListener("click", this._onNameEdit.bind(this));
       html.addEventListener("blur", this._onNameSave.bind(this), true);
       html.addEventListener("keypress", this._onNameKeypress.bind(this));
     }
@@ -175,76 +247,106 @@ export class CampaignCodexBaseSheet extends foundry.appv1.sheets.JournalSheet {
     }
   }
 
-  _setupSaveButton(html) {
-    html.querySelector(".save-data")?.addEventListener("click", this._onSaveData.bind(this));
-  }
-  /**
-   * Retrieves the raw, un-enriched source content for a secret block.
-   * @param {HTMLElement} secret The secret element.
-   * @returns {string|null}      The raw content string from the document flag.
-   * @protected
-   */
-  _getSecretContent(secret) {
-    // Find the parent rich-text section to identify which field we're in (e.g., "description" or "notes").
-    const editor = secret.closest('.cc-enriched[name="proseedited"]');
-    const editButton = editor?.querySelector('[class*="cc-edit-"]');
-    if (!editButton) return null;
-
-    // The field name is the last part of the class name (e.g., "cc-edit-description" -> "description")
-    const fieldName = editButton.className.split("-").pop();
-    const data = this.document.getFlag("campaign-codex", "data") || {};
-    return data[fieldName];
+  _activateJournalListeners(html) {
+    html.querySelectorAll(".remove-standard-journal")?.forEach(el => el.addEventListener("click", this._onRemoveStandardJournal.bind(this)));
+    html.querySelectorAll(".open-journal")?.forEach((element) => element.addEventListener("click", async (e) => await this._onOpenDocument(e, "journal")));
   }
 
-  /**
-   * Updates the document flag with new content after a secret's state has been toggled.
-   * @param {HTMLElement} secret      The secret element.
-   * @param {string} modifiedContent  The updated raw content string.
-   * @returns {Promise<Document>}     The updated JournalEntry document.
-   * @protected
-   */
-  async _updateSecret(secret, modifiedContent) {
-    const editor = secret.closest('.cc-enriched[name="proseedited"]');
-    const editButton = editor?.querySelector('[class*="cc-edit-"]');
-    if (!editButton) return;
-    const fieldName = editButton.className.split("-").pop();
-    const data = foundry.utils.deepClone(this.document.getFlag("campaign-codex", "data") || {});
-    data[fieldName] = modifiedContent;
-    return this.document.setFlag("campaign-codex", "data", data);
+  _activateEditorListeners(html) {
+    html.querySelectorAll("prose-mirror").forEach((editor) => {
+      if (editor.dataset.listenerAttached) return;
+      editor.dataset.listenerAttached = "true";
+
+      editor.addEventListener("save", async (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+
+        const target = event.currentTarget;
+        let valueToSave = Array.isArray(target.value) ? target.value[0] : target.value;
+        const fieldName = target.name.split(".").pop();
+
+        const currentData = this.document.getFlag("campaign-codex", "data") || {};
+        if (currentData[fieldName] !== valueToSave) {
+          currentData[fieldName] = valueToSave;
+          await this.document.setFlag("campaign-codex", "data", currentData);
+        }
+        this.render();
+      });
+    });
   }
 
-  async _onRemoveStandardJournal(event) {
+  _addClassToEditorContent(html) {
+    html.querySelectorAll("prose-mirror").forEach((editor) => {
+      editor.addEventListener("open", () => {
+        const containerDiv = editor.querySelector(".editor-container");
+        const journalClassString = game.system.id === "dnd5e" ? "dnd5e2-journal journal-page-content" : "journal-page-content";
+        if (containerDiv && journalClassString) {
+          containerDiv.classList.add(...journalClassString.split(" "));
+        }
+      });
+    });
+  }
+
+  // =========================================================================
+  // Event Handlers (_on... methods)
+  // =========================================================================
+
+
+  _onDragOver(event) {
     event.preventDefault();
-    await this._saveFormData();
-    const currentData = this.document.getFlag("campaign-codex", "data") || {};
-    currentData.linkedStandardJournal = null;
-    await this.document.setFlag("campaign-codex", "data", currentData);
-    this.render(false);
-    ui.notifications.info("Unlinked journal");
+    event.dataTransfer.dropEffect = "link";
+  }
+
+  async _onDrop(event) {
+    event.preventDefault();
+    if (this._dropping) return;
+    this._dropping = true;
+
+    let data;
+    try {
+      data = JSON.parse(event.dataTransfer.getData("text/plain"));
+    } catch (err) {
+      this._dropping = false;
+      return;
+    }
+
+    try {
+      await this._saveFormData();
+      await this._handleDrop(data, event);
+
+      // Refresh this sheet and any related open sheets
+      const sheetsToRefresh = new Set([this]);
+      const myDocUuid = this.document.uuid;
+
+      for (const app of Object.values(ui.windows)) {
+        if (!app.document?.getFlag || app === this) continue;
+        if (app._isRelatedDocument && (await app._isRelatedDocument(myDocUuid))) {
+          sheetsToRefresh.add(app);
+        }
+      }
+
+      for (const app of sheetsToRefresh) {
+        app.render(false);
+      }
+    } catch (error) {
+      console.error("Campaign Codex | Error handling drop:", error);
+    } finally {
+      this._dropping = false;
+    }
   }
 
   async _onNameEdit(event) {
     const nameElement = event.currentTarget;
-    const currentName = nameElement.textContent;
-
     const input = document.createElement("input");
     input.type = "text";
     input.className = "name-input";
-    input.value = currentName;
+    input.value = nameElement.textContent;
     input.style.cssText = `
-      background: transparent;
-      border: 1px solid rgba(255,255,255,0.3);
-      color: white;
-      padding: 4px 8px;
-      border-radius: 4px;
-      font-family: 'Modesto Condensed', serif;
-      font-size: 28px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 2px;
-      width: 100%;
+      background: transparent; border: 1px solid rgba(255,255,255,0.3); color: white;
+      padding: 4px 8px; border-radius: 4px; font-family: 'Modesto Condensed', serif;
+      font-size: 28px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 2px; width: 100%;
     `;
-
     nameElement.replaceWith(input);
     input.focus();
     input.select();
@@ -277,17 +379,14 @@ export class CampaignCodexBaseSheet extends foundry.appv1.sheets.JournalSheet {
   async _onImageClick(event) {
     event.preventDefault();
     event.stopPropagation();
-
     const current = this.document.getFlag("campaign-codex", "image") || this.document.img;
-    const fp = new FilePicker({
+    const fp = new foundry.applications.apps.FilePicker.implementation({
       type: "image",
       current: current,
       callback: async (path) => {
         try {
           await this.document.setFlag("campaign-codex", "image", path);
-
           this.render(false);
-
           ui.notifications.info("Image updated successfully!");
         } catch (error) {
           console.error("Failed to update image:", error);
@@ -297,151 +396,17 @@ export class CampaignCodexBaseSheet extends foundry.appv1.sheets.JournalSheet {
       top: this.position.top + 40,
       left: this.position.left + 10,
     });
-
     return fp.browse();
   }
 
-  _onDragOver(event) {
-    event.preventDefault();
-    event.dataTransfer.dropEffect = "link";
-  }
-
-  async _onDrop(event) {
-    event.preventDefault();
-    if (this._dropping) return;
-    this._dropping = true;
-
-    let data;
-    try {
-      data = JSON.parse(event.dataTransfer.getData("text/plain"));
-    } catch (err) {
-      this._dropping = false;
-      return;
-    }
-
-    try {
-      await this._saveFormData();
-      await this._handleDrop(data, event);
-
-      const sheetsToRefresh = new Set();
-      const myDocUuid = this.document.uuid;
-
-      sheetsToRefresh.add(this);
-
-      for (const app of Object.values(ui.windows)) {
-        if (!app.document?.getFlag || app === this) continue;
-
-        const appType = app.document.getFlag("campaign-codex", "type");
-        if (appType && app._isRelatedDocument && (await app._isRelatedDocument(myDocUuid))) {
-          sheetsToRefresh.add(app);
-        }
-      }
-
-      for (const app of sheetsToRefresh) {
-        // console.log(`Campaign Codex | Refreshing sheet: ${app.document.name}`);
-        app.render(false);
-      }
-    } catch (error) {
-      console.error("Campaign Codex | Error handling drop:", error);
-    } finally {
-      this._dropping = false;
-    }
-  }
-
-  async _onSaveData(event) {
-    event.preventDefault();
-
-    const nativeElement = this.element instanceof jQuery ? this.element[0] : this.element;
-    const form = nativeElement.querySelector("form");
-    const formData = new foundry.applications.ux.FormDataExtended(form);
-    const data = formData.object;
-    const currentData = this.document.getFlag("campaign-codex", "data") || {};
-
-    const updatedData = {
-      ...currentData,
-    };
-
-    const proseEditedFields = new Set();
-    nativeElement.querySelectorAll('[name="proseedited"]').forEach(function (element) {
-      const editBtn = element.querySelector('[class^="cc-edit-"]');
-      if (editBtn) {
-        const className = editBtn.className;
-        const fieldMatch = className.match(/cc-edit-(\w+)/);
-        if (fieldMatch) {
-          proseEditedFields.add(fieldMatch[1]);
-        }
-      }
-    });
-
-    Object.keys(data).forEach((fieldName) => {
-      if (!proseEditedFields.has(fieldName)) {
-        updatedData[fieldName] = data[fieldName] || "";
-      }
-    });
-
-    try {
-      await this.document.setFlag("campaign-codex", "data", updatedData);
-      ui.notifications.info(`${this.constructor.name.replace("Sheet", "")} saved successfully!`);
-
-      const saveBtn = event.currentTarget;
-      saveBtn.classList.add("success");
-      setTimeout(() => saveBtn.classList.remove("success"), 1500);
-    } catch (error) {
-      console.error("Campaign Codex | Error saving data:", error);
-      ui.notifications.error("Failed to save data!");
-
-      const saveBtn = event.currentTarget;
-      saveBtn.classList.add("error");
-      setTimeout(() => saveBtn.classList.remove("error"), 1500);
-    }
-  }
-
-  async _saveFormData() {
-    const nativeElement = this.element instanceof jQuery ? this.element[0] : this.element;
-    const form = nativeElement?.querySelector("form");
-    if (form) {
-      try {
-        const formData = new foundry.applications.ux.FormDataExtended(form);
-        const data = formData.object;
-        const currentData = this.document.getFlag("campaign-codex", "data") || {};
-
-        const updatedData = {
-          ...currentData,
-        };
-
-        const proseEditedFields = new Set();
-        nativeElement.querySelectorAll('[name="proseedited"]').forEach(function (element) {
-          const editBtn = element.querySelector('[class^="cc-edit-"]');
-          if (editBtn) {
-            const className = editBtn.className;
-            const fieldMatch = className.match(/cc-edit-(\w+)/);
-            if (fieldMatch) {
-              proseEditedFields.add(fieldMatch[1]);
-            }
-          }
-        });
-
-        Object.keys(data).forEach((fieldName) => {
-          if (!proseEditedFields.has(fieldName)) {
-            updatedData[fieldName] = data[fieldName] || "";
-          }
-        });
-
-        await this.document.setFlag("campaign-codex", "data", updatedData);
-      } catch (error) {
-        console.warn("Campaign Codex | Could not auto-save form data:", error);
-      }
-    }
-  }
-
   async _onOpenDocument(event, type) {
+    if (event.target.closest(".entity-image, .shop-icon, .card-image-clickable")) {
+        return; 
+    }
+
     event.stopPropagation();
     const uuid = event.currentTarget.dataset[`${type}Uuid`] || event.currentTarget.closest(`[data-${type}-uuid]`)?.dataset[`${type}Uuid`];
-
-    if (!uuid) {
-      console.warn(`Campaign Codex | No UUID found for ${type}`);
-      return;
-    }
+    if (!uuid) return console.warn(`Campaign Codex | No UUID found for ${type}`);
 
     try {
       const doc = await fromUuid(uuid);
@@ -462,91 +427,77 @@ export class CampaignCodexBaseSheet extends foundry.appv1.sheets.JournalSheet {
 
   async _onRemoveFromList(event, listName) {
     await this._saveFormData();
+
     const itemUuid = event.currentTarget.dataset[Object.keys(event.currentTarget.dataset)[0]];
     const myDoc = this.document;
     const myData = myDoc.getFlag("campaign-codex", "data") || {};
     const myType = myDoc.getFlag("campaign-codex", "type");
     if (!myData[listName]) return;
 
+    // Remove the item from the source document's list
     const originalLength = Array.isArray(myData[listName]) ? myData[listName].length : myData[listName] ? 1 : 0;
     if (Array.isArray(myData[listName])) {
       myData[listName] = myData[listName].filter((uuid) => uuid !== itemUuid);
     } else {
       myData[listName] = null;
     }
-
     const newLength = Array.isArray(myData[listName]) ? myData[listName].length : myData[listName] ? 1 : 0;
     if (originalLength === newLength) {
       this.render(false);
       return;
     }
-
     await myDoc.setFlag("campaign-codex", "data", myData);
 
     let targetDoc;
     try {
-      const relationshipMap = {
-        "npc:linkedShops": {
-          targetType: "shop",
-          reverseField: "linkedNPCs",
-          isArray: true,
-        },
-        "npc:linkedLocations": {
-          targetType: "location",
-          reverseField: "linkedNPCs",
-          isArray: true,
-        },
-        "npc:associates": {
-          targetType: "npc",
-          reverseField: "associates",
-          isArray: true,
-        },
-        "location:linkedNPCs": {
-          targetType: "npc",
-          reverseField: "linkedLocations",
-          isArray: true,
-        },
-        "location:linkedShops": {
-          targetType: "shop",
-          reverseField: "linkedLocation",
-          isArray: false,
-        },
-        "shop:linkedNPCs": {
-          targetType: "npc",
-          reverseField: "linkedShops",
-          isArray: true,
-        },
-      };
+      targetDoc = await fromUuid(itemUuid);
+      if (!targetDoc) return;
 
-      const relationshipKey = `${myType}:${listName}`;
-      const reverseLink = relationshipMap[relationshipKey];
+      const targetType = targetDoc.getFlag("campaign-codex", "type");
+      const targetData = targetDoc.getFlag("campaign-codex", "data") || {};
+      let reverseField = null;
+      let isArray = false;
+      let needsUpdate = false;
 
-      if (reverseLink) {
-        targetDoc = await fromUuid(itemUuid);
-        if (!targetDoc || targetDoc.getFlag("campaign-codex", "type") !== reverseLink.targetType) {
-          return;
+      // Special handling for the multi-type "linkedLocations" field on NPCs
+      if (myType === "npc" && listName === "linkedLocations" && (targetType === "location" || targetType === "region")) {
+        reverseField = "linkedNPCs";
+        isArray = true;
+      } else {
+        // Fallback to the relationshipMap for all other standard, single-type links
+        const relationshipMap = {
+          "npc:linkedShops": { targetType: "shop", reverseField: "linkedNPCs", isArray: true },
+          "npc:associates": { targetType: "npc", reverseField: "associates", isArray: true },
+          "region:linkedNPCs": { targetType: "npc", reverseField: "linkedLocations", isArray: true },
+          "region:linkedShops": { targetType: "shop", reverseField: "linkedLocation", isArray: false },
+          "location:linkedNPCs": { targetType: "npc", reverseField: "linkedLocations", isArray: true },
+          "location:linkedShops": { targetType: "shop", reverseField: "linkedLocation", isArray: false },
+          "shop:linkedNPCs": { targetType: "npc", reverseField: "linkedShops", isArray: true },
+        };
+        const relationship = relationshipMap[`${myType}:${listName}`];
+        if (relationship && relationship.targetType === targetType) {
+          reverseField = relationship.reverseField;
+          isArray = relationship.isArray;
         }
+      }
 
-        const targetData = targetDoc.getFlag("campaign-codex", "data") || {};
-        const reverseField = reverseLink.reverseField;
-        let targetUpdated = false;
-
-        if (reverseLink.isArray) {
+      if (reverseField) {
+        if (isArray) {
           const originalTargetLength = (targetData[reverseField] || []).length;
           targetData[reverseField] = (targetData[reverseField] || []).filter((uuid) => uuid !== myDoc.uuid);
           if (targetData[reverseField].length < originalTargetLength) {
-            targetUpdated = true;
+            needsUpdate = true;
           }
         } else {
           if (targetData[reverseField] === myDoc.uuid) {
             targetData[reverseField] = null;
-            targetUpdated = true;
+            needsUpdate = true;
           }
         }
+      }
 
-        if (targetUpdated) {
-          await targetDoc.setFlag("campaign-codex", "data", targetData);
-        }
+      if (needsUpdate) {
+        await targetDoc.setFlag("campaign-codex", "data", targetData);
       }
     } catch (error) {
       console.error("Campaign Codex | Error in bidirectional cleanup:", error);
@@ -561,71 +512,24 @@ export class CampaignCodexBaseSheet extends foundry.appv1.sheets.JournalSheet {
         }
       }
     }
-
-    const targetName = targetDoc ? targetDoc.name : "item";
-    ui.notifications.info(`Removed link to "${targetName}"`);
   }
 
-  async _handleActorDrop(data, event) {
-    const sourceActor = await fromUuid(data.uuid);
-    if (!sourceActor) {
-      ui.notifications.warn("Could not find the dropped actor.");
-      return;
-    }
-    let actor;
-    actor = sourceActor;
-    if (!actor) return;
+  async _onRemoveStandardJournal(event) {
+    event.preventDefault();
+    event.stopPropagation(); // Prevent the card's open listener from firing
     await this._saveFormData();
 
-    const sheetType = this.getSheetType();
+    const journalUuid = event.currentTarget.dataset.journalUuid;
+    if (!journalUuid) return;
 
-    switch (sheetType) {
-      case "location": {
-        const npcJournal = await game.campaignCodex.findOrCreateNPCJournalForActor(actor);
-        if (npcJournal) {
-          await game.campaignCodex.linkLocationToNPC(this.document, npcJournal);
-          ui.notifications.info(`Linked "${actor.name}" to location "${this.document.name}"`);
-        }
-        break;
-      }
-
-      case "shop": {
-        const npcJournal = await game.campaignCodex.findOrCreateNPCJournalForActor(actor);
-        if (npcJournal) {
-          await game.campaignCodex.linkShopToNPC(this.document, npcJournal);
-          ui.notifications.info(`Linked "${actor.name}" to shop "${this.document.name}"`);
-        }
-        break;
-      }
-
-      case "npc": {
-        const dropZone = event.target.closest(".drop-zone");
-        const dropType = dropZone?.dataset.dropType;
-
-        if (dropType === "actor") {
-          const myData = this.document.getFlag("campaign-codex", "data") || {};
-          myData.linkedActor = actor.uuid;
-          await this.document.setFlag("campaign-codex", "data", myData);
-          ui.notifications.info(`Linked actor "${actor.name}" to this journal.`);
-        } else if (dropType === "associate") {
-          const associateJournal = await game.campaignCodex.findOrCreateNPCJournalForActor(actor);
-          if (associateJournal && associateJournal.uuid !== this.document.uuid) {
-            await game.campaignCodex.linkNPCToNPC(this.document, associateJournal);
-            ui.notifications.info(`Linked "${actor.name}" as an associate.`);
-          } else if (associateJournal.uuid === this.document.uuid) {
-            ui.notifications.warn("Cannot link an NPC to itself as an associate.");
-          }
-        }
-        break;
-      }
-
-      default:
-        ui.notifications.warn(`Actor drop not configured for "${sheetType}" sheets.`);
-        return;
+    const currentData = this.document.getFlag("campaign-codex", "data") || {};
+    if (currentData.linkedStandardJournals && Array.isArray(currentData.linkedStandardJournals)) {
+        currentData.linkedStandardJournals = currentData.linkedStandardJournals.filter(uuid => uuid !== journalUuid);
+        await this.document.setFlag("campaign-codex", "data", currentData);
+        this.render(false);
+        ui.notifications.info("Unlinked journal.");
     }
-
-    this.render(false);
-  }
+}
 
   async _onRemoveFromRegion(event) {
     event.preventDefault();
@@ -637,35 +541,30 @@ export class CampaignCodexBaseSheet extends foundry.appv1.sheets.JournalSheet {
 
     if (myType === "location") {
       locationDoc = this.document;
-      const locationData = locationDoc.getFlag("campaign-codex", "data") || {};
-      const regionUuid = locationData.parentRegion;
-      if (regionUuid) {
-        regionDoc = await fromUuid(regionUuid);
-      }
+      const regionUuid = locationDoc.getFlag("campaign-codex", "data")?.parentRegion;
+      if (regionUuid) regionDoc = await fromUuid(regionUuid);
     } else if (myType === "region") {
       regionDoc = this.document;
       const locationUuid = event.currentTarget.dataset.locationUuid;
-      if (locationUuid) {
-        locationDoc = await fromUuid(locationUuid);
-      }
+      if (locationUuid) locationDoc = await fromUuid(locationUuid);
     }
 
     if (!locationDoc || !regionDoc) {
       ui.notifications.warn("Could not find the linked region or location.");
-      this.render(false);
-      return;
+      return this.render(false);
     }
 
+    // Update region and location documents
     const regionData = regionDoc.getFlag("campaign-codex", "data") || {};
     if (regionData.linkedLocations) {
       regionData.linkedLocations = regionData.linkedLocations.filter((uuid) => uuid !== locationDoc.uuid);
       await regionDoc.setFlag("campaign-codex", "data", regionData);
     }
-
     await locationDoc.unsetFlag("campaign-codex", "data.parentRegion");
 
     ui.notifications.info(`Removed "${locationDoc.name}" from region "${regionDoc.name}"`);
 
+    // Render affected sheets
     for (const app of Object.values(ui.windows)) {
       if (app.document && (app.document.uuid === regionDoc.uuid || app.document.uuid === locationDoc.uuid)) {
         app.render(false);
@@ -673,26 +572,128 @@ export class CampaignCodexBaseSheet extends foundry.appv1.sheets.JournalSheet {
     }
   }
 
-  async close(options = {}) {
-    if (this._forceClose) {
-      return super.close(options);
+  async _onDropNPCsToMap(npcs, options = {}) {
+    if (!npcs || npcs.length === 0) {
+      return ui.notifications.warn(localize("warn.nonpcfound"));
     }
-
-    const documentExists = this.document && game.journal.get(this.document.id);
-
-    if (documentExists && !this.document._pendingDeletion) {
-      await this._saveFormData();
+    try {
+      const result = await game.campaignCodexNPCDropper.dropNPCsToScene(npcs, options);
+      if (result && result.success > 0) {
+        console.log(`Campaign Codex | Successfully dropped ${result.success} NPCs to scene`);
+      }
+      return result;
+    } catch (error) {
+      console.error("Campaign Codex | Error dropping NPCs to map:", error);
+      ui.notifications.error(localize("warn.failedtodrop"));
     }
-
-    return super.close(options);
   }
 
-  _activateSheetSpecificListeners(html) {}
+  async _onDropNPCsToMapClick(event) {
+    event.preventDefault();
+    const sheetType = this.getSheetType();
+    ui.notifications.warn(`Drop to map not implemented for ${sheetType} sheets`);
+  }
 
-  async _handleDrop(data, event) {}
+  _showTab(tabName, html) {
+    html.querySelectorAll(".sidebar-tabs .tab-item").forEach((tab) => tab.classList.remove("active"));
+    html.querySelectorAll(".tab-panel").forEach((panel) => panel.classList.remove("active"));
+    html.querySelector(`.sidebar-tabs .tab-item[data-tab="${tabName}"]`)?.classList.add("active");
+    html.querySelector(`.tab-panel[data-tab="${tabName}"]`)?.classList.add("active");
+  }
 
-  getSheetType() {
-    return "base";
+  // =========================================================================
+  // Core Logic & Data Handling
+  // =========================================================================
+
+  async _saveFormData() {
+    const nativeElement = this.element instanceof jQuery ? this.element[0] : this.element;
+    const form = nativeElement?.querySelector("form");
+    if (form) {
+      try {
+        const formData = new foundry.applications.ux.FormDataExtended(form);
+        const data = formData.object;
+        const currentData = this.document.getFlag("campaign-codex", "data") || {};
+        const updatedData = { ...currentData, ...data.flags?.["campaign-codex"]?.data };
+        await this.document.setFlag("campaign-codex", "data", updatedData);
+      } catch (error) {
+        console.warn("Campaign Codex | Could not auto-save form data:", error);
+      }
+    }
+  }
+
+  async _handleActorDrop(data, event) {
+    const actor = await fromUuid(data.uuid);
+    if (!actor) return ui.notifications.warn("Could not find the dropped actor.");
+
+    await this._saveFormData();
+    const sheetType = this.getSheetType();
+
+    switch (sheetType) {
+      case "region": {
+        const npcJournal = await game.campaignCodex.findOrCreateNPCJournalForActor(actor);
+        if (npcJournal) {
+          await game.campaignCodex.linkRegionToNPC(this.document, npcJournal);
+          ui.notifications.info(`Linked "${actor.name}" to "${this.document.name}"`);
+        }
+        break;
+      }
+      case "location": {
+        const npcJournal = await game.campaignCodex.findOrCreateNPCJournalForActor(actor);
+        if (npcJournal) {
+          await game.campaignCodex.linkLocationToNPC(this.document, npcJournal);
+          ui.notifications.info(`Linked "${actor.name}" to "${this.document.name}"`);
+        }
+        break;
+      }
+      case "shop": {
+        const npcJournal = await game.campaignCodex.findOrCreateNPCJournalForActor(actor);
+        if (npcJournal) {
+          await game.campaignCodex.linkShopToNPC(this.document, npcJournal);
+          ui.notifications.info(`Linked "${actor.name}" to "${this.document.name}"`);
+        }
+        break;
+      }
+      case "npc": {
+        const dropType = event.target.closest(".tab-panel")?.dataset.tab;
+        if (dropType === "info") {
+          const myData = this.document.getFlag("campaign-codex", "data") || {};
+          myData.linkedActor = actor.uuid;
+          await this.document.setFlag("campaign-codex", "data", myData);
+          ui.notifications.info(`Linked actor "${actor.name}" to this journal.`);
+        } else if (dropType === "associates") {
+          const associateJournal = await game.campaignCodex.findOrCreateNPCJournalForActor(actor);
+          if (associateJournal && associateJournal.uuid !== this.document.uuid) {
+            await game.campaignCodex.linkNPCToNPC(this.document, associateJournal);
+            ui.notifications.info(`Linked "${actor.name}" as an associate.`);
+          } else if (associateJournal.uuid === this.document.uuid) {
+            ui.notifications.warn("Cannot link an NPC to itself as an associate.");
+          }
+        }
+        break;
+      }
+      default:
+        return ui.notifications.warn(`Actor drop not configured for "${sheetType}" sheets.`);
+    }
+    this.render(false);
+  }
+
+  _getSecretContent(secret) {
+    const editor = secret.closest(".cc-enriched");
+    const fieldElement = editor?.querySelector('prose-mirror[name*="flags.campaign-codex.data."]');
+    if (!fieldElement) return null;
+    const fieldName = fieldElement.getAttribute("name").split(".").pop();
+    const data = this.document.getFlag("campaign-codex", "data") || {};
+    return data[fieldName];
+  }
+
+  async _updateSecret(secret, modifiedContent) {
+    const editor = secret.closest(".cc-enriched");
+    const fieldElement = editor?.querySelector('prose-mirror[name*="flags.campaign-codex.data."]');
+    if (!fieldElement) return;
+    const fieldName = fieldElement.getAttribute("name").split(".").pop();
+    const data = foundry.utils.deepClone(this.document.getFlag("campaign-codex", "data") || {});
+    data[fieldName] = modifiedContent;
+    return this.document.setFlag("campaign-codex", "data", data);
   }
 
   async _isRelatedDocument(changedDocUuid) {
@@ -768,67 +769,28 @@ export class CampaignCodexBaseSheet extends foundry.appv1.sheets.JournalSheet {
     return false;
   }
 
-  static generateNotesTab(data) {
-    return `
-  ${TemplateComponents.contentHeader("fas fa-sticky-note", "GM Notes")}
-  ${TemplateComponents.richTextSection("Private Notes", "fas fa-eye-slash", data.sheetData.enrichedNotes, "notes", data.isOwnerOrHigher)}
-`;
-  }
-
-  async _onEditDescription(event, fromlocation) {
-    event.preventDefault();
-    event.stopPropagation();
-    new DescriptionEditor(this.document, { field: fromlocation }).render(true);
-  }
+  // =========================================================================
+  // Methods for Subclass Overrides
+  // =========================================================================
 
   /**
-   * Drop NPCs to the current scene map
-   * @param {Array} npcs - Array of NPC objects to drop
-   * @param {Object} options - Options for the drop operation
+   * Placeholder for activating listeners specific to a subclass.
+   * @param {HTMLElement} html - The sheet's HTML element.
    */
-  async _onDropNPCsToMap(npcs, options = {}) {
-    if (!npcs || npcs.length === 0) {
-      ui.notifications.warn("No NPCs available to drop to map!");
-      return;
-    }
-
-    try {
-      const result = await game.campaignCodexNPCDropper.dropNPCsToScene(npcs, options);
-
-      if (result && result.success > 0) {
-        console.log(`Campaign Codex | Successfully dropped ${result.success} NPCs to scene`);
-      }
-
-      return result;
-    } catch (error) {
-      console.error("Campaign Codex | Error dropping NPCs to map:", error);
-      ui.notifications.error("Failed to drop NPCs to map. Check console for details.");
-    }
-  }
-
-  async _onDropNPCsToMapClick(event) {
-    event.preventDefault();
-
-    const sheetType = this.getSheetType();
-    ui.notifications.warn(`Drop to map not implemented for ${sheetType} sheets`);
-  }
+  _activateSheetSpecificListeners(html) {}
 
   /**
-   * Checks if the current user has Observer permission or higher for a document from its UUID.
-   * @param {string} uuid The UUID of the document to check.
-   * @returns {Promise<boolean>} A Promise that resolves to true if the user can view, otherwise false.
+   * Placeholder for handling drop data specific to a subclass.
+   * @param {object} data - The parsed drop data.
+   * @param {DragEvent} event - The drop event.
    */
-  static async canUserView(uuid) {
-    if (game.user.isGM) return true;
-    if (!uuid) return false;
+  async _handleDrop(data, event) {}
 
-    try {
-      const doc = await fromUuid(uuid);
-      if (!doc) return false;
-      return doc.testUserPermission(game.user, CONST.DOCUMENT_OWNERSHIP_LEVELS.OBSERVER);
-    } catch (error) {
-      console.warn(`Campaign Codex | Could not resolve UUID for permission check: ${uuid}`, error);
-      return false;
-    }
+  /**
+   * Returns the type of the sheet, to be overridden by subclasses.
+   * @returns {string}
+   */
+  getSheetType() {
+    return "base";
   }
 }

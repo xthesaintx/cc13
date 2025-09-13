@@ -1,5 +1,35 @@
-## 0.7.62
-- Hot fix to hide buttons on secrets in selected group sheets until I can fix
+## 0.8.03
+- Performanc upgrade to all sheets
+- Style update to buttons
+- Multiple Journals tab 
+
+## 0.8.01b
+- Performance improvement on groupsheet
+- image cropping improvement
+
+## 0.7.88b
+- Create journal dialog not working for NPCs fixed
+
+## 0.7.87b
+- Complete overhaul of linked cards, buttons and major UI improvements
+- Complete overhaul of group sheets
+- Refactored and fixed linking, link clean up and updating
+- Refactored some link checking
+- Refactored hooks
+- Linked cards click through to sheets
+- Add tag toggle to npc sheet
+- Added tag information to side panel and on cards
+- Fixed scrolling
+- Fixed indirect link updating
+- NPCs and tags on region sheets
+- Moved permission checking to linkers
+- Substantial back end code improvements
+
+### Fixes
+- Enter on Markup Unlinking standard journal
+
+## 0.7.7b
+- Added inline editors
 
 ## 0.7.61
 - Inventory column header row fix when base price is disabled

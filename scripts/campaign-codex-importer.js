@@ -557,31 +557,44 @@ export class SimpleCampaignCodexImporter {
             "linkedLocation",
             "parentRegion",
             "linkedScene",
-            "linkedStandardJournal",
+            // "linkedStandardJournal",
         ];
 
         for (const field of singleLinkFields) {
             if (newCodexData[field]) {
-                if (field === "linkedStandardJournal") {
-                    const parts =
-                        newCodexData[field].split(".JournalEntryPage.");
-                    const oldJournalUuid = parts[0];
-                    const newJournalUuid = uuidMap.get(oldJournalUuid);
-
-                    if (newJournalUuid) {
-                        if (parts.length > 1) {
-                            const pageIdPart = parts[1];
-                            newCodexData[field] =
-                                `${newJournalUuid}.JournalEntryPage.${pageIdPart}`;
-                        } else {
-                            newCodexData[field] = newJournalUuid;
-                        }
-                    }
-                } else {
-                    newCodexData[field] = relink(newCodexData[field]);
-                }
+                newCodexData[field] = relink(newCodexData[field]);
             }
         }
+
+        // HANDLE LINKED STANDARD JOURNALS ARRAY
+        if (Array.isArray(newCodexData.linkedStandardJournals)) {
+            newCodexData.linkedStandardJournals = newCodexData.linkedStandardJournals.map(oldUuid => {
+                // Relink the whole UUID, whether it's a page or a journal
+                return relink(oldUuid);
+            });
+        }
+        // for (const field of singleLinkFields) {
+        //     if (newCodexData[field]) {
+        //         if (field === "linkedStandardJournal") {
+        //             const parts =
+        //                 newCodexData[field].split(".JournalEntryPage.");
+        //             const oldJournalUuid = parts[0];
+        //             const newJournalUuid = uuidMap.get(oldJournalUuid);
+
+        //             if (newJournalUuid) {
+        //                 if (parts.length > 1) {
+        //                     const pageIdPart = parts[1];
+        //                     newCodexData[field] =
+        //                         `${newJournalUuid}.JournalEntryPage.${pageIdPart}`;
+        //                 } else {
+        //                     newCodexData[field] = newJournalUuid;
+        //                 }
+        //             }
+        //         } else {
+        //             newCodexData[field] = relink(newCodexData[field]);
+        //         }
+        //     }
+        // }
 
         [
             "linkedNPCs",

@@ -15,11 +15,8 @@
 .application.window-app.sheet.journal-sheet.campaign-codex {
   border: none !important;
   border-radius: 0 !important;
-/*  box-shadow: none !important;*/
   overflow: visible !important;
-/*  width: 100% !important;
-  height: 100% !important;
-*/  --cc-primary: #8b1538;
+  --cc-primary: #8b1538;
   --cc-primary-dark: #6b0f28;
   --cc-sidebar-bg: #2a2a2a;
   --cc-sidebar-text: #ffffff;
@@ -32,12 +29,11 @@
   --cc-card-bg: #ffffff;
   --cc-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   --cc-border-light: #e9ecef;
-  --cc-font-heading: 'Modesto Condensed', serif;
-  --cc-font-body: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  --cc-font-heading: "Modesto Condensed", serif;
+  --cc-font-body: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 }
 
 .campaign-codex .window-header {
-  /*display: none !important;*/
 }
 
 .campaign-codex .window-content {
@@ -65,7 +61,7 @@
   display: flex;
   width: 100%;
   height: 100%;
-  min-height: 600px;
+  min-height: 420px;
   background: url(../ui/texture-white.jpg);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
   overflow: hidden;
@@ -82,28 +78,37 @@
   position: relative;
 }
 
-.campaign-codex .sidebar-header {
+.campaign-codex .group-sidebar .sidebar-header {
   padding: 24px;
   text-align: center;
-  border-bottom: 1px solid var(--cc-border);
+  border-bottom: 0px solid var(--cc-border);
+  position: relative;
+}
+
+.campaign-codex .sidebar-header {
+  padding: 24px 24px 8px 24px;
+  text-align: center;
+  border-bottom: 0px solid var(--cc-border);
   position: relative;
 }
 
 .campaign-codex .sheet-image {
   width: 100%;
-  max-height: 200px;
+  max-height: 252px;
   border-radius: 12px;
   overflow: hidden;
   margin: 0 auto 16px auto;
   box-shadow: var(--cc-shadow);
   position: relative;
+  display: flex;
+  justify-content: center;
 }
 
 .campaign-codex .sheet-image img {
-  width: 100%;
-  max-height: 200px;
+  max-width: 100%;
+  max-height: 252px;
   object-fit: cover;
-  object-position: 50% 25%;
+  object-position: 50% 0%;
 }
 
 .campaign-codex .sheet-title {
@@ -131,42 +136,46 @@
   margin-bottom: 16px;
 }
 
-.campaign-codex .image-change-btn {
-  background: var(--cc-accent);
-  color: white;
-  border: none;
-  border-radius: 50%;
-  font-size: 11px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  height: 48px;
-  width: 48px;
-  position: absolute;
-  top: 16px;
-  left: 16px;
-  box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3);
+/*.campaign-codex .image-change-btn {
+width: 40px;
+    max-width: 300px;
+    max-height: 150px;
+    height: 36px;
+    position: absolute;
+    top: 0px;
+    right: 30px;
+    border-radius: 0 0 16px 16px;
+    padding: 8px 0px 8px 0px;
+    gap: 12px;
+    background: var(--cc-accent);
+    box-shadow: var(--cc-shadow);
+    line-height: 20px;
 }
 
 .campaign-codex .image-change-btn:hover {
-  background: #b8941f;
-  transform: translateY(-1px);
-}
+  background: var(--cc-main-text);
+  color: white;
+}*/
 
 /* Sidebar Navigation Tabs */
 .campaign-codex .sidebar-tabs {
   border-bottom: 1px solid var(--cc-border);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  /*    display: flex;
+    overflow-x: auto;*/
 }
 
 .campaign-codex .tab-item {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 16px 24px;
+  padding: 8px 16px;
   cursor: pointer;
   transition: all 0.2s ease;
   border-left: 3px solid transparent;
   color: rgba(255, 255, 255, 0.8);
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 500;
   justify-content: space-between;
 }
@@ -225,7 +234,7 @@
 /* Quick Links */
 .campaign-codex .sidebar-links {
   flex: 1;
-  padding: 20px 24px;
+  padding: 20px 24px 6px 24px;
   overflow-y: auto;
   min-height: 0;
 }
@@ -277,6 +286,7 @@
   border-radius: 6px;
   object-fit: cover;
   margin-bottom: 4px;
+  object-position: 50% 5%;
 }
 
 .campaign-codex .link-name {
@@ -319,7 +329,8 @@
 .campaign-codex .tab-panel.active {
   display: flex;
   flex-direction: column;
-  overflow-y: column;
+  overflow-y: auto;
+  position: relative;
 }
 
 /* Content Headers */
@@ -353,7 +364,7 @@
 
 /* Form Elements */
 .campaign-codex .form-section {
-  margin-bottom: 24px;
+/*  margin-bottom: 24px;*/
 }
 
 .campaign-codex .form-label {
@@ -413,16 +424,12 @@
   color: #666;
 }
 
-
 .campaign-codex .action-btn:hover {
   background: var(--cc-accent);
   color: white;
   border-color: var(--cc-accent);
   transform: translateY(-1px);
 }
-
-
-
 
 .campaign-codex .action-btn.send-to-player {
   background: #28a745;
@@ -481,13 +488,9 @@
 
 /* Info Banners */
 .campaign-codex .info-banner {
-  background: rgba(13, 202, 240, 0.1);
-  border: 1px solid rgba(13, 202, 240, 0.2);
-  border-radius: 8px;
-  padding: 16px;
-  margin-bottom: 24px;
+  margin-bottom: 16px;
   display: flex;
-  align-items: center;
+  justify-content: center;
   gap: 12px;
 }
 
@@ -608,16 +611,14 @@
 
 /*sort button*/
 .campaign-codex .sort-btn {
-    background: none;
-    border: 0px;
+  background: none;
+  border: 0px;
 }
 .campaign-codex .sort-btn:hover {
-    background: none;
-    color: var(--cc-accent);
-    border: 0px;
+  background: none;
+  color: var(--cc-accent);
+  border: 0px;
 }
-
-
 
 /*
  * ---------------------------------------------
@@ -635,15 +636,24 @@
 .campaign-codex .entity-card {
   background: var(--cc-card-bg);
   border-radius: 12px;
-  padding: 20px;
+  padding: 16px 16px 16px 100px;
   display: flex;
   align-items: center;
   gap: 16px;
   box-shadow: var(--cc-shadow);
   transition: all 0.2s ease;
   border: 1px solid var(--cc-border-light);
+  min-height: 80px;
+  position: relative;
 }
 
+.campaign-codex .shop-inventory-section .shop-items .group-item-card:hover{
+  transform: translateY(-1px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+  border-color: var(--cc-accent);
+}
+
+.campaign-codex .selected-inventory-item:hover,
 .campaign-codex .entity-card:hover {
   transform: translateY(-4px);
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
@@ -651,18 +661,22 @@
 }
 
 .campaign-codex .entity-image {
-  width: 60px;
-  height: 60px;
-  border-radius: 10px;
+  width: 80px;
+  height: 100%;
+  border-radius: 10px 0px 0px 10px;
   overflow: hidden;
   flex-shrink: 0;
   background: #f0f0f0;
+  position: absolute;
+  top: 0px;
+  left: 0px;
 }
 
 .campaign-codex .entity-image img {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  object-position: 50% 5%;
 }
 
 .campaign-codex .entity-content {
@@ -681,12 +695,16 @@
   white-space: nowrap;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  vertical-align: top;
+  display: inline-block;
 }
 
 .campaign-codex .entity-meta {
   font-size: 12px;
   color: #666;
   margin-bottom: 8px;
+  vertical-align: top;
+  display: inline-block;
 }
 
 .campaign-codex .entity-type {
@@ -697,7 +715,7 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  font-size: 10px;
+  font-size: 9px;
 }
 
 .campaign-codex .entity-type-player {
@@ -708,7 +726,7 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  font-size: 10px;
+  font-size: 9px;
 }
 
 .campaign-codex .entity-locations {
@@ -742,38 +760,6 @@
   gap: 4px;
 }
 
-/* Region Info & Location Tags */
-.campaign-codex .region-info {
-  margin-top: 8px;
-  padding: 8px 12px;
-  background: rgba(212, 175, 55, 0.1);
-  border: 1px solid rgba(212, 175, 55, 0.3);
-  border-radius: 6px;
-  text-align: center;
-  font-size: 12px;
-}
-
-.campaign-codex .region-label {
-  color: rgba(255, 255, 255, 0.7);
-  margin-right: 6px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  font-weight: 600;
-}
-
-.campaign-codex .region-name {
-  color: var(--cc-accent);
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  transition: all 0.2s ease;
-}
-
-.campaign-codex .region-name:hover {
-  color: #b8941f;
-  text-shadow: 0 0 4px rgba(212, 175, 55, 0.3);
-}
-
 .campaign-codex .location-tag {
   background: #e9ecef;
   color: #666;
@@ -787,9 +773,10 @@
   display: inline-block;
 }
 
+
 /* NPC Card Styling */
 .campaign-codex .npc-section {
-  margin-bottom: 32px;
+  margin-bottom: 16px;
 }
 
 .campaign-codex .npc-section:last-child {
@@ -816,36 +803,6 @@
   font-size: 16px;
 }
 
-.campaign-codex .npc-section .entity-card.npc-card[data-source="location"] {
-  border-left: 4px solid #28a745;
-  background: linear-gradient(135deg, rgba(40, 167, 69, 0.02), rgba(40, 167, 69, 0.05));
-}
-
-.campaign-codex .npc-section .entity-card.npc-card[data-source="location"]:hover {
-  border-left-color: #218838;
-  background: linear-gradient(135deg, rgba(40, 167, 69, 0.05), rgba(40, 167, 69, 0.08));
-}
-
-.campaign-codex .npc-section .entity-card.npc-card[data-source="shop"] {
-  border-left: 4px solid #6f42c1;
-  background: linear-gradient(135deg, rgba(111, 66, 193, 0.02), rgba(111, 66, 193, 0.05));
-}
-
-.campaign-codex .npc-section .entity-card.npc-card[data-source="shop"]:hover {
-  border-left-color: #563d7c;
-  background: linear-gradient(135deg, rgba(111, 66, 193, 0.05), rgba(111, 66, 193, 0.08));
-}
-
-.campaign-codex .entity-card.shop-npc {
-  border-left: 4px solid #6f42c1;
-  background: linear-gradient(135deg, rgba(111, 66, 193, 0.02), rgba(111, 66, 193, 0.05));
-}
-
-.campaign-codex .entity-card.shop-npc:hover {
-  border-left-color: #563d7c;
-  background: linear-gradient(135deg, rgba(111, 66, 193, 0.05), rgba(111, 66, 193, 0.08));
-}
-
 .campaign-codex .shop-tag {
   background: #6f42c1 !important;
   color: white !important;
@@ -860,13 +817,12 @@
   color: #6f42c1;
 }
 
-.campaign-codex .entity-card.npc-card[data-source="direct"] {
-  border-left: 4px solid #28a745;
+.campaign-codex .tag-mode-tags {
+  margin-top: 4px;
 }
 
-.campaign-codex .entity-card.npc-card[data-source="direct"]:hover {
-  border-left-color: #218838;
-  box-shadow: 0 8px 25px rgba(40, 167, 69, 0.15);
+.campaign-codex .tag-mode-tags i {
+  color: var(--cc-sidebar-bg);
 }
 
 .campaign-codex .npc-section .entity-grid {
@@ -898,6 +854,7 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
+  object-position: 50% 5%;
 }
 
 .campaign-codex .actor-content {
@@ -962,7 +919,7 @@
 .campaign-codex .inventory-table {
   background: white;
   border-radius: 12px;
-  overflow: hidden;
+  overflow: visible;
   box-shadow: var(--cc-shadow);
 }
 
@@ -1017,6 +974,7 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
+  object-position: 50% 5%;
 }
 
 .campaign-codex .item-details {
@@ -1087,7 +1045,9 @@
 /* Loot Mode Inventory */
 .campaign-codex .inventory-table.loot-mode .table-header,
 .campaign-codex .inventory-table.loot-mode .inventory-item {
-  grid-template-columns: 60px minmax(100px, 2fr) minmax(80px, 100px) minmax(80px, 100px) minmax(100px, 120px) 68px;
+  grid-template-columns:
+    60px minmax(100px, 2fr) minmax(80px, 100px) minmax(80px, 100px)
+    minmax(100px, 120px) 68px;
 }
 
 /* Markup Control */
@@ -1160,7 +1120,6 @@
 }
 
 .campaign-codex .dialog.journal-editor .editor-container {
-  /*margin: 0.5rem 0.5rem 4rem 1rem;*/
 }
 
 /* Player Selection Dialog */
@@ -1274,6 +1233,7 @@
   position: fixed;
   width: 30px;
   height: 16px;
+  position: absolute;
 }
 
 .campaign-codex .toggle-control {
@@ -1306,7 +1266,7 @@
   width: 12px;
   left: 2px;
   bottom: 2px;
-  background-color: #FFF;
+  background-color: #fff;
   transition: 0.4s;
   border-radius: 50%;
 }
@@ -1339,7 +1299,7 @@
   display: flex;
   width: 100%;
   height: 100%;
-  min-height: 700px;
+  min-height: 420px;
   overflow: hidden;
 }
 
@@ -1373,7 +1333,7 @@
   padding: 16px;
   border-bottom: 1px solid var(--cc-border);
   display: grid;
-  grid-template-columns: 1fr 32px 32px 32px;
+  grid-template-columns: 1fr 32px 32px 32px 32px 32px;
   gap: 4px;
   align-items: center;
 }
@@ -1402,7 +1362,8 @@
   gap: 4px;
   transition: opacity 0.2s ease;
 }
-
+.campaign-codex .toggle-tree-tags,
+.campaign-codex .toggle-tree-npcs,
 .campaign-codex .toggle-tree-items,
 .campaign-codex .btn-expand-all,
 .campaign-codex .btn-collapse-all {
@@ -1419,6 +1380,8 @@
   text-align: center;
 }
 
+.campaign-codex .toggle-tree-tags:hover,
+.campaign-codex .toggle-tree-npcs:hover,
 .campaign-codex .toggle-tree-items:hover,
 .campaign-codex .btn-expand-all:hover,
 .campaign-codex .btn-collapse-all:hover {
@@ -1426,6 +1389,8 @@
   color: white;
 }
 
+.campaign-codex .toggle-tree-tags.active,
+.campaign-codex .toggle-tree-npcs.active,
 .campaign-codex .toggle-tree-items.active {
   background-color: var(--cc-accent);
   color: white;
@@ -1719,6 +1684,7 @@
 
 .campaign-codex .group-tab-panel.active {
   display: block;
+  position: relative;
 }
 
 .campaign-codex .group-content-area {
@@ -1773,6 +1739,74 @@
 }
 
 /* NPC Grid & Filters */
+
+.campaign-codex .filter-btn.refresh-btn :hover {
+  border-color: var(--cc-accent);
+  background: rgba(212, 175, 55, 0.05);
+}
+
+.campaign-codex .filter-btn.refresh-btn.active {
+  background: var(--cc-border);
+  border-color: var(--cc-accent);
+}
+
+.campaign-codex .filter-btn i{
+    font-size: 16px;
+    color: var(--cc-accent);
+}
+
+.campaign-codex .filter-btn i{
+    font-size: 16px;
+    color: white;
+}
+
+.campaign-codex .filter-btn.refresh-btn  {
+  width: 40px;
+  max-width: 300px;
+  max-height: 150px;
+  height: 36px;
+  position: absolute;
+  top: 0px;
+  border-radius: 0 0 16px 16px;
+  justify-content: center;
+/*  padding: 8px 0px 8px 4px;  */
+  gap: 12px;
+  background: var(--cc-accent);
+  box-shadow: var(--cc-shadow);
+}
+
+/*RIGHT 30*/
+.campaign-codex .filter-btn.refresh-btn.npcs-tag {
+  right: 30px;
+}
+
+/*RIGHT 80*/
+.campaign-codex .filter-btn.refresh-btn.npcs-player {
+  right: 80px;
+}
+
+/*RIGHT 130*/
+.campaign-codex .filter-btn.refresh-btn.npcs-shop {
+  right: 130px;
+}
+
+/*RIGHT 180*/
+.campaign-codex .filter-btn.refresh-btn.npcs-location {
+  right: 180px;
+}
+
+/*RIGHT 180*/
+.campaign-codex .filter-btn.refresh-btn.npcs-all {
+  right: 230px;
+}
+
+
+
+
+
+    
+
+
 .campaign-codex .npc-filters {
   display: flex;
   gap: 8px;
@@ -1781,51 +1815,17 @@
   grid-template-columns: repeat(4, 1fr);
 }
 
-.campaign-codex .filter-btn {
-  padding: 8px 16px;
-  border: 1px solid #ddd;
-  background: white;
-  border-radius: 20px;
-  cursor: pointer;
-  font-size: 12px;
-  font-weight: 500;
-  transition: all 0.2s ease;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.campaign-codex .filter-btn:hover {
-  border-color: var(--cc-accent);
-  background: rgba(212, 175, 55, 0.05);
-}
-
-.campaign-codex .filter-btn.active {
-  background: var(--cc-accent);
-  color: white;
-  border-color: var(--cc-accent);
-}
-
 .campaign-codex .npc-grid-container {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 16px;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
 }
 
-.campaign-codex .group-npc-card {
-  background: var(--cc-card-bg);
-  border-radius: 12px;
-  padding: 16px;
-  box-shadow: var(--cc-shadow);
-  border: 1px solid var(--cc-border-light);
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  transition: all 0.2s ease;
-}
 
-.campaign-codex .group-npc-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+
+.campaign-codex .npc-grid-container .entity-card{
+width: 100%;
+margin-bottom: 8px;
 }
 
 .campaign-codex .npc-avatar img {
@@ -1833,6 +1833,7 @@
   height: 48px;
   border-radius: 8px;
   object-fit: cover;
+  object-position: 50% 5%;
 }
 
 .campaign-codex .npc-info {
@@ -1898,6 +1899,7 @@
   box-shadow: var(--cc-shadow);
   border: 1px solid var(--cc-border-light);
   transition: all 0.2s ease;
+  cursor: pointer;
 }
 
 .campaign-codex .group-location-card:hover {
@@ -1914,6 +1916,7 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
+  object-position: 50% 5%;
 }
 
 .campaign-codex .location-info {
@@ -1960,14 +1963,14 @@
 
 /* Inventory Styles */
 .campaign-codex .inventory-summary {
-  display: flex;
-  gap: 32px;
-  margin-bottom: 32px;
-  padding: 20px;
-  background: white;
-  border-radius: 12px;
-  box-shadow: var(--cc-shadow);
-  justify-content: space-around;
+    display: flex;
+    gap: 32px;
+    margin-bottom: 32px;
+    padding: 16px;
+    background: white;
+    border-radius: 12px;
+    box-shadow: var(--cc-shadow);
+    justify-content: space-around;
 }
 
 .campaign-codex .summary-stat {
@@ -1999,21 +2002,36 @@
 }
 
 .campaign-codex .shop-header {
-  display: grid;
-  align-items: center;
-  grid-template-columns: 48px 1fr 36px;
-  gap: 12px;
-  padding: 16px;
-  background: #f8f9fa;
-  border-bottom: 1px solid var(--cc-border-light);
+    display: grid;
+    align-items: center;
+    grid-template-columns: 1fr;
+    gap: 12px;
+    padding: 16px 16px 16px 112px;
+    background: #f8f9fa;
+    border-bottom: 1px solid var(--cc-border-light);
+    position: relative;
+    cursor: pointer;
 }
 
 .campaign-codex .shop-icon {
-  width: 40px;
-  height: 40px;
-  border-radius: 6px;
-  object-fit: cover;
+    width: 96px;
+    height: 100%;
+    object-fit: cover;
+    object-position: 50% 25%;
+    position: absolute;
 }
+
+.campaign-codex .shop-icon::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+        background: linear-gradient(to right, transparent 0%, white 50%);
+      -webkit-mask-image: linear-gradient(to right, black 50%, transparent 100%);
+            mask-image: linear-gradient(to right, black 50%, transparent 100%);
+  }
 
 .campaign-codex .shop-info {
   flex: 1;
@@ -2047,6 +2065,9 @@
   background: #f8f9fa;
   border-radius: 6px;
   border: 1px solid var(--cc-border-light);
+  cursor: pointer;
+  transition: all 0.2s ease;
+
 }
 
 .campaign-codex .item-icon {
@@ -2079,6 +2100,8 @@
  * ---------------------------------------------
  */
 
+/* Region Info & Location Tags */
+.campaign-codex .region-info,
 .campaign-codex .scene-info {
   margin-top: 8px;
   padding-left: 12px;
@@ -2093,7 +2116,7 @@
   gap: 8px;
   font-size: 12px;
 }
-
+.campaign-codex .region-label,
 .campaign-codex .scene-label {
   color: rgba(255, 255, 255, 0.7);
   text-transform: uppercase;
@@ -2103,11 +2126,11 @@
   align-items: center;
   gap: 4px;
 }
-
+.campaign-codex .region-label i,
 .campaign-codex .scene-label i {
   color: var(--cc-accent);
 }
-
+.campaign-codex .region-name,
 .campaign-codex .scene-name {
   color: var(--cc-accent);
   font-weight: 700;
@@ -2197,7 +2220,7 @@
   display: flex;
   background: #f8f9fa;
   border-bottom: 1px solid #dee2e6;
-  margin-bottom: 1rem;
+  /*  margin-bottom: 1rem;*/
   padding-left: 32px;
   overflow-x: auto;
 }
@@ -2236,6 +2259,7 @@
   flex: 1;
   overflow-y: auto;
   padding: 0 1rem 1rem;
+  position: relative;
 }
 
 .campaign-codex .selected-content-section {
@@ -2260,6 +2284,16 @@
   color: var(--cc-accent);
   font-size: 24px;
   padding-bottom: 6px;
+}
+
+.campaign-codex .selected-sheet-info .entity-locations i {
+  font-size: 10px;
+  color: #999;
+  color: var(--cc-sidebar-bg);
+}
+
+.campaign-codex .selected-sheet-info .entity-locations {
+  align-items: baseline;
 }
 
 .campaign-codex .info-grid {
@@ -2403,6 +2437,29 @@
   gap: 0.5rem;
 }
 
+.campaign-codex .selected-sheet-content .inventory-list {
+  display: flex;
+  flex-direction: row;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.campaign-codex .selected-sheet-content .selected-inventory-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  background: #f8f9fa;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  position: relative;
+  flex: 1 0 200px;
+  flex-basis: calc(100% / 2 - 10px);
+  min-width: 200px;
+}
+
 .campaign-codex .selected-inventory-item {
   display: flex;
   align-items: center;
@@ -2412,6 +2469,8 @@
   border-radius: 8px;
   background: #f8f9fa;
   transition: all 0.2s ease;
+  cursor: pointer;
+  position: relative;
 }
 
 .campaign-codex .selected-inventory-item .item-icon {
@@ -2547,7 +2606,6 @@
 }
 
 .campaign-codex .shop-inventory-section .shop-header button,
-.campaign-codex .selected-inventory-item .item-actions button,
 .campaign-codex .selected-location-card .location-actions button,
 .campaign-codex .selected-npc-card .npc-actions button,
 .campaign-codex .selected-associate-card .associate-actions button,
@@ -2566,7 +2624,6 @@
 }
 
 .campaign-codex .shop-inventory-section .shop-header button:hover,
-.campaign-codex .selected-inventory-item .item-actions button:hover,
 .campaign-codex .selected-location-card .location-actions button:hover,
 .campaign-codex .selected-npc-card .npc-actions button:hover,
 .campaign-codex .selected-associate-card .associate-actions button:hover,
@@ -2607,10 +2664,7 @@
     width: 100%;
     max-height: 300px;
   }
-  .campaign-codex .sidebar-tabs {
-    display: flex;
-    overflow-x: auto;
-  }
+
   .campaign-codex .tab-item {
     white-space: nowrap;
     flex-shrink: 0;
@@ -2642,7 +2696,6 @@
   }
 }
 
-
 /*
  * ---------------------------------------------
  * Secret Block Button 
@@ -2664,7 +2717,7 @@
 }
 
 .campaign-codex section.secret {
-    margin-top: 20px;
+  margin-top: 20px;
 }
 .campaign-codex .cc-hidden-secrets section.secret > button.reveal {
   display: none;
@@ -2672,10 +2725,67 @@
 
 /*
  * ---------------------------------------------
+ * Inline Editor Styles
+ * ---------------------------------------------
+ */
+.campaign-codex .prosemirror,
+.campaign-codex .prosemirror .editor-container .editor-content,
+.campaign-codex .prosemirror .editor-container {
+  height: auto;
+  overflow: visible;
+  min-height: 200px;
+}
+
+.campaign-codex .prosemirror .editor-content {
+  position: relative;
+}
+
+.campaign-codex .prosemirror .editor-menu{
+    position: sticky;
+    top: -22px;
+    z-index: 10;
+    background: #dddddd;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+
+}
+
+.campaign-codex .sheet-main,
+.campaign-codex .sheet-form {
+  height: auto;
+  overflow: visible;
+}
+
+.campaign-codex prose-mirror > button.toggle {
+  position: absolute;
+  width: 32px;
+  height: 32px;
+  top: -15px;
+  right: -15px;
+  color: var(--cc-accent);
+  background: none;
+  border: none;
+  font-size: 18px;
+  display: block;
+  text-align: right;
+  box-shadow: none;
+}
+
+.campaign-codex prose-mirror > button.toggle:hover {
+  border: none;
+  color: #ff6400;
+  text-shadow: none;
+  box-shadow: none;
+}
+.campaign-codex prose-mirror > button.toggle:disabled {
+  display: none;
+  color: #0000ff;
+}
+
+/*
+ * ---------------------------------------------
  * Override the DND5e Editor-Content Font nonsense
  * ---------------------------------------------
  */
-
 
 .campaign-codex .dnd5e2-journal .editor-content h1,
 .campaign-codex .dnd5e2-journal .editor-content h2,
@@ -2685,11 +2795,513 @@
   border-bottom: none;
 }
 .campaign-codex .dnd5e2-journal .editor-content h1 {
-  font-size:2em;
+  font-size: 2em;
 }
 .campaign-codex .dnd5e2-journal .editor-content h2 {
-  font-size:1.4em;
+  font-size: 1.4em;
 }
 .campaign-codex .dnd5e2-journal .editor-content h3 {
-  font-size:1.25em;
+  font-size: 1.25em;
+}
+
+/*
+ * ---------------------------------------------
+ * Info (Populated) Card
+ * ---------------------------------------------
+ */
+.campaign-codex .tab-panel.active[data-tab="info"] .linked-actor-card {
+  width: auto;
+  max-width: 300px;
+  max-height: 150px;
+  height: auto;
+  position: absolute;
+  top: 0px;
+  right: 30px;
+  border-radius: 0 0 16px 16px;
+  padding: 8px 16px 8px 16px;
+  gap: 12px;
+}
+
+.campaign-codex .npc-sheet .tab-panel.active[data-tab="info"] .linked-actor-card {
+  width: auto;
+  max-width: 300px;
+  max-height: 150px;
+  height: auto;
+  position: absolute;
+  top: 0px;
+  right: 80px;
+  border-radius: 0 0 16px 16px;
+  padding: 8px 16px 8px 48px;
+  gap: 12px;
+}
+
+/*
+ * ---------------------------------------------
+ * Buttons TOP
+ * ---------------------------------------------
+ */
+
+/*LEFT 30*/
+.campaign-codex .image-change-btn.refresh-btn { 
+  width: 40px;
+  max-width: 300px;
+  max-height: 150px;
+  height: 36px;
+  position: absolute;
+  top: 0px;
+  left: 30px;
+  border-radius: 0 0 16px 16px;
+/*  padding: 8px 0px 8px 0px;*/
+  gap: 12px;
+  background: var(--cc-accent);
+  box-shadow: var(--cc-shadow);
+  line-height: 20px;
+  justify-content: center;
+}
+
+/*RIGHT 30*/
+.campaign-codex .image-change-btn.refresh-btn, 
+.campaign-codex .selected-sheet-actions .btn-open-sheet,
+.campaign-codex .group-sheet .selected-sheet-content .npcs-to-map-button,
+.campaign-codex .region-sheet .tab-panel.active[data-tab="shops"] .refresh-btn,
+.campaign-codex .region-sheet .tab-panel.active[data-tab="npcs"] .refresh-btn,
+.campaign-codex .region-sheet .tab-panel.active[data-tab="locations"] .create-location-button,
+.campaign-codex :is(.location-sheet, .npc-sheet) .tab-panel.active[data-tab="npcs"] .create-npc-button,
+.campaign-codex .npc-sheet .tab-panel.active[data-tab="associates"] .create-npc-button,
+.campaign-codex .shop-sheet .tab-panel.active[data-tab="npcs"] .create-npc-button,
+.campaign-codex .npc-sheet .tab-panel.active[data-tab="locations"] .refresh-btn,
+.campaign-codex :is(.location-sheet, .npc-sheet) .tab-panel.active[data-tab="shops"] .create-shop-button,
+.campaign-codex .npc-sheet .tab-panel.active[data-tab="info"] .npcs-to-map-button {
+  width: 40px;
+  max-width: 300px;
+  max-height: 150px;
+  height: 36px;
+  position: absolute;
+  top: 0px;
+  right: 30px;
+  border-radius: 0 0 16px 16px;
+/*  padding: 8px 0px 8px 0px;*/
+justify-content: center;
+  gap: 12px;
+  background: var(--cc-accent);
+  box-shadow: var(--cc-shadow);
+  line-height: 20px;
+}
+/*RIGHT 80*/
+.campaign-codex .selected-sheet-actions .btn-open-actor,
+.campaign-codex .selected-sheet-actions .btn-open-scene,
+.campaign-codex .region-sheet .tab-panel.active[data-tab="npcs"] .create-npc-button,
+.campaign-codex .npc-sheet .tab-panel.active[data-tab="locations"] .create-location-button,
+.campaign-codex :is(.npc-sheet, .shop-sheet, .location-sheet) .tab-panel.active[data-tab="npcs"] .npcs-to-map-button,
+.campaign-codex .region-sheet .tab-panel.active[data-tab="shops"] .create-shop-button,
+.campaign-codex .npc-sheet .tab-panel.active[data-tab="associates"] .members-to-map-button {
+  width: 40px;
+  max-width: 300px;
+  max-height: 150px;
+  height: 36px;
+  position: absolute;
+  top: 0px;
+  right: 80px;
+  border-radius: 0 0 16px 16px;
+  justify-content: center;
+/*  padding: 8px 0px 8px 0px;  */
+  gap: 12px;
+  background: var(--cc-accent);
+  box-shadow: var(--cc-shadow);
+  line-height: 20px;
+
+}
+
+/*RIGHT 130*/
+.campaign-codex .selected-sheet-actions .btn-npc-to-scene,
+.campaign-codex :is(.region-sheet) .tab-panel.active[data-tab="npcs"] .npcs-to-map-button {
+  width: 40px;
+  max-width: 300px;
+  max-height: 150px;
+  height: 36px;
+  position: absolute;
+  top: 0px;
+  right: 130px;
+  border-radius: 0 0 16px 16px;
+  justify-content: center;
+/*  padding: 8px 0px 8px 0px;  gap: 12px;*/
+  background: var(--cc-accent);
+  box-shadow: var(--cc-shadow);
+ line-height: 20px;
+ 
+}
+
+.campaign-codex .image-change-btn.refresh-btn i,
+.campaign-codex .group-sheet .selected-sheet-content .npcs-to-map-button i,
+.campaign-codex .selected-sheet-actions .btn-npc-to-scene i,
+.campaign-codex .selected-sheet-actions .btn-open-actor i,
+.campaign-codex .selected-sheet-actions .btn-open-scene i,
+.campaign-codex .selected-sheet-actions .btn-open-sheet i{
+    font-size: 16px;
+    color: white;
+    margin:0px 0px 0px 0px;
+}
+
+.campaign-codex .region-sheet .tab-panel.active[data-tab="npcs"] .refresh-btn i,
+.campaign-codex .region-sheet .tab-panel.active[data-tab="shops"] .refresh-btn i,
+.campaign-codex :is(.location-sheet, .npc-sheet, .shop-sheet) .tab-panel.active[data-tab="npcs"] :is(.create-npc-button, .npcs-to-map-button) i,
+.campaign-codex .npc-sheet .tab-panel.active[data-tab="associates"] :is(.create-npc-button, .members-to-map-button) i,
+.campaign-codex :is(.npc-sheet, .region-sheet) .tab-panel.active[data-tab="locations"] :is(.refresh-btn, .create-location-button) i,
+.campaign-codex :is(.location-sheet, .npc-sheet, .region-sheet) .tab-panel.active[data-tab="shops"] .create-shop-button i,
+.campaign-codex .npc-sheet .tab-panel.active[data-tab="info"] .npcs-to-map-button i {
+    font-size: 16px;
+    color: white;
+    margin:0 0 0 0;
+}
+
+/*
+ * ---------------------------------------------
+ * Actor Details
+ * ---------------------------------------------
+ */
+
+.campaign-codex .tab-panel.active[data-tab="info"] .actor-image .fas {
+  font-size: 16px;
+  color: var(--cc-accent);
+}
+
+.campaign-codex .tab-panel.active[data-tab="info"] .actor-image {
+  height: 16px;
+  width: 16px;
+}
+
+.campaign-codex .npc-sheet .tab-panel.active[data-tab="info"] .actor-image {
+  height: 100%;
+  width: 36px;
+  position: absolute;
+  top: 0px;
+  left: 0px;
+  background: var(--cc-accent);
+  border-radius: 0 0 0 16px;
+}
+
+.campaign-codex .tab-panel.active[data-tab="info"] .actor-name {
+  margin: 0px;
+  font-size: 16px;
+}
+.campaign-codex .tab-panel.active[data-tab="info"] .actor-details {
+  display: none;
+}
+.campaign-codex .tab-panel.active[data-tab="info"] .actor-actions {
+  display: flex;
+  flex-direction: row;
+  gap: 6px;
+}
+
+.campaign-codex .tab-panel.active[data-tab="info"] .actor-actions .action-btn {
+  height: 12px;
+  width: 12px;
+  font-size: 12px;
+  border: none;
+}
+
+/*
+ * ---------------------------------------------
+ * Drop Zone Card
+ * ---------------------------------------------
+ */
+.campaign-codex .group-tab-panel.active[data-tab="journals"] .drop-zone,
+.campaign-codex .tab-panel.active[data-tab="journals"] .drop-zone,
+.campaign-codex .tab-panel.active[data-tab="info"] .drop-zone {
+  width: auto;
+  max-width: 300px;
+  max-height: 150px;
+  height: auto;
+  position: absolute;
+  top: 0px;
+  right: 30px;
+  border-radius: 0 0 16px 16px;
+  padding: 8px 8px 0px 8px;
+  gap: 12px;
+  background: var(--cc-accent);
+}
+
+.campaign-codex .group-tab-panel.active[data-tab="journals"] .drop-zone h3,
+.campaign-codex .tab-panel.active[data-tab="journals"] .drop-zone h3,
+.campaign-codex .group-tab-panel.active[data-tab="journals"] .drop-zone i,
+.campaign-codex .tab-panel.active[data-tab="journals"] .drop-zone i,
+.campaign-codex .tab-panel.active[data-tab="info"] .drop-zone i,
+.campaign-codex .tab-panel.active[data-tab="info"] .drop-zone h3 {
+  border: 0px;
+  color: white;
+  font-size: 14px;
+}
+
+.campaign-codex .selected-sheet-content .drop-zone,
+.campaign-codex .group-tab-panel.active[data-tab="info"] .drop-zone,
+.campaign-codex .tab-panel.active[data-tab="shops"] .drop-zone,
+.campaign-codex .tab-panel.active[data-tab="locations"] .drop-zone,
+.campaign-codex .tab-panel.active[data-tab="npcs"] .drop-zone,
+.campaign-codex .tab-panel.active[data-tab="associates"] .drop-zone,
+.campaign-codex .tab-panel.active[data-tab="inventory"] .drop-zone {
+  display: none;
+}
+.campaign-codex.region-sheet .tab-panel.active[data-tab="npcs"] .empty-state,
+.campaign-codex.region-sheet .tab-panel.active[data-tab="shops"] .empty-state {
+  margin-top: 60px;
+}
+.campaign-codex.region-sheet .tab-panel.active[data-tab="shops"] .empty-state h3,
+.campaign-codex.region-sheet .tab-panel.active[data-tab="npcs"] .empty-state h3 {
+  border: 0px;
+}
+.campaign-codex.region-sheet .tab-panel.active[data-tab="shops"] .empty-state p. .campaign-codex.region-sheet .tab-panel.active[data-tab="npcs"] .empty-state p {
+  display: none;
+}
+
+.campaign-codex .selected-sheet-journals{
+  margin-top: 16px;
+}
+
+
+/*
+ * ---------------------------------------------
+ * Style Extraction from Code
+ * ---------------------------------------------
+ */
+
+/* Inventory Move Styles from Code */
+.campaign-codex .cc-inv-price-table {
+  text-align: center;
+  align-content: center;
+}
+.campaign-codex .cc-loot-mode {
+  grid-template-columns: 60px minmax(100px, 2fr) minmax(100px, 120px) 68px;
+}
+.campaign-codex .cc-hide-base {
+  grid-template-columns:
+    60px minmax(100px, 2fr) minmax(80px, 100px) minmax(100px, 120px)
+    68px;
+}
+.campaign-codex .cc-shop-mode {
+  grid-template-columns:
+    60px minmax(100px, 2fr) minmax(80px, 100px) minmax(80px, 100px)
+    minmax(100px, 120px) 68px;
+}
+
+.campaign-codex .cc-player-create-option {
+  width: 32px;
+  height: 32px;
+  border-radius: 4px;
+  margin-right: 8px;
+}
+
+.campaign-codex-buttons .cc-create-buttons {
+  flex: 1;
+  min-width: 0;
+  padding: 4px 8px;
+  font-size: 11px;
+  background: #17a2b8;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.campaign-codex .npc-toggles {
+  margin-top: 8px;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: center;
+  padding-top: 0px;
+}
+
+/*
+ * ---------------------------------------------
+ * Form fix for group sheet scrolling
+ * ---------------------------------------------
+ */
+.campaign-codex .campaign-codex.cc-scroll-fix,
+form.locked.campaign-codex.group-sheet, 
+form.editable.campaign-codex.group-sheet {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.campaign-codex .cc-scroll-group {
+  overflow-y: auto;
+  min-height: 0;
+}
+
+/*
+ * ---------------------------------------------
+ * Link Tags
+ * ---------------------------------------------
+ */
+.campaign-codex .link-tags .link-card,
+.campaign-codex .link-tags .tag-card {
+  display: grid;
+  grid-template-columns: 20px 1fr 20px;
+  align-items: center;
+  padding: 4px 4px 4px 6px;
+  gap: 4px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+  margin-bottom: 6px;
+}
+
+.campaign-codex .link-tags .link-card i,
+.campaign-codex .link-tags .tag-card i {
+  font-size: 14px;
+}
+
+.campaign-codex .link-tags .link-card button {
+  width: 14px;
+  height: 14px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 0px solid var(--cc-accent);
+  color: var(--cc-accent);
+  padding: 0px 2px 0px 2px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 8px;
+  transition: all 0.2s ease;
+  text-align: center;
+  line-height: 16px;
+}
+
+.campaign-codex .link-tags .link-card button:hover {
+  transform: translateY(-1px);
+}
+
+/*
+ * ---------------------------------------------
+ * Entity Grid New Styling
+ * ---------------------------------------------
+ */
+
+.campaign-codex .entity-card .entity-actions .action-btn.disabled-rmv {
+  width: 32px;
+  height: 32px;
+  position: absolute;
+  right: 8px;
+  top: 0px;
+  border-radius: 0px 0px 8px 8px;
+}
+
+.campaign-codex .entity-card .entity-actions .action-btn[class*="remove-"] {
+  width: 32px;
+  height: 32px;
+  position: absolute;
+  right: 8px;
+  top: 0px;
+
+  border-radius: 0px 0px 8px 8px;
+  background: var(--cc-primary);
+}
+
+.campaign-codex .selected-inventory-item .item-actions{
+  grid-template-columns: 1fr;
+}
+
+.campaign-codex .selected-inventory-item .item-actions .btn-send-to-player {
+  width: 32px;
+  height: 32px;
+  position: absolute;
+  right: 16px;
+  top: 0px;
+  border-radius: 0px 0px 8px 8px;
+  background: #28a745;
+}
+
+.campaign-codex .entity-card .entity-actions .action-btn.open-actor {
+  width: 32px;
+  height: 32px;
+  position: absolute;
+  right: 44px;
+  top: 0px;
+  border-radius: 0px 0px 8px 8px;
+  background: var(--cc-sidebar-bg);
+}
+.campaign-codex .selected-inventory-item .item-actions i,
+.campaign-codex .entity-card .entity-actions .action-btn.open-actor i,
+.campaign-codex .entity-card .entity-actions .action-btn[class*="remove-"] i {
+  font-size: 12px;
+  color: white;
+}
+
+.campaign-codex .selected-inventory-item .item-actions .btn-send-to-player:hover,
+.campaign-codex .entity-card .entity-actions .action-btn.open-actor:hover,
+.campaign-codex .entity-card .entity-actions .action-btn[class*="remove-"]:hover {
+  background: var(--cc-border);
+  box-shadow: none;
+  border: none;
+  color: white;
+  transform: none;
+}
+
+.campaign-codex .selected-sheet-content .entity-grid {
+  grid-template-columns: none;
+}
+
+.campaign-codex .group-sheet .selected-sheet-content .section-heading i{
+  color:var(--cc-accent);
+}
+
+.campaign-codex .group-sheet .selected-sheet-content .section-heading {
+  color: var(--cc-main-text);
+  font-size: 16px;
+  font-weight: 600;
+  margin: 16px 0 12px 0;
+  border-bottom: 1px solid #dee2e6;
+  padding-bottom: 4px;
+}
+
+.campaign-codex .selected-sheet-content .selected-content-section .empty-state{
+  display: none;
+}
+
+.campaign-codex .selected-sheet-journals .entity-grid.journal-grid{
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap:16px;
+}
+
+.campaign-codex .journal-card .entity-name{
+    font-family: var(--cc-font-heading);
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--cc-main-text);
+    margin: 0 0 0px 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: pre-wrap;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    vertical-align: top;
+  display: block
+}
+.campaign-codex .journal-card i{
+  color: var(--cc-accent);
+  font-size: 24px;
+}
+
+.campaign-codex .entity-card.journal-card.open-journal{
+background: var(--cc-card-bg);
+    border-radius: 12px;
+    padding: 16px 44px 16px 16px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    box-shadow: var(--cc-shadow);
+    transition: all 0.2s ease;
+    border: 1px solid var(--cc-border-light);
+    min-height: 40px;
+    position: relative;
+    line-height: 20px;
+}
+
+.campaign-codex code-mirror.source-editor{
+    overflow: visible;
+    min-height: 200px;
+    padding-bottom: 0px;
+    margin-bottom: 16px;
 }

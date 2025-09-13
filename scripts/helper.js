@@ -4,24 +4,36 @@ import { SimpleCampaignCodexImporter } from "./campaign-codex-importer.js";
 import { GroupLinkers } from "./sheets/group-linkers.js";
 
 /**
- * HTML string for the main campaign codex action buttons.
+ * localization.
  * @type {string}
  */
-export const buttonGrouphead = `
+export const localize = (key) => game.i18n.localize(`CAMPAIGN_CODEX.${key}`);
+
+/**
+ * formatted localization.
+ * @type {string}
+ */
+export const format = (key, data) => game.i18n.format(`CAMPAIGN_CODEX.${key}`, data);
+
+/**
+ * HTML string for the main campaign codex action buttons.
+ * @returns {string}
+ */
+export const getButtonGrouphead = () => `
     <div class="campaign-codex-buttons" style="margin: 8px 0; display: flex; gap: 4px; flex-wrap: wrap;">
-        <button class="create-region-btn" type="button" title="Create New Region" style="flex: 1; min-width: 0; padding: 4px 8px; font-size: 11px; background: #20c997; color: white; border: none; border-radius: 4px; cursor: pointer;">
+        <button class="create-region-btn cc-create-buttons" type="button" title="${format('button.title', {type: localize('names.region')})}" style="background: #20c997;">
             <i class="fas fa-globe"></i>
         </button>
-        <button class="create-location-btn" type="button" title="Create New Location" style="flex: 1; min-width: 0; padding: 4px 8px; font-size: 11px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer;">
+        <button class="create-location-btn cc-create-buttons" type="button" title="${format('button.title', {type: localize('names.location')})}" style="background: #28a745;">
             <i class="fas fa-map-marker-alt"></i>
         </button>
-        <button class="create-shop-btn" type="button" title="Create New Entry" style="flex: 1; min-width: 0; padding: 4px 8px; font-size: 11px; background: #6f42c1; color: white; border: none; border-radius: 4px; cursor: pointer;">
+        <button class="create-shop-btn cc-create-buttons" type="button" title="${format('button.title', {type: localize('names.entry')})}" style="background: #6f42c1;">
             <i class="fas fa-book-open"></i>
         </button>
-        <button class="create-npc-btn" type="button" title="Create New NPC Journal" style="flex: 1; min-width: 0; padding: 4px 8px; font-size: 11px; background: #fd7e14; color: white; border: none; border-radius: 4px; cursor: pointer;">
+        <button class="create-npc-btn cc-create-buttons" type="button" title="${format('button.title', {type: localize('names.npc')})}" style="background: #fd7e14;">
             <i class="fas fa-user"></i>
         </button>
-        <button class="create-group-btn" type="button" title="Create New Group Overview" style="flex: 1; min-width: 0; padding: 4px 8px; font-size: 11px; background: #17a2b8; color: white; border: none; border-radius: 4px; cursor: pointer;">
+        <button class="create-group-btn cc-create-buttons" type="button" title="${format('button.title', {type: localize('names.group')})}" style="background: #17a2b8;">
             <i class="fas fa-layer-group"></i>
         </button>
     </div>
@@ -369,7 +381,7 @@ export function addJournalDirectoryUI(html) {
 
     const directoryHeader = nativeHtml.querySelector(".directory-header");
     if (directoryHeader) {
-        directoryHeader.insertAdjacentHTML("beforeend", buttonGrouphead);
+        directoryHeader.insertAdjacentHTML("beforeend", getButtonGrouphead());
     }
 
     nativeHtml
