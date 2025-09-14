@@ -455,7 +455,7 @@ export class ShopSheet extends CampaignCodexBaseSheet {
     const currentData = this.document.getFlag("campaign-codex", "data") || {};
     currentData.isLoot = isLoot;
     await this.document.setFlag("campaign-codex", "data", currentData);
-    this.render(false);
+    this.render(true);
   }
 
   async _onHideInventoryToggle(event) {
@@ -468,7 +468,7 @@ export class ShopSheet extends CampaignCodexBaseSheet {
       this._currentTab = "info";
     }
 
-    this.render(false);
+    this.render(true);
   }
 
   async _onMarkupChange(event) {
@@ -476,7 +476,7 @@ export class ShopSheet extends CampaignCodexBaseSheet {
     const currentData = this.document.getFlag("campaign-codex", "data") || {};
     currentData.markup = markup;
     await this.document.setFlag("campaign-codex", "data", currentData);
-    this.render(false);
+    this.render(true);
   }
 
   async _onQuantityChange(event) {
@@ -666,7 +666,7 @@ export class ShopSheet extends CampaignCodexBaseSheet {
     await this._saveFormData();
     await game.campaignCodex.linkSceneToDocument(scene, this.document);
     ui.notifications.info(`Linked scene "${scene.name}" to ${this.document.name}`);
-    this.render(false);
+    this.render(true);
   }
 
   async _handleItemDrop(data, event) {
