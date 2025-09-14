@@ -26,9 +26,7 @@ import {
 Hooks.once("init", async function () {
     console.log("Campaign Codex | Initializing");
     console.log("Campaign Codex | Pausing relationship updates for until ready.");
-    // Handlebars.registerHelper("localize", function(key) {
-    //     return game.i18n.localize(key);
-    // });
+
     game.campaignCodexImporting = true;
     await campaigncodexSettings();
 
@@ -297,38 +295,10 @@ Hooks.on("renderJournalEntry", async (journal, html, data) => {
     }
 });
 
-// Hooks.on("updateJournalEntry", async (document, changes, options, userId) => {
-//     if (changes.name) {
-//         await CampaignManager._scheduleSheetRefresh(document.uuid);
-//     }     
 
-
-//     if (changes.permission) {
-//         for (const app of Object.values(ui.windows)) {
-//             if (app.document?.getFlag("campaign-codex", "type") && app.document.uuid !== document.uuid) {
-//                 if (app._isRelatedDocument && (await app._isRelatedDocument(document.uuid))) {
-//                     console.log(`Campaign Codex | Refreshing ${app.document.name} due to permission update in ${document.name}`);
-//                     app.render(false);
-//                 }
-//             }
-//         }
-//     }
-
-//     if (document._skipRelationshipUpdates || options.skipRelationshipUpdates || game.campaignCodexImporting || game.user.id !== userId) return;
-
-//     const type = document.getFlag("campaign-codex", "type");
-//     if (!type) return;
-
-//     try {
-//         await game.campaignCodex.handleRelationshipUpdates(document, changes, type);
-//     } catch (error) {
-//         console.error("Campaign Codex | Error in updateJournalEntry hook:", error);
-//     }
-// });
 
 
 Hooks.on("updateJournalEntry", async (document, changes, options, userId) => {
-  // First, handle the bidirectional data updates if the change was made by the current user.
   if (
     !document._skipRelationshipUpdates &&
     !options.skipRelationshipUpdates &&
@@ -338,7 +308,6 @@ Hooks.on("updateJournalEntry", async (document, changes, options, userId) => {
     const type = document.getFlag("campaign-codex", "type");
     if (type) {
       try {
-        // console.log("updateJournalEntry");
         await game.campaignCodex.handleRelationshipUpdates(
           document,
           changes,
@@ -353,7 +322,6 @@ Hooks.on("updateJournalEntry", async (document, changes, options, userId) => {
     }
   }
 
-  // Second, schedule a refresh for any open sheets that might be affected by this change.
   await game.campaignCodex._scheduleSheetRefresh(document.uuid);
 });
 
@@ -361,66 +329,16 @@ Hooks.on("updateJournalEntry", async (document, changes, options, userId) => {
 Hooks.on("updateActor", async (actor, changes, options, userId) => {
   if (game.user.id !== userId) return;
 
-  // Find any NPC Journal linked to this actor.
   const linkedNPC = game.journal.find(
     (j) => j.getFlag("campaign-codex", "data")?.linkedActor === actor.uuid,
   );
 
-  // If a linked NPC journal exists, any sheet related to that NPC needs to be refreshed.
   if (linkedNPC) {
     await game.campaignCodex._scheduleSheetRefresh(linkedNPC.uuid);
   }
 });
 
-// Hooks.on("updateActor", async (actor, changes, options, userId) => {
-//     if (game.user.id !== userId || !changes.img) return;
-//     const linkedNPCs = game.journal.filter((j) => j.getFlag("campaign-codex", "data")?.linkedActor === actor.uuid);
-//     if (linkedNPCs.length === 0) return;
 
-//     const linkedNpcUuids = new Set(linkedNPCs.map((j) => j.uuid));
-//     console.log(`Campaign Codex | Actor image updated for ${actor.name}. Found ${linkedNPCs.length} linked NPC journals.`);
-
-//     const sheetsToRefresh = new Set();
-
-//     for (const app of Object.values(ui.windows)) {
-//         if (!app.document?.getFlag) continue;
-//         const docType = app.document.getFlag("campaign-codex", "type");
-//         if (!docType) continue;
-
-//         if (docType === "npc" && linkedNpcUuids.has(app.document.uuid)) {
-//             sheetsToRefresh.add(app);
-//             continue;
-//         }
-
-//         if (docType === "group" && app.constructor.name === "GroupSheet") {
-//             const groupData = app.document.getFlag("campaign-codex", "data") || {};
-//             const groupMembers = await GroupLinkers.getGroupMembers(groupData.members || []);
-//             const nestedData = await GroupLinkers.getNestedData(groupMembers);
-
-//             const containsNpc = nestedData.allNPCs.some((npc) => linkedNpcUuids.has(npc.uuid));
-//             if (containsNpc) {
-//                 sheetsToRefresh.add(app);
-//             }
-//             continue;
-//         }
-
-//         if (app._isRelatedDocument) {
-//             for (const npcUuid of linkedNpcUuids) {
-//                 if (await app._isRelatedDocument(npcUuid)) {
-//                     sheetsToRefresh.add(app);
-//                     break;
-//                 }
-//             }
-//         }
-//     }
-
-//     if (sheetsToRefresh.size > 0) {
-//         console.log(`Campaign Codex | Refreshing ${sheetsToRefresh.size} sheets.`);
-//         for (const app of sheetsToRefresh) {
-//             app.render(false);
-//         }
-//     }
-// });
 
 
 Hooks.on("renderChatMessageHTML", (app, html, data) => {

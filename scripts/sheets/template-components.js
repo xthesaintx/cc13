@@ -45,28 +45,6 @@ export class TemplateComponents {
     return ASSET_MAP.default.image;
   }
 
-  // static async prepareEntitiesWithPermissions(entities) {
-  //   if (!entities || entities.length === 0) return [];
-  //   const permissionPromises = entities.map((entity) => {
-  //     const entityPromise = CampaignCodexBaseSheet.canUserView(entity.uuid);
-  //     const actorPromise = entity.actor?.uuid
-  //       ? CampaignCodexBaseSheet.canUserView(entity.actor.uuid)
-  //       : Promise.resolve(false);
-  //     return Promise.all([entityPromise, actorPromise]);
-  //   });
-
-  //   const allPermissions = await Promise.all(permissionPromises);
-
-  //   return entities.map((entity, index) => {
-  //     const [canViewEntity, canViewActor] = allPermissions[index];
-
-  //     return {
-  //       ...entity,
-  //       canView: canViewEntity,
-  //       canViewActor: canViewActor,
-  //     };
-  //   });
-  // }
 
   // =========================================================================
   // General UI Components
@@ -117,7 +95,6 @@ export class TemplateComponents {
     }
 
     const escapedRawValue = foundry.utils.escapeHTML(rawValue);
-    // const escapedRawValue = Handlebars.escapeExpression(rawValue);
 
     return `
       <article class="journal-entry-page cc-enriched${systemClass}">
@@ -624,38 +601,6 @@ export class TemplateComponents {
   // Journal Components
   // =========================================================================
 
-  // /**
-  //  * Creates a section for linking to a standard Foundry Journal Entry.
-  //  * @param {object} data - The sheet data containing journal link info.
-  //  * @returns {string} The HTML for the journal section.
-  //  */
-  // static standardJournalSection(data) {
-  //   if (data.linkedStandardJournal && data.canViewJournal) {
-  //     return `
-  //       <div class="scene-info" style="margin-top: -24px;margin-bottom: 24px; min-height:40px">
-  //         <span class="scene-name open-journal" data-journal-uuid="${data.linkedStandardJournal.uuid}" title="${format('message.open', { type: localize('names.journal') })}">
-  //           <i class="fas fa-book"></i> ${data.linkedStandardJournal.name}
-  //         </span>
-  //         ${
-  //           data.isGM
-  //             ? `<button type="button" class="scene-btn remove-standard-journal" title="${format('message.unlink', {type: localize('names.journal') })}">
-  //                 <i class="fas fa-unlink"></i>
-  //                </button>`
-  //             : ""
-  //         }
-  //       </div>
-  //     `;
-  //   } else if (data.isGM) {
-  //     return `
-  //       <div class="scene-info" style="margin-top: -24px;margin-bottom: 24px; min-height:40px">
-  //         <span class="scene-name" title="${format("message.open", { type: localize('names.journal') })}">
-  //           <i class="fas fa-book"></i> ${localize('ui.drag.link.journal.standard')}
-  //         </span>
-  //       </div>
-  //     `;
-  //   }
-  //   return "";
-  // }
 
 /**
  * Creates a grid of cards for linked standard journals.

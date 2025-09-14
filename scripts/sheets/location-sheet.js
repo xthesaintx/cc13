@@ -64,7 +64,6 @@ export class LocationSheet extends CampaignCodexBaseSheet {
     data.canViewRegion = canViewRegion;
     data.canViewScene = canViewScene;
 
-    // const locationData = this.document.getFlag("campaign-codex", "data") || {};
 
     // --- Basic Sheet Info ---
     data.sheetType = "location";
@@ -72,10 +71,7 @@ export class LocationSheet extends CampaignCodexBaseSheet {
     data.customImage = this.document.getFlag("campaign-codex", "image") || TemplateComponents.getAsset("image", "location");
 
     // --- Linked Data Fetching ---
-    // data.linkedRegion = await CampaignCodexLinkers.getLinkedRegion(this.document);
-    // data.directNPCs = await CampaignCodexLinkers.getDirectNPCs(this.document, locationData.linkedNPCs || []);
-    // data.shopNPCs = await CampaignCodexLinkers.getShopNPCs(this.document, locationData.linkedShops || []);
-    // data.linkedShops = await CampaignCodexLinkers.getLinkedShops(this.document, locationData.linkedShops || []);
+
     data.allNPCs = [...data.directNPCs, ...data.shopNPCs];
     data.taggedDirectNPCs = data.directNPCs.filter((npc) => npc.tag === true);
     data.taggedShopNPCs = data.shopNPCs.filter((npc) => npc.tag === true);
@@ -86,27 +82,6 @@ export class LocationSheet extends CampaignCodexBaseSheet {
 
     const directUuids = new Set(data.directNPCsWithoutTaggedNPCs.map((npc) => npc.uuid));
     data.shopNPCsWithoutTaggedNPCsNoDirect = data.shopNPCsWithoutTaggedNPCs.filter((associate) => !directUuids.has(associate.uuid));
-
-    // // Linked Scene
-    // data.linkedScene = null;
-    // if (locationData.linkedScene) {
-    //   try {
-    //     const scene = await fromUuid(locationData.linkedScene);
-    //     if (scene) {
-    //       data.linkedScene = {
-    //         uuid: scene.uuid,
-    //         name: scene.name,
-    //         img: scene.thumb || "icons/svg/map.svg",
-    //       };
-    //     }
-    //   } catch (error) {
-    //     console.warn(`Campaign Codex | Linked scene not found: ${locationData.linkedScene}`);
-    //   }
-    // }
-
-    // --- Permissions ---
-    // data.canViewRegion = await this.constructor.canUserView(data.linkedRegion?.uuid);
-    // data.canViewScene = await this.constructor.canUserView(data.linkedScene?.uuid);
 
     // --- UI Component Data ---
     data.tabs = [
@@ -366,12 +341,10 @@ export class LocationSheet extends CampaignCodexBaseSheet {
     if (!journal || journal.uuid === this.document.uuid) return;
 
     const journalType = journal.getFlag("campaign-codex", "type");
-    // const dropOnInfoTab = event.target.closest('.tab-panel[data-tab="info"]');
 
     await this._saveFormData();
     if (((!journalType && data.type === "JournalEntry") || data.type === "JournalEntryPage")) {
       const locationData = this.document.getFlag("campaign-codex", "data") || {};
-      // Ensure linkedStandardJournals is an array
       locationData.linkedStandardJournals = locationData.linkedStandardJournals || [];
 
       // Avoid adding duplicates

@@ -33,7 +33,6 @@ export class NPCSheet extends CampaignCodexBaseSheet {
   async getData() {
     const data = await super.getData();
 
-    // PERFORMANCE: Use cached data if available.
     if (!this._processedData) {
       this._processedData = await this._processNpcData();
     }
@@ -46,18 +45,14 @@ export class NPCSheet extends CampaignCodexBaseSheet {
     data.associates = associates;
 
 
-    // const npcData = this.document.getFlag("campaign-codex", "data") || {};
-    // data.tagMode = npcData.tagMode || false;
+
 
     // --- Linked Data Fetching ---
-    // data.linkedActor = npcData.linkedActor ? await CampaignCodexLinkers.getLinkedActor(npcData.linkedActor) : null;
-    // const rawLocations = await CampaignCodexLinkers.getAllLocations(this.document, npcData.linkedLocations || []);
+
     data.defaultImage = TemplateComponents.getAsset("image", "npc");
 
     // Permissions
     data.allLocations = rawLocations;
-    // data.linkedShops = await CampaignCodexLinkers.getLinkedShopsWithLocation(this.document, npcData.linkedShops || []);
-    // data.associates = await CampaignCodexLinkers.getAssociates(this.document, npcData.associates || []);
     data.taggedNPCs = data.associates.filter((npc) => npc.tag === true);
     data.associatesWithoutTaggedNPCs = data.associates.filter((npc) => npc.tag !== true);
 
@@ -512,7 +507,6 @@ export class NPCSheet extends CampaignCodexBaseSheet {
 
     if (((!journalType && data.type === "JournalEntry") || data.type === "JournalEntryPage")) {
         const locationData = this.document.getFlag("campaign-codex", "data") || {};
-        // Ensure linkedStandardJournals is an array
         locationData.linkedStandardJournals = locationData.linkedStandardJournals || [];
 
         // Avoid adding duplicates

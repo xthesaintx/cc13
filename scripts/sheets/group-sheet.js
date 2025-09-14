@@ -50,7 +50,6 @@ export class GroupSheet extends CampaignCodexBaseSheet {
 
   async getData() {
     const data = await super.getData();
-    // const groupData = this.document.getFlag("campaign-codex", "data") || {};
     data.isGM = game.user.isGM;
     if (!this._processedData) {
       this._processedData = await this._processGroupData();
@@ -59,12 +58,9 @@ export class GroupSheet extends CampaignCodexBaseSheet {
     data.groupMembers = groupMembers;
     data.nestedData = nestedData;
     data.treeTagNodes = treeTagNodes;
-    // data.groupMembers = await GroupLinkers.getGroupMembers(groupData.members || []);
-    // data.nestedData = await GroupLinkers.getNestedData(data.groupMembers);
     data.sheetType = "group";
     data.sheetTypeLabel = localize("names.group");
     data.customImage = this.document.getFlag("campaign-codex", "image") || TemplateComponents.getAsset("image", "group");
-    // data.treeTagNodes = await GroupLinkers.buildTagTree(data.nestedData);
     data.leftPanel = await this._generateLeftPanel(data.groupMembers, data.nestedData, data.treeTagNodes);
     data.tabs = [
       {
@@ -153,14 +149,6 @@ export class GroupSheet extends CampaignCodexBaseSheet {
     const nativeHtml = html instanceof jQuery ? html[0] : html;
     super.activateListeners(html);
 
-    // if (this._sidebarScrollTop) {
-    //   const treeContent = nativeHtml.querySelector(".tree-content");
-    //   if (treeContent) {
-    //     treeContent.scrollTop = this._sidebarScrollTop;
-    //   }
-    //   // Reset the stored value so it doesn't get reapplied on other renders
-    //   this._sidebarScrollTop = 0; 
-    // }
 
 
     const singleActionMap = {
@@ -207,13 +195,6 @@ export class GroupSheet extends CampaignCodexBaseSheet {
       });
     }
 
-    // // Stop images being clickable
-    // nativeHtml.querySelectorAll(".card-image-clickable").forEach((element) =>
-    //   element.addEventListener("click", (e) => {
-    //     e.stopPropagation();
-    //     this._onOpenDocument(e, "sheet");
-    //   }),
-    // );
 
     nativeHtml.querySelector(".tag-mode-toggle")?.addEventListener("change", this._onTagToggle.bind(this));
   }
@@ -818,7 +799,6 @@ export class GroupSheet extends CampaignCodexBaseSheet {
     if (!nodes || nodes.length === 0) return "";
     const hideByPermission = game.settings.get("campaign-codex", "hideByPermission");
 
-    // 1. Define the desired order for sorting by type.
     const typeOrder = {
       tag: 1,
       group: 2,
@@ -826,36 +806,25 @@ export class GroupSheet extends CampaignCodexBaseSheet {
       location: 4,
       shop: 5,
       npc: 6,
-      associate: 6, // Associates are NPCs, so they get the same priority
+      associate: 6, 
     };
 
-    // 2. Filter nodes based on permissions first.
     const filteredNodes = nodes.filter((child) => !hideByPermission || child.canView);
 
-    // 3. Sort the filtered nodes using the custom multi-level sort.
     const sortedNodes = [...filteredNodes].sort((a, b) => {
-      const typeA = typeOrder[a.type] || 99; // Get numeric order for type A
-      const typeB = typeOrder[b.type] || 99; // Get numeric order for type B
+      const typeA = typeOrder[a.type] || 99; 
+      const typeB = typeOrder[b.type] || 99; 
 
-      // If types are different, sort by the defined type order
       if (typeA !== typeB) {
         return typeA - typeB;
       }
 
-      // If types are the same, sort alphabetically by name
       return a.name.localeCompare(b.name);
     });
 
-    // 4. Map the sorted nodes to HTML.
     return sortedNodes
-    // if (!nodes || nodes.length === 0) return "";
-    // const hideByPermission = game.settings.get("campaign-codex", "hideByPermission");
 
-    // const alphaCards = game.settings.get("campaign-codex", "sortCardsAlpha");
-    // const nodestoRender = alphaCards ? [...nodes].sort((a, b) => a.name.localeCompare(b.name)) : nodes;
 
-    // const filteredNodesToRender = nodestoRender.filter((child) => !hideByPermission || child.canView);
-    // return filteredNodesToRender
       .map((node) => {
         const children = node.associates ? [...node.associates, ...node.locations, ...node.shops, ...node.regions] : [];
         const hasChildren = children.length > 0;
@@ -891,21 +860,10 @@ export class GroupSheet extends CampaignCodexBaseSheet {
   }
 
   _generateTreeNodes(nodes, nestedData) {
-    // let html = "";
-    // if (!nodes) return html;
-    // const alphaCards = game.settings.get("campaign-codex", "sortCardsAlpha");
-    // const nodestoRender = alphaCards ? [...nodes].sort((a, b) => a.name.localeCompare(b.name)) : nodes;
-    // const hideByPermission = game.settings.get("campaign-codex", "hideByPermission");
 
-    // return nodestoRender
-    //   .map((node) => {
-    //     if (node.type === "npc" && !this._showTreeNPCs) {
-    //       return "";
-    //     }
 
     if (!nodes) return "";
 
-    // 1. Define the desired order for sorting by type.
     const typeOrder = {
       group: 1,
       region: 2,
@@ -914,23 +872,19 @@ export class GroupSheet extends CampaignCodexBaseSheet {
       npc: 5,
     };
 
-    // 2. Sort the nodes using a custom compare function.
     const sortedNodes = [...nodes].sort((a, b) => {
-      const typeA = typeOrder[a.type] || 99; // Get the numeric order for type A
-      const typeB = typeOrder[b.type] || 99; // Get the numeric order for type B
+      const typeA = typeOrder[a.type] || 99; 
+      const typeB = typeOrder[b.type] || 99; 
 
-      // If the types are different, sort by type order
       if (typeA !== typeB) {
         return typeA - typeB;
       }
 
-      // If types are the same, sort alphabetically by name
       return a.name.localeCompare(b.name);
     });
 
     const hideByPermission = game.settings.get("campaign-codex", "hideByPermission");
 
-    // 3. Map the now sorted nodes to HTML.
     return sortedNodes
       .map((node) => {
         if (node.type === "npc" && !this._showTreeNPCs) {
@@ -1029,7 +983,6 @@ export class GroupSheet extends CampaignCodexBaseSheet {
 
   _generateInfoTab(data) {
         const standardJournalGrid = TemplateComponents.standardJournalGrid(data.linkedStandardJournals);
-      // ${TemplateComponents.standardJournalSection(data)}
 
     return `
 
@@ -1272,7 +1225,6 @@ export class GroupSheet extends CampaignCodexBaseSheet {
       return;
     }
 
-    // Check for and prevent circular dependencies
     if (newMemberDoc.getFlag("campaign-codex", "type") === "group.notfound") {
       const membersOfNewGroup = await GroupLinkers.getGroupMembers(newMemberDoc.getFlag("campaign-codex", "data")?.members || []);
       const nestedDataOfNewGroup = await GroupLinkers.getNestedData(membersOfNewGroup);
@@ -1286,7 +1238,6 @@ export class GroupSheet extends CampaignCodexBaseSheet {
     const groupData = this.document.getFlag("campaign-codex", "data") || {};
     let currentMembers = groupData.members || [];
 
-    // Prevent adding a member that is already included as a child of another member
     const existingMembers = await GroupLinkers.getGroupMembers(currentMembers);
     const nestedData = await GroupLinkers.getNestedData(existingMembers);
     const allExistingNestedUuids = new Set([
@@ -1302,7 +1253,6 @@ export class GroupSheet extends CampaignCodexBaseSheet {
       return;
     }
 
-    // Get all nested children of the NEW member
     const newMemberAsGroupMember = [
       {
         uuid: newMemberUuid,
@@ -1318,11 +1268,9 @@ export class GroupSheet extends CampaignCodexBaseSheet {
       ...nestedDataOfNewMember.allNPCs.map((i) => i.uuid),
     ]);
 
-    // Filter the current members list, removing any that are children of the new member
     const membersToRemove = currentMembers.filter((memberUuid) => allNestedUuidsOfNewMember.has(memberUuid));
     let updatedMembers = currentMembers.filter((memberUuid) => !allNestedUuidsOfNewMember.has(memberUuid));
 
-    // Add the new member to the cleaned list
     updatedMembers.push(newMemberUuid);
     groupData.members = updatedMembers;
     await this.document.setFlag("campaign-codex", "data", groupData);
@@ -1413,8 +1361,7 @@ export class GroupSheet extends CampaignCodexBaseSheet {
   async _isRelatedDocument(changedDocUuid) {
     if (!this.document.getFlag) return false;
     
-    // PERFORMANCE: Use the cache if it exists, otherwise get fresh data.
-    // This makes the check much faster after the initial render.
+
     if (!this._processedData) {
         this._processedData = await this._processGroupData();
     }
@@ -1472,12 +1419,7 @@ export class GroupSheet extends CampaignCodexBaseSheet {
       return;
     }
     
-    // const nativeElement = this.element instanceof jQuery ? this.element[0] : this.element;
-    // const treeContent = nativeElement.querySelector(".tree-content")
 
-    // if (treeContent) {
-    //   this._sidebarScrollTop = treeContent.scrollTop;
-    // }
 
     const treeNode = event.currentTarget.closest(".tree-node");
     const uuid = treeNode.dataset.sheetUuid;

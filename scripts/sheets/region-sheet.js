@@ -74,33 +74,18 @@ export class RegionSheet extends CampaignCodexBaseSheet {
     data.linkedScene = linkedScene;
     data.canViewScene = canViewScene;
 
-    // const regionData = this.document.getFlag("campaign-codex", "data") || {};
 
     // --- Basic Sheet Info ---
     data.sheetType = "region";
     data.sheetTypeLabel = localize("names.region");
     data.customImage = this.document.getFlag("campaign-codex", "image") || TemplateComponents.getAsset("image", "region");
 
-    // --- Linked Tagged NPCs and All Linked NPCs (for clean up) ---
-    // const rawLinkedNPCs = await CampaignCodexLinkers.getLinkedNPCs(this.document, regionData.linkedNPCs || []);
 
     // --- Linked Data Fetching ---
     const locationUuids = regionData.linkedLocations || [];
     const shopUuids = regionData.linkedShops || [];
 
-    // const rawLocations = await CampaignCodexLinkers.getLinkedLocations(this.document, locationUuids);
-    // const rawNPCs = await CampaignCodexLinkers.getAllNPCs(locationUuids);
-    // const rawShops = await CampaignCodexLinkers.getAllShops(locationUuids);
-    // const rawdirectShops = await CampaignCodexLinkers.getLinkedShops(this.document, shopUuids);
-    // const rawShopNPCs = await CampaignCodexLinkers.getShopNPCs(this.document, regionData.linkedShops);
 
-    // --- Permissions Processing ---
-    // data.linkedLocations = rawLocations;
-    // data.allShops = rawShops;
-    // data.linkedShops = rawdirectShops;
-    // data.shopNPCs = rawShopNPCs;
-    // data.allNPCs = rawNPCs;
-    // data.linkedNPCs = rawLinkedNPCs;
 
     //tags
     data.taggedNPCs = data.linkedNPCs.filter((npc) => npc.tag === true);
@@ -114,20 +99,6 @@ export class RegionSheet extends CampaignCodexBaseSheet {
     data.allNPCsWithoutTaggedNPCsnoDirect = data.allNPCsWithoutTaggedNPCs.filter((associate) => !directUuids.has(associate.uuid));
     const directEntryUuids = new Set(data.shopNPCsWithoutTaggedNPCsnoDirect.map((npc) => npc.uuid));
     data.shopNPCsWithoutTaggedNPCsnoDirectnoShop = data.allNPCsWithoutTaggedNPCsnoDirect.filter((associate) => !directEntryUuids.has(associate.uuid));
-
-    // // --- Linked Scene ---
-    // data.linkedScene = null;
-    // if (regionData.linkedScene) {
-    //   try {
-    //     const scene = await fromUuid(regionData.linkedScene);
-    //     if (scene) {
-    //       data.linkedScene = { uuid: scene.uuid, name: scene.name, img: scene.thumb || "icons/svg/map.svg" };
-    //     }
-    //   } catch (error) {
-    //     console.warn(`Campaign Codex | Linked scene not found: ${regionData.linkedScene}`);
-    //   }
-    // }
-    // data.canViewScene = await this.constructor.canUserView(data.linkedScene?.uuid);
 
     // --- UI Component Data ---
     data.tabs = [

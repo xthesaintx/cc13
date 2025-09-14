@@ -253,7 +253,6 @@ export class SimpleCampaignCodexImporter {
             processPack(compendiums.items, "items"),
             processPack(compendiums.scenes, "scenes"),
         ]);
-        // importData.journals = new Set([...importData.journals].filter(j => j.getFlag(this.CONSTANTS.FLAG_SCOPE, this.CONSTANTS.FLAG_TYPE)));
         // JOURNAL ADDITION
         const hasCodexJournal = [...importData.journals].some((j) =>
             j.getFlag(this.CONSTANTS.FLAG_SCOPE, this.CONSTANTS.FLAG_TYPE),
@@ -573,28 +572,7 @@ export class SimpleCampaignCodexImporter {
                 return relink(oldUuid);
             });
         }
-        // for (const field of singleLinkFields) {
-        //     if (newCodexData[field]) {
-        //         if (field === "linkedStandardJournal") {
-        //             const parts =
-        //                 newCodexData[field].split(".JournalEntryPage.");
-        //             const oldJournalUuid = parts[0];
-        //             const newJournalUuid = uuidMap.get(oldJournalUuid);
 
-        //             if (newJournalUuid) {
-        //                 if (parts.length > 1) {
-        //                     const pageIdPart = parts[1];
-        //                     newCodexData[field] =
-        //                         `${newJournalUuid}.JournalEntryPage.${pageIdPart}`;
-        //                 } else {
-        //                     newCodexData[field] = newJournalUuid;
-        //                 }
-        //             }
-        //         } else {
-        //             newCodexData[field] = relink(newCodexData[field]);
-        //         }
-        //     }
-        // }
 
         [
             "linkedNPCs",

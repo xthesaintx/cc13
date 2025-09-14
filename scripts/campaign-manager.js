@@ -191,7 +191,6 @@ export class CampaignManager {
     const locData = regionDoc.getFlag("campaign-codex", "data") || {};
     const npcData = npcDoc.getFlag("campaign-codex", "data") || {};
     const locNPCs = new Set(locData.linkedNPCs || []);
-    // if (npcData.tagMode){
       if (!locNPCs.has(npcDoc.uuid)) {
         locNPCs.add(npcDoc.uuid);
         locData.linkedNPCs = [...locNPCs];
@@ -204,7 +203,6 @@ export class CampaignManager {
         npcData.linkedLocations = [...npcLocs];
         await npcDoc.setFlag("campaign-codex", "data", npcData);
       }
-    // } 
   }
 
   async linkLocationToShop(locationDoc, shopDoc) {
@@ -601,7 +599,6 @@ async _scheduleSheetRefresh(changedDocUuid) {
       if (changedDoc) {
         const changedType = changedDoc.getFlag("campaign-codex", "type");
 
-        // Case 1: An NPC was updated
         if (changedType === "npc") {
           const npcData = changedDoc.getFlag("campaign-codex", "data") || {};
           const directLocationsAndRegions = (await CampaignCodexLinkers.getNameFromUuids(npcData.linkedLocations || [])).map(uuid => fromUuid(uuid));
@@ -639,13 +636,7 @@ async _scheduleSheetRefresh(changedDocUuid) {
                 }
             }
         }
-        
-        // if(changedType === "location") {
-        //      const locationData = changedDoc.getFlag("campaign-codex", "data") || {};
-        //      if(locationData.parentRegion) {
-        //          indirectlyRelatedUuids.add(locationData.parentRegion);
-        //      }
-        // }
+
       }
     } catch (e) {
       console.warn(`Campaign Codex | Could not process indirect relationships for ${changedDocUuid}`, e);
@@ -674,7 +665,6 @@ async _scheduleSheetRefresh(changedDocUuid) {
     }
 
     for (const app of sheetsToRefresh) {
-      // app.render(false);
       app.render(true);
     }
   }

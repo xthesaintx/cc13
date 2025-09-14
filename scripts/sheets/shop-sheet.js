@@ -64,36 +64,10 @@ export class ShopSheet extends CampaignCodexBaseSheet {
   data.canViewLocation = canViewLocation;
   data.canViewScene = canViewScene;
 
-    // const shopData = this.document.getFlag("campaign-codex", "data") || {};
-    // data.isLoot = shopData.isLoot || false;
-    // data.hideInventory = shopData.hideInventory || false;
-
-    // data.linkedScene = null;
-    // if (shopData.linkedScene) {
-    //   try {
-    //     const scene = await fromUuid(shopData.linkedScene);
-    //     if (scene) {
-    //       data.linkedScene = {
-    //         uuid: scene.uuid,
-    //         name: scene.name,
-    //         img: scene.thumb || "icons/svg/map.svg",
-    //       };
-    //     }
-    //   } catch (error) {
-    //     console.warn(`Campaign Codex | Linked scene not found: ${shopData.linkedScene}`);
-    //   }
-    // }
-
-    // data.linkedNPCs = await CampaignCodexLinkers.getLinkedNPCs(this.document, shopData.linkedNPCs || []);
-    // data.linkedLocation = shopData.linkedLocation ? await CampaignCodexLinkers.getLinkedLocation(shopData.linkedLocation) : null;
-    // data.inventory = await CampaignCodexLinkers.getInventory(this.document, shopData.inventory || []);
     data.taggedNPCs = data.linkedNPCs.filter((npc) => npc.tag === true);
     data.linkedNPCsWithoutTaggedNPCs = data.linkedNPCs.filter((npc) => npc.tag !== true);
 
     // // Prepare Permissions
-    // data.preparedInventory = data.inventory;
-    // data.canViewLocation = await this.constructor.canUserView(shopData.linkedLocation?.uuid);
-    // data.canViewScene = await this.constructor.canUserView(shopData.linkedScene?.uuid);
 
     data.sheetType = "shop";
     data.sheetTypeLabel = localize("names.shop");
@@ -730,7 +704,6 @@ export class ShopSheet extends CampaignCodexBaseSheet {
     const dropOnInfoTab = event.target.closest('.tab-panel[data-tab="info"]');
     if (((!journalType && data.type === "JournalEntry") || data.type === "JournalEntryPage")) {
         const locationData = this.document.getFlag("campaign-codex", "data") || {};
-        // Ensure linkedStandardJournals is an array
         locationData.linkedStandardJournals = locationData.linkedStandardJournals || [];
 
         // Avoid adding duplicates
@@ -744,7 +717,6 @@ export class ShopSheet extends CampaignCodexBaseSheet {
       }
 
     if (journalType === "npc") {
-      // await this._saveFormData();
       await this._saveFormData();
       await game.campaignCodex.linkShopToNPC(this.document, journal);
       this.render(true);

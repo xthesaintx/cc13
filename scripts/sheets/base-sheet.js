@@ -178,9 +178,8 @@ async _render(force, options) {
     this._activateJournalListeners(nativeHtml);
     this._activateEditorListeners(nativeHtml);
     this._addClassToEditorContent(nativeHtml);
-    this._activateSheetSpecificListeners(nativeHtml); // For subclasses
+    this._activateSheetSpecificListeners(nativeHtml); 
 
-    // Specific button listeners
     nativeHtml.querySelectorAll(".npcs-to-map-button").forEach((element) => element.addEventListener("click", this._onDropNPCsToMapClick.bind(this)));
 
     // Handle non-GM permissions
@@ -314,7 +313,6 @@ async _render(force, options) {
       await this._saveFormData();
       await this._handleDrop(data, event);
 
-      // Refresh this sheet and any related open sheets
       const sheetsToRefresh = new Set([this]);
       const myDocUuid = this.document.uuid;
 
