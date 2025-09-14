@@ -1770,7 +1770,8 @@ width: 40px;
   border-radius: 0 0 16px 16px;
   justify-content: center;
 /*  padding: 8px 0px 8px 4px;  */
-  gap: 12px;
+/*  gap: 12px;*/
+  display: flex;
   background: var(--cc-accent);
   box-shadow: var(--cc-shadow);
 }
@@ -2852,7 +2853,8 @@ margin-bottom: 8px;
   left: 30px;
   border-radius: 0 0 16px 16px;
 /*  padding: 8px 0px 8px 0px;*/
-  gap: 12px;
+/*  gap: 12px;*/
+    display: flex;
   background: var(--cc-accent);
   box-shadow: var(--cc-shadow);
   line-height: 20px;
@@ -2882,7 +2884,9 @@ margin-bottom: 8px;
   border-radius: 0 0 16px 16px;
 /*  padding: 8px 0px 8px 0px;*/
 justify-content: center;
-  gap: 12px;
+    display: flex;
+
+/*  gap: 12px;*/
   background: var(--cc-accent);
   box-shadow: var(--cc-shadow);
   line-height: 20px;
@@ -2905,7 +2909,8 @@ justify-content: center;
   border-radius: 0 0 16px 16px;
   justify-content: center;
 /*  padding: 8px 0px 8px 0px;  */
-  gap: 12px;
+/*  gap: 12px;*/
+    display: flex;
   background: var(--cc-accent);
   box-shadow: var(--cc-shadow);
   line-height: 20px;
@@ -2925,6 +2930,8 @@ justify-content: center;
   border-radius: 0 0 16px 16px;
   justify-content: center;
 /*  padding: 8px 0px 8px 0px;  gap: 12px;*/
+    display: flex;
+
   background: var(--cc-accent);
   box-shadow: var(--cc-shadow);
  line-height: 20px;
