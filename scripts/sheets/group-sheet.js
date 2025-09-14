@@ -16,6 +16,7 @@ export class GroupSheet extends CampaignCodexBaseSheet {
     this._selectedSheetTab = "info";
     this._expandedNodes = new Set();
     this._showTreeItems = false;
+    this._showTreeNPCTags = false;
     this._showTreeNPCs = true;
     this._showTreeTags = false;
     this._processedData = null;
@@ -156,6 +157,7 @@ export class GroupSheet extends CampaignCodexBaseSheet {
       ".btn-collapse-all": this._onCollapseAll,
       ".toggle-tree-items": this._onToggleTreeItems,
       ".toggle-tree-npcs": this._onToggleTreeNPC,
+      ".toggle-tree-npctags": this._onToggleTreeNPCTags,
       ".toggle-tree-tags": this._onToggleTreeTags,
       ".btn-close-selected": this._onCloseSelectedSheet,
       ".btn-open-scene": this._onOpenScene,
@@ -760,13 +762,12 @@ export class GroupSheet extends CampaignCodexBaseSheet {
 
   async _generateLeftPanel(groupMembers, nestedData, tagNodes) {
     const toggleClass = this._showTreeItems ? "active" : "";
+    const toggleClassNPCTags = this._showTreeNPCTags ? "active" : "";
     const toggleClassNPC = this._showTreeNPCs ? "active" : "";
     const toggleClassTag = this._showTreeTags ? "active" : "";
     return `
       <div class="group-tree">
         <div class="tree-header">
-
-          <h3><i class="fas fa-sitemap"></i> Structure</h3>
           <button type="button" class="btn-expand-all" title="Expand All" style="width:32px">
             <i class="fas fa-expand-arrows-alt"></i>
           </button>
@@ -781,8 +782,12 @@ export class GroupSheet extends CampaignCodexBaseSheet {
           </button>
           <button type="button" class="toggle-tree-npcs ${toggleClassNPC}" title="Hide/Show NPCs" style="width:32px">
             <i class="fas fa-user"></i>
-          </button>`
-              : "<div></div><div></div>"
+          </button>
+          <button type="button" class="toggle-tree-npctags ${toggleClassNPCTags}" title="Hide/Show Tags" style="width:32px">
+            <i class="fas fa-user-tag"></i>
+          </button>
+                `
+              : "<div></div><div></div><div></div>"
           }
           <button type="button" class="toggle-tree-tags ${toggleClassTag}" title="Tag Only Mode" style="width:32px">
             <i class="fas fa-tag"></i>
@@ -887,6 +892,7 @@ export class GroupSheet extends CampaignCodexBaseSheet {
 
     return sortedNodes
       .map((node) => {
+        console.log(node);
         if (node.type === "npc" && !this._showTreeNPCs) {
           return "";
         }
@@ -897,7 +903,7 @@ export class GroupSheet extends CampaignCodexBaseSheet {
         const isExpanded = this._expandedNodes.has(node.uuid);
         const isClickable = node.type !== "item";
         const clickableClass = isClickable ? "clickable" : "";
-        return !node?.tag && (!hideByPermission || node.canView)
+        return (this._showTreeNPCTags || !node?.tag) && (!hideByPermission || node.canView)
           ? ` 
        
         <div class="tree-node ${isSelected ? "selected" : ""}" data-type="${node.type}" data-sheet-uuid="${node.uuid}">
@@ -940,6 +946,7 @@ export class GroupSheet extends CampaignCodexBaseSheet {
 
   _getChildrenForMember(member, nestedData) {
     const hideByPermission = game.settings.get("campaign-codex", "hideByPermission");
+   console.log(nestedData);
     let children = [];
     switch (member.type) {
       case "group":
@@ -971,6 +978,10 @@ export class GroupSheet extends CampaignCodexBaseSheet {
     }
 
     return children.filter((child) => {
+      if (this._showTreeNPCTags){
+        const isViewable = !hideByPermission || child.canView;
+        return isViewable;
+      }
       const isNotTaggedNpc = !(child.type === "npc" && child.tag === true);
       const isViewable = !hideByPermission || child.canView;
       return isNotTaggedNpc && isViewable;
@@ -1392,6 +1403,12 @@ export class GroupSheet extends CampaignCodexBaseSheet {
   _onToggleTreeNPC(event) {
     event.preventDefault();
     this._showTreeNPCs = !this._showTreeNPCs;
+    this.render(false);
+  }
+
+  _onToggleTreeNPCTags(event) {
+    event.preventDefault();
+    this._showTreeNPCTags = !this._showTreeNPCTags;
     this.render(false);
   }
 

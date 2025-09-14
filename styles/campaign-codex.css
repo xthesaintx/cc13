@@ -83,6 +83,7 @@
   text-align: center;
   border-bottom: 0px solid var(--cc-border);
   position: relative;
+  padding-bottom: 0px;
 }
 
 .campaign-codex .sidebar-header {
@@ -1330,12 +1331,15 @@ width: 40px;
 }
 
 .campaign-codex .tree-header {
-  padding: 16px;
-  border-bottom: 1px solid var(--cc-border);
-  display: grid;
-  grid-template-columns: 1fr 32px 32px 32px 32px 32px;
-  gap: 4px;
-  align-items: center;
+    /* padding: 16px; */
+    border-bottom: 1px solid var(--cc-border);
+    display: grid;
+    grid-template-columns: 32px 32px 32px 32px 32px 32px;
+    gap: 16px;
+    align-items: center;
+    justify-content: center;
+    padding-top: 4px;
+    padding-bottom: 12px;
 }
 
 .campaign-codex .tree-header h3 {
@@ -1362,6 +1366,7 @@ width: 40px;
   gap: 4px;
   transition: opacity 0.2s ease;
 }
+.campaign-codex .toggle-tree-npctags,
 .campaign-codex .toggle-tree-tags,
 .campaign-codex .toggle-tree-npcs,
 .campaign-codex .toggle-tree-items,
@@ -1380,6 +1385,7 @@ width: 40px;
   text-align: center;
 }
 
+.campaign-codex .toggle-tree-npctags:hover,
 .campaign-codex .toggle-tree-tags:hover,
 .campaign-codex .toggle-tree-npcs:hover,
 .campaign-codex .toggle-tree-items:hover,
@@ -1389,6 +1395,7 @@ width: 40px;
   color: white;
 }
 
+.campaign-codex .toggle-tree-npctags.active,
 .campaign-codex .toggle-tree-tags.active,
 .campaign-codex .toggle-tree-npcs.active,
 .campaign-codex .toggle-tree-items.active {

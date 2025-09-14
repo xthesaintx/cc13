@@ -663,10 +663,13 @@ async _scheduleSheetRefresh(changedDocUuid) {
         sheetsToRefresh.add(app);
       }
     }
-
-    for (const app of sheetsToRefresh) {
-      app.render(true);
-    }
+for (const app of sheetsToRefresh) {
+  const isCurrentlyActive = (ui.activeWindow === app);
+ app.render(true, { focus: isCurrentlyActive });
+}
+    // for (const app of sheetsToRefresh) {
+    //   app.render(true);
+    // }
   }
 
   // =========================================================================
