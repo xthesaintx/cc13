@@ -506,14 +506,14 @@ async _render(force, options) {
     }
 
     this.render(true);
-    if (targetDoc) {
-      for (const app of Object.values(ui.windows)) {
-        if (app.document && app.document.uuid === targetDoc.uuid) {
-          app.render(false);
-          break;
-        }
-      }
-    }
+    // if (targetDoc) {
+      // for (const app of Object.values(ui.windows)) {
+      //   if (app.document && app.document.uuid === targetDoc.uuid) {
+      //     app.render(false);
+      //     break;
+      //   }
+      // }
+    // }
   }
 
   async _onRemoveStandardJournal(event) {
