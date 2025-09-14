@@ -27,7 +27,7 @@ export const getButtonGrouphead = () => `
         <button class="create-location-btn cc-create-buttons" type="button" title="${format('button.title', {type: localize('names.location')})}" style="background: #28a745;">
             <i class="fas fa-map-marker-alt"></i>
         </button>
-        <button class="create-shop-btn cc-create-buttons" type="button" title="${format('button.title', {type: localize('names.entry')})}" style="background: #6f42c1;">
+        <button class="create-shop-btn cc-create-buttons" type="button" title="${format('button.title', {type: localize('names.shop')})}" style="background: #6f42c1;">
             <i class="fas fa-book-open"></i>
         </button>
         <button class="create-npc-btn cc-create-buttons" type="button" title="${format('button.title', {type: localize('names.npc')})}" style="background: #fd7e14;">
