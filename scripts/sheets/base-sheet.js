@@ -445,7 +445,7 @@ async _render(force, options) {
     }
     const newLength = Array.isArray(myData[listName]) ? myData[listName].length : myData[listName] ? 1 : 0;
     if (originalLength === newLength) {
-      this.render(false);
+      this.render(true);
       return;
     }
     await myDoc.setFlag("campaign-codex", "data", myData);
