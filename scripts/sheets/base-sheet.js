@@ -324,8 +324,12 @@ async _render(force, options) {
       }
 
       for (const app of sheetsToRefresh) {
-        app.render(false);
+        const isCurrentlyActive = (ui.activeWindow === app);
+        app.render(true, { focus: isCurrentlyActive });
       }
+      // for (const app of sheetsToRefresh) {
+      //   app.render(false);
+      // }
     } catch (error) {
       console.error("Campaign Codex | Error handling drop:", error);
     } finally {
@@ -501,7 +505,7 @@ async _render(force, options) {
       console.error("Campaign Codex | Error in bidirectional cleanup:", error);
     }
 
-    this.render(false);
+    this.render(true);
     if (targetDoc) {
       for (const app of Object.values(ui.windows)) {
         if (app.document && app.document.uuid === targetDoc.uuid) {
@@ -524,7 +528,7 @@ async _render(force, options) {
     if (currentData.linkedStandardJournals && Array.isArray(currentData.linkedStandardJournals)) {
         currentData.linkedStandardJournals = currentData.linkedStandardJournals.filter(uuid => uuid !== journalUuid);
         await this.document.setFlag("campaign-codex", "data", currentData);
-        this.render(false);
+        this.render(true);
         ui.notifications.info("Unlinked journal.");
     }
 }
@@ -672,7 +676,7 @@ async _render(force, options) {
       default:
         return ui.notifications.warn(`Actor drop not configured for "${sheetType}" sheets.`);
     }
-    this.render(false);
+    this.render(true);
   }
 
   _getSecretContent(secret) {

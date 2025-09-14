@@ -368,6 +368,7 @@ export class NPCSheet extends CampaignCodexBaseSheet {
     const currentData = this.document.getFlag("campaign-codex", "data") || {};
     currentData.tagMode = tagMode;
     await this.document.setFlag("campaign-codex", "data", currentData);
+    this.render(true);
   }
 
   async _onCreateShopJournal(event) {
