@@ -891,27 +891,36 @@ export class GroupSheet extends CampaignCodexBaseSheet {
     const hideByPermission = game.settings.get("campaign-codex", "hideByPermission");
 
     return sortedNodes
-      .map((node) => {
-        console.log(node);
-        if (node.type === "npc" && !this._showTreeNPCs) {
-          return "";
-        }
+     .map((node) => {
+      const passesDisplayFilter =
+        (node.type !== "npc") ||
+        (node.tag && this._showTreeNPCTags) ||
+        (!node.tag && this._showTreeNPCs);
 
+      // A node is only rendered if it passes BOTH the display filter AND the permission check.
+      const shouldRender = passesDisplayFilter && (!hideByPermission || node.canView);
+
+      // if (
+      //   (node.type === "npc" && !this._showTreeNPCs) &&
+      //   (node.tag && !this._showTreeNPCTags) 
+      // ) {
+      //   return ""; // If any condition is met, skip rendering this node.
+      // }
         const children = this._getChildrenForMember(node, nestedData);
         const hasChildren = children && children.length > 0;
         const isSelected = this._selectedSheet && this._selectedSheet.uuid === node.uuid;
         const isExpanded = this._expandedNodes.has(node.uuid);
         const isClickable = node.type !== "item";
         const clickableClass = isClickable ? "clickable" : "";
-        return (this._showTreeNPCTags || !node?.tag) && (!hideByPermission || node.canView)
-          ? ` 
-       
+
+        return shouldRender ?    
+        // return (!hideByPermission || node.canView) ?
+          ` 
         <div class="tree-node ${isSelected ? "selected" : ""}" data-type="${node.type}" data-sheet-uuid="${node.uuid}">
           <div class="tree-node-header ${hasChildren ? "expandable" : ""}">
             ${hasChildren ? `<i class="fas ${isExpanded ? "fa-chevron-down" : "fa-chevron-right"} expand-icon expand-toggle"></i>` : '<i class="tree-spacer"></i>'}
             <i class="${TemplateComponents.getAsset("icon", node.tag ? "tag" : node.type)} node-icon" alt="${node.name}">&nbsp;</i>
             <span class="tree-label ${clickableClass}"> ${node.name}</span>
-            
             <div class="tree-actions">
               ${
                 game.user.isGM
@@ -927,7 +936,6 @@ export class GroupSheet extends CampaignCodexBaseSheet {
               </button>
             </div>
           </div>
-          
           ${
             hasChildren
               ? `
@@ -938,15 +946,14 @@ export class GroupSheet extends CampaignCodexBaseSheet {
               : ""
           }
         </div>
-      `
-          : "";
+      `:"";
+       
       })
       .join("");
   }
 
   _getChildrenForMember(member, nestedData) {
     const hideByPermission = game.settings.get("campaign-codex", "hideByPermission");
-   console.log(nestedData);
     let children = [];
     switch (member.type) {
       case "group":
@@ -955,18 +962,18 @@ export class GroupSheet extends CampaignCodexBaseSheet {
       case "region":
         children.push(...(nestedData.locationsByRegion[member.uuid] || []));
         children.push(...(nestedData.shopsByRegion[member.uuid] || []));
-        if (this._showTreeNPCs) {
+        if (this._showTreeNPCs || this._showTreeNPCTags) {
           children.push(...(nestedData.npcsByRegion[member.uuid] || []));
         }
         break;
       case "location":
         children.push(...(nestedData.shopsByLocation[member.uuid] || []));
-        if (this._showTreeNPCs) {
+        if (this._showTreeNPCs || this._showTreeNPCTags) {
           children.push(...(nestedData.npcsByLocation[member.uuid] || []));
         }
         break;
       case "shop":
-        if (this._showTreeNPCs) {
+        if (this._showTreeNPCs || this._showTreeNPCTags) {
           children.push(...(nestedData.npcsByShop[member.uuid] || []));
         }
         if (this._showTreeItems) {
@@ -978,14 +985,35 @@ export class GroupSheet extends CampaignCodexBaseSheet {
     }
 
     return children.filter((child) => {
-      if (this._showTreeNPCTags){
-        const isViewable = !hideByPermission || child.canView;
-        return isViewable;
-      }
-      const isNotTaggedNpc = !(child.type === "npc" && child.tag === true);
       const isViewable = !hideByPermission || child.canView;
-      return isNotTaggedNpc && isViewable;
+      if (!isViewable) {
+        return false; 
+      }
+      if (child.type !== "npc") {
+        return true;
+      }
+      const isStandardNpc = child.type === "npc" && !child.tag;
+      const isTaggedNpc = child.type === "npc" && child.tag === true;
+      if (this._showTreeNPCs && isStandardNpc) {
+        return true;
+      }
+      if (this._showTreeNPCTags && isTaggedNpc) {
+        return true;
+      }
+      return false;
     });
+
+
+    // return children.filter((child) => {
+    //   if (this._showTreeNPCTags){
+    //     const isTaggedNpc = (child.type === "npc" && child.tag === true);
+    //     const isViewable = !hideByPermission || child.canView;
+    //     return isTaggedNpc && isViewable;
+    //   }
+    //   const isNotTaggedNpc = !(child.type === "npc" && child.tag === true);
+    //   const isViewable = !hideByPermission || child.canView;
+    //   return isNotTaggedNpc && isViewable;
+    // });
   }
 
   // =========================================================================
