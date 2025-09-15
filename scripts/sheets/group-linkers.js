@@ -4,6 +4,33 @@ import { CampaignCodexBaseSheet } from "./base-sheet.js";
 import { localize, format } from "../helper.js";
 
 export class GroupLinkers {
+  
+  /**
+   * Finds any "Tag" NPCs from the tag tree that are not already present in the main NPC list,
+   * and formats them for display.
+   * @param {Array<object>} treeTagNodes - The output from `buildTagTree`.
+   * @param {Array<object>} existingNpcs - The array of `allNPCs` to check against for duplicates.
+   * @returns {Promise<Array<object>>} A promise that resolves to an array of formatted "Tag" NPC objects.
+   */
+  static async formatMissingTags(treeTagNodes, existingNpcs) {
+    const existingNpcUuids = new Set(existingNpcs.map(npc => npc.uuid));
+    const missingTags = treeTagNodes.filter(
+      tagNode => !existingNpcUuids.has(tagNode.uuid)
+    );
+
+    if (missingTags.length === 0) return [];
+    const promises = missingTags.map(async (tagNode) => {
+      const doc = await fromUuid(tagNode.uuid);
+      if (doc) {
+        return this._createNPCInfo(doc, null, null);
+      }
+      return null;
+    });
+
+    const formattedTags = (await Promise.all(promises)).filter(Boolean);
+    return formattedTags;
+  }
+
   /**
    * Builds a structured tree of tagged NPCs and their connections from the pre-processed nestedData.
    * @param {object} nestedData The fully processed data object from GroupLinkers.getNestedData.

@@ -46,7 +46,8 @@ export class GroupSheet extends CampaignCodexBaseSheet {
     const groupMembers = await GroupLinkers.getGroupMembers(groupData.members || []);
     const nestedData = await GroupLinkers.getNestedData(groupMembers);
     const treeTagNodes = await GroupLinkers.buildTagTree(nestedData);
-    return { groupMembers, nestedData, treeTagNodes };
+    const missingTaggedNpcs = await GroupLinkers.formatMissingTags(treeTagNodes, nestedData.allNPCs);
+    return { groupMembers, nestedData, treeTagNodes, missingTaggedNpcs };
   }
 
   async getData() {
@@ -55,10 +56,11 @@ export class GroupSheet extends CampaignCodexBaseSheet {
     if (!this._processedData) {
       this._processedData = await this._processGroupData();
     }
-    const { groupMembers, nestedData, treeTagNodes } = this._processedData;
+    const { groupMembers, nestedData, treeTagNodes, missingTaggedNpcs } = this._processedData;
     data.groupMembers = groupMembers;
     data.nestedData = nestedData;
     data.treeTagNodes = treeTagNodes;
+    data.missingTaggedNpcs = missingTaggedNpcs;
     data.sheetType = "group";
     data.sheetTypeLabel = localize("names.group");
     data.customImage = this.document.getFlag("campaign-codex", "image") || TemplateComponents.getAsset("image", "group");
@@ -1056,7 +1058,12 @@ export class GroupSheet extends CampaignCodexBaseSheet {
   // =========================================================================
 
   async _generateNPCsTab(data) {
-    const preparedNPCs = data.nestedData.allNPCs;
+    const allAvailableNPCs = [
+      ...data.nestedData.allNPCs, 
+      ...(data.missingTaggedNpcs || [])
+    ];
+
+    const uniqueNpcs = [...new Map(allAvailableNPCs.map(npc => [npc.uuid, npc])).values()];
 
     return `
     
@@ -1069,7 +1076,7 @@ export class GroupSheet extends CampaignCodexBaseSheet {
       </div>
       
       <div class="npc-grid-container">
-        ${await this._generateNPCCards(preparedNPCs)}
+        ${await this._generateNPCCards(uniqueNpcs)}
       </div>
     `;
   }
