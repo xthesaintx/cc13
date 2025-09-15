@@ -687,9 +687,7 @@ export class GroupSheet extends CampaignCodexBaseSheet {
 
   async _generateSelectedAssociatesContent(selectedDoc, selectedData) {
     const associates = await CampaignCodexLinkers.getAssociates(selectedDoc, selectedData.associates || []);
-    console.log (associates);
     const preparedassociates = associates;
-    console.log (preparedassociates);
     const dropToMapBtn =
       canvas.scene && game.user.isGM
         ? `
