@@ -618,7 +618,7 @@ export class GroupSheet extends CampaignCodexBaseSheet {
     const preparedNPCs = npcs;
 
     const taggedNpcMap = preparedNPCs.reduce((acc, npc) => {
-      if (npc.tag === false) {
+      if (!npc.tag) {
         acc.set(npc.uuid, npc);
       }
       return acc;
@@ -652,7 +652,7 @@ export class GroupSheet extends CampaignCodexBaseSheet {
     return `
       <div class="selected-content-section">
         <div class="shops-list">
-         ${TemplateComponents.entityGrid(preparedShops, "shop", false, false)}
+         ${TemplateComponents.entityGrid(preparedShops, "shop", false, true)}
         </div>
       </div>
     `;
@@ -668,7 +668,7 @@ export class GroupSheet extends CampaignCodexBaseSheet {
     return `
       <div class="selected-content-section">
         <div class="locations-list">
-          ${TemplateComponents.entityGrid(preparedLocations, "location", false, false)}
+          ${TemplateComponents.entityGrid(preparedLocations, "location", false, true)}
         </div>
       </div>
     `;
@@ -687,7 +687,9 @@ export class GroupSheet extends CampaignCodexBaseSheet {
 
   async _generateSelectedAssociatesContent(selectedDoc, selectedData) {
     const associates = await CampaignCodexLinkers.getAssociates(selectedDoc, selectedData.associates || []);
+    console.log (associates);
     const preparedassociates = associates;
+    console.log (preparedassociates);
     const dropToMapBtn =
       canvas.scene && game.user.isGM
         ? `
@@ -698,7 +700,7 @@ export class GroupSheet extends CampaignCodexBaseSheet {
         : "";
 
     const taggedNpcMap = preparedassociates.reduce((acc, npc) => {
-      if (npc.tag === false) {
+      if (!npc.tag) {
         acc.set(npc.uuid, npc);
       }
       return acc;
