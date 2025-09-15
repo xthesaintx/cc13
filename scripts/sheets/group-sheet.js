@@ -1110,7 +1110,7 @@ export class GroupSheet extends CampaignCodexBaseSheet {
 
     cards.forEach((card) => {
       const cardFilter = card.dataset.filter;
-      if (filter === "all" || cardFilter.includes(filter)) {
+    if (filter === "all" || (cardFilter && cardFilter.includes(filter))) {
         card.style.display = "flex";
       } else {
         card.style.display = "none";
