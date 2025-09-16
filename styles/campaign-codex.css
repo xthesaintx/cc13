@@ -698,6 +698,7 @@ width: 40px;
   letter-spacing: 0.5px;
   vertical-align: top;
   display: inline-block;
+  text-wrap: auto;
 }
 
 .campaign-codex .entity-meta {

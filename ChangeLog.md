@@ -1,3 +1,6 @@
+## 0.8.05
+- entity-name css text wrap fix
+
 ## 0.8.04
 - Region Sheet NPC Tab fix
 
