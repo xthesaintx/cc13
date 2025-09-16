@@ -1,5 +1,8 @@
+## 0.8.04
+- Region Sheet NPC Tab fix
+
 ## 0.8.03
-- Performanc upgrade to all sheets
+- Performance upgrade to all sheets
 - Style update to buttons
 - Multiple Journals tab 
 

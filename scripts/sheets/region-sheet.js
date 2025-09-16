@@ -74,7 +74,6 @@ export class RegionSheet extends CampaignCodexBaseSheet {
     data.linkedScene = linkedScene;
     data.canViewScene = canViewScene;
 
-
     // --- Basic Sheet Info ---
     data.sheetType = "region";
     data.sheetTypeLabel = localize("names.region");
@@ -273,10 +272,25 @@ export class RegionSheet extends CampaignCodexBaseSheet {
   }
 
   async _generateNPCsBySource(data) {
-    const directNPCs = data.shopNPCsWithoutTaggedNPCsnoDirectnoShop.filter((npc) => npc.source === "location");
-    const shopNPCs = data.shopNPCsWithoutTaggedNPCsnoDirectnoShop.filter((npc) => npc.source === "shop");
+
+    // Region SHOPS
     const directShopNPCs = data.shopNPCsWithoutTaggedNPCsnoDirect.filter((npc) => npc.source === "shop");
+
     let content = "";
+
+    const [locationShopNPCs, locationNPCs] = 
+      data.shopNPCsWithoutTaggedNPCsnoDirectnoShop.reduce(
+        ([shops, locations], npc) => {
+          if (npc.shops.length > 0) {
+            shops.push(npc);
+          } else {
+            locations.push(npc);
+          }
+          return [shops, locations];
+        },
+        [[], []]
+    );
+
 
     if (data.linkedNPCsWithoutTaggedNPCs.length > 0) {
       content += `<div class="npc-section">${TemplateComponents.entityGrid(data.linkedNPCsWithoutTaggedNPCs, "npc", true, false)}</div>`;
@@ -286,14 +300,14 @@ export class RegionSheet extends CampaignCodexBaseSheet {
       content += `<div class="npc-section"><h3><i class="${TemplateComponents.getAsset("icon", "shop")}"></i> ${localize("names.shop")} ${localize("names.npcs")}</h3>${TemplateComponents.entityGrid(directShopNPCs, "npc", true, true)}</div>`;
     }
 
-    if (directNPCs.length > 0) {
-      content += `<div class="npc-section"><h3><i class="${TemplateComponents.getAsset("icon", "location")}"></i>${localize("names.location")} ${localize("names.npcs")}</h3>${TemplateComponents.entityGrid(directNPCs, "npc", true, true)}</div>`;
+    if (locationNPCs.length > 0) {
+      content += `<div class="npc-section"><h3><i class="${TemplateComponents.getAsset("icon", "location")}"></i>${localize("names.location")} ${localize("names.npcs")}</h3>${TemplateComponents.entityGrid(locationNPCs, "npc", true, true)}</div>`;
     }
 
-    if (shopNPCs.length > 0) {
-      content += `<div class="npc-section"><h3><i class="${TemplateComponents.getAsset("icon", "shop")}"></i> ${localize("names.location")} - ${localize("names.shop")} ${localize("names.npcs")}</h3>${TemplateComponents.entityGrid(shopNPCs, "npc", true, true)}</div>`;
+    if (locationShopNPCs.length > 0) {
+      content += `<div class="npc-section"><h3><i class="${TemplateComponents.getAsset("icon", "shop")}"></i> ${localize("names.location")} - ${localize("names.shop")} ${localize("names.npcs")}</h3>${TemplateComponents.entityGrid(locationShopNPCs, "npc", true, true)}</div>`;
     }
-    if (data.allNPCsWithoutTaggedNPCsnoDirect.length + directShopNPCs.length + data.linkedNPCsWithoutTaggedNPCs.length === 0) {
+    if (data.linkedNPCsWithoutTaggedNPCs.length + directShopNPCs.length + locationNPCs.length + locationShopNPCs.length === 0) {
       content = TemplateComponents.emptyState("npc");
     }
     return content;
