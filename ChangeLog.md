@@ -1,3 +1,6 @@
+## 0.8.06
+- circular dependancy fix
+
 ## 0.8.05
 - entity-name css text wrap fix
 

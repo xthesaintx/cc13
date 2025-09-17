@@ -1271,7 +1271,7 @@ export class GroupSheet extends CampaignCodexBaseSheet {
       return;
     }
 
-    if (newMemberDoc.getFlag("campaign-codex", "type") === "group.notfound") {
+    if (newMemberDoc.getFlag("campaign-codex", "type") === "group") {
       const membersOfNewGroup = await GroupLinkers.getGroupMembers(newMemberDoc.getFlag("campaign-codex", "data")?.members || []);
       const nestedDataOfNewGroup = await GroupLinkers.getNestedData(membersOfNewGroup);
 
