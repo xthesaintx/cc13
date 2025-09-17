@@ -1,4 +1,4 @@
-## 0.8.06
+## 0.8.07
 - circular dependancy fix
 
 ## 0.8.05
