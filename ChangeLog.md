@@ -1,3 +1,6 @@
+## 0.8.08
+- renamed to Campaign Codex instead of campaign-codex
+
 ## 0.8.07
 - circular dependancy fix
 

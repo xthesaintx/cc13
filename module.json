@@ -1,6 +1,6 @@
 {
   "id": "campaign-codex",
-  "title": "campaign-codex",
+  "title": "Campaign Codex",
   "version": "0.8.07",
   "esmodules": ["scripts/main.js"],
   "languages": [
