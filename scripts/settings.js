@@ -86,6 +86,15 @@ export default async function campaigncodexSettings() {
         type: Boolean,
         default: false,
     });
+    game.settings.register("campaign-codex", "roundFinalPrice", {
+        name: localize("roundFinalPrice.name"),
+        hint: localize("roundFinalPrice.hint"),
+        scope: "world",
+        config: true,
+        requiresReload: true,
+        type: Boolean,
+        default: true,
+    });
     game.settings.register("campaign-codex", "resetItemPathsButton", {
         name: localize("resetItemPathsButton.name"),
         hint: localize("resetItemPathsButton.hint"),

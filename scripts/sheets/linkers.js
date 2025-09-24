@@ -1044,6 +1044,7 @@ export class CampaignCodexLinkers {
    */
   static async getInventory(document, inventoryData) {
     if (!inventoryData || !Array.isArray(inventoryData)) return [];
+    const roundFinalPrice = game.settings.get("campaign-codex", "roundFinalPrice");
 
     const systemId = game.system.id;
     const { pricePath, denominationPath, currency: defaultCurrency } = this._getSystemSettings(systemId);
@@ -1068,26 +1069,57 @@ export class CampaignCodexLinkers {
         currency = this.getValue(item, denominationPath) || "gp";
       }
 
-      if (systemId === "pf2e") {
-        const pf2ePrice = this.getValue(item, "system.price.value");
-        if (pf2ePrice) {
-          if (pf2ePrice.pp > 0) {
-            currency = "pp";
-            basePrice = pf2ePrice.pp;
-          } else if (pf2ePrice.gp > 0) {
-            currency = "gp";
-            basePrice = pf2ePrice.gp;
-          } else if (pf2ePrice.sp > 0) {
-            currency = "sp";
-            basePrice = pf2ePrice.sp;
-          } else {
-            currency = "cp";
-            basePrice = pf2ePrice.cp;
-          }
+
+    if (systemId === "pf2e") {
+      const pf2ePrice = this.getValue(item, "system.price.value");
+      if (pf2ePrice) {
+        const pp = pf2ePrice.pp || 0;
+        const gp = pf2ePrice.gp || 0;
+        const sp = pf2ePrice.sp || 0;
+        const cp = pf2ePrice.cp || 0;
+        if (pp > 0) {
+          const totalPrice = pp + (gp / 10) + (sp / 100) + (cp / 1000);
+          basePrice = parseFloat(totalPrice.toFixed(3)); // Format to 3 decimal places
+          currency = "pp";
+        } else if (gp > 0) {
+          const totalPrice = gp + (sp / 10) + (cp / 100);
+          basePrice = parseFloat(totalPrice.toFixed(2)); // Format to 2 decimal places
+          currency = "gp";
+        } else if (sp > 0) {
+          const totalPrice = sp + (cp / 10);
+          basePrice = parseFloat(totalPrice.toFixed(1)); // Format to 1 decimal place
+          currency = "sp";
+        } else {
+          basePrice = cp;
+          currency = "cp";
         }
       }
+    }
+    
+    if (systemId === "shadowdark") {
+      const sdPrice = this.getValue(item, "system.cost");
 
-      const finalPrice = itemData.customPrice ?? Math.round(basePrice * markup);
+      if (sdPrice) {
+        const gp = sdPrice.gp || 0;
+        const sp = sdPrice.sp || 0;
+        const cp = sdPrice.cp || 0;
+
+        if (gp > 0) {
+          const totalPrice = gp + (sp / 10) + (cp / 100);
+          basePrice = parseFloat(totalPrice.toFixed(2));
+          currency = "gp";
+        } else if (sp > 0) {
+          const totalPrice = sp + (cp / 10);
+          basePrice = parseFloat(totalPrice.toFixed(1));
+          currency = "sp";
+        } else {
+          basePrice = cp;
+          currency = "cp";
+        }
+      }
+    }
+      console.log(basePrice);
+      const finalPrice = roundFinalPrice ? itemData.customPrice ?? Math.round(basePrice * markup) : Math.round((basePrice * markup)*100)/100 ;
 
       return {
         permission: item.permission,

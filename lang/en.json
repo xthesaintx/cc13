@@ -62,9 +62,19 @@
       "tags": "Tags",
       "inventory":"Inventory",
       "scene":"Scene",
-      "standard": "Standard"
+      "standard": "Standard",
+      "quest":"Quest",
+      "quests":"Quests"
     },
     "settings": {
+      "roundFinalPrice":{
+        "name": "Round final price to a whole number",
+        "hint": "Will round the final price of an item to the nearest whole number."
+      },
+      "maxRegionDepth": {
+        "name": "Override nesting depth",
+        "hint": "The number of layers of regions you can create. Default 5, a higher value will be more system intensive."
+      },
       "itemPricePath": {
         "name": "Override Item Price Path",
         "hint": "Path to item price value (e.g., 'system.price.value' for D&D5e). Leave blank to use detected system."
@@ -110,6 +120,7 @@
       "itemPricePathsReset": "Item price paths reset to D&D5e defaults"
     },
     "dropzone": {
+      "region": "Drag {type} to add them",
       "location": "Drag {type} or scenes here to add them",
       "shop": "Drag {type} journals here to add them",
       "npc": "Drag {type} or Actors here to add them",

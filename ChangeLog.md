@@ -1,3 +1,7 @@
+## 0.8.09
+- Added compatability for Shadowdark item price
+- Added option to toggle rounding of item price
+
 ## 0.8.08
 - renamed to Campaign Codex instead of campaign-codex
 
