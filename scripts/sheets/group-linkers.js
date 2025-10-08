@@ -184,6 +184,7 @@ static async processJournalLinks(journalUuids) {
           canView: canView,
           tags: filteredTags,
           name: doc.name,
+          quests: !!(doc.getFlag?.("campaign-codex", "data")?.quests && doc.getFlag?.("campaign-codex", "data")?.quests.length),
           img: doc.getFlag?.("campaign-codex", "image") || doc.img,
           type,
           tag: doc.getFlag?.("campaign-codex", "data")?.tagMode || false,
@@ -210,6 +211,7 @@ static async processJournalLinks(journalUuids) {
       membersByGroup: {},
       npcsByRegion: {},
       locationsByRegion: {},
+      regionsByRegion: {},
       shopsByRegion: {},
       shopsByLocation: {},
       npcsByLocation: {},
@@ -280,8 +282,8 @@ static async processJournalLinks(journalUuids) {
       await this._enrichEntity(region, regionDoc);
       nestedData.allRegions.push(region);
     }
-    const childTypes = { locations: "location", shops: "shop", npcs: "npc" };
-    const childLinks = { locations: regionData.linkedLocations, shops: regionData.linkedShops, npcs: regionData.linkedNPCs };
+    const childTypes = { regions: "region", locations: "location", shops: "shop", npcs: "npc" };
+    const childLinks = { regions: regionData.linkedRegions, locations: regionData.linkedLocations, shops: regionData.linkedShops, npcs: regionData.linkedNPCs };
 
     for (const [key, type] of Object.entries(childTypes)) {
       const listKey = `${key}ByRegion`;
@@ -303,6 +305,7 @@ static async processJournalLinks(journalUuids) {
         return {
           uuid: doc.uuid,
           name: doc.name,
+          quests: !!(doc.getFlag("campaign-codex", "data")?.quests && doc.getFlag("campaign-codex", "data")?.quests.length),
           img: doc.getFlag("campaign-codex", "image") || doc.img,
           type,
           tags: filteredTags,
@@ -356,6 +359,7 @@ static async processJournalLinks(journalUuids) {
           return {
             uuid: doc.uuid,
             name: doc.name,
+            quests: !!(doc.getFlag("campaign-codex", "data")?.quests && doc.getFlag("campaign-codex", "data")?.quests.length),
             img: doc.getFlag("campaign-codex", "image") || doc.img,
             type,
             tags: filteredTags,
@@ -391,6 +395,8 @@ static async processJournalLinks(journalUuids) {
         .map((tag) => tag.name)
         .sort();
       shop.canView = canView;
+      shop.quests = !!(shopData.quests && shopData.quests.length),
+
       nestedData.allShops.push(shop);
     }
 
@@ -415,6 +421,7 @@ static async processJournalLinks(journalUuids) {
       return {
         uuid: npcDoc.uuid,
         name: npcDoc.name,
+        quests: !!(npcDoc.getFlag("campaign-codex", "data")?.quests && npcDoc.getFlag("campaign-codex", "data")?.quests.length),
         img: npcDoc.getFlag("campaign-codex", "image") || npcDoc.img,
         type: "npc",
         tags: npcTags,
@@ -507,6 +514,7 @@ static async processJournalLinks(journalUuids) {
       name: npcDoc.name,
       img: imageData,
       type: "npc",
+      quests: !!(npcData.quests && npcData.quests.length),
       tags: linkedTags
         .filter((tag) => !hideByPermission || tag.canView)
         .map((tag) => tag.name)
@@ -531,12 +539,13 @@ static async processJournalLinks(journalUuids) {
       CampaignCodexLinkers.getTaggedNPCs(data.linkedNPCs || data.associates || []) || [],
       CampaignCodexLinkers.getNameFromUuids(data.linkedShops || []),
       CampaignCodexBaseSheet.canUserView(doc.uuid),
-      entity.type === "location" ? CampaignCodexLinkers.getLinkedRegion(doc) : Promise.resolve(null),
+      entity.type === "location" || entity.type === "region" ? CampaignCodexLinkers.getLinkedRegion(doc) : Promise.resolve(null),
       entity.type === "location" || entity.type === "region" ? CampaignCodexLinkers.getNameFromUuids(data.linkedNPCs || [], true) : Promise.resolve([]),
       entity.type === "location" ? CampaignCodexLinkers.getShopNPCs(doc, data.linkedShops || []).then((npcs) => npcs.length) : Promise.resolve(0),
     ]);
 
     entity.canView = canView;
+    entity.quests = !!(data.quests && data.quests.length);
     entity.permission = doc.permission;
     entity.shops = linkedShops.sort();
     entity.tags = linkedTags
@@ -544,6 +553,9 @@ static async processJournalLinks(journalUuids) {
       .map((tag) => tag.name)
       .sort();
     entity.npcs = npcs;
+   if (entity.type === "region") {
+      entity.region = region?.name;
+    }
 
     if (entity.type === "location") {
       entity.region = region?.name;

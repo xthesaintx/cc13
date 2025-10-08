@@ -24,7 +24,13 @@
     "add":"Add {type}",
     "group": {
       "notfound":"The item you are trying to add could not be found.",
-      "self":"A group cannot be added to itself."
+      "self":"A group cannot be added to itself.",
+      "expandAll": "Expand All",
+      "collapseAll": "Collapse All",
+      "toggleItems": "Hide/Show Inventory Items",
+      "toggleNPCs": "Hide/Show NPCs",
+      "toggleNPCTags": "Hide/Show Tags on NPCs",
+      "toggleTagMode": "Tag Tree Mode"
     },
     "member": {
       "type":"Member {type}"
@@ -64,9 +70,22 @@
       "scene":"Scene",
       "standard": "Standard",
       "quest":"Quest",
-      "quests":"Quests"
+      "quests":"Quests",
+      "toc":"Table of Contents"
     },
     "settings": {
+      "colorPicker":{
+        "name": "Accent Color Override",
+        "hint": "Override the default theme accent color. Enter a hex code like #d4af37. Leave blank to restore the default."
+      },
+      "showOnlyPinned":{
+        "name": "Show Only Pinned Quests in ToC",
+        "hint": "If checked, the Table of Contents will only show quests that have been marked as 'pinned'."
+      },
+      "showStats":{
+        "name": "Show stats in menu",
+        "hint": "Will show (#) next to a menu item in the sheets to indicate the number of each kind, viewable by GM only."
+      },
       "roundFinalPrice":{
         "name": "Round final price to a whole number",
         "hint": "Will round the final price of an item to the nearest whole number."
@@ -112,8 +131,8 @@
         "hint": "Hide Items in Inventories if the user does not have observer or higher ownership of the item"
       },
       "resetItemPathsButton": {
-        "name": "Reset Item Paths to Defaults",
-        "hint": "Enable this option and save to reset item price and currency paths to D&D5e defaults (system.price.value and system.price.denomination)"
+        "name": "Reset to Defaults",
+        "hint": "Enable this option and save to reset settings to default"
       }
     },
     "notifications": {

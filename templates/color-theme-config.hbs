@@ -1,0 +1,13 @@
+<div class="form-body scrollable" >
+    <p class="notes">Configure the theme colors for the Campaign Codex UI. Changes will be applied after saving.</p>
+
+    {{#each fieldsets as |fieldset|}}
+    <fieldset>
+        <legend>{{fieldset.legend}}</legend>
+        {{#each fieldset.fields as |f|}}
+            {{formField f.field value=f.value}}
+        {{/each}}
+    </fieldset>
+    {{/each}}
+</div>
+

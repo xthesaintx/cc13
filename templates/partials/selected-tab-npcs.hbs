@@ -1,0 +1,31 @@
+<div class="selected-content-section">
+  {{#if isGM}}
+    <div class="selected-actions">
+      {{{dropToMapBtn}}}
+    </div>
+  {{/if}}
+
+  {{#if hasContent}}
+    {{#if untaggedDirectNPCs.length}}
+      <div class="npc-section">
+        <div class="npc-list">
+          {{{directNpcGrid}}}
+        </div>
+      </div>
+    {{/if}}
+
+    {{#if untaggedShopNPCs.length}}
+      <div class="npc-section">
+        <h3 class="section-heading">
+          <i class="{{shopIcon}}"></i>
+          {{ccLocalize "names.shops"}}
+        </h3>
+        <div class="npc-list">
+          {{{shopNpcGrid}}}
+        </div>
+      </div>
+    {{/if}}
+  {{else}}
+    <p><em>No NPCs linked.</em></p>
+  {{/if}}
+</div>

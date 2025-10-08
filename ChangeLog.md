@@ -1,3 +1,31 @@
+## 0.8.45
+- quest board and table of contents
+- themes in the core settings
+
+## 0.8.31
+- Add tags directly from sheet
+- Create tags directly from sheet
+- updated ui of quicklinks and tags
+- customisable subtitle on sheets
+
+## 0.8.25
+- Toggle stats next to menu items on main sheets, viewable by GM only
+- Export and Import overhaul
+- Can select and export a root folder to a compendium (module) as a pack
+- Can import packs, and will selectively bring in actors, items, scenes and journals
+- Creating packs is additive, using the same pack name as an existing pack will add to it
+- Creating whole world exports will clear and overwrite the module journal compendium
+
+## 0.8.18
+- Importer fix
+
+## 0.8.16
+- Added quests to sheets
+- Regions and be added to regions
+- Core setting to limit the number of layers of regions, default 5, max 10.
+- removed ability to open scenes from compendium sheets
+- updated the export / import feature. Exporting will overwrite journals in a module rather than timestamp but will keep scene notes and actors intact.
+
 ## 0.8.09
 - Added compatability for Shadowdark item price
 - Added option to toggle rounding of item price

@@ -2,7 +2,7 @@ import { MODULE_NAME } from "./settings.js";
 import { SimpleCampaignCodexExporter } from "./campaign-codex-exporter.js";
 import { SimpleCampaignCodexImporter } from "./campaign-codex-importer.js";
 import { GroupLinkers } from "./sheets/group-linkers.js";
-
+import { CampaignCodexTOCSheet } from "./campaign-codex-toc.js";
 /**
  * localization.
  * @type {string}
@@ -15,27 +15,38 @@ export const localize = (key) => game.i18n.localize(`CAMPAIGN_CODEX.${key}`);
  */
 export const format = (key, data) => game.i18n.format(`CAMPAIGN_CODEX.${key}`, data);
 
+export const renderTemplate = foundry.applications.handlebars.renderTemplate;
+
+
 /**
  * HTML string for the main campaign codex action buttons.
  * @returns {string}
  */
 export const getButtonGrouphead = () => `
-    <div class="campaign-codex-buttons" style="margin: 8px 0; display: flex; gap: 4px; flex-wrap: wrap;">
-        <button class="create-region-btn cc-create-buttons" type="button" title="${format('button.title', {type: localize('names.region')})}" style="background: #20c997;">
+    <div class="campaign-codex campaign-codex-toc-buttons" >
+        <button class="cc-open-toc-btn cc-create-toc-buttons" type="button" title="${format('message.open', {type: localize('names.toc')})}" >
+            <i class="fas fa-closed-captioning"></i> ${format('message.open', {type: localize('names.toc')})}
+        </button>
+    </div>
+    <div class="campaign-codex campaign-codex-buttons" >
+        <button class="create-group-btn cc-create-buttons" type="button" title="${format('button.title', {type: localize('names.group')})}" >
+            <i class="fas fa-folder-tree"></i>
+        </button>
+        <button class="create-region-btn cc-create-buttons" type="button" title="${format('button.title', {type: localize('names.region')})}" >
             <i class="fas fa-globe"></i>
         </button>
-        <button class="create-location-btn cc-create-buttons" type="button" title="${format('button.title', {type: localize('names.location')})}" style="background: #28a745;">
+        <button class="create-location-btn cc-create-buttons" type="button" title="${format('button.title', {type: localize('names.location')})}" >
             <i class="fas fa-map-marker-alt"></i>
         </button>
-        <button class="create-shop-btn cc-create-buttons" type="button" title="${format('button.title', {type: localize('names.shop')})}" style="background: #6f42c1;">
+        <button class="create-shop-btn cc-create-buttons" type="button" title="${format('button.title', {type: localize('names.shop')})}" >
             <i class="fas fa-book-open"></i>
         </button>
-        <button class="create-npc-btn cc-create-buttons" type="button" title="${format('button.title', {type: localize('names.npc')})}" style="background: #fd7e14;">
+        <button class="create-npc-btn cc-create-buttons" type="button" title="${format('button.title', {type: localize('names.npc')})}" >
             <i class="fas fa-user"></i>
         </button>
-        <button class="create-group-btn cc-create-buttons" type="button" title="${format('button.title', {type: localize('names.group')})}" style="background: #17a2b8;">
-            <i class="fas fa-layer-group"></i>
-        </button>
+        <button class="create-tag-btn cc-create-buttons" type="button" title="${format('button.title', {type: localize('names.tag')})}" >
+            <i class="fas fa-tag"></i>
+        </button>    
     </div>
 `;
 
@@ -94,18 +105,19 @@ export function getExportImportButtonsHtml(hasCampaignCodex) {
             ${
                 hasCampaignCodex
                     ? `
-                <button class="cc-export-btn" type="button" title="Export all Campaign Codex content to compendium" style="flex: 1; padding: 4px 8px; font-size: 11px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; height: auto">
+                <button class="campaign-codex cc-export-btn" type="button" title="Export all Campaign Codex content to compendium" >
                     <i class="fas fa-download"></i> Export Campaign Codex
                 </button>
             `
                     : ""
             }
-            <button class="cc-import-btn" type="button" title="Import Campaign Codex content from compendium" style="flex: 1; padding: 4px 8px; font-size: 11px; background: #17a2b8; color: white; border: none; border-radius: 4px; cursor: pointer; height: auto">
+            <button class="campaign-codex cc-import-btn" type="button" title="Import Campaign Codex content from compendium">
                 <i class="fas fa-upload"></i> Import Campaign Codex
             </button>
         </div>
     `;
 }
+
 
 /**
  * Prompts the user for a name for a new Campaign Codex entry.
@@ -113,54 +125,35 @@ export function getExportImportButtonsHtml(hasCampaignCodex) {
  * @returns {Promise<string|null>} A promise that resolves with the entered name or null if cancelled.
  */
 export async function promptForName(type) {
-    return new Promise((resolve) => {
-        new Dialog({
-            title: `Create New ${type}`,
+    try {
+        const name = await foundry.applications.api.DialogV2.prompt({
+            window: { title: `Create New ${type}` },
             content: `
-                <form class="flexcol">
-                    <div class="form-group">
-                        <label>Name:</label>
-                        <input type="text" name="name" placeholder="Enter ${type.toLowerCase()} name..." autofocus style="width: 100%;" />
-                    </div>
-                </form>
+                <div class="form-group">
+                    <label>Name:</label>
+                    <input type="text" name="name" placeholder="Enter ${type.toLowerCase()} name..." autofocus style="width: 100%;" />
+                </div>
             `,
-            buttons: {
-                create: {
-                    icon: '<i class="fas fa-check"></i>',
-                    label: "Create",
-                    callback: (html) => {
-                        const nativeHtml =
-                            html instanceof jQuery ? html[0] : html;
-                        const name = nativeHtml
-                            .querySelector('[name="name"]')
-                            .value.trim();
-                        resolve(name || `New ${type}`);
-                    },
-                },
-                cancel: {
-                    icon: '<i class="fas fa-times"></i>',
-                    label: "Cancel",
-                    callback: () => resolve(null),
-                },
+            ok: {
+                icon: '<i class="fas fa-check"></i>',
+                label: "Create",
+                callback: (event, button) => {
+                    const enteredName = button.form.elements.name.value.trim();
+                    return enteredName || `New ${type}`; // Provide a default name if input is empty
+                }
             },
-            default: "create",
-            render: (html) => {
-                const nativeHtml = html instanceof jQuery ? html[0] : html;
-                const input = nativeHtml.querySelector('input[name="name"]');
-                input.focus();
-                input.addEventListener("keypress", (e) => {
-                    if (e.key === "Enter") {
-                        e.preventDefault();
-                        nativeHtml
-                            .closest(".dialog")
-                            .querySelector(".dialog-button.create")
-                            .click();
-                    }
-                });
+            cancel: {
+                icon: '<i class="fas fa-times"></i>',
+                label: "Cancel"
             },
-        }).render(true);
-    });
+            rejectClose: true,
+        });
+        return name;
+    } catch (e) {
+        return null;
+    }
 }
+
 
 /**
  * Ensures that the Campaign Codex folders exist in the JournalEntry directory.
@@ -173,6 +166,7 @@ export async function ensureCampaignCodexFolders() {
         "Campaign Codex - NPCs": "npc",
         "Campaign Codex - Regions": "region",
         "Campaign Codex - Groups": "group",
+        "Campaign Codex - Tags": "tag",
     };
 
     for (const [folderName, type] of Object.entries(folderNames)) {
@@ -203,14 +197,16 @@ export async function ensureCampaignCodexFolders() {
  * @returns {string} The hex color code.
  */
 export function getFolderColor(type) {
-    const colors = {
-        location: "#28a745",
-        shop: "#6f42c1",
-        npc: "#fd7e14",
-        region: "#20c997",
-        group: "#17a2b8",
-    };
-    return colors[type] || "#999999";
+    // const colors = {
+    //     location: "#28a745",
+    //     shop: "#6f42c1",
+    //     npc: "#fd7e14",
+    //     region: "#20c997",
+    //     group: "#17a2b8",
+    //     tag: "#a217b8"
+    // };
+    // return colors[type] || "#999999";
+    return "#634c1b";
 }
 
 /**
@@ -228,6 +224,7 @@ export function getCampaignCodexFolder(type) {
         npc: "Campaign Codex - NPCs",
         region: "Campaign Codex - Regions",
         group: "Campaign Codex - Groups",
+        tag: "Campaign Codex - Tags",
     };
 
     const folderName = folderNames[type];
@@ -236,102 +233,6 @@ export function getCampaignCodexFolder(type) {
     );
 }
 
-/**
- * Displays a dialog to add a given journal entry to an existing group overview.
- * @param {JournalEntry} journal - The journal entry to add to a group.
- * @returns {Promise<void>} A promise that resolves when the dialog is closed.
- */
-export async function showAddToGroupDialog(journal) {
-    const groupJournals = game.journal.filter(
-        (j) => j.getFlag("campaign-codex", "type") === "group",
-    );
-
-    if (groupJournals.length === 0) {
-        ui.notifications.warn("No group overviews found. Create one first.");
-        return;
-    }
-
-    const options = groupJournals
-        .map((group) => `<option value="${group.uuid}">${group.name}</option>`)
-        .join("");
-
-    return new Promise((resolve) => {
-        new Dialog({
-            title: "Add to Group",
-            content: `
-                <form class="flexcol">
-                    <div class="form-group">
-                        <label>Select Group:</label>
-                        <select name="groupUuid" style="width: 100%;">
-                            ${options}
-                        </select>
-                    </div>
-                    <p style="font-size: 12px; color: #666; margin: 8px 0;">
-                        This will add "${journal.name}" to the selected group overview.
-                    </p>
-                </form>
-            `,
-            buttons: {
-                add: {
-                    icon: '<i class="fas fa-plus"></i>',
-                    label: "Add to Group",
-                    callback: async (html) => {
-                        const nativeHtml =
-                            html instanceof jQuery ? html[0] : html;
-                        const groupUuid =
-                            nativeHtml.querySelector(
-                                '[name="groupUuid"]',
-                            ).value;
-                        const groupJournal = await fromUuid(groupUuid);
-
-                        if (groupJournal) {
-                            const groupData =
-                                groupJournal.getFlag(
-                                    "campaign-codex",
-                                    "data",
-                                ) || {};
-                            const members = groupData.members || [];
-
-                            if (!members.includes(journal.uuid)) {
-                                members.push(journal.uuid);
-                                groupData.members = members;
-                                await groupJournal.setFlag(
-                                    "campaign-codex",
-                                    "data",
-                                    groupData,
-                                );
-                                ui.notifications.info(
-                                    `Added "${journal.name}" to group "${groupJournal.name}"`,
-                                );
-
-                                for (const app of Object.values(ui.windows)) {
-                                    if (
-                                        app.document &&
-                                        app.document.uuid === groupJournal.uuid
-                                    ) {
-                                        app.render(false);
-                                        break;
-                                    }
-                                }
-                            } else {
-                                ui.notifications.warn(
-                                    `"${journal.name}" is already in this group.`,
-                                );
-                            }
-                        }
-                        resolve();
-                    },
-                },
-                cancel: {
-                    icon: '<i class="fas fa-times"></i>',
-                    label: "Cancel",
-                    callback: () => resolve(),
-                },
-            },
-            default: "add",
-        }).render(true);
-    });
-}
 
 /**
  * Adds Campaign Codex specific buttons to the Journal Directory UI.
@@ -385,6 +286,18 @@ export function addJournalDirectoryUI(html) {
     }
 
     nativeHtml
+        .querySelector(".cc-open-toc-btn")
+        ?.addEventListener("click", async () => {
+            if (game.campaignCodex.tocSheetInstance && game.campaignCodex.tocSheetInstance.rendered) {
+                game.campaignCodex.tocSheetInstance.close();
+            return;
+            }
+            let savedDimensions = game.settings.get("campaign-codex", "tocSheetDimensions");
+            game.campaignCodex.tocSheetInstance = new CampaignCodexTOCSheet({ position: { width: savedDimensions.width, height: savedDimensions.height } });
+            game.campaignCodex.tocSheetInstance.render(true);
+        });
+
+    nativeHtml
         .querySelector(".create-location-btn")
         ?.addEventListener("click", async () => {
             const name = await promptForName("Location");
@@ -404,6 +317,21 @@ export function addJournalDirectoryUI(html) {
                 doc?.sheet.render(true);
             }
         });
+
+    nativeHtml
+        .querySelector(".create-tag-btn")
+        ?.addEventListener("click", async () => {
+            const name = await promptForName("Tag Journal");
+            if (name) {
+                const doc = await game.campaignCodex.createNPCJournal(
+                    null,
+                    name,
+                    true
+                );
+                doc?.sheet.render(true);
+            }
+        });
+
 
     nativeHtml
         .querySelector(".create-npc-btn")
@@ -438,6 +366,9 @@ export function addJournalDirectoryUI(html) {
             }
         });
 }
+
+
+
 export async function mergeDuplicateCodexFolders() {
     console.log("Campaign Codex | Checking for duplicate folders after import...");
 
@@ -446,7 +377,8 @@ export async function mergeDuplicateCodexFolders() {
         "Campaign Codex - Entries",
         "Campaign Codex - NPCs",
         "Campaign Codex - Regions",
-        "Campaign Codex - Groups"
+        "Campaign Codex - Groups",
+        "Campaign Codex - Tags"
     ];
 
     const foldersToDelete = [];
@@ -473,4 +405,95 @@ export async function mergeDuplicateCodexFolders() {
         await Folder.deleteDocuments(foldersToDelete);
         ui.notifications.info("Campaign Codex folder cleanup complete.");
     }
+}
+
+/**
+ * A configuration object mapping document types to their creation logic.
+ */
+const creationConfig = {
+  group: {
+    prompt: "Group Overview",
+    create: (name) => game.campaignCodex.createGroupJournal(name),
+  },
+  location: {
+    prompt: "Location",
+    create: (name) => game.campaignCodex.createLocationJournal(name),
+  },
+  region: {
+    prompt: "Region",
+    create: (name) => game.campaignCodex.createRegionJournal(name),
+  },
+  shop: {
+    prompt: "Entry",
+    create: (name) => game.campaignCodex.createShopJournal(name),
+  },
+  npc: {
+    prompt: "NPC Journal",
+    create: (name) => game.campaignCodex.createNPCJournal(null, name, false),
+  },
+  tag: {
+    prompt: "Tag Journal",
+    create: (name) => game.campaignCodex.createNPCJournal(null, name, true),
+  },
+};
+
+/**
+ * Prompts the user for a name and creates a new Campaign Codex document of a given type.
+ * @param {string} type - The type of document to create (e.g., 'group', 'location', 'npc').
+ */
+export async function createFromScene(type) {
+  const config = creationConfig[type];
+  if (!config) {
+    const errorMessage = `Cannot create document of unknown type: "${type}"`;
+    console.error(`Campaign Codex | ${errorMessage}`);
+    ui.notifications.error(errorMessage);
+    return;
+  }
+  const name = await promptForName(config.prompt);
+  if (name) {
+    const doc = await config.create(name);
+    doc?.sheet.render(true);
+  }
+}
+
+
+
+// This function will apply all saved colors to the UI
+export function applyThemeColors() {
+    // The keys here now match the CSS variables directly
+    const colorSettings = {
+        '--cc-slate': game.settings.get("campaign-codex", "color-slate"),
+        '--cc-text-muted': game.settings.get("campaign-codex", "color-textMuted"),
+        '--cc-border-medium': game.settings.get("campaign-codex", "color-borderMedium"),
+        '--cc-accent80': game.settings.get("campaign-codex", "color-accent80"),
+        '--cc-accent30': game.settings.get("campaign-codex", "color-accent30"),
+        '--cc-accent10': game.settings.get("campaign-codex", "color-accent10"),
+        '--cc-primary': game.settings.get("campaign-codex", "color-primary"),
+        '--cc-sidebar-bg': game.settings.get("campaign-codex", "color-sidebarBg"),
+        '--cc-sidebar-text': game.settings.get("campaign-codex", "color-sidebarText"),
+        '--cc-main-bg': game.settings.get("campaign-codex", "color-mainBg"),
+        '--cc-main-text': game.settings.get("campaign-codex", "color-mainText"),
+        '--cc-ui': game.settings.get("campaign-codex", "color-ui"),
+        '--cc-accent': game.settings.get("campaign-codex", "color-accent"),
+        '--cc-success': game.settings.get("campaign-codex", "color-success"),
+        '--cc-danger': game.settings.get("campaign-codex", "color-danger"),
+        '--cc-border': game.settings.get("campaign-codex", "color-border"),
+        '--cc-card-bg': game.settings.get("campaign-codex", "color-cardBg"),
+        '--cc-border-light': game.settings.get("campaign-codex", "color-borderLight"),
+        '--cc-font-heading': game.settings.get("campaign-codex", "color-fontHeading"),
+        '--cc-font-body': game.settings.get("campaign-codex", "color-fontBody")
+    };
+
+    const cssOverrides = Object.entries(colorSettings)
+        .map(([variable, value]) => `${variable}: ${value} !important;`)
+        .join("\n");
+    
+    const styleId = 'cc-theme-override-style';
+    let styleElement = document.getElementById(styleId);
+    if (!styleElement) {
+        styleElement = document.createElement('style');
+        styleElement.id = styleId;
+        document.head.appendChild(styleElement);
+    }
+    styleElement.innerHTML = `.campaign-codex { ${cssOverrides} }`;
 }

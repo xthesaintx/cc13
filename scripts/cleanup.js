@@ -10,6 +10,12 @@ export class CleanUp {
       const type = document.getFlag("campaign-codex", "type");
       if (!type) return;
 
+      const data = document.getFlag("campaign-codex", "data") || {};
+      if (type === "npc" && data.tagMode) {
+        game.campaignCodex.removeTagFromCache(document);
+        console.log(`Campaign Codex | Removed deleted tag "${document.name}" from cache.`);
+      }
+
       try {
         await this.performComprehensiveCleanup(document, type);
       } catch (error) {

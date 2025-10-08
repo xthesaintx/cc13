@@ -1,0 +1,81 @@
+<div class="quest-item">
+  <div class="quest-title-wrap">
+    <h4 class="quest-title quest-input-title" data-quest-id="{{quest.id}}" {{#if (and isGM (not isGroupSheet))}}data-editable="true"{{/if}}>
+      {{quest.title}}
+    </h4>
+  </div>
+
+  {{!-- The description section --}}
+  <article class="journal-entry-page cc-enriched {{systemClass}}">
+    <section class="journal-page-content">
+      {{#if (and isGM (not isGroupSheet))}}
+        <prose-mirror class="quest-description-editor" data-quest-id="{{quest.id}}" value="{{quest.description}}" document-uuid="{{doc.uuid}}" compact="true" toggled>
+          {{{quest.enrichedDescription}}}
+        </prose-mirror>
+      {{else}}
+        {{{quest.enrichedDescription}}}
+      {{/if}}
+    </section>
+  </article>
+
+
+  {{!-- The completion toggle icon --}}
+  <div class="quest-toggle-icon {{#if quest.completed}}quest-completed-icon{{else}}quest-uncompleted-icon{{/if}}" data-quest-id="{{quest.id}}" data-field="completed" title="{{#if quest.completed}}Mark as Incomplete{{else}}Mark as Complete{{/if}}">
+    <i class="fas {{#if quest.completed}}fa-circle-check{{else}}fa-circle-xmark{{/if}}"></i>
+  </div>
+
+  {{!-- GM Controls --}}
+  <div class="quest-controls">
+    {{#if isGM}}
+      <div class="quest-toggle-icon pinned-toggle" data-quest-id="{{quest.id}}" data-field="pinned" title="{{#if quest.pinned}}Remove from Quest Board{{else}}Pin to Quest Board{{/if}}">
+        <i class="fas {{#if quest.pinned}}fa-thumbtack{{else}}fa-thumbtack-slash{{/if}}"></i>
+      </div>
+      <div class="quest-toggle-icon visible-toggle" data-quest-id="{{quest.id}}" data-field="visible" title="{{#if quest.visible}}Hide from Players{{else}}Show to Players{{/if}}">
+        <i class="fas {{#if quest.visible}}fa-eye{{else}}fa-eye-slash{{/if}}"></i>
+      </div>
+      {{#if (not isGroupSheet)}}
+        <button type="button" class="remove-quest action-btn" data-quest-id="{{quest.id}}" title="Remove Quest"><i class="fas fa-trash"></i></button>
+      {{/if}}
+    {{/if}}
+  </div>
+  {{!-- Objectives Section --}}
+  <div class="objectives-section">
+    <div class="objectives-header">
+      <h5>Objectives</h5>
+      {{#if (and isGM (not isGroupSheet))}}
+        <a class="add-objective" data-quest-id="{{id}}" title="Add Objective"><i class="fas fa-circle-plus"></i></a>
+      {{/if}}
+    </div>
+
+    <ul class="objective-list">
+      {{#each objectives}}
+          {{#if ../isGM}}
+          <li class="objective-item" data-objective-id="{{id}}">
+            <a class="objective-toggle-icon" data-quest-id="{{../id}}" data-objective-id="{{id}}" data-field="completed" title="Toggle Completion">
+              <i class="{{#if completed}}fas fa-circle-check{{else}}far fa-circle{{/if}}"></i>
+            </a>
+            <span class="objective-text editable" data-quest-id="{{../id}}" data-objective-id="{{id}}">{{text}}</span>
+            <div class="objective-controls">
+              <a class="objective-toggle-icon" data-quest-id="{{../id}}" data-objective-id="{{id}}" data-field="visible" title="Toggle Player Visibility">
+                <i class="fas {{#if visible}}fa-eye{{else}}fa-eye-slash{{/if}}"></i>
+              </a>
+              {{#if (not ../isGroupSheet)}}
+              <a class="remove-objective" data-quest-id="{{../id}}" data-objective-id="{{id}}" title="Delete Objective">
+                <i class="fas fa-trash"></i>
+              </a>
+              {{/if}}
+            </div>
+          </li>
+          {{else}}
+            {{#if visible}}
+              <li class="objective-item" data-objective-id="{{id}}">
+              <i class="far {{#if completed}}fas fa-circle-check{{else}}far fa-circle{{/if}}"></i>
+              <span class="objective-text">{{text}}</span>
+            </li>
+            {{/if}}
+          {{/if}}
+      {{/each}}
+    </ul>
+  </div>
+
+</div>

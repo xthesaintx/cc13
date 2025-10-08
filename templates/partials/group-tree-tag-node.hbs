@@ -1,0 +1,28 @@
+<div class="tree-node {{#if node.isSelected}}selected{{/if}}" data-type="{{node.type}}" data-sheet-uuid="{{node.uuid}}">
+  <div class="tree-node-header {{#if node.hasChildren}}expandable{{/if}}">
+    
+    {{#if node.hasChildren}}
+      <i class="fas {{#if node.isExpanded}}fa-chevron-down{{else}}fa-chevron-right{{/if}} expand-icon expand-toggle"></i>
+    {{else}}
+      <i class="tree-spacer"></i>
+    {{/if}}
+
+    <i class="{{node.displayIcon}} node-icon" alt="{{node.name}}">&nbsp;</i>
+    <span class="tree-label clickable"> {{node.name}}</span>
+
+    <div class="tree-actions">
+      <button type="button" class="btn-open-sheet" data-sheet-type="{{node.type}}" data-sheet-uuid="{{node.uuid}}" title="Open Sheet">
+        <i class="fas fa-external-link-alt"></i>
+      </button>
+    </div>
+  </div>
+
+  {{#if node.hasChildren}}
+    <div class="tree-children" style="display: {{#if node.isExpanded}}block{{else}}none{{/if}};">
+      {{#each node.children}}
+        {{!-- This is the recursive call --}}
+        {{> "modules/campaign-codex/templates/partials/group-tree-tag-node.hbs" node=this}}
+      {{/each}}
+    </div>
+  {{/if}}
+</div>

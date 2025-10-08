@@ -1,0 +1,33 @@
+<div class="group-tree">
+  <div class="tree-header">
+    <button type="button" class="btn-expand-all" title="{{ccLocalize 'group.expandAll'}}" style="width:32px">
+      <i class="fas fa-expand-arrows-alt"></i>
+    </button>
+    <button type="button" class="btn-collapse-all" title="{{ccLocalize 'group.collapseAll'}}" style="width:32px">
+      <i class="fas fa-compress-arrows-alt"></i>
+    </button>
+    
+    {{#unless _showTreeTags}}
+      <button type="button" class="toggle-tree-items {{toggleClass}}" title="{{ccLocalize 'group.toggleItems'}}" style="width:32px">
+        <i class="fas fa-boxes"></i>
+      </button>
+      <button type="button" class="toggle-tree-npcs {{toggleClassNPC}}" title="{{ccLocalize 'group.toggleNPCs'}}" style="width:32px">
+        <i class="fas fa-user"></i>
+      </button>
+      <button type="button" class="toggle-tree-npctags {{toggleClassNPCTags}}" title="{{ccLocalize 'group.toggleNPCTags'}}" style="width:32px">
+        <i class="fas fa-user-tag"></i>
+      </button>
+    {{else}}
+      <div></div>
+      <div></div>
+      <div></div>
+    {{/unless}}
+
+    <button type="button" class="toggle-tree-tags {{toggleClassTag}}" title="{{ccLocalize 'group.toggleTagMode'}}" style="width:32px">
+      <i class="fas fa-tag"></i>
+    </button>
+  </div>
+  <div class="tree-content scrollable">
+    {{{treeContent}}}
+  </div>
+</div>

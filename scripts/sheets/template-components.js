@@ -1,5 +1,5 @@
 import { CampaignCodexBaseSheet } from "./base-sheet.js";
-import { localize, format } from "../helper.js";
+import { localize, format, renderTemplate } from "../helper.js";
 
 /**
  * A collection of static methods for generating HTML template components.
@@ -26,6 +26,7 @@ export class TemplateComponents {
       item: { icon: "fas fa-box", image: myModulePath + "ui/item.webp" },
       group: { icon: "fas fa-sitemap", image: myModulePath + "ui/group.webp" },
       tag: { icon: "fas fa-tag", image: myModulePath + "ui/npc.webp" },
+      quest: { icon: "fas fa-scroll", image: myModulePath + "ui/npc.webp" },
       default: {
         icon: "fas fa-question",
         image: myModulePath + "ui/default.webp",
@@ -133,6 +134,7 @@ export class TemplateComponents {
    */
   static emptyState(type) {
     const icons = {
+      region: "fas fa-globe",
       location: "fas fa-map-marker-alt",
       shop: "fas fa-book-open",
       npc: "fas fa-users",
@@ -141,6 +143,7 @@ export class TemplateComponents {
     };
 
     const messages = {
+      region: format("dropzone.empty", { type: localize("names.regions") }),
       location: format("dropzone.empty", { type: localize("names.locations") }),
       shop: format("dropzone.empty", { type: localize("names.shops") }),
       npc: format("dropzone.empty", { type: localize("names.npcs") }),
@@ -149,9 +152,8 @@ export class TemplateComponents {
     };
 
     const descriptions = {
-      location: format("dropzone.location", {
-        type: localize("names.locations"),
-      }),
+      region: format("dropzone.region", {type: localize("names.regions"),}),
+      location: format("dropzone.location", {type: localize("names.locations"),}),
       shop: format("dropzone.shop", { type: localize("names.shop") }),
       npc: format("dropzone.npc", { type: localize("names.npcs") }),
       associate: format("dropzone.associate", { type: localize("names.npcs") }),
@@ -244,6 +246,34 @@ export class TemplateComponents {
       </div>
     `;
   }
+
+  // =========================================================================
+  // Quest Card Components
+  // =========================================================================
+
+static async questList(docIn, quests, isGM, isGroupSheet = false) {
+  if (!quests){return};
+    const addButton = isGM ? '<button type="button" class="add-quest refresh-btn"><i class="fas fa-circle-plus"></i></button>' : '';
+    const visibleQuests = isGM ? quests : quests.filter(q => q.visible);
+    const processedQuests = visibleQuests.map(quest => {
+        return {
+            ...quest,
+            canEdit: isGM && !isGroupSheet 
+        };
+    });
+
+    const templateData = {
+      doc: docIn,
+      quests: processedQuests,
+      isGM: isGM,
+      isGroupSheet: isGroupSheet,
+      header: this.contentHeader("fas fa-scroll", "Quests", addButton),
+      systemClass: game.system.id === "dnd5e" ? " dnd5e2-journal themed theme-light" : ""
+    };
+
+    return renderTemplate("modules/campaign-codex/templates/quests/quest-list.hbs", templateData);
+  }
+
 
   // =========================================================================
   // Entity & Card Components

@@ -9,13 +9,48 @@ export class CampaignManager {
   constructor() {
     this.relationshipCache = new Map();
     this._creationQueue = new Set();
+    this.tagCache = [];
   }
+    async initializeTagCache() {
+        console.log("Campaign Codex | Initializing Tag Cache");
+        const taggedNpcs = [];
+        for (const journal of game.journal) {
+            if (journal.getFlag("campaign-codex", "type") === "npc" && journal.getFlag("campaign-codex", "data")?.tagMode) {
+                taggedNpcs.push({
+                    uuid: journal.uuid,
+                    id: journal.id,
+                    name: journal.name
+                });
+            }
+        }
+        this.tagCache = taggedNpcs;
+        console.log("Campaign Codex | Tag Cache Initialized with", this.tagCache.length, "tags.");
+    }
+
+    addTagToCache(npcDoc) {
+        if (!this.tagCache.some(tag => tag.uuid === npcDoc.uuid)) {
+            this.tagCache.push({
+                uuid: npcDoc.uuid,
+                name: npcDoc.name
+            });
+        }
+    }
+
+    removeTagFromCache(npcDoc) {
+        this.tagCache = this.tagCache.filter(tag => tag.uuid !== npcDoc.uuid);
+    }
+
+    getTagCache() {
+        return this.tagCache;
+    }
+
 
   // =========================================================================
   // Document Creation
   // =========================================================================
 
-  async createNPCJournal(actor = null, name = null) {
+
+  async createNPCJournal(actor = null, name = null, tagged = false) {
     const journalName = name || (actor ? `${actor.name} - Journal` : "New NPC Journal");
     const creationKey = `npc-${actor?.uuid || journalName}`;
     if (this._creationQueue.has(creationKey)) return;
@@ -34,13 +69,16 @@ export class CampaignManager {
               linkedShops: [],
               associates: [],
               notes: "",
+              tagMode: tagged,
             },
           },
           core: { sheetClass: "campaign-codex.NPCSheet" },
         },
         pages: [{ name: "Overview", type: "text", text: { content: `<h1>${journalName}</h1><p>NPC details...</p>` } }],
       };
-      return await JournalEntry.create(journalData);
+      const newJournal = await JournalEntry.create(journalData);
+      if (tagged){this.addTagToCache(newJournal)};
+      return (newJournal);
     } finally {
       this._creationQueue.delete(creationKey);
     }
@@ -667,9 +705,7 @@ for (const app of sheetsToRefresh) {
   const isCurrentlyActive = (ui.activeWindow === app);
  app.render(true, { focus: isCurrentlyActive });
 }
-    // for (const app of sheetsToRefresh) {
-    //   app.render(true);
-    // }
+if (foundry.applications.instances.get("campaign-codex-toc-sheet")){foundry.applications.instances.get("campaign-codex-toc-sheet").render();}
   }
 
   // =========================================================================
@@ -701,26 +737,28 @@ for (const app of sheetsToRefresh) {
     await document.setFlag("campaign-codex", "data", docData);
   }
 
+
   async openLinkedScene(document) {
     const documentData = document.getFlag("campaign-codex", "data") || {};
     const linkedSceneUuid = documentData.linkedScene;
-    if (!linkedSceneUuid) return ui.notifications.warn("No scene linked to this document");
-
+    if (!linkedSceneUuid) {
+      return ui.notifications.warn("No scene linked to this document");
+    }
+    console.log(document);
+    console.log(linkedSceneUuid);
     try {
       const linkedScene = await fromUuid(linkedSceneUuid);
-      if (!linkedScene) return ui.notifications.error("Linked scene not found");
-      if (!linkedScene.pack) return linkedScene.view();
-      
-      const worldSceneUuid = documentData.worldSceneUuid;
-      if (worldSceneUuid) {
-        try {
-          const worldScene = await fromUuid(worldSceneUuid);
-          if (worldScene && !worldScene.pack) return worldScene.view();
-        } catch (error) {
-          console.warn("Campaign Codex | World scene UUID invalid, re-importing", error);
-        }
+      console.log(linkedScene);
+      if (!linkedScene) {
+        return ui.notifications.error("Linked scene not found");
       }
-      await this._importSceneAndSetWorldUuid(document, linkedScene, documentData);
+
+      if (linkedScene.pack) {
+        return ui.notifications.warn("Opening scenes from compendiums is not supported. Please import the scene into your world and link it again.");
+      }
+
+      return linkedScene.view();
+
     } catch (error) {
       console.error("Campaign Codex | Error opening linked scene:", error);
       ui.notifications.error("Failed to open linked scene");
@@ -812,4 +850,151 @@ for (const app of sheetsToRefresh) {
       return doc.setFlag("campaign-codex", "data", data);
     }
   }
+
+// =========================================================================
+  // Region-to-Region Linking
+  // =========================================================================
+
+  /**
+   * Links one region to another as a child, ensuring a valid tree structure.
+   * A region can only have one parent. This is the primary function to call.
+   * @param {JournalEntry} parentRegionDoc - The region to become the parent.
+   * @param {JournalEntry} childRegionDoc - The region to be moved/linked.
+   */
+  async linkRegionToRegion(parentRegionDoc, childRegionDoc) {
+    const isValid = await this._isValidRegionMove(parentRegionDoc, childRegionDoc);
+    if (!isValid) {
+      return; 
+    }
+
+    const childData = childRegionDoc.getFlag("campaign-codex", "data") || {};
+    const oldParentUuid = childData.parentRegion;
+
+    // 1. Unlink from the old parent, if it exists and is different from the new parent.
+    if (oldParentUuid && oldParentUuid !== parentRegionDoc.uuid) {
+      const oldParentDoc = await fromUuid(oldParentUuid).catch(() => null);
+      if (oldParentDoc) {
+        const oldParentData = oldParentDoc.getFlag("campaign-codex", "data") || {};
+        oldParentData.linkedRegions = (oldParentData.linkedRegions || []).filter(uuid => uuid !== childRegionDoc.uuid);
+        await oldParentDoc.setFlag("campaign-codex", "data", oldParentData);
+      }
+    }
+
+    const parentData = parentRegionDoc.getFlag("campaign-codex", "data") || {};
+    const parentRegions = new Set(parentData.linkedRegions || []);
+    parentRegions.add(childRegionDoc.uuid);
+    parentData.linkedRegions = [...parentRegions];
+    await parentRegionDoc.setFlag("campaign-codex", "data", parentData);
+
+    // 3. Set the `parentRegion` flag on the child document.
+    childData.parentRegion = parentRegionDoc.uuid;
+    await childRegionDoc.setFlag("campaign-codex", "data", childData);
+
+    ui.notifications.info(`Moved "${childRegionDoc.name}" into "${parentRegionDoc.name}".`);
+
+    for (const app of Object.values(ui.windows)) {
+      if (app.document && (app.document.uuid === parentRegionDoc.uuid || app.document.uuid === childRegionDoc.uuid || app.document.uuid ===  oldParentUuid)) {
+
+      // if (app.document && [parentRegionDoc.uuid, childRegionDoc.uuid, oldParentUuid].includes(app.document.uuid)) {
+        app.render(true);
+      }
+    }
+  }
+
+  /**
+   * Validates if moving a region to a new parent is a valid operation by checking for self-assignment,
+   * circular dependencies, and depth limits. This is the main validation hub.
+   * @param {JournalEntry} newParent - The intended new parent region.
+   * @param {JournalEntry} childToMove - The region being moved.
+   * @returns {Promise<boolean>} - True if the move is valid, false otherwise.
+   * @private
+   */
+  async _isValidRegionMove(newParent, childToMove) {
+    let maxDepth = game.settings.get("campaign-codex", "maxRegionDepth");
+    if (typeof maxDepth !== 'number' || isNaN(maxDepth) || maxDepth < 1 || maxDepth > 10) {
+      maxDepth = 5;
+    }
+    if (newParent.uuid === childToMove.uuid) {
+      ui.notifications.warn("A region cannot be its own parent.");
+      return false;
+    }
+
+    const [isCircular, parentDepth, childSubtreeDepth] = await Promise.all([
+      this._isAncestor(childToMove, newParent),
+      this._getRegionDepth(newParent),
+      this._getRegionDepth(childToMove, true) 
+    ]);
+
+    // Check for circular dependency.
+    if (isCircular) {
+      ui.notifications.warn(`You cannot move "${childToMove.name}" into "${newParent.name}" as it is an ancestor.`);
+      return false;
+    }
+
+    if (parentDepth + 1 + childSubtreeDepth > maxDepth) {
+      ui.notifications.warn(`This action would exceed the maximum nesting depth of ${maxDepth}.`);
+      return false;
+    }
+
+    return true; 
+  }
+
+  /**
+   * Checks if `potentialAncestor` is an ancestor of `doc`. Traverses up the parent chain from `doc`.
+   * @param {JournalEntry} potentialAncestor - The document that might be an ancestor.
+   * @param {JournalEntry} doc - The document to check the ancestry of.
+   * @returns {Promise<boolean>} - True if a circular dependency is detected.
+   * @private
+   */
+  async _isAncestor(potentialAncestor, doc) {
+    let current = doc;
+    while (current) {
+      const parentUuid = current.getFlag("campaign-codex", "data")?.parentRegion;
+      if (!parentUuid) return false; // Reached the top of the tree.
+      if (parentUuid === potentialAncestor.uuid) return true; // Found the ancestor.
+      current = await fromUuid(parentUuid).catch(() => null);
+    }
+    return false;
+  }
+
+  /**
+   * Calculates the nesting depth of a given region. Uses a memoization cache for performance.
+   * @param {JournalEntry} regionDoc - The region to check.
+   * @param {boolean} [countChildren=false] - If true, counts the deepest branch of its children instead of its own depth from the root.
+   * @param {Map<string, number>} [memo={}] - Memoization cache to avoid re-calculating depths.
+   * @returns {Promise<number>} - The nesting depth.
+   * @private
+   */
+  async _getRegionDepth(regionDoc, countChildren = false, memo = new Map()) {
+    if (!regionDoc) return 0;
+    const cacheKey = `${regionDoc.uuid}-${countChildren}`;
+    if (memo.has(cacheKey)) return memo.get(cacheKey);
+
+    let depth = 0;
+    if (!countChildren) {
+      const parentUuid = regionDoc.getFlag("campaign-codex", "data")?.parentRegion;
+      if (parentUuid) {
+        const parentDoc = await fromUuid(parentUuid).catch(() => null);
+        depth = 1 + await this._getRegionDepth(parentDoc, false, memo);
+      }
+    } else {
+      // Traverse downwards to find the deepest branch. This can be parallelized.
+      const data = regionDoc.getFlag("campaign-codex", "data") || {};
+      const linkedRegionUuids = data.linkedRegions || [];
+      if (linkedRegionUuids.length > 0) {
+        const childDepthPromises = linkedRegionUuids.map(uuid =>
+          fromUuid(uuid).then(childDoc =>
+            childDoc ? 1 + this._getRegionDepth(childDoc, true, memo) : 0
+          )
+        );
+        const childDepths = await Promise.all(childDepthPromises);
+        depth = Math.max(0, ...childDepths);
+      }
+    }
+
+    memo.set(cacheKey, depth);
+    return depth;
+  }
+
+  
 }

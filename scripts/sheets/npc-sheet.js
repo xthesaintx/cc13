@@ -58,12 +58,17 @@ export class NPCSheet extends CampaignCodexBaseSheet {
 
     // --- Basic Sheet Info ---
     data.sheetType = "npc";
-    if (data.tagMode) {
-      data.sheetTypeLabel = "";
-    } else {
-      data.sheetTypeLabel =
-        data.linkedActor?.type === "character" ? format("sheet.journal", { type: localize("names.player") }) : format("sheet.journal", { type: localize("names.npc") });
-    }
+        if (data.sheetTypeLabelOverride !== undefined && data.sheetTypeLabelOverride !== "") {
+            data.sheetTypeLabel = data.sheetTypeLabelOverride;
+        } else if (data.tagMode) {
+            data.sheetTypeLabel = localize("names.tag") 
+        } else {
+            data.sheetTypeLabel = data.linkedActor?.type === "character" 
+                ? format("sheet.journal", { type: localize("names.player") }) 
+                : format("sheet.journal", { type: localize("names.npc") });
+        }
+
+
     data.customImage = this.document.getFlag("campaign-codex", "image") || data.linkedActor?.img || TemplateComponents.getAsset("image", "npc");
 
     const directLocationCount = data.allLocations.filter((loc) => loc.source === "direct").length;
@@ -79,21 +84,22 @@ export class NPCSheet extends CampaignCodexBaseSheet {
         key: "locations",
         label: localize("names.locations"),
         icon: TemplateComponents.getAsset("icon", "location"),
-        statistic: { value: data.tagMode ? directLocationCount : data.linkedShops.length, color: "#28a745" },
+        statistic: { value: data.allLocations.length, view: data.allLocations.length > 0 },
       },
       {
         key: "shops",
         label: localize("names.shops"),
         icon: TemplateComponents.getAsset("icon", "shop"),
-        statistic: { value: data.linkedShops.length, color: "#6f42c1" },
+        statistic: { value: data.linkedShops.length, view: data.linkedShops.length > 0 },
       },
       {
         key: "associates",
         label: data.tagMode ? localize("names.members") : localize("names.associates"),
         icon: TemplateComponents.getAsset("icon", "npc"),
-        statistic: { value: data.associates.length, color: "#fd7e14" },
+        statistic: { value: data.associatesWithoutTaggedNPCs.length, view: data.associatesWithoutTaggedNPCs.length > 0 },
       },
-{ key: "journals", label: localize("names.journals"), icon: "fas fa-book"},
+{ key: "quests", label: localize("names.quests"), icon: "fas fa-scroll", statistic: {value: data.sheetData.quests.length, view:data.sheetData.quests.length>0}  }, 
+{ key: "journals", label: localize("names.journals"), icon: "fas fa-book", statistic: {value: data.linkedStandardJournals.length, view:data.linkedStandardJournals.length>0} },
       ...(data.isGM
         ? [
             {
@@ -118,15 +124,15 @@ export class NPCSheet extends CampaignCodexBaseSheet {
 
     if (game.user.isGM) {
       headerContent = `
-      <div class="shop-toggles npc-toggles">
-      <span class="stat-label">${localize("button.tagmode")}</span>
+      <div class="shop-toggles npc-toggles tag-toggles" title="Toggle Tagged NPC mode">
+      <span class="stat-label"><i class ="${TemplateComponents.getAsset('icon', 'tag')}"></i></span>
         <label class="toggle-control">
           <input type="checkbox" class="tag-mode-toggle" ${data.tagMode ? "checked" : ""} style="margin: 0;"><span class="slider"></span>
         </label>
       </div>
     `;
     }
-    data.customHeaderContent = headerContent;
+    data.customFooterContent = headerContent;
 
     // --- Tab Panels ---
     data.tabPanels = [
@@ -150,6 +156,7 @@ export class NPCSheet extends CampaignCodexBaseSheet {
         active: this._currentTab === "associates",
         content: await this._generateAssociatesTab(data),
       },
+      { key: "quests", active: this._currentTab === "quests", content: await TemplateComponents.questList(this.document, data.sheetData.quests, data.isGM) },
       { key: "journals", active: this._currentTab === "journals", content:  `${TemplateComponents.contentHeader("fas fa-book", "Journals")}${TemplateComponents.standardJournalGrid(data.linkedStandardJournals)}` },
 
       {
@@ -368,6 +375,11 @@ export class NPCSheet extends CampaignCodexBaseSheet {
     const currentData = this.document.getFlag("campaign-codex", "data") || {};
     currentData.tagMode = tagMode;
     await this.document.setFlag("campaign-codex", "data", currentData);
+    if (tagMode) {
+      game.campaignCodex.addTagToCache(this.document);
+      } else {
+          game.campaignCodex.removeTagFromCache(this.document);
+      }
     this.render(true);
   }
 

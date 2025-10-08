@@ -49,7 +49,6 @@ export class ShopSheet extends CampaignCodexBaseSheet {
 
   async getData() {
     const data = await super.getData();
-  // PERFORMANCE: Use cached data if available, otherwise process and cache it.
   if (!this._processedData) {
     this._processedData = await this._processShopData();
   }
@@ -63,16 +62,16 @@ export class ShopSheet extends CampaignCodexBaseSheet {
   data.inventory = inventory;
   data.canViewLocation = canViewLocation;
   data.canViewScene = canViewScene;
-
-    data.taggedNPCs = data.linkedNPCs.filter((npc) => npc.tag === true);
-    data.linkedNPCsWithoutTaggedNPCs = data.linkedNPCs.filter((npc) => npc.tag !== true);
-
-    // // Prepare Permissions
-
-    data.sheetType = "shop";
+  data.taggedNPCs = data.linkedNPCs.filter((npc) => npc.tag === true);
+  data.linkedNPCsWithoutTaggedNPCs = data.linkedNPCs.filter((npc) => npc.tag !== true);
+  data.sheetType = "shop";
+  if (data.sheetTypeLabelOverride !== undefined && data.sheetTypeLabelOverride !== "") {
+    data.sheetTypeLabel = data.sheetTypeLabelOverride;
+  } else {
     data.sheetTypeLabel = localize("names.shop");
-    data.customImage = this.document.getFlag("campaign-codex", "image") || TemplateComponents.getAsset("image", "shop");
-    data.markup = shopData.markup || 1.0;
+  }
+  data.customImage = this.document.getFlag("campaign-codex", "image") || TemplateComponents.getAsset("image", "shop");
+  data.markup = shopData.markup || 1.0;
 
     data.tabs = [
       {
@@ -91,7 +90,7 @@ export class ShopSheet extends CampaignCodexBaseSheet {
               active: this._currentTab === "inventory",
               statistic: {
                 value: data.inventory.length,
-                color: "#28a745",
+                view: data.inventory.length >0,
               },
             },
           ]),
@@ -101,11 +100,12 @@ export class ShopSheet extends CampaignCodexBaseSheet {
         icon: "fas fa-users",
         active: this._currentTab === "npcs",
         statistic: {
-          value: data.linkedNPCs.length,
-          color: "#fd7e14",
+          value: data.linkedNPCsWithoutTaggedNPCs.length,
+          view: data.linkedNPCsWithoutTaggedNPCs.length>0,
         },
       },
-      { key: "journals", label: localize("names.journals"), icon: "fas fa-book"},
+      { key: "quests", label: localize("names.quests"), icon: "fas fa-scroll", statistic: {value: data.sheetData.quests.length, view:data.sheetData.quests.length>0}  }, 
+      { key: "journals", label: localize("names.journals"), icon: "fas fa-book", statistic: {value: data.linkedStandardJournals.length, view:data.linkedStandardJournals.length>0} },
 
       ...(game.user.isGM
         ? [
@@ -210,6 +210,7 @@ export class ShopSheet extends CampaignCodexBaseSheet {
         active: this._currentTab === "npcs",
         content: await this._generateNPCsTab(data),
       },
+      { key: "quests", active: this._currentTab === "quests", content: await TemplateComponents.questList(this.document, data.sheetData.quests, data.isGM) },
       { key: "journals", active: this._currentTab === "journals", content:  `${TemplateComponents.contentHeader("fas fa-book", "Journals")}${TemplateComponents.standardJournalGrid(data.linkedStandardJournals)}` },
 
       {

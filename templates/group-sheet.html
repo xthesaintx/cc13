@@ -13,7 +13,7 @@
           <h1 class="sheet-title">{{document.name}}</h1>
           <!-- <div class="sheet-type">{{sheetTypeLabel}}</div> -->
           
-          {{#if isGM}}<button class="image-change-btn refresh-btn" type="button">
+          {{#if isGM}}<button class="image-change-btn" type="button">
             <i class="fas fa-camera"></i>
           </button>{{/if}}
                   {{!-- Custom header content --}}
@@ -28,9 +28,9 @@
       <main class="group-main">
         <nav class="group-tabs">
           {{#each tabs}}
-            <div class="group-tab {{#if active}}active{{/if}}" data-tab="{{key}}">
+            <div class="group-tab {{#if active}}active{{/if}}" data-tab="{{key}}" title="{{label}}">
               <i class="{{icon}}"></i>
-              <span class="tab-label">{{label}}</span>
+              <!-- <span class="tab-label">{{label}}</span> -->
 
             </div>
           {{/each}}

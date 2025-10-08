@@ -1,0 +1,30 @@
+<div class="inventory-by-shop">
+  {{#each shops as |shop|}}
+    <div class="shop-inventory-section">
+      <div class="shop-header btn-open-sheet" data-sheet-uuid="{{shop.uuid}}">
+        <img src="{{getAsset "image" shop.type shop.img}}" alt="{{shop.name}}" class="shop-icon">
+        <div class="shop-info">
+          <h4 class="shop-name">{{shop.name}}</h4>
+          {{#if shop.tags.length}}
+            <i class="fas fa-tag"></i>
+            {{#each shop.tags}}
+              <span class="location-tag tag-mode">{{this}}</span>
+            {{/each}}
+          {{/if}}
+        </div>
+      </div>
+      
+      <div class="shop-items">
+        {{#each shop.items as |item|}}
+          <div class="group-item-card btn-open-sheet" data-sheet-uuid="{{item.uuid}}">
+            <img src="{{getAsset "image" "item" item.img}}" alt="{{item.name}}" class="item-icon">
+            <div class="item-info">
+              <span class="item-name">{{item.name}}</span>
+              <span class="item-price">{{item.quantity}}x {{item.finalPrice}}{{item.currency}}</span>
+            </div>
+          </div>
+        {{/each}}
+      </div>
+    </div>
+  {{/each}}
+</div>

@@ -1,90 +1,81 @@
 <div class="campaign-codex {{sheetType}}-sheet cc-scroll-fix">
   <div class="sheet-container">
-    
     {{!-- Sidebar --}}
     <aside class="sheet-sidebar">
-      
       {{!-- Header with Image and Title --}}
       <div class="sidebar-header">
         <div class="sheet-image">
-          <img src="{{#if customImage}}{{customImage}}{{/if}}" 
-               alt="{{document.name}}" 
-               onerror="this.src='{{defaultImage}}'">
+          <img src="{{#if customImage}}{{customImage}}{{/if}}" alt="{{document.name}}" onerror="this.src='{{defaultImage}}'" />
         </div>
-        
-        <h1 class="sheet-title">{{document.name}}</h1>
-        <div class="sheet-type">{{sheetTypeLabel}}</div>
-        
-        {{#if isGM}}<button class="image-change-btn refresh-btn" type="button">
-          <i class="fas fa-camera"></i>
-        </button>{{/if}}
-        
-        {{!-- Custom header content --}}
-        {{{customHeaderContent}}}
-      </div>
-      
 
-      
-{{!-- Navigation Tabs with Integrated Statistics --}}
-<div class="cc-scroll-group scrollable">
-<nav class="sidebar-tabs">
-  {{#each tabs}}
-    <div class="tab-item {{#if active}}active{{/if}}" data-tab="{{key}}">
-      <i class="{{icon}}"></i>
-      <span class="tab-label">{{label}}</span>
-   </div>
-  {{/each}}
-</nav>
-      {{!-- Tags --}}
-      {{#if quickTags}}
-        <div class="sidebar-links">
-          <h3>Tags</h3>
+        <h1 class="sheet-title">{{document.name}}</h1>
+        <div class="sheet-type"><i class="{{#if tagMode}}{{getAsset 'icon' 'tag'}}{{else}}{{getAsset 'icon' sheetType}}{{/if}}
+"></i> {{sheetTypeLabel}}</div>
+        {{#if isGM}}<button class="image-change-btn" type="button">
+          <i class="fas fa-camera"></i></button
+        >{{/if}} {{!-- Custom header content --}} {{{customHeaderContent}}}
+      </div>
+
+      {{!-- Navigation Tabs with Integrated Statistics --}}
+      <div class="cc-scroll-group scrollable">
+        <nav class="sidebar-tabs">
+          {{#each tabs}}
+          <div class="tab-item {{#if active}}active{{/if}}" data-tab="{{key}}">
+            <i class="{{icon}}"></i>
+            <span class="tab-label">{{label}}</span>
+            {{#if (and ../isGM ../showStats statistic.view)}}
+            <span class="tab-stat"> {{statistic.value}}</span>
+            {{/if}}
+          </div>
+          {{/each}}
+        </nav>
+        {{{customFooterContent}}}
+        {{!-- Tags --}}
+        <div class="sidebar-links tags">
+            <h3 class="tags">Tags
+              <i class="fas fa-circle-plus create-tag-btn" title="Create new Tag"></i><i class="fas fa-eye toggletags" title="Toggle Existing Tags"></i>
+
+         </h3>
           <div class="link-tags">
             {{#each quickTags}}
-              <div class="link-card npc-link tag-card" data-npc-uuid="{{uuid}}" title="{{name}}">
-                  <i class="fas fa-user-tag link-icon"></i>
-                <span class="link-name">{{name}}</span>
-                {{#if ../isGM}}<button class="remove-npc" data-npc-uuid="{{uuid}}" type="button">
-          <i class="fas fa-times"></i>
-        </button>{{/if}}
-              </div>
+            <div class="link-card npc-link tag-card" data-npc-uuid="{{uuid}}" title="{{name}}">
+              <span class="link-name">{{name}}</span> {{#if ../isGM}}<i class="fas fa-trash remove-npc" data-npc-uuid="{{uuid}}"></i>
+              {{/if}}
+            </div>
+            {{/each}}
+            {{#each existingTags}}
+            <div class="link-card existing-tag" data-npc-uuid="{{this.uuid}}" title="{{this.name}}">
+              <span class="link-name">{{this.name}}</span>
+            </div>
             {{/each}}
           </div>
-        </div>
-      {{/if}}
 
-      {{!-- Quick Links --}}
-      {{#if quickLinks}}
+
+        </div>
+
+        {{!-- Quick Links --}} {{#if quickLinks}}
         <div class="sidebar-links">
-          <h3>Quicklinks</h3>
-          <div class="link-tags">
+          <h3 class="collapsible-quicklinks">Quicklinks<i class="fas fa-caret-up"></i></h3>
+          <div class="link-tags collapsible-content">
             {{#each quickLinks}}
-              <div class="link-card {{type}}-link" data-{{type}}-uuid="{{uuid}}" title="{{name}}">
-                          <i class="{{getIcon type}} link-icon"></i>
-                <span class="link-name">{{name}}</span>
-              </div>
+            <div class="link-card {{type}}-link" data-{{type}}-uuid="{{uuid}}" title="{{name}}">
+              <i class="{{getIcon type}} link-icon"></i>
+              <span class="link-name">{{name}}</span>
+            </div>
             {{/each}}
           </div>
         </div>
-      {{/if}}
-   </div>   
+        {{/if}}
+      </div>
     </aside>
-    
+
     {{!-- Main Content --}}
     <main class="sheet-main">
-
       <form class="sheet-form">
-        
-        {{!-- Tab Panels --}}
-        {{#each tabPanels}}
-          <section class="tab-panel {{#if active}}active{{/if}} scrollable" data-tab="{{key}}">
-            {{{content}}}
-          </section>
+        {{!-- Tab Panels --}} {{#each tabPanels}}
+        <section class="tab-panel {{#if active}}active{{/if}} scrollable" data-tab="{{key}}">{{{content}}}</section>
         {{/each}}
-        
       </form>
-    
     </main>
-    
   </div>
 </div>

@@ -14,26 +14,48 @@ import { GroupLinkers } from "./sheets/group-linkers.js";
 import {
     localize,
     format,
+    createFromScene,
     handleCampaignCodexClick,
     ensureCampaignCodexFolders,
     getFolderColor,
     getCampaignCodexFolder,
-    showAddToGroupDialog,
     addJournalDirectoryUI,
     mergeDuplicateCodexFolders,
+    applyThemeColors,
 } from "./helper.js";
+
+import { CampaignCodexTOCSheet } from "./campaign-codex-toc.js";
+// let tocSheetInstance = null;
+
 
 Hooks.once("init", async function () {
     console.log("Campaign Codex | Initializing");
     console.log("Campaign Codex | Pausing relationship updates for until ready.");
+    const templatePaths = [
+    "modules/campaign-codex/templates/quests/quest-list.hbs",
+    "modules/campaign-codex/templates/partials/quest-card.hbs",
+    "modules/campaign-codex/templates/partials/selected-sheet-view.hbs",
+    "modules/campaign-codex/templates/partials/group-sheet-sidebar.hbs",
+    "modules/campaign-codex/templates/partials/group-tab-info.hbs",
+    "modules/campaign-codex/templates/partials/group-tab-inventory.hbs",
+    "modules/campaign-codex/templates/partials/group-tab-locations.hbs",
+    "modules/campaign-codex/templates/partials/group-location-card.hbs",
+    "modules/campaign-codex/templates/partials/selected-tab-inventory.hbs",
+    "modules/campaign-codex/templates/partials/group-tree-tag-node.hbs",
+    "modules/campaign-codex/templates/partials/group-tree-node.hbs",
+    "modules/campaign-codex/templates/partials/selected-tab-npcs.hbs",
+    "modules/campaign-codex/templates/partials/selected-tab-tags.hbs",
+    "modules/campaign-codex/templates/partials/selected-tab-associates.hbs",
+    "modules/campaign-codex/templates/partials/group-tab-quests.hbs",
+    "modules/campaign-codex/templates/partials/group-tab-npcs.hbs",
+    ];
+    foundry.applications.handlebars.loadTemplates(templatePaths);
 
     game.campaignCodexImporting = true;
     await campaigncodexSettings();
-
-    Handlebars.registerHelper("getIcon", function (entityType) {
-        return TemplateComponents.getAsset("icon", entityType);
-    });
-
+    Handlebars.registerHelper("ccLocalize", localize);
+    Handlebars.registerHelper("getAsset", TemplateComponents.getAsset);
+    Handlebars.registerHelper("getIcon", function (entityType) { return TemplateComponents.getAsset("icon", entityType); });
     Handlebars.registerHelper("if_system", function (systemId, options) {
         if (game.system.id === systemId) {
             return options.fn(this);
@@ -78,16 +100,18 @@ Hooks.once("i18nInit", async function () {
 });
 
 
-
 Hooks.once("ready", async function () {
     console.log("Campaign Codex | Ready");
-
     game.campaignCodex = new CampaignManager();
+    game.campaignCodex.tocSheetInstance = null;
+
+    await game.campaignCodex.initializeTagCache();
     game.campaignCodexCleanup = new CleanUp();
     game.campaignCodexNPCDropper = NPCDropper;
     game.campaignCodexTokenPlacement = CampaignCodexTokenPlacement;
     window.CampaignCodexTokenPlacement = CampaignCodexTokenPlacement;
-
+    // THEMES
+    applyThemeColors();
     if (game.settings.get("campaign-codex", "useOrganizedFolders")) {
         await ensureCampaignCodexFolders();
     }
@@ -122,8 +146,8 @@ Hooks.on("preDeleteScene", async (scene, options, userId) => {
     }
 });
 
+
 Hooks.on("preDeleteJournalEntry", async (journal, options, userId) => {
-    // Exit if this is a Campaign Codex journal, as it has its own cleanup.
     if (journal.getFlag("campaign-codex", "type")) return;
 
     try {
@@ -159,27 +183,10 @@ Hooks.on("getJournalEntryContextOptions", (application, menuItems) => {
                 }
             },
         },
-        {
-            name: format("context.group", { type: localize("names.group") }),
-            icon: '<i class="fas fa-plus-circle"></i>',
-            condition: (element) => {
-                const journalId = element.dataset.entryId;
-                const journal = game.journal.get(journalId);
-                const journalType = journal?.getFlag("campaign-codex", "type");
-                return journalType && ["region", "location", "shop", "npc"].includes(journalType) && game.user.isGM;
-            },
-            callback: async (element) => {
-                const journalId = element.dataset.entryId;
-                const journal = game.journal.get(journalId);
-                if (journal) {
-                    await showAddToGroupDialog(journal);
-                }
-            },
-        },
+
     );
 });
 
-// Add to the Create Dialog Button on Journal Directory
 Hooks.on("renderDialogV2", (dialog, html, data) => {
     if (dialog.title !== "Create Journal Entry") return;
 
@@ -193,7 +200,7 @@ Hooks.on("renderDialogV2", (dialog, html, data) => {
         region: "campaign-codex.RegionSheet",
         location: "campaign-codex.LocationSheet",
         shop: "campaign-codex.ShopSheet",
-        npc: "campaign-codex.NPCSheet", // Correctly capitalized
+        npc: "campaign-codex.NPCSheet", 
         group: "campaign-codex.GroupSheet",
     };
     const campaignCodexTypes = {
@@ -248,9 +255,9 @@ Hooks.on("createJournalEntry", async (document, options, userId) => {
 
     const journalType = document.getFlag("campaign-codex", "type");
     if (!journalType) return;
-
-    // The only remaining job is to move it to the correct folder.
-    const folder = getCampaignCodexFolder(journalType);
+    const tag = document.getFlag("campaign-codex", "data")?.tagMode;
+    const folderType = (tag && journalType === "npc") ? 'tag' : journalType;
+    const folder = getCampaignCodexFolder(folderType);
     if (folder) {
         await document.update({ folder: folder.id });
     }
@@ -295,8 +302,16 @@ Hooks.on("renderJournalEntry", async (journal, html, data) => {
     }
 });
 
-
-
+Hooks.on("preUpdateJournalEntry", (journal, changed, options, userId) => {
+    const sheetClass = changed.flags?.core?.sheetClass;
+    if (sheetClass && sheetClass.startsWith('campaign-codex.')) {
+        const type = sheetClass.split('.')[1]?.replace('Sheet', '').toLowerCase();
+        if (type) {
+            console.log(`Campaign Codex | Setting type for '${journal.name}' to '${type}'`);
+            foundry.utils.setProperty(changed, "flags.campaign-codex.type", type);
+        }
+    }
+});
 
 Hooks.on("updateJournalEntry", async (document, changes, options, userId) => {
   if (
@@ -321,7 +336,6 @@ Hooks.on("updateJournalEntry", async (document, changes, options, userId) => {
       }
     }
   }
-
   await game.campaignCodex._scheduleSheetRefresh(document.uuid);
 });
 
@@ -337,8 +351,6 @@ Hooks.on("updateActor", async (actor, changes, options, userId) => {
     await game.campaignCodex._scheduleSheetRefresh(linkedNPC.uuid);
   }
 });
-
-
 
 
 Hooks.on("renderChatMessageHTML", (app, html, data) => {
@@ -369,3 +381,40 @@ Hooks.on("importAdventure", async (adventure, formData, created, updated) => {
         delete game.campaignCodexImporting;
     }
 });
+
+Hooks.on("getSceneControlButtons", (controls) => {
+    controls["campaign-codex"] = {
+        name: "campaign-codex",
+        title: "Campaign Codex",
+        icon: "fas fa-closed-captioning",
+        visible: true,
+        button:true,
+        order: Object.keys(controls).length+1,
+        onChange: (event, active) => {
+        if ( active ) canvas.tokens.activate();
+        },
+      onToolChange: () => {},
+        tools: {
+            "toc-sheet": {
+                name: "toc-sheet",
+                title: format('button.title', { type: localize('names.group') }),
+                icon: "fas fa-sitemap",
+                button: true,
+                order: 11,
+                onChange: (event, toggle) => {
+                    if (game.campaignCodex.tocSheetInstance && game.campaignCodex.tocSheetInstance.rendered) {
+                        game.campaignCodex.tocSheetInstance.close();
+                        return;
+                    }
+                    let savedDimensions = game.settings.get("campaign-codex", "tocSheetDimensions");
+                    game.campaignCodex.tocSheetInstance = new CampaignCodexTOCSheet({ position: { width: savedDimensions.width, height: savedDimensions.height } });
+                    game.campaignCodex.tocSheetInstance.render(true);
+                }
+            },
+
+        },
+        activeTool: "toc-sheet"
+    };
+});
+
+

@@ -1,0 +1,69 @@
+<section class="campaign-codex-toc-app scrollable tab{{#if tab.active}} active{{/if}}" data-group="{{tab.group}}" data-tab="{{tab.id}}">
+    {{#if hasContent}}
+        <div class="toc-quest-list">
+            {{!-- Pinned Quests --}}
+            {{#each questsPinned}}
+              <div class="toc-quest-item is-collapsed">
+              <h4><i class="fas fa-thumbtack" title="Pinned"></i>{{this.title}}
+                            {{#if this.completed}}
+                            <i class="fas fa-check-circle" title="Completed"></i>{{else}}<span>&nbsp;</span>
+                            {{/if}}
+                            {{#if this.canViewSource}}
+                            <i class="fas fa-book" data-action="openDocument" data-uuid="{{this.journalUuid}}" title="Open Source Journal: {{this.journalName}}"></i>
+                            {{else}}<span></span>{{/if}}
+                <i class="fas fa-caret-up collaspable-quicklinks" data-action="collapseQuests"></i></h3>
+                    <div class="toc-quest-body collapsible-content">
+                        <div class="toc-quest-description">
+                            {{{this.enrichedDescription}}}
+                        </div>
+                        {{#if this.visibleObjectives.length}}
+                            <ul class="quest-objectives">
+                                {{#each this.visibleObjectives}}
+                                    <li>
+                                        {{#if this.completed}}<i class="fas fa-check-square"></i>{{else}}<i class="far fa-square"></i>{{/if}}
+                                        <span>{{{this.enrichedText}}}</span>
+                                    </li>
+                                {{/each}}
+                            </ul>
+                        {{/if}}
+                    </div>
+                </div>
+            {{/each}}
+
+            {{!-- Unpinned Quests (conditionally displayed) --}}
+            {{#unless showOnlyPinned}}
+            {{#each questsUnpinned}}
+            {{#if (and this.canViewSource this.visible)}}
+              <div class="toc-quest-item is-collapsed">
+              <h4><i class="fas fa-thumbtack-slash" title="Not Pinned"></i>{{this.title}}
+                            {{#if this.completed}}
+                                <i class="fas fa-check-circle" title="Completed"></i>
+                            {{else}}<span></span>{{/if}}
+                            {{#if this.canViewSource}}
+                                <i class="fas fa-book" data-action="openDocument" data-uuid="{{this.journalUuid}}" title="Open Source Journal: {{this.journalName}}"></i>
+                            {{else}}<span></span>{{/if}}
+                <i class="fas fa-caret-up collaspable-quicklinks" data-action="collapseQuests"></i></h3>
+                    <div class="toc-quest-body collapsible-content">
+                        <div class="toc-quest-description">
+                            {{{this.enrichedDescription}}}
+                        </div>
+                        {{#if this.visibleObjectives.length}}
+                            <ul class="quest-objectives">
+                                {{#each this.visibleObjectives}}
+                                    <li>
+                                        {{#if this.completed}}<i class="fas fa-check-square"></i>{{else}}<i class="far fa-square"></i>{{/if}}
+                                        <span>{{{this.enrichedText}}}</span>
+                                    </li>
+                                {{/each}}
+                            </ul>
+                        {{/if}}
+                    </div>
+                </div>
+                {{/if}}
+                {{/each}}
+            {{/unless}}
+        </div>
+    {{else}}
+        <p class="notes">No quests found in any Campaign Codex documents.</p>
+    {{/if}}
+</section>

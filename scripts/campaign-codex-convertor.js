@@ -233,95 +233,93 @@ export class CampaignCodexJournalConverter {
     return content;
   }
 
-  static async showExportDialog(sourceJournal) {
+
+static async showExportDialog(sourceJournal) {
     const ccType = sourceJournal.getFlag("campaign-codex", "type");
     if (!ccType) {
-      ui.notifications.warn("This journal is not a Campaign Codex document");
-      return;
+        ui.notifications.warn("This journal is not a Campaign Codex document");
+        return;
     }
 
     const folders = game.folders.filter((f) => f.type === "JournalEntry");
     const folderOptions = folders
-      .map((f) => `<option value="${f.id}">${f.name}</option>`)
-      .join("");
+        .map((f) => `<option value="${f.id}">${f.name}</option>`)
+        .join("");
 
-    return new Promise((resolve) => {
-      new Dialog({
-        title: "Export to Standard Journal",
-        content: `
-          <form class="flexcol">
-            <div class="form-group">
-              <label>Export Name:</label>
-              <input type="text" name="exportName" value="${sourceJournal.name} (Exported)" style="width: 100%;" />
-            </div>
-            <div class="form-group">
-              <label>Target Folder:</label>
-              <select name="folderId" style="width: 100%;">
+    const content = `
+        <div class="form-group">
+            <label>Export Name:</label>
+            <input type="text" name="exportName" value="${sourceJournal.name} (Exported)" style="width: 100%;" />
+        </div>
+        <div class="form-group">
+            <label>Target Folder:</label>
+            <select name="folderId" style="width: 100%;">
                 <option value="">-- Same as Original --</option>
                 <option value="root">-- Root Directory --</option>
                 ${folderOptions}
-              </select>
-            </div>
-            <div class="form-group">
-              <label>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>
                 <input type="checkbox" name="openAfterExport" checked />
                 Open exported journal after creation
-              </label>
-            </div>
-            <div class="form-group">
-              <p style="font-size: 12px; color: #666; margin: 8px 0;">
+            </label>
+        </div>
+        <div class="form-group">
+            <p style="font-size: 12px; color: #666; margin: 8px 0;">
                 <i class="fas fa-info-circle"></i> 
                 This will create a standard Foundry journal with all Campaign Codex data formatted as HTML content.
-              </p>
-            </div>
-          </form>
-        `,
-        buttons: {
-          export: {
-            icon: '<i class="fas fa-book"></i>',
-            label: "Export",
-            callback: async (html) => {
-              const nativeHtml = html instanceof jQuery ? html[0] : html;
-              const form = nativeHtml.querySelector("form");
-              const formData = new foundry.applications.ux.FormDataExtended(
-                form,
-              ).object;
+            </p>
+        </div>
+    `;
 
-              const options = {
-                namePrefix: "",
-                openAfterExport: formData.openAfterExport,
-              };
-
-              if (formData.folderId === "root") {
-                options.folderId = null;
-              } else if (formData.folderId && formData.folderId !== "") {
-                options.folderId = formData.folderId;
-              }
-
-              let customName = null;
-              if (formData.exportName && formData.exportName.trim() !== "") {
-                customName = formData.exportName.trim();
-                options.namePrefix = "";
-              }
-
-              const result = await this.exportToStandardJournal(sourceJournal, {
-                ...options,
-                customName: customName,
-              });
-
-              resolve(result);
+    const dialogData = await foundry.applications.api.DialogV2.wait({
+        window: { title: "Export to Standard Journal" },
+        content,
+        buttons: [
+            {
+                action: "export",
+                icon: '<i class="fas fa-book"></i>',
+                label: "Export",
+                default: true,
+                callback: (event, button) => {
+                    return Object.fromEntries(new FormData(button.form));
+                }
             },
-          },
-          cancel: {
-            icon: '<i class="fas fa-times"></i>',
-            label: "Cancel",
-            callback: () => resolve(null),
-          },
-        },
-        default: "export",
-      }).render(true);
+            {
+                action: "cancel",
+                icon: '<i class="fas fa-times"></i>',
+                label: "Cancel",
+                callback: () => null
+            }
+        ],
+        rejectClose: true
+    }).catch(() => null);
+
+    if (!dialogData) return null;
+    const options = {
+        namePrefix: "",
+        openAfterExport: dialogData.openAfterExport === 'on',
+    };
+
+    if (dialogData.folderId === "root") {
+        options.folderId = null;
+    } else if (dialogData.folderId && dialogData.folderId !== "") {
+        options.folderId = dialogData.folderId;
+    }
+
+    let customName = null;
+    if (dialogData.exportName && dialogData.exportName.trim() !== "") {
+        customName = dialogData.exportName.trim();
+        options.namePrefix = "";
+    }
+    
+    // Call the final export function and return its result.
+    return await this.exportToStandardJournal(sourceJournal, {
+        ...options,
+        customName: customName,
     });
-  }
+}
 
   static async batchExport(journals, options = {}) {
     const ccJournals = journals.filter((j) =>

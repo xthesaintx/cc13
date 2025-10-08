@@ -1,0 +1,31 @@
+<div class="selected-sheet-container">
+  <div class="selected-sheet-header">
+    <div class="selected-sheet-info">
+      <div class="selected-sheet-details">
+        <h2>{{selectedSheet.name}}</h2>
+      </div>
+      {{{tagsContent}}}
+    </div>
+    <div class="selected-header-image">
+      <img src="{{selectedImage}}">
+    </div>
+    <div class="selected-sheet-actions {{selectedSheet.type}}">
+      {{{dropButtonHtml}}}
+      {{{sceneButtonHtml}}}
+      {{{actorButtonHtml}}}
+      <button type="button" class="btn-open-sheet" data-sheet-uuid="{{selectedSheet.uuid}}" title="{{ccLocalize "title.open.sheet"}}">
+        <i class="fas fa-external-link-alt"></i>
+      </button>
+    </div>
+    <nav class="selected-sheet-tabs {{selectedSheet.type}}">
+      {{#each subTabs}}
+        <div class="selected-sheet-tab {{#if this.active}}active{{/if}}" data-tab="{{this.key}}" title="{{this.label}}">
+          <i class="{{this.icon}}"></i>
+        </div>
+      {{/each}}
+    </nav>
+  </div>
+  <div class="selected-sheet-content scrollable">
+    {{{selectedSheetContent}}}
+  </div>
+</div>

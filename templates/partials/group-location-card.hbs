@@ -1,0 +1,42 @@
+<div class="group-location-card" data-sheet-uuid="{{location.uuid}}">
+  <div class="location-image">
+    <img class="card-image-clickable" data-sheet-uuid="{{location.uuid}}" src="{{getAsset "image" location.type location.img}}" alt="{{location.name}}">
+  </div>
+  <div class="location-info">
+    <h4 class="location-name"><i class="{{location.displayIcon}}"></i> {{location.name}}</h4>
+
+    {{#if location.region}}
+      <div class="entity-locations">
+        <i class="{{getAsset "icon" "region"}}"></i>
+        <span class="location-tag">{{location.region}}</span>
+      </div>
+    {{/if}}
+
+    {{#if location.shops.length}}
+      <div class="entity-locations shop-tags">
+        <i class="{{getAsset "icon" "shop"}}"></i>
+        {{#each location.shops}}
+          <span class="location-tag shop-tag">{{this}}</span>
+        {{/each}}
+      </div>
+    {{/if}}
+
+    {{#if location.tags.length}}
+      <div class="entity-locations tag-mode-tags">
+        <i class="fas fa-tag"></i>
+        {{#each location.tags}}
+          <span class="location-tag tag-mode">{{this}}</span>
+        {{/each}}
+      </div>
+    {{/if}}
+
+    {{#if location.npcs.length}}
+      <div class="entity-locations tag-mode-tags">
+        <i class="{{getAsset "icon" "npc"}}"></i>
+        {{#each location.npcs}}
+          <span class="location-tag">{{this}}</span>
+        {{/each}}
+      </div>
+    {{/if}}
+  </div>
+</div>

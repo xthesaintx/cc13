@@ -1,0 +1,11 @@
+<div class="npc-filters">
+  {{#each filters as |filter|}}
+    <button type="button" class="filter-btn refresh-btn {{filter.class}} {{#if filter.active}}active{{/if}}" data-filter="{{filter.dataFilter}}" title="{{filter.title}}">
+        <i class="{{filter.iconClass}}"></i>
+    </button>
+  {{/each}}
+</div>
+
+<div class="npc-grid-container">
+  {{{npcGridHtml}}}
+</div>

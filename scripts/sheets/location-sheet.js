@@ -43,7 +43,7 @@ export class LocationSheet extends CampaignCodexBaseSheet {
       CampaignCodexLinkers.getShopNPCs(this.document, locationData.linkedShops || []),
       CampaignCodexLinkers.getLinkedShops(this.document, locationData.linkedShops || []),
       this.constructor.canUserView(locationData.parentRegion),
-      this.constructor.canUserView(locationData.linkedScene)
+      this.constructor.canUserView(locationData.linkedScene),
     ]);
 
     return { locationData, linkedRegion, directNPCs, shopNPCs, linkedShops, linkedScene, canViewRegion, canViewScene };
@@ -63,15 +63,13 @@ export class LocationSheet extends CampaignCodexBaseSheet {
     data.linkedScene = linkedScene;
     data.canViewRegion = canViewRegion;
     data.canViewScene = canViewScene;
-
-
-    // --- Basic Sheet Info ---
     data.sheetType = "location";
-    data.sheetTypeLabel = localize("names.location");
+    if (data.sheetTypeLabelOverride !== undefined && data.sheetTypeLabelOverride !== "") {
+            data.sheetTypeLabel = data.sheetTypeLabelOverride;
+        } else {
+          data.sheetTypeLabel = localize("names.location");
+        }
     data.customImage = this.document.getFlag("campaign-codex", "image") || TemplateComponents.getAsset("image", "location");
-
-    // --- Linked Data Fetching ---
-
     data.allNPCs = [...data.directNPCs, ...data.shopNPCs];
     data.taggedDirectNPCs = data.directNPCs.filter((npc) => npc.tag === true);
     data.taggedShopNPCs = data.shopNPCs.filter((npc) => npc.tag === true);
@@ -82,7 +80,7 @@ export class LocationSheet extends CampaignCodexBaseSheet {
 
     const directUuids = new Set(data.directNPCsWithoutTaggedNPCs.map((npc) => npc.uuid));
     data.shopNPCsWithoutTaggedNPCsNoDirect = data.shopNPCsWithoutTaggedNPCs.filter((associate) => !directUuids.has(associate.uuid));
-
+    const statAllNPCs = data.directNPCsWithoutTaggedNPCs.length + data.shopNPCsWithoutTaggedNPCsNoDirect.length;
     // --- UI Component Data ---
     data.tabs = [
       { key: "info", label: localize("names.info"), icon: "fas fa-info-circle" },
@@ -90,10 +88,11 @@ export class LocationSheet extends CampaignCodexBaseSheet {
         key: "npcs",
         label: localize("names.npcs"),
         icon: "fas fa-users",
-        statistic: { value: data.directNPCsWithoutTaggedNPCs.length + data.shopNPCsWithoutTaggedNPCsNoDirect.length + data.taggedDirectNPCs.length, color: "#fd7e14" },
+        statistic: { value: statAllNPCs, view: statAllNPCs > 0 },
       },
-      { key: "journals", label: localize("names.journals"), icon: "fas fa-book"},
-      { key: "shops", label: localize("names.shops"), icon: "fas fa-book-open", statistic: { value: data.linkedShops.length, color: "#6f42c1" } },
+      { key: "quests", label: localize("names.quests"), icon: "fas fa-scroll", statistic: {value: data.sheetData.quests.length, view:data.sheetData.quests.length>0}  },
+      { key: "journals", label: localize("names.journals"), icon: "fas fa-book", statistic: {value: data.linkedStandardJournals.length, view:data.linkedStandardJournals.length>0} },
+      { key: "shops", label: localize("names.shops"), icon: "fas fa-book-open", statistic: { value: data.linkedShops.length, view: data.linkedShops.length > 0 } },
       ...(data.isGM ? [{ key: "notes", label: localize("names.note"), icon: "fas fa-sticky-note" }] : []),
     ].map((tab) => ({ ...tab, active: this._currentTab === tab.key }));
 
@@ -121,7 +120,12 @@ export class LocationSheet extends CampaignCodexBaseSheet {
       { key: "npcs", active: this._currentTab === "npcs", content: await this._generateNPCsTab(data) },
       { key: "shops", active: this._currentTab === "shops", content: await this._generateShopsTab(data) },
       { key: "notes", active: this._currentTab === "notes", content: CampaignCodexBaseSheet.generateNotesTab(this.document, data) },
-      { key: "journals", active: this._currentTab === "journals", content:  `${TemplateComponents.contentHeader("fas fa-book", "Journals")}${TemplateComponents.standardJournalGrid(data.linkedStandardJournals)}` },
+      { key: "quests", active: this._currentTab === "quests", content: await TemplateComponents.questList(this.document, data.sheetData.quests, data.isGM) },
+      {
+        key: "journals",
+        active: this._currentTab === "journals",
+        content: `${TemplateComponents.contentHeader("fas fa-book", "Journals")}${TemplateComponents.standardJournalGrid(data.linkedStandardJournals)}`,
+      },
     ];
 
     return data;
@@ -343,7 +347,7 @@ export class LocationSheet extends CampaignCodexBaseSheet {
     const journalType = journal.getFlag("campaign-codex", "type");
 
     await this._saveFormData();
-    if (((!journalType && data.type === "JournalEntry") || data.type === "JournalEntryPage")) {
+    if ((!journalType && data.type === "JournalEntry") || data.type === "JournalEntryPage") {
       const locationData = this.document.getFlag("campaign-codex", "data") || {};
       locationData.linkedStandardJournals = locationData.linkedStandardJournals || [];
 
@@ -355,9 +359,7 @@ export class LocationSheet extends CampaignCodexBaseSheet {
       } else {
         ui.notifications.warn(`Journal "${journal.name}" is already linked.`);
       }
-    }
-
-    else if (journalType === "npc") {
+    } else if (journalType === "npc") {
       await game.campaignCodex.linkLocationToNPC(this.document, journal);
     } else if (journalType === "shop") {
       await game.campaignCodex.linkLocationToShop(this.document, journal);

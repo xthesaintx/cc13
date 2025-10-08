@@ -221,6 +221,7 @@ export class CampaignCodexLinkers {
       });
   }
 
+
   /**
    * Fetches and processes a list of locations, adding metadata like NPC and shop counts.
    * @param {Document} document The document context for cleaning references.
@@ -235,7 +236,6 @@ export class CampaignCodexLinkers {
       if (!journal) {
         throw new Error(`Linked location not found: ${uuid}`);
       }
-
       const locationData = journal.getFlag("campaign-codex", "data") || {};
       const imageData = journal.getFlag("campaign-codex", "image") || TemplateComponents.getAsset("image", "location");
 
@@ -282,6 +282,71 @@ export class CampaignCodexLinkers {
     }
 
     return locations;
+  }
+  
+  /**
+   * Fetches and processes a list of linked regions.
+   * @param {Document} document The document context for cleaning references.
+   * @param {string[]} regionUuids Array of region UUIDs.
+   * @returns {Promise<Array<object>>}
+   */
+  static async getLinkedRegions(document, regionUuids) {
+    if (!regionUuids || !Array.isArray(regionUuids)) return [];
+    const hideByPermission = game.settings.get("campaign-codex", "hideByPermission");
+
+    const regionPromises = regionUuids.map(async (uuid) => {
+      const journal = await fromUuid(uuid);
+      if (!journal) {
+        throw new Error(`Linked region not found: ${uuid}`);
+      }
+
+      const regionData = journal.getFlag("campaign-codex", "data") || {};
+      const imageData = journal.getFlag("campaign-codex", "image") || TemplateComponents.getAsset("image", "region");
+
+      const [linkedTags, linkedShops, canView] = await Promise.all([
+        this.getTaggedNPCs(regionData.linkedNPCs),
+        this.getNameFromUuids(regionData.linkedShops || []),
+        CampaignCodexBaseSheet.canUserView(journal.uuid),
+      ]);
+
+      return {
+        id: journal.id,
+        uuid: journal.uuid,
+        name: journal.name,
+        shops: linkedShops.sort(),
+        canView: canView,
+        permission: journal.permission,
+        tags: linkedTags
+          .filter((tag) => !hideByPermission || tag.canView)
+          .map((tag) => tag.name)
+          .sort(),
+        img: imageData,
+        meta: `<span></span>`, // You can customize this meta if needed
+      };
+    });
+
+    const results = await Promise.allSettled(regionPromises);
+
+    const regions = [];
+    const brokenRegionUuids = [];
+    results.forEach((result, index) => {
+      if (result.status === "fulfilled") {
+        regions.push(result.value);
+      } else {
+        const failedUuid = regionUuids[index];
+        brokenRegionUuids.push(failedUuid);
+        console.warn(`Campaign Codex | ${result.reason.message}`);
+      }
+    });
+
+    // This now correctly cleans up the 'linkedRegions' array on the document.
+    if (brokenRegionUuids.length > 0) {
+      document._skipRelationshipUpdates = true;
+      await this.clearBrokenReferences(document, brokenRegionUuids, "linkedRegions");
+      delete document._skipRelationshipUpdates;
+    }
+
+    return regions;
   }
 
   /**
@@ -1069,6 +1134,24 @@ export class CampaignCodexLinkers {
         currency = this.getValue(item, denominationPath) || "gp";
       }
 
+      // if (systemId === "pf2e") {
+      //   const pf2ePrice = this.getValue(item, "system.price.value");
+      //   if (pf2ePrice) {
+      //     if (pf2ePrice.pp > 0) {
+      //       currency = "pp";
+      //       basePrice = pf2ePrice.pp;
+      //     } else if (pf2ePrice.gp > 0) {
+      //       currency = "gp";
+      //       basePrice = pf2ePrice.gp;
+      //     } else if (pf2ePrice.sp > 0) {
+      //       currency = "sp";
+      //       basePrice = pf2ePrice.sp;
+      //     } else {
+      //       currency = "cp";
+      //       basePrice = pf2ePrice.cp;
+      //     }
+      //   }
+      // }
 
     if (systemId === "pf2e") {
       const pf2ePrice = this.getValue(item, "system.price.value");
@@ -1118,7 +1201,6 @@ export class CampaignCodexLinkers {
         }
       }
     }
-      console.log(basePrice);
       const finalPrice = roundFinalPrice ? itemData.customPrice ?? Math.round(basePrice * markup) : Math.round((basePrice * markup)*100)/100 ;
 
       return {
@@ -1261,6 +1343,12 @@ export class CampaignCodexLinkers {
           currency: "gp",
         };
       case "ose":
+        return {
+          pricePath: "system.cost",
+          denominationPath: null,
+          currency: "gp",
+        };
+      case "shadowdark":
         return {
           pricePath: "system.cost",
           denominationPath: null,
