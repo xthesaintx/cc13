@@ -98,11 +98,11 @@ async _prepareContext(options) {
 
     const questProcessingPromises = allQuestsToProcess.map(async ({ quest, doc }) => {
         const canViewSource = doc.testUserPermission(game.user, CONST.DOCUMENT_OWNERSHIP_LEVELS.OBSERVER);
-        const descriptionPromise = TextEditor.enrichHTML(quest.description || "", { async: true });
+        const descriptionPromise = foundry.applications.ux.TextEditor.implementation.enrichHTML(quest.description || "", { async: true });
         const objectivePromises = (quest.objectives || [])
             .filter(obj => obj.visible)
             .map(async obj => {
-                const enrichedText = await TextEditor.enrichHTML(obj.text || "", { async: true });
+                const enrichedText = await foundry.applications.ux.TextEditor.implementation.enrichHTML(obj.text || "", { async: true });
                 return { ...obj, enrichedText };
             });
 
