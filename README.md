@@ -11,8 +11,7 @@ Patreon: www.patreon.com/wgtngm
 
 Campaign Codex extends the Foundry journaling system by providing bespoke journal sheet types, relationship linking, and organisational tools. The objective of Campaign Codex is to ensure that any campaign information, from short one-shots to expansive continent-spanning campaigns, can be accessed easily and efficiently. The module integrates five sheet types into Foundry’s journal panel. Campaign Codex complements Foundry’s core journal system rather than replacing it, preserving existing content. Each sheet type supports linking with scenes, actors, and items, creating an interconnected network of campaign information.
 
-## 📖 [Documentation](https://github.com/xthesaintx/cc13/wiki/Campaign-Codex)
-
+## 📖 [Documentation](https://campaigncodex.wgtngm.com/)
 
 ## Support & Community
 
