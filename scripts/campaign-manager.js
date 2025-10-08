@@ -40,7 +40,7 @@ export class CampaignManager {
         this.tagCache = this.tagCache.filter(tag => tag.uuid !== npcDoc.uuid);
     }
 
-    getTagCache() {
+    async getTagCache() {
         return this.tagCache;
     }
 

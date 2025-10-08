@@ -102,7 +102,7 @@ async _render(force, options) {
     data.showStats = game.settings.get("campaign-codex", "showStats");
     data.sheetTypeLabelOverride = sheetData.sheetTypeLabelOverride;
 
-    const allTags = game.campaignCodex.getTagCache();
+    const allTags = await game.campaignCodex.getTagCache();
     const linkedTagUuids = this.object.getFlag("campaign-codex", "data")?.associates || this.object.getFlag("campaign-codex", "data")?.linkedNPCs || [];
     const isThisDocATag = this.object.getFlag("campaign-codex", "data")?.tagMode;
     data.existingTags = allTags.filter(tag => {

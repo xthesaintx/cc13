@@ -158,13 +158,11 @@ export class RegionSheet extends CampaignCodexBaseSheet {
     if (data.parentRegion) {
       headerContent += `<div class="region-info"><span class="region-label">${localize("names.region")}:</span> <span class="region-name ${data.canViewRegion ? `region-link" data-region-uuid="${data.parentRegion.uuid}"` : '"'}">${data.parentRegion.name}</span></div>`;
     }
-    console.log(data.linkedScene);
     if (data.linkedScene) {
       headerContent += `<div class="scene-info"><span class="scene-name ${data.canViewScene ? `open-scene" data-scene-uuid="${data.linkedScene.uuid}"` : '"'} title="${format("message.open", { type: localize("names.scene") })}"><i class="fas fa-map"></i> ${data.linkedScene.name}</span>${data.isGM ? `<button type="button" class="scene-btn remove-scene" title="${format("message.unlink", { type: localize("names.scene") })}"><i class="fas fa-unlink"></i></button>` : ""}</div>`;
     } else if (data.isGM) {
       headerContent += `<div class="scene-info"><span class="scene-name open-scene"><i class="fas fa-link"></i> ${format("dropzone.link", { type: localize("names.scene") })}</span></div>`;
     }
-    console.log(headerContent);
     if (headerContent) data.customHeaderContent = headerContent;
 
     // --- Tab Panels ---
