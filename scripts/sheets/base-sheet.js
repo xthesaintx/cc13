@@ -797,6 +797,7 @@ _onToggleTags(event) {
     nameElement.textContent = this.document.name;
     input.replaceWith(nameElement);
     nameElement.addEventListener("click", this._onNameEdit.bind(this));
+    if(this.document.getFlag("campaign-codex", "data")?.tagMode) {game.campaignCodex.updateTagInCache(this.document);}
   }
 
   async _onNameKeypress(event) {
