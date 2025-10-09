@@ -328,7 +328,7 @@ Hooks.on("updateJournalEntry", async (document, changes, options, userId) => {
           changes,
           type,
         );
-                if (type === "npc" && document.getFlag("campaign-codex", "data")?.tagMode) {
+        if (type === "npc" && document.getFlag("campaign-codex", "data")?.tagMode) {
           game.campaignCodex.updateTagInCache(document);
         }
       } catch (error) {
