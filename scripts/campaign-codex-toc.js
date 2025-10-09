@@ -85,7 +85,7 @@ async _prepareContext(options) {
     const context = await super._prepareContext(options);
     context.tabs = this._prepareTabs("sheet");
     const codexJournals = game.journal.filter((j) => j.getFlag(this.constructor.SCOPE, this.constructor.TYPE_KEY));
-    const allTags = game.campaignCodex.getTagCache?.() || [];
+    const allTags = await game.campaignCodex.getTagCache?.() || [];
     const tagUuids = new Set(allTags.map(tag => tag.uuid));
     context.isGM = game.user.isGM;
 
