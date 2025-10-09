@@ -428,32 +428,60 @@ _onToggleTags(event) {
 
   async _linkTagToSheet(tagUuid) {
     const myDoc = this.document;
-    const myData = myDoc.getFlag("campaign-codex", "data") || {};
     const myType = myDoc.getFlag("campaign-codex", "type");
-    let listName;
+    const tagDoc = await fromUuid(tagUuid);
+
+    if (!tagDoc) {
+        ui.notifications.warn("Could not find the tag to link.");
+        return;
+    }
 
     switch (myType) {
         case 'npc':
-            listName = 'associates';
+            await game.campaignCodex.linkNPCToNPC(myDoc, tagDoc);
             break;
         case 'location':
+            await game.campaignCodex.linkLocationToNPC(myDoc, tagDoc);
+            break;
         case 'region':
+            await game.campaignCodex.linkRegionToNPC(myDoc, tagDoc);
+            break;
         case 'shop':
-            listName = 'linkedNPCs';
+            await game.campaignCodex.linkShopToNPC(myDoc, tagDoc);
             break;
         default:
             return;
     }
-
-    if (!myData[listName]) {
-        myData[listName] = [];
-    }
-    if (!myData[listName].includes(tagUuid)) {
-        myData[listName].push(tagUuid);
-        await myDoc.setFlag("campaign-codex", "data", myData);
-        this.render(false);
-    }
+    this.render(false);
   }
+  // async _linkTagToSheet(tagUuid) {
+  //   const myDoc = this.document;
+  //   const myData = myDoc.getFlag("campaign-codex", "data") || {};
+  //   const myType = myDoc.getFlag("campaign-codex", "type");
+  //   let listName;
+
+  //   switch (myType) {
+  //       case 'npc':
+  //           listName = 'associates';
+  //           break;
+  //       case 'location':
+  //       case 'region':
+  //       case 'shop':
+  //           listName = 'linkedNPCs';
+  //           break;
+  //       default:
+  //           return;
+  //   }
+
+  //   if (!myData[listName]) {
+  //       myData[listName] = [];
+  //   }
+  //   if (!myData[listName].includes(tagUuid)) {
+  //       myData[listName].push(tagUuid);
+  //       await myDoc.setFlag("campaign-codex", "data", myData);
+  //       this.render(false);
+  //   }
+  // }
 
 
   /**

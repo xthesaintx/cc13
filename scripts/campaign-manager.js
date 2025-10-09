@@ -35,6 +35,12 @@ export class CampaignManager {
             });
         }
     }
+    updateTagInCache(npcDoc) {
+        const tag = this.tagCache.find(tag => tag.uuid === npcDoc.uuid);
+        if (tag) {
+            tag.name = npcDoc.name;
+        }
+    }
 
     removeTagFromCache(npcDoc) {
         this.tagCache = this.tagCache.filter(tag => tag.uuid !== npcDoc.uuid);
