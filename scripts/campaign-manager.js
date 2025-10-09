@@ -626,6 +626,33 @@ export class CampaignManager {
   // UI & Sheet Management
   // =========================================================================
 
+/**
+ * Refreshes all open Campaign Codex sheets.
+ * This is useful when a global change occurs (like renaming or deleting a tag) 
+ * that affects sheets that aren't directly linked to the changed document.
+ */
+async refreshAllOpenCodexSheets() {
+  const docsWithOpenEditors = new Set();
+  for (const app of Object.values(ui.windows)) {
+    if (app.constructor.name === "DescriptionEditor" && app.document) {
+      docsWithOpenEditors.add(app.document.uuid);
+    }
+  }
+
+  for (const app of Object.values(ui.windows)) {
+    const isCodexSheet = app.document?.getFlag && app.document.getFlag("campaign-codex", "type");
+    
+    if ( isCodexSheet && !docsWithOpenEditors.has(app.document.uuid) ) {
+      console.log(`Campaign Codex | Forcing refresh on open sheet due to global change: ${app.document.name}`);
+      app.render(true);
+    }
+  }
+  
+  const tocSheet = foundry.applications.instances.get("campaign-codex-toc-sheet");
+  if (tocSheet) {
+    tocSheet.render();
+  }
+}
 
 async _scheduleSheetRefresh(changedDocUuid) {
     const sheetsToRefresh = new Set();

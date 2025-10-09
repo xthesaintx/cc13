@@ -315,32 +315,42 @@ Hooks.on("preUpdateJournalEntry", (journal, changed, options, userId) => {
 
 Hooks.on("updateJournalEntry", async (document, changes, options, userId) => {
   if (
-    !document._skipRelationshipUpdates &&
-    !options.skipRelationshipUpdates &&
-    !game.campaignCodexImporting &&
-    game.user.id === userId
+    document._skipRelationshipUpdates ||
+    options.skipRelationshipUpdates ||
+    game.campaignCodexImporting ||
+    game.user.id !== userId
   ) {
-    const type = document.getFlag("campaign-codex", "type");
-    if (type) {
-      try {
-        await game.campaignCodex.handleRelationshipUpdates(
-          document,
-          changes,
-          type,
-        );
-        if (type === "npc" && document.getFlag("campaign-codex", "data")?.tagMode) {
-          game.campaignCodex.updateTagInCache(document);
-        }
-      } catch (error) {
-        console.error(
-          "Campaign Codex | Error handling relationship updates:",
-          error,
-        );
+    return; 
+  }
+
+  const type = document.getFlag("campaign-codex", "type");
+  const isTag = type === "npc" && !!document.getFlag("campaign-codex", "data")?.tagMode;
+
+  if (type) {
+    try {
+      await game.campaignCodex.handleRelationshipUpdates(
+        document,
+        changes,
+        type
+      );
+      if (isTag) {
+        game.campaignCodex.updateTagInCache(document);
       }
+    } catch (error) {
+      console.error(
+        "Campaign Codex | Error handling relationship updates:",
+        error
+      );
     }
   }
-  await game.campaignCodex._scheduleSheetRefresh(document.uuid);
+
+  if (isTag && changes.hasOwnProperty("name")) {
+    await game.campaignCodex.refreshAllOpenCodexSheets();
+  } else {
+    await game.campaignCodex._scheduleSheetRefresh(document.uuid);
+  }
 });
+
 
 
 Hooks.on("updateActor", async (actor, changes, options, userId) => {

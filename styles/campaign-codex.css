@@ -4199,7 +4199,7 @@ color:var(--cc-ui)
 padding: 0px 10px;
 }
 
-button.control.ui-control.layer.icon.fas.fa-closed-captioning[data-control="campaign-codex"]{
+/*button.control.ui-control.layer.icon.fas.fa-closed-captioning[data-control="campaign-codex"]{
   background: #d4af37;
   color: black;
-}
+}*/
