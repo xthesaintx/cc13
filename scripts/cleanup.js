@@ -30,6 +30,10 @@ export class CleanUp {
       const type = document.getFlag("campaign-codex", "type");
       if (!type) return;
 
+    const tocSheet = foundry.applications.instances.get("campaign-codex-toc-sheet");
+    if (tocSheet) {
+      tocSheet.render();
+    }
       for (const app of Object.values(ui.windows)) {
         if (app.document && app.document.id === document.id) {
           const isCampaignCodexSheet = [
