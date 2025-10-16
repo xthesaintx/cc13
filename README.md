@@ -20,8 +20,8 @@ For bug reports, feature requests or general chat about the module or other publ
 ## Installation
 
 1. In Foundry, navigate to the Add-on Modules tab.  
-2. Click Install Module.  
-3. Paste the manifest URL for your Foundry version:  
-   * Foundry v13: [https://github.com/xthesaintx/cc13/releases/latest/download/module.json](https://github.com/xthesaintx/cc13/releases/latest/download/module.json)
-4. Click Install.  
-5. Enable the module in your world.
+2. Click Install Module.
+3. Either search for "Campaign Codex" or  paste the manifest URL:   
+   [https://github.com/xthesaintx/cc13/releases/latest/download/module.json](https://github.com/xthesaintx/cc13/releases/latest/download/module.json)
+5. Click Install.  
+6. Enable the module in your world.
