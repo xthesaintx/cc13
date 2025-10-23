@@ -1,7 +1,8 @@
 # Campaign Codex v13
 Encounter a bug or issue with the Campaign Codex Foundry VTT module? Please report it [here](https://github.com/xthesaintx/cc13/issues).
 
-YouTube Overview: https://youtu.be/P4dhOny7FMs
+[Campaign Codex Video Overview](https://youtu.be/gp8hWTmajvs?si=awMAZ4sddzeh_vAZ)
+
 
 Discord: https://discord.gg/fycwH79s2y
 
