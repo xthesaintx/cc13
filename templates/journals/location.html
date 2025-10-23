@@ -1,0 +1,48 @@
+<!--
+  Location Overview Template
+  - Uses the two-column flexbox layout.
+  - Main content for descriptive text and points of interest.
+  - Sidebar for an "at-a-glance" info box.
+-->
+<div style="display: flex; flex-wrap: wrap; gap: 2rem;">
+
+    <!-- Main Content: Description, Points of Interest -->
+    <div style="flex: 2; min-width: 300px;">
+        <h1 style="font-size: 1.5em; display: block; margin-bottom: 1rem; ">Silvermist Port</h1>
+        <p style="font-style: italic;">A bustling port city known for its hardy sailors and the thick, silver mist that rolls in from the sea each morning.</p>
+        <hr style="border-color: #0000003b;">
+        
+        <p>Carved into the cliffs of the Azure Coast, Silvermist is a city of second chances. Its winding streets are slick with sea spray, and the air is thick with the scent of salt, tar, and exotic spices. By day, the markets teem with merchants from distant lands. By night, the taverns are filled with the boisterous songs of sailors and the hushed whispers of smugglers. The city is ruled by a council of powerful merchant captains, whose wealth is matched only by their ambition.</p>
+
+        <h3 style="margin-top: 1rem; border-bottom: 1px solid #0000003b; padding-bottom: 0.5rem;">Points of Interest</h3>
+        <p><strong>The Salty Siren:</strong> A rowdy tavern famed for its potent grog and the questionable reliability of its patrons. A great place to gather rumors.</p>
+        <p><strong>The Harbormaster's Office:</strong> A tall, imposing stone building overlooking the docks. The Harbormaster, a stern man named Kaelen, sees everything that comes and goes from the port.</p>
+        <p><strong>The Jade Market:</strong> An open-air bazaar where one can find anything from rare silks to forbidden magical components, provided you know who to ask.</p>
+    </div>
+
+    <!-- Sidebar: Key Facts -->
+    <div style="flex: 1; min-width: 250px; display: flex; flex-direction: column; gap: 1rem;">
+        <figure style="margin: 0;">
+            <img src="modules/campaign-codex/ui/group.webp" alt="City Crest" style="display: block; width: 100%; object-fit: cover; border-radius: 3px;">
+        </figure>
+        <div style="background: #0000001a; padding: 1rem; border-radius: 5px; border: 1px solid #0000003b;">
+            <h3 style="margin-top: 0; border-bottom: 1px solid #0000003b; padding-bottom: 0.5rem;">Key Facts</h3>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                <strong>Population</strong>
+                <span>~15,000</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                <strong>Government</strong>
+                <span>Merchant Council</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                <strong>Major Factions</strong>
+                <span>The Dockworkers' Guild, The Veiled Syndicate</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 0;">
+                <strong>Main Exports</strong>
+                <span>Fish, Timber, Rare Ores</span>
+            </div>
+        </div>
+    </div>
+</div>

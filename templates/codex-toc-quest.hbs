@@ -3,7 +3,7 @@
         <div class="toc-quest-list">
             {{!-- Pinned Quests --}}
             {{#each questsPinned}}
-              <div class="toc-quest-item is-collapsed">
+              <div class="toc-quest-item is-collapsed" data-name="{{this.title}}">
               <h4><i class="fas fa-thumbtack" title="Pinned"></i>{{this.title}}
                             {{#if this.completed}}
                             <i class="fas fa-check-circle" title="Completed"></i>{{else}}<span>&nbsp;</span>
@@ -11,30 +11,37 @@
                             {{#if this.canViewSource}}
                             <i class="fas fa-book" data-action="openDocument" data-uuid="{{this.journalUuid}}" title="Open Source Journal: {{this.journalName}}"></i>
                             {{else}}<span></span>{{/if}}
-                <i class="fas fa-caret-up collaspable-quicklinks" data-action="collapseQuests"></i></h3>
+                <i class="fas fa-caret-up collaspable-quicklinks" data-action="collapseQuests"></i></h4>
                     <div class="toc-quest-body collapsible-content">
                         <div class="toc-quest-description">
                             {{{this.enrichedDescription}}}
                         </div>
-                        {{#if this.visibleObjectives.length}}
-                            <ul class="quest-objectives">
-                                {{#each this.visibleObjectives}}
-                                    <li>
-                                        {{#if this.completed}}<i class="fas fa-check-square"></i>{{else}}<i class="far fa-square"></i>{{/if}}
-                                        <span>{{{this.enrichedText}}}</span>
+                        {{! Quest Items Section }}
+                        {{#if inventory.length}}
+                              <h4>Rewards</h4>
+                            <ul class="quest-objectives" style="grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));display: grid;">
+                              {{#each inventory as |item|}}
+                                    <li>{{item.name}} {{#if ../isGM}}<i class="fas fa-paper-plane" style="cursor: pointer; color: var(--cc-ui);" data-action="sendToPlayer"  data-item-uuid="{{item.itemUuid}}"></i>{{/if}}
                                     </li>
-                                {{/each}}
+                              {{/each}}
+                            </ul>
+                        {{/if}}
+                        {{#if this.visibleObjectives.length}}
+                              <h4>Objectives</h4>
+                            <ul class="quest-objectives">
+                                {{> "modules/campaign-codex/templates/partials/toc-quest-objective.hbs" objectives=this.visibleObjectives}}
                             </ul>
                         {{/if}}
                     </div>
                 </div>
+
             {{/each}}
 
             {{!-- Unpinned Quests (conditionally displayed) --}}
             {{#unless showOnlyPinned}}
             {{#each questsUnpinned}}
             {{#if (and this.canViewSource this.visible)}}
-              <div class="toc-quest-item is-collapsed">
+              <div class="toc-quest-item is-collapsed" data-name="{{this.title}}">
               <h4><i class="fas fa-thumbtack-slash" title="Not Pinned"></i>{{this.title}}
                             {{#if this.completed}}
                                 <i class="fas fa-check-circle" title="Completed"></i>
@@ -42,19 +49,14 @@
                             {{#if this.canViewSource}}
                                 <i class="fas fa-book" data-action="openDocument" data-uuid="{{this.journalUuid}}" title="Open Source Journal: {{this.journalName}}"></i>
                             {{else}}<span></span>{{/if}}
-                <i class="fas fa-caret-up collaspable-quicklinks" data-action="collapseQuests"></i></h3>
+                <i class="fas fa-caret-up collaspable-quicklinks" data-action="collapseQuests"></i></h4>
                     <div class="toc-quest-body collapsible-content">
                         <div class="toc-quest-description">
                             {{{this.enrichedDescription}}}
                         </div>
                         {{#if this.visibleObjectives.length}}
                             <ul class="quest-objectives">
-                                {{#each this.visibleObjectives}}
-                                    <li>
-                                        {{#if this.completed}}<i class="fas fa-check-square"></i>{{else}}<i class="far fa-square"></i>{{/if}}
-                                        <span>{{{this.enrichedText}}}</span>
-                                    </li>
-                                {{/each}}
+                                {{> "modules/campaign-codex/templates/partials/toc-quest-objective.hbs" objectives=this.visibleObjectives}}
                             </ul>
                         {{/if}}
                     </div>

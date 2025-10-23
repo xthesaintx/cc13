@@ -1,16 +1,16 @@
-<div class="quest-container">
-  {{#if (not isGroupSheet)}}{{{header}}} {{/if}}
-  <div class="quest-list">
 
-    {{#if quests}}
+<!-- <div class="quest-container"> -->
+{{#if (not isGroupSheet)}}{{{header}}} {{/if}}
+{{#unless hide}}
+{{#if quests}}
+<div class="quest-list">
       {{#each quests}}
         {{> "modules/campaign-codex/templates/partials/quest-card.hbs" quest=. isGM=../isGM isGroupSheet=../isGroupSheet doc=../doc systemClass=../systemClass}}
       {{/each}}
     {{else}}
       {{#unless isGM}}
-        <p style="text-align: center; margin-top: 2rem;">No active quests.</p>
       {{/unless}}
-    {{/if}}
-
   </div>
-</div>
+{{/if}}
+{{/unless}}
+<!-- </div> -->

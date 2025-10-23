@@ -179,12 +179,13 @@ static async processJournalLinks(journalUuids) {
           .sort();
         const type = doc.getFlag?.("campaign-codex", "type") || "unknown";
 
+    const allQuests = doc.getFlag("campaign-codex", "data")?.quests || [];
         return {
           uuid: doc.uuid,
           canView: canView,
           tags: filteredTags,
           name: doc.name,
-          quests: !!(doc.getFlag?.("campaign-codex", "data")?.quests && doc.getFlag?.("campaign-codex", "data")?.quests.length),
+        quests: allQuests.length > 0 && (game.user.isGM || allQuests.some(q => q.visible)),
           img: doc.getFlag?.("campaign-codex", "image") || doc.img,
           type,
           tag: doc.getFlag?.("campaign-codex", "data")?.tagMode || false,
@@ -302,10 +303,13 @@ static async processJournalLinks(journalUuids) {
           .map((tag) => tag.name)
           .sort();
 
+        const allQuests = doc.getFlag("campaign-codex", "data")?.quests || [];
+  
+
         return {
           uuid: doc.uuid,
           name: doc.name,
-          quests: !!(doc.getFlag("campaign-codex", "data")?.quests && doc.getFlag("campaign-codex", "data")?.quests.length),
+          quests: allQuests.length > 0 && (game.user.isGM || allQuests.some(q => q.visible)),
           img: doc.getFlag("campaign-codex", "image") || doc.img,
           type,
           tags: filteredTags,
@@ -356,10 +360,12 @@ static async processJournalLinks(journalUuids) {
             .map((tag) => tag.name)
             .sort();
 
+          const allQuests = doc.getFlag("campaign-codex", "data")?.quests || [];
+
           return {
             uuid: doc.uuid,
             name: doc.name,
-            quests: !!(doc.getFlag("campaign-codex", "data")?.quests && doc.getFlag("campaign-codex", "data")?.quests.length),
+            quests: allQuests.length > 0 && (game.user.isGM || allQuests.some(q => q.visible)),
             img: doc.getFlag("campaign-codex", "image") || doc.img,
             type,
             tags: filteredTags,
@@ -418,10 +424,12 @@ static async processJournalLinks(journalUuids) {
         .map((tag) => tag.name)
         .sort();
 
+    const allQuests = npcDoc.getFlag("campaign-codex", "data")?.quests || [];
+
       return {
         uuid: npcDoc.uuid,
         name: npcDoc.name,
-        quests: !!(npcDoc.getFlag("campaign-codex", "data")?.quests && npcDoc.getFlag("campaign-codex", "data")?.quests.length),
+        quests: allQuests.length > 0 && (game.user.isGM || allQuests.some(q => q.visible)),
         img: npcDoc.getFlag("campaign-codex", "image") || npcDoc.img,
         type: "npc",
         tags: npcTags,
@@ -509,12 +517,14 @@ static async processJournalLinks(journalUuids) {
     ]);
     const imageData = npcDoc.getFlag("campaign-codex", "image") || actor?.img || TemplateComponents.getAsset("image", "npc");
 
+    const allQuests = npcDoc.getFlag("campaign-codex", "data")?.quests || [];
+
     return {
       uuid: npcDoc.uuid,
       name: npcDoc.name,
       img: imageData,
       type: "npc",
-      quests: !!(npcData.quests && npcData.quests.length),
+      quests: allQuests.length > 0 && (game.user.isGM || allQuests.some(q => q.visible)),
       tags: linkedTags
         .filter((tag) => !hideByPermission || tag.canView)
         .map((tag) => tag.name)
@@ -527,7 +537,7 @@ static async processJournalLinks(journalUuids) {
       locations: allLocations.sort(),
       shops: linkedShops.sort(),
       canView: canView,
-      meta: game.campaignCodex?.getActorDisplayMeta(actor, npcData.tagMode) || `<span class="entity-type">${localize("names.npc")}</span>`,
+      meta: game.campaignCodex?.getActorDisplayMeta(actor, npcData) || `<span class="entity-type">${localize("names.npc")}</span>`,
       actor: actor ? { uuid: actor.uuid, name: actor.name, type: actor.type } : null,
     };
   }

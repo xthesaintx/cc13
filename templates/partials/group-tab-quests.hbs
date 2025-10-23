@@ -1,8 +1,10 @@
 {{#each entities as |entity|}}
+{{#unless entity.hide}}
   {{#if entity.questListHtml}}
     <div class="quest-group">
       <h3><i class="{{entity.icon}}">&nbsp;</i>{{entity.name}}</h3>
       {{{entity.questListHtml}}}
     </div>
   {{/if}}
+  {{/unless}}
 {{/each}}

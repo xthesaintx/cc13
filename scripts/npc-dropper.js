@@ -58,7 +58,9 @@ export class NPCDropper {
     return npcJournals[0] || null;
   }
 
-  /**
+
+
+/**
    * Shows the NPC selection dialog
    * @param {Array} npcs - NPCs to show in dialog
    * @param {Object} options - Dialog options
@@ -71,12 +73,12 @@ export class NPCDropper {
           ${npcs
             .map(
               (npc) => `
-            <label style="display: flex; align-items: center; margin: 8px 0; padding: 8px; background: #f8f9fa; border-radius: 4px;">
+            <label>
               <input type="checkbox" name="selected-npcs" value="${npc.uuid || npc.id}" checked style="margin-right: 8px;">
               <img src="${npc.img}" alt="${npc.name}" style="width: 32px; height: 32px; border-radius: 4px; margin-right: 8px;">
               <span style="font-weight: 600;">${npc.name}</span>
-              ${npc.actor.type === "character" ? '<span style="margin-left: 8px; font-size: 10px; background: #28a745; color: white; padding: 2px 6px; border-radius: 10px;">PLAYER</span>' : ""}
-              ${npc.actor.pack ? '<span style="margin-left: 8px; font-size: 10px; background: #6c757d; color: white; padding: 2px 6px; border-radius: 10px;">COMPENDIUM</span>' : ""}
+              ${npc.actor.type === "character" ? '<span style="margin-left: 8px; font-size: 8px; padding: 2px 6px;">PLAYER</span>' : ""}
+              ${npc.actor.pack ? '<span style="margin-left: 8px; font-size: 8px; padding: 2px 6px;">COMPENDIUM</span>' : ""}
             </label>
           `,
             )
@@ -94,8 +96,8 @@ export class NPCDropper {
         `
             : ""
         }
-        <div style="margin-top: 12px; padding: 12px; background: #e8f5e8; border-left: 4px solid #28a745; border-radius: 4px; font-size: 13px;">
-          <ul style="margin: 4px 0 0 16px; padding: 0;">
+        <div class="cc-info">
+          <ul>
             <li><strong>Rotate:</strong> Scroll wheel to rotate tokens</li>
             <li><strong>Grid Snap:</strong> Hold shift to disable snapping</li>
             <li><strong>Skip Tokens:</strong> Right-click to skip unwanted NPCs</li>
@@ -104,55 +106,53 @@ export class NPCDropper {
       </div>
     `;
 
-    return new Promise((resolve) => {
-      new Dialog({
-        title: options.title || "Drop NPCs to Map",
-        content: content,
-        buttons: {
-          drop: {
-            icon: '<i class="fas fa-map"></i>',
-            label: "Start Placing",
-            callback: async (html) => {
-              const selectedNPCIds = [];
-              html[0]
-                .querySelectorAll('input[name="selected-npcs"]:checked')
-                .forEach((input) => {
-                  selectedNPCIds.push(input.value);
-                });
-
-              const startHiddenInput = html[0].querySelector(
-                'input[name="start-hidden"]',
-              );
-              const startHidden = startHiddenInput
-                ? startHiddenInput.checked
-                : false;
-
-              if (selectedNPCIds.length > 0) {
-                const selectedNPCs = npcs.filter((npc) =>
-                  selectedNPCIds.includes(npc.uuid || npc.id),
-                );
-
-                const result = await this._startTokenPlacement(selectedNPCs, {
-                  startHidden,
-                  ...options,
-                });
-                resolve(result);
-              } else {
-                ui.notifications.warn("No NPCs selected!");
-                resolve({ success: 0, failed: 0, imported: 0 });
+    const dialogData = await foundry.applications.api.DialogV2.wait({
+      window: { title: options.title || "Drop NPCs to Map" },
+      classes: ['campaign-codex npc-dropper' ],
+      content,
+      buttons: [
+          {
+              action: "drop",
+              icon: '<i class="fas fa-map"></i>',
+              label: "Start Placing",
+              default: true,
+              callback: (event, button) => {
+                    const form = button.form;
+                    const selectedNPCs = Array.from(form.querySelectorAll('input[name="selected-npcs"]:checked')).map(cb => cb.value);
+                    const startHidden = form.querySelector('input[name="start-hidden"]')?.checked ?? false;
+                    return { selectedNPCs, startHidden };
               }
-            },
           },
-          cancel: {
-            icon: '<i class="fas fa-times"></i>',
-            label: "Cancel",
-            callback: () => resolve(null),
-          },
-        },
-        default: "drop",
-      }).render(true);
-    });
-  }
+          {
+              action: "cancel",
+              icon: '<i class="fas fa-times"></i>',
+              label: "Cancel",
+              callback: () => null
+          }
+      ],
+      rejectClose: true
+  }).catch(() => null);
+
+  if (!dialogData) return null;
+
+    const { selectedNPCs: selectedNPCIds, startHidden } = dialogData;
+
+    if (selectedNPCIds.length > 0) {
+      const selectedNPCs = npcs.filter((npc) =>
+        selectedNPCIds.includes(npc.uuid || npc.id),
+      );
+
+      return this._startTokenPlacement(selectedNPCs, {
+        startHidden,
+        ...options,
+      });
+    } else {
+      ui.notifications.warn("No NPCs selected!");
+      return { success: 0, failed: 0, imported: 0 };
+    }
+}
+
+
 
   /**
    * Starts the token placement workflow using Foundry's TokenPlacement system

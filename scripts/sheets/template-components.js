@@ -1,5 +1,6 @@
 import { CampaignCodexBaseSheet } from "./base-sheet.js";
 import { localize, format, renderTemplate } from "../helper.js";
+import { CampaignCodexLinkers } from "./linkers.js";
 
 /**
  * A collection of static methods for generating HTML template components.
@@ -255,14 +256,32 @@ static async questList(docIn, quests, isGM, isGroupSheet = false) {
   if (!quests){return};
     const addButton = isGM ? '<button type="button" class="add-quest refresh-btn"><i class="fas fa-circle-plus"></i></button>' : '';
     const visibleQuests = isGM ? quests : quests.filter(q => q.visible);
-    const processedQuests = visibleQuests.map(quest => {
+
+    const hideInventoryByPermission = game.settings.get("campaign-codex", "hideInventoryByPermission");
+
+    const processedQuests = await Promise.all(visibleQuests.map(async quest => {
+        const inventoryWithoutPerms = await CampaignCodexLinkers.getInventory(docIn, quest.inventory || []);
+        const processedInventory = await Promise.all(
+            inventoryWithoutPerms.map(async (item) => {
+                const canView = await CampaignCodexBaseSheet.canUserView(item.uuid || item.itemUuid);
+                return { ...item, canView, type: "item" };
+            })
+        );
+        const finalItems = hideInventoryByPermission
+            ? processedInventory.filter(item => item.canView)
+            : processedInventory;
         return {
             ...quest,
-            canEdit: isGM && !isGroupSheet 
+            inventory: finalItems, 
+            canEdit: isGM && !isGroupSheet
         };
-    });
+    }));
+    
+    const hideSection = !processedQuests || processedQuests.length === 0;
+
 
     const templateData = {
+      hide: hideSection, 
       doc: docIn,
       quests: processedQuests,
       isGM: isGM,
@@ -694,16 +713,15 @@ static standardJournalCard(journal, disableRemove = false) {
   // Dialogs
   // =========================================================================
 
-  /**
-   * Creates and renders a dialog for selecting a player character.
-   * @param {string} itemName - The name of the item being sent.
-   * @param {function} onPlayerSelected - The callback function to execute with the selected actor.
-   */
-  static async createPlayerSelectionDialog(itemName, onPlayerSelected) {
-    const playerCharacters = game.actors.filter(
-      (actor) => actor.type === "character",
-    );
 
+  static async createPlayerSelectionDialog(itemName, onPlayerSelected) {
+    // const playerCharacters = game.actors.filter(
+    //   (actor) => actor.type === "character",
+    // );
+const allowedTypes = ["character", "player"];
+const playerCharacters = game.actors.filter(
+  (actor) => actor.type && allowedTypes.includes(actor.type.toLowerCase()),
+);
     if (playerCharacters.length === 0) {
       ui.notifications.warn("No player characters found");
       return;
@@ -737,31 +755,104 @@ static standardJournalCard(journal, disableRemove = false) {
       </div>
     `;
 
-    new Dialog({
-      title: "Send Item to Player Character",
+    const dialog = new foundry.applications.api.DialogV2({
+      window: {
+        title: "Send Item to Player Character"
+      },
+      classes: ['campaign-codex', 'send-to-player'],
       content: content,
-      buttons: {
-        cancel: {
-          icon: '<i class="fas fa-times"></i>',
-          label: "Cancel",
-        },
-      },
-      render: (html) => {
-        const nativeHtml = html instanceof jQuery ? html[0] : html;
-        nativeHtml.querySelectorAll(".player-option").forEach((element) => {
-          element.addEventListener("click", async (event) => {
-            const actorUuid = event.currentTarget.dataset.actorUuid;
-            const actor = await fromUuid(actorUuid);
-            if (actor) {
-              onPlayerSelected(actor);
-            }
-            nativeHtml
-              .closest(".dialog")
-              .querySelector(".dialog-button.cancel")
-              .click();
-          });
-        });
-      },
-    }).render(true);
+      buttons: [
+          {
+            action: "cancel",
+            icon: "fas fa-times",
+            label: "Cancel"
+          }
+      ]
+    });
+
+    await dialog.render(true);
+
+    dialog.element.querySelectorAll(".player-option").forEach((element) => {
+      element.addEventListener("click", async (event) => {
+        const actorUuid = event.currentTarget.dataset.actorUuid;
+        const actor = await fromUuid(actorUuid);
+        if (actor) {
+          onPlayerSelected(actor);
+        }
+        dialog.close();
+      });
+    });
   }
+
+
+  // /**
+  //  * Creates and renders a dialog for selecting a player character.
+  //  * @param {string} itemName - The name of the item being sent.
+  //  * @param {function} onPlayerSelected - The callback function to execute with the selected actor.
+  //  */
+  // static async createPlayerSelectionDialog(itemName, onPlayerSelected) {
+  //   const playerCharacters = game.actors.filter(
+  //     (actor) => actor.type === "character",
+  //   );
+
+  //   if (playerCharacters.length === 0) {
+  //     ui.notifications.warn("No player characters found");
+  //     return;
+  //   }
+
+  //   const content = `
+  //     <div class="player-selection campaign-codex">
+  //       <p>Send <strong>${itemName}</strong> to which player character?</p>
+  //       <div class="player-list">
+  //         ${playerCharacters
+  //           .map((char) => {
+  //             const assignedUser = game.users.find(
+  //               (u) => u.character?.uuid === char.uuid,
+  //             );
+  //             const userInfo = assignedUser
+  //               ? ` (${assignedUser.name})`
+  //               : " (Unassigned)";
+
+  //             return `
+  //             <div class="player-option" data-actor-uuid="${char.uuid}">
+  //               <img src="${char.img}" alt="${char.name}" style="width: 32px; height: 32px; border-radius: 4px; margin-right: 8px;">
+  //               <div class="player-info">
+  //                 <span class="character-name">${char.name}</span>
+  //                 <span class="user-info">${userInfo}</span>
+  //               </div>
+  //             </div>
+  //           `;
+  //           })
+  //           .join("")}
+  //       </div>
+  //     </div>
+  //   `;
+
+  //   new Dialog({
+  //     title: "Send Item to Player Character",
+  //     content: content,
+  //     buttons: {
+  //       cancel: {
+  //         icon: '<i class="fas fa-times"></i>',
+  //         label: "Cancel",
+  //       },
+  //     },
+  //     render: (html) => {
+  //       const nativeHtml = html instanceof jQuery ? html[0] : html;
+  //       nativeHtml.querySelectorAll(".player-option").forEach((element) => {
+  //         element.addEventListener("click", async (event) => {
+  //           const actorUuid = event.currentTarget.dataset.actorUuid;
+  //           const actor = await fromUuid(actorUuid);
+  //           if (actor) {
+  //             onPlayerSelected(actor);
+  //           }
+  //           nativeHtml
+  //             .closest(".dialog")
+  //             .querySelector(".dialog-button.cancel")
+  //             .click();
+  //         });
+  //       });
+  //     },
+  //   }).render(true);
+  // }
 }

@@ -1,6 +1,10 @@
 import { ColorThemeConfig } from "./color-theme-config.js";
+import { SimpleCampaignCodexExporter } from "./campaign-codex-exporter.js";
+import { templateManager } from "./journal-template-manager.js";
 
+import { TemplatePicker } from "./template-picker.js";
 import {
+    applyTocButtonStyle,
     applyThemeColors
 } from "./helper.js";
 export const MODULE_NAME = "campaign-codex";
@@ -137,6 +141,18 @@ export default async function campaigncodexSettings() {
     default: false,
 });
 
+
+    game.settings.register("campaign-codex", "useStyledTocButton", {
+        name: localize("useStyledTocButton.name"),
+        hint: localize("useStyledTocButton.hint"),
+        scope: "world",
+        config: true,
+        type: Boolean,
+        default: true,
+        onChange: (value) => applyTocButtonStyle(value),
+    });
+
+
 const accentDefault = "#d4af37";
 
 
@@ -232,6 +248,25 @@ game.settings.registerMenu("campaign-codex", "themeColorPicker", {
                 ui.notifications.info(game.i18n.localize("CAMPAIGN_CODEX.notifications.itemPricePathsReset"));
             }
         },
+    });
+
+    game.settings.register("campaign-codex", "journalTemplateFolder", {
+        name: "Journal Template Folder",
+        hint: "The folder to scan for ProseMirror journal templates.",
+        scope: "world",
+        config: false, 
+        type: String,
+        default: "modules/campaign-codex/templates/journals/",
+        onChange: () => templateManager.scanAllTemplates()
+    });
+
+    game.settings.registerMenu("campaign-codex", "journalTemplatePicker", {
+        name: "Journal Template Path",
+        label: "Select Journal Template Path",
+        hint: "Select a folder with hbs or html files for journal templates",
+        icon: "fas fa-folder-open",
+        type: TemplatePicker, 
+        restricted: true 
     });
 
 

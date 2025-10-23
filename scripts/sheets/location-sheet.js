@@ -181,6 +181,8 @@ export class LocationSheet extends CampaignCodexBaseSheet {
   async _handleDrop(data, event) {
     if (data.type === "Scene") {
       await this._handleSceneDrop(data, event);
+    } else if (data.type === "Item") {
+      await this._handleItemDrop(data, event);
     } else if (data.type === "JournalEntry" || data.type === "JournalEntryPage") {
       await this._handleJournalDrop(data, event);
     } else if (data.type === "Actor") {

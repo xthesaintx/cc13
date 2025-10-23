@@ -572,7 +572,7 @@ export class CampaignCodexLinkers {
         actor: actor,
         canView: canView,
         permission: journal.permission,
-        meta: game.campaignCodex?.getActorDisplayMeta(actor, npcData.tagMode) || `<span class="entity-type">${localize("names.npc")}</span>`,
+        meta: game.campaignCodex?.getActorDisplayMeta(actor, npcData) || `<span class="entity-type">${localize("names.npc")}</span>`,
       };
     });
 
@@ -640,7 +640,7 @@ export class CampaignCodexLinkers {
           .filter((tag) => !hideByPermission || tag.canView)
           .map((tag) => tag.name)
           .sort(),
-        meta: game.campaignCodex?.getActorDisplayMeta(actor, npcData.tagMode) || `<span class="entity-type">${localize("names.npc")}</span>`,
+        meta: game.campaignCodex?.getActorDisplayMeta(actor, npcData) || `<span class="entity-type">${localize("names.npc")}</span>`,
         locations: allLocations.sort(),
         shops: linkedShops.sort(),
         source: "direct",
@@ -808,7 +808,7 @@ export class CampaignCodexLinkers {
           type: journal.getFlag("campaign-codex", "type") || "npc",
           tags: filteredTags,
           permission: journal.permission,
-          meta: game.campaignCodex?.getActorDisplayMeta(actor, npcData.tagMode) || `<span class="entity-type">${localize("names.npc")}</span>`,
+          meta: game.campaignCodex?.getActorDisplayMeta(actor, npcData) || `<span class="entity-type">${localize("names.npc")}</span>`,
           locations: allLocations.sort(),
           shops: linkedShops.sort(),
           canView: canView,

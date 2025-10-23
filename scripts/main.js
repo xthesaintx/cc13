@@ -1,3 +1,6 @@
+import { templateManager } from "./journal-template-manager.js";
+import { SimpleCampaignCodexExporter } from "./campaign-codex-exporter.js";
+import "./prosemirror-integration.js";
 import campaigncodexSettings, { MODULE_NAME } from "./settings.js";
 import { CampaignManager } from "./campaign-manager.js";
 import { LocationSheet } from "./sheets/location-sheet.js";
@@ -22,16 +25,20 @@ import {
     addJournalDirectoryUI,
     mergeDuplicateCodexFolders,
     applyThemeColors,
+    applyTocButtonStyle,
+    handleJournalConversion, 
+    confirmationDialog,
+    convertJournalToCCSheet
 } from "./helper.js";
 
 import { CampaignCodexTOCSheet } from "./campaign-codex-toc.js";
 // let tocSheetInstance = null;
 
-
 Hooks.once("init", async function () {
     console.log("Campaign Codex | Initializing");
     console.log("Campaign Codex | Pausing relationship updates for until ready.");
     const templatePaths = [
+    "modules/campaign-codex/templates/partials/toc-quest-objective.hbs",
     "modules/campaign-codex/templates/quests/quest-list.hbs",
     "modules/campaign-codex/templates/partials/quest-card.hbs",
     "modules/campaign-codex/templates/partials/selected-sheet-view.hbs",
@@ -48,8 +55,12 @@ Hooks.once("init", async function () {
     "modules/campaign-codex/templates/partials/selected-tab-associates.hbs",
     "modules/campaign-codex/templates/partials/group-tab-quests.hbs",
     "modules/campaign-codex/templates/partials/group-tab-npcs.hbs",
+    "modules/campaign-codex/templates/partials/quest-objective.hbs",
+    "modules/campaign-codex/templates/partials/quest-sub-objective.hbs",
     ];
     foundry.applications.handlebars.loadTemplates(templatePaths);
+    // TEMPLATE MENU BUILD
+    templateManager.scanAllTemplates();
 
     game.campaignCodexImporting = true;
     await campaigncodexSettings();
@@ -103,7 +114,21 @@ Hooks.once("i18nInit", async function () {
 Hooks.once("ready", async function () {
     console.log("Campaign Codex | Ready");
     game.campaignCodex = new CampaignManager();
+// 
+    game.campaignCodex.initialize(); 
+
     game.campaignCodex.tocSheetInstance = null;
+
+    // Exporter Testing
+    game.SimpleCampaignCodexExporter = SimpleCampaignCodexExporter; 
+    game.campaignCodex.convertJournalToCCSheet = convertJournalToCCSheet;
+    //API
+    game.modules.get('campaign-codex').api = {
+      openTOCSheet: () => game.campaignCodex.openTOCSheet(),
+      convertJournalToCCSheet: convertJournalToCCSheet,
+      exportToObsidian:()=> SimpleCampaignCodexExporter.exportToObsidian()
+    };
+
 
     await game.campaignCodex.initializeTagCache();
     game.campaignCodexCleanup = new CleanUp();
@@ -302,13 +327,14 @@ Hooks.on("renderJournalEntry", async (journal, html, data) => {
     }
 });
 
-Hooks.on("preUpdateJournalEntry", (journal, changed, options, userId) => {
+Hooks.on("preUpdateJournalEntry", async (journal, changed, options, userId) => {
     const sheetClass = changed.flags?.core?.sheetClass;
     if (sheetClass && sheetClass.startsWith('campaign-codex.')) {
         const type = sheetClass.split('.')[1]?.replace('Sheet', '').toLowerCase();
         if (type) {
             console.log(`Campaign Codex | Setting type for '${journal.name}' to '${type}'`);
             foundry.utils.setProperty(changed, "flags.campaign-codex.type", type);
+            await handleJournalConversion(journal, changed);
         }
     }
 });
@@ -350,8 +376,6 @@ Hooks.on("updateJournalEntry", async (document, changes, options, userId) => {
     await game.campaignCodex._scheduleSheetRefresh(document.uuid);
   }
 });
-
-
 
 Hooks.on("updateActor", async (actor, changes, options, userId) => {
   if (game.user.id !== userId) return;

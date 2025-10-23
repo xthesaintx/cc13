@@ -108,13 +108,13 @@ export class ColorThemeConfig extends ColorThemeCC {
         return [
             {
                 type: "button",
-                action: "reset", // Custom action for the event handler
+                action: "reset", 
                 icon: "fa-solid fa-undo",
                 label: "Reset Defaults"
             },
             {
                 type: "button",
-                action: "apply", // Custom action for the event handler
+                action: "apply",
                 icon: "fa-solid fa-check",
                 label: "Apply Changes"
             },

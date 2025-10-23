@@ -1,3 +1,47 @@
+## API
+Assign the API:
+- campaignCodexAPI = game.modules.get('campaign-codex')?.api;
+
+### Copy Standard Journal to CC Sheet
+Convert a journal with a text page or multiple text pages in a CC sheet of a type or multiples sheets
+- campaignCodexAPI.convertJournalToCCSheet (uuid, type, pagesToSeparateSheets)
+uuid: uuid of journal to copy
+type: String, destination sheet type (location, npc, region, shop, group, tags)
+pagesToSeparateSheets: Bool, will create a Campaign Codex sheet of type for each page in the journal
+
+
+### Export to zip of md files
+- campaignCodexAPI.exportToObsidian();
+
+
+### Open the ToC Sheet
+- campaignCodexAPI.openTOCSheet();
+
+## 9.3
+- Updated Welcome message
+- Items on Quests
+- Quests sub objectives
+- Max height added on the quest box description area
+- Drag Drop reordering of objectives
+- Confirmation dialog on Quest delete
+- Added templates to text editor
+- Added user templates from folder selected in settings (will scan dir for HBS/HTML)
+- Added details/summary compatability to text editor
+- Send Item to Player updated to V2
+- Drop NPC dialog updated to v2
+- Made AllTags more robust
+- Fixed some UI compatability with styling
+- NPC card subtitle will come from sheet
+- Filter for TOC
+- CC scene control button is part of the UI
+- Styled CC Scene control toggle in settings (if on it uses the UI color from themes)
+- Sheet Focus fix
+- Improved Exports to standard journals and MD to include quests
+- Converting standard journals to CC journals gives the option to bring in content.
+- Various other bug fixes
+- FR localisation added
+- Remove image button
+
 ## 0.8.45
 - quest board and table of contents
 - themes in the core settings

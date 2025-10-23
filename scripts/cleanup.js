@@ -26,6 +26,7 @@ export class CleanUp {
       }
     });
 
+
     Hooks.on("deleteJournalEntry", async (document, options, userId) => {
       const type = document.getFlag("campaign-codex", "type");
       if (!type) return;
@@ -34,6 +35,7 @@ export class CleanUp {
     if (tocSheet) {
       tocSheet.render();
     }
+
       for (const app of Object.values(ui.windows)) {
         if (app.document && app.document.id === document.id) {
           const isCampaignCodexSheet = [
@@ -707,10 +709,6 @@ export class CleanUp {
 
         const updatedData = foundry.utils.deepClone(docData);
         updatedData.linkedStandardJournal = null;
-
-        // if ('linkedJournalPageId' in updatedData) {
-        //     updatedData.linkedJournalPageId = null;
-        // }
 
         updatePromises.push(
           doc

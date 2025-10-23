@@ -1,5 +1,6 @@
 import { localize, format } from "./helper.js";
 import { CampaignCodexLinkers } from "./sheets/linkers.js";
+import { CampaignCodexTOCSheet } from "./campaign-codex-toc.js";
 
 export class CampaignManager {
   // =========================================================================
@@ -10,7 +11,19 @@ export class CampaignManager {
     this.relationshipCache = new Map();
     this._creationQueue = new Set();
     this.tagCache = [];
+// 
+    this._ready = null; 
   }
+
+  /**
+   * Starts the initialization process for the manager.
+   * It ensures that the initialization only runs once.
+   */
+  initialize() {
+      if (this._ready) return;
+      this._ready = this.initializeTagCache();
+  }
+
     async initializeTagCache() {
         console.log("Campaign Codex | Initializing Tag Cache");
         const taggedNpcs = [];
@@ -35,6 +48,7 @@ export class CampaignManager {
             });
         }
     }
+
     updateTagInCache(npcDoc) {
         const tag = this.tagCache.find(tag => tag.uuid === npcDoc.uuid);
         if (tag) {
@@ -47,6 +61,8 @@ export class CampaignManager {
     }
 
     async getTagCache() {
+// 
+        await this._ready; 
         return this.tagCache;
     }
 
@@ -54,6 +70,29 @@ export class CampaignManager {
   // =========================================================================
   // Document Creation
   // =========================================================================
+
+  /**
+   * Opens the Campaign Codex Table of Contents sheet.
+   * If the sheet is already open, it brings it to the front.
+   */
+  openTOCSheet() {
+    // Check if an instance already exists and is rendered
+    if (game.campaignCodex.tocSheetInstance && game.campaignCodex.tocSheetInstance.rendered) {
+      return;
+    }
+
+    // If not, create and render a new one
+    let savedDimensions = game.settings.get("campaign-codex", "tocSheetDimensions");
+    game.campaignCodex.tocSheetInstance = new CampaignCodexTOCSheet({ 
+        position: { 
+            width: savedDimensions.width, 
+            height: savedDimensions.height 
+        } 
+    });
+    game.campaignCodex.tocSheetInstance.render(true);
+  }
+
+
 
 
   async createNPCJournal(actor = null, name = null, tagged = false) {
@@ -625,34 +664,40 @@ export class CampaignManager {
   // =========================================================================
   // UI & Sheet Management
   // =========================================================================
-
 /**
  * Refreshes all open Campaign Codex sheets.
  * This is useful when a global change occurs (like renaming or deleting a tag) 
  * that affects sheets that aren't directly linked to the changed document.
  */
 async refreshAllOpenCodexSheets() {
-  const docsWithOpenEditors = new Set();
-  for (const app of Object.values(ui.windows)) {
-    if (app.constructor.name === "DescriptionEditor" && app.document) {
-      docsWithOpenEditors.add(app.document.uuid);
+    const docsWithOpenEditors = new Set();
+    const sheetsToRefresh = new Set();
+    for (const app of Object.values(ui.windows)) {
+      if (app.constructor.name === "DescriptionEditor" && app.document) {
+        docsWithOpenEditors.add(app.document.uuid);
+      }
+    }
+    for (const app of Object.values(ui.windows)) {
+      const isCodexSheet = app.document?.getFlag && app.document.getFlag("campaign-codex", "type");
+      if ( isCodexSheet && !docsWithOpenEditors.has(app.document.uuid) ) {
+        sheetsToRefresh.add(app);
+      }
+    }
+    const activeWindow = ui.activeWindow;
+    for (const app of sheetsToRefresh) {
+        if (app !== activeWindow) {
+            app.render(true, { focus: false });
+        }
+    }
+    if (activeWindow && sheetsToRefresh.has(activeWindow)) {
+        await activeWindow.render(true);
+        activeWindow.bringToTop();
+    }
+    const tocSheet = foundry.applications.instances.get("campaign-codex-toc-sheet");
+    if (tocSheet) {
+      tocSheet.render();
     }
   }
-
-  for (const app of Object.values(ui.windows)) {
-    const isCodexSheet = app.document?.getFlag && app.document.getFlag("campaign-codex", "type");
-    
-    if ( isCodexSheet && !docsWithOpenEditors.has(app.document.uuid) ) {
-      console.log(`Campaign Codex | Forcing refresh on open sheet due to global change: ${app.document.name}`);
-      app.render(true);
-    }
-  }
-  
-  const tocSheet = foundry.applications.instances.get("campaign-codex-toc-sheet");
-  if (tocSheet) {
-    tocSheet.render();
-  }
-}
 
 async _scheduleSheetRefresh(changedDocUuid) {
     const sheetsToRefresh = new Set();
@@ -734,10 +779,18 @@ async _scheduleSheetRefresh(changedDocUuid) {
         sheetsToRefresh.add(app);
       }
     }
-for (const app of sheetsToRefresh) {
-  const isCurrentlyActive = (ui.activeWindow === app);
- app.render(true, { focus: isCurrentlyActive });
-}
+    const activeWindow = ui.activeWindow;
+
+    for (const app of sheetsToRefresh) {
+        if (app !== activeWindow) {
+            app.render(true, { focus: false });
+        }
+    }
+
+    if (activeWindow && sheetsToRefresh.has(activeWindow)) {
+        await activeWindow.render(true);
+        activeWindow.bringToTop();
+    }
 if (foundry.applications.instances.get("campaign-codex-toc-sheet")){foundry.applications.instances.get("campaign-codex-toc-sheet").render();}
   }
 
@@ -822,11 +875,23 @@ if (foundry.applications.instances.get("campaign-codex-toc-sheet")){foundry.appl
   // Getters & Utility Methods
   // =========================================================================
 
-  getActorDisplayMeta(actor, tag) {
-    if (tag) return `<span class="entity-type" style="background: var(--cc-border);">${localize("names.tag")}</span>`;
-    if (!actor) return `<span class="entity-type">${localize('names.npc')}</span>`;
-    if (actor.type === "character") return `<span class="entity-type-player">${localize('names.player')}</span>`;
-    return `<span class="entity-type">${localize('names.npc')}</span>`;
+  getActorDisplayMeta(actor, npcData) {
+    let metaLabel = ""
+    if (npcData.sheetTypeLabelOverride !== undefined && npcData.sheetTypeLabelOverride !== "") {
+            metaLabel = npcData.sheetTypeLabelOverride;
+        } else if (npcData.tagMode) {
+            metaLabel = localize("names.tag") 
+        } else {
+            metaLabel = actor?.type === "character" 
+                ? localize("names.player") : localize("names.npc");
+        }
+    return `<span class="entity-type">${metaLabel}</span>`;
+
+    // const tag = npcData.tagMode;
+    // if (tag) return `<span class="entity-type" style="background: var(--cc-border);">${localize("names.tag")}</span>`;
+    // if (!actor) return `<span class="entity-type">${localize('names.npc')}</span>`;
+    // if (actor.type === "character") return `<span class="entity-type-player">${localize('names.player')}</span>`;
+    // return `<span class="entity-type">${localize('names.npc')}</span>`;
   }
 
   async findOrCreateNPCJournalForActor(actor) {

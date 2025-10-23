@@ -38,12 +38,14 @@
   --cc-border: #444444;
   --cc-card-bg: #ffffff;
   --cc-dark:0,0,0;
+  --cc-windowheader:#2a2a2aAA;
   --cc-shadow: 0 2px 8px rgba(var(--cc-dark), 0.1);
   --cc-border-light: #e9ecef;
   --cc-font-heading: "Modesto Condensed", serif;
   --cc-font-body: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 }
 .campaign-codex .window-header {
+  background: var(--cc-windowheader);
 }
 
 .campaign-codex .window-content {
@@ -134,6 +136,7 @@
   cursor: pointer;
   transition: all 0.2s ease;
   line-height: 1.1;
+  overflow-wrap: break-word;
 /*  overflow-x: hidden;*/
 }
 
@@ -570,6 +573,7 @@
   position: relative;
 }
 
+.campaign-codex .objectives-section.quest-inventory .shop-items .group-item-card:hover,
 .campaign-codex .shop-inventory-section .shop-items .group-item-card:hover{
   transform: translateY(-1px);
   box-shadow: 0 8px 25px rgba(var(--cc-dark), 0.15);
@@ -631,6 +635,10 @@
   margin-bottom: 8px;
   vertical-align: top;
   display: inline-block;
+  max-width: 80%;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
 }
 
 .campaign-codex .entity-type {
@@ -697,6 +705,10 @@
   margin-right: 4px;
   margin-bottom: 2px;
   display: inline-block;
+  max-width: 80%;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+      overflow: hidden;
 }
 
 
@@ -962,7 +974,8 @@
 
 .campaign-codex .item-actions {
   display: grid;
-  grid-template-columns: 32px 32px;
+/*  grid-template-columns: 32px 32px;*/
+      grid-template-columns: auto auto;
   gap: 4px;
   min-width: 40px;
 }
@@ -1055,9 +1068,8 @@
 }
 
 .campaign-codex .player-selection p {
-  margin-bottom: 16px;
-  font-size: 14px;
-  color: var(--cc-main-text);
+  margin-top: 0px;
+  max-width: 350px;
 }
 
 .campaign-codex .player-list {
@@ -1066,22 +1078,11 @@
   gap: 8px;
 }
 
-.campaign-codex .player-option {
-  display: flex;
-  align-items: center;
-  padding: 12px;
-  background: var(--cc-main-bg);
-  border: 1px solid var(--cc-border-light);
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.2s ease;
+
+.campaign-codex.send-to-player .form-footer{
+      padding: 0px 10px 10px 10px;
 }
 
-.campaign-codex .player-option:hover {
-  background: var(--cc-border-light);
-  border-color: var(--cc-accent);
-  transform: translateY(-1px);
-}
 
 .campaign-codex .player-info {
   display: flex;
@@ -1091,7 +1092,7 @@
 
 .campaign-codex .character-name {
   font-weight: 600;
-  color: var(--cc-main-text);
+/*  color: var(--cc-main-text);*/
   font-size: 14px;
 }
 
@@ -1103,43 +1104,62 @@
 
 .campaign-codex .player-option span {
   font-weight: 500;
-  color: var(--cc-main-text);
 }
 
 /* NPC Dropper Dialog */
-.drop-to-map-dialog {
-  padding: 8px;
+.campaign-codex.npc-dropper .window-content{
+  padding: 10px !important;
+}
+.campaign-codex .drop-to-map-dialog {
 }
 
-.drop-to-map-dialog .npc-selection {
-  border: 1px solid var(--cc-border-light);
+.campaign-codex .player-list,
+.campaign-codex .drop-to-map-dialog .npc-selection {
+  border: 1px dotted var(--cc-accent30);
   border-radius: 6px;
   padding: 8px;
-  background: var(--cc-main-bg);
 }
 
-.drop-to-map-dialog .npc-selection label {
+.campaign-codex .drop-to-map-dialog .cc-info ul{
+  padding-left: 0px;
+  margin: 0px 0px 0px 0px;
+  list-style: none;
+}
+.campaign-codex .drop-to-map-dialog .cc-info {
+  border: 1px dotted var(--cc-accent30);
+  border-radius: 6px;
+  padding: 16px;
+  }
+
+.campaign-codex .player-option,
+.campaign-codex .drop-to-map-dialog .npc-selection label {
+  display: flex; align-items: center; margin: 8px 0; padding: 8px; border-radius: 4px;
   cursor: pointer;
   transition: all 0.2s ease;
   border: 1px solid transparent;
 }
-
-.drop-to-map-dialog .npc-selection label:hover {
-  background: var(--cc-border-light) !important;
+.campaign-codex .player-option:hover,
+.campaign-codex .drop-to-map-dialog .npc-selection label:hover {
+  background: var(--cc-accent10) !important;
   border-color: var(--cc-accent);
   transform: translateY(-1px);
 }
 
-.drop-to-map-dialog .npc-selection input[type="checkbox"] {
-  accent-color: var(--cc-accent);
+.campaign-codex .drop-to-map-dialog input[type="checkbox"] {
+  --checkbox-background-color: var(--cc-accent30);
   cursor: pointer;
 }
 
-.drop-to-map-dialog p {
+.campaign-codex .drop-to-map-dialog .npc-selection input[type="checkbox"] {
+  --checkbox-background-color: var(--cc-accent30);
+  cursor: pointer;
+}
+
+/*.campaign-codex .drop-to-map-dialog p {
   margin-bottom: 12px;
   font-weight: 600;
   color: var(--cc-main-text);
-}
+}*/
 
 /* Shop Toggle Controls */
 .campaign-codex .shop-toggles {
@@ -1940,7 +1960,7 @@ margin-bottom: 8px;
   gap: 12px;
   padding: 16px;
 }
-
+.campaign-codex .objectives-section.quest-inventory .shop-items .group-item-card,
 .campaign-codex .group-item-card {
   display: flex;
   flex-wrap: wrap;
@@ -2666,7 +2686,8 @@ left: 296px;
 }
 
 /*RIGHT 30*/
-.campaign-codex .quest-container .content-header .refresh-btn,
+.campaign-codex .content-header .refresh-btn,
+/*.campaign-codex .quest-container .content-header .refresh-btn,*/
 /*.campaign-codex .image-change-btn.refresh-btn, */
 /*.campaign-codex .selected-sheet-actions .btn-open-sheet,*/
 .campaign-codex .group-sheet .selected-sheet-content .npcs-to-map-button,
@@ -2739,7 +2760,8 @@ justify-content: center;
  line-height: 20px;
  
 }
-.campaign-codex .quest-container .content-header .refresh-btn i,
+.campaign-codex .content-header .refresh-btn i,
+/*.campaign-codex .quest-container .content-header .refresh-btn i,*/
 /*.campaign-codex .image-change-btn.refresh-btn i,*/
 .campaign-codex .group-sheet .selected-sheet-content .npcs-to-map-button i,
 .campaign-codex .selected-sheet-actions .btn-npc-to-scene i,
@@ -2881,6 +2903,12 @@ justify-content: center;
   text-align: center;
   align-content: center;
 }
+
+.campaign-codex .cc-inv-price-table.item-final-price  {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+} 
 .campaign-codex .cc-loot-mode {
   grid-template-columns: 60px minmax(100px, 2fr) minmax(100px, 120px) 68px;
 }
@@ -3187,13 +3215,14 @@ color: var(--cc-sidebar-text);
 .campaign-codex .quest-item article.journal-entry-page{
     overflow-y: auto;
     overflow-x: hidden;
+    max-height: 400px;
   }
 
 .campaign-codex .quest-list {
   display: grid;
   grid-template-columns: 1fr;
   gap: 20px;
-  margin-top: 24px;
+  margin-bottom: 24px;
 }
 
 @media (min-width: 640px) {
@@ -3664,7 +3693,7 @@ color: var(--cc-sidebar-text);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 1px;
-  margin: 24px 0 0px 0;
+  margin: 0px 0 12px 0;
   border-bottom: 0px solid var(--cc-border-light);
   padding-bottom: 0px;
   display: flex;
@@ -3672,6 +3701,26 @@ color: var(--cc-sidebar-text);
 }
 
 /* objectives */
+
+.campaign-codex .objectives-section.quest-inventory {
+    padding-top: 10px;
+    border-top: 1px solid var(--cc-accent);
+    background: var(--cc-main-bg);
+    margin-left: -20px;
+    padding-left: 20px;
+    margin-right: -20px;
+    padding-right: 20px;
+    padding-bottom: 20px;
+    margin-bottom: -20px;
+}
+
+.campaign-codex .objectives-section.quest-inventory .shop-items {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 12px;
+    padding: 8px 0px 16px 0px;
+}
+
 
 .campaign-codex .objectives-section {
     padding-top: 10px;
@@ -3735,7 +3784,8 @@ color: var(--cc-sidebar-text);
 }
 
 .campaign-codex .objective-item {
-  display: flex;
+/*  display: flex;*/
+  display:grid;
   align-items: center;
   padding: 4px 0;
   gap: 8px;
@@ -3793,17 +3843,17 @@ color: var(--cc-sidebar-text);
     outline: none;
 }
 
-.campaign-codex .sidebar-links.tags{
+.campaign-codex .sidebar-links.cc-tags{
 position: relative;
 }
 
-.campaign-codex .sidebar-links .tags{
+.campaign-codex .sidebar-links .cc-tags{
     display: grid;
     grid-template-columns: 1fr 24px 24px;
     align-items: center;
     user-select: none;
 }
-.campaign-codex .sidebar-links .tags i{
+.campaign-codex .sidebar-links .cc-tags i{
       cursor: pointer;
       font-size: 14px;
 
@@ -4111,8 +4161,21 @@ color:var(--cc-ui)
 }    
 .campaign-codex.codex-toc .toc-quest-item ul.quest-objectives {
     list-style: none;
+/*    padding-left: 0;*/
+}   
+
+.campaign-codex.codex-toc .toc-quest-item .quest-objectives {
+    list-style: none;
     padding-left: 0;
-}    
+}   
+
+.campaign-codex.codex-toc .toc-quest-item .quest-objectives ul.quest-objectives {
+    list-style: none;
+    margin-left: 10px;
+    border-left: 1px dashed var(--cc-border-medium);
+    padding-left: 10px;
+} 
+
 
 .campaign-codex-toc-app .cc-toc-journal-list{
     display:grid;
@@ -4202,4 +4265,161 @@ padding: 0px 10px;
 /*button.control.ui-control.layer.icon.fas.fa-closed-captioning[data-control="campaign-codex"]{
   background: #d4af37;
   color: black;
-}*/
+}
+*/
+
+
+
+/* styles for objective drag-and-drop */
+.objective-item.dragging {
+  opacity: 0.5;
+  background: var(--cc-accent10);
+  cursor:grabbing !important;
+}
+
+.objective-item .objective-list {
+    margin-left: 20px;
+    border-left: 1px dashed var(--cc-border-medium);
+    padding-left: 10px;
+}
+
+.objective-item .objective-content {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.objective-item.drag-over-top::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background-color: var(--cc-accent);
+  z-index: 1;
+}
+
+.objective-item.drag-over-bottom::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background-color: var(--cc-accent);
+  z-index: 1;
+}
+
+.objective-item {
+    position: relative; /* Needed for the absolute positioning of the lines */
+}
+
+
+.campaign-codex.codex-toc .form-group {
+    padding: 10px 10px 0px 10px;
+    margin-bottom: 0;
+
+}
+
+
+/*
+ TEMPLATE STLYES 
+ */
+ .campaign-codex .cc-grid-layout {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 2rem;
+    }
+    .campaign-codex .cc-grid-layout .cc-main-content {
+        flex: 2; /* Takes up 2/3 of the space */
+        min-width: 300px;
+    }
+    .campaign-codex .cc-grid-layout .cc-sidebar {
+        flex: 1; /* Takes up 1/3 of the space */
+        min-width: 250px;
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+   .campaign-codex .cc-grid-layout .cc-info-box {
+        background: var(--cc-bg-secondary, #0000001a);
+        padding: 1rem;
+        border-radius: 5px;
+        border: 1px solid var(--cc-border-light, #0000003b);
+    }
+    .campaign-codex .cc-grid-layout .cc-info-box h3 {
+        margin-top: 0;
+        border-bottom: 1px solid var(--cc-border-medium);
+        padding-bottom: 0.5rem;
+    }
+     .campaign-codex .cc-grid-layout .cc-info-box .info-item {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 0.5rem;
+    }
+    .campaign-codex .cc-grid-layout .cc-info-box hr {
+        border-color: var(--cc-border-medium, #0000003b);
+    }
+
+
+    .cc-grid-layout .cc-image-frame img {
+        display: block;
+        width: 100%;
+        aspect-ratio: 1 / 1.5;
+        object-fit: cover;
+        border-radius: 3px;
+    }
+    .cc-grid-layout .cc-info-box .info-item:last-child {
+        border-bottom: none;
+        margin-bottom: 0;
+    }
+
+
+.campaign-codex .cc-remove-image{
+    position: absolute;
+    bottom: 8px;
+    right: 8px;
+    width: 10px;
+    height: 10px;
+    /* border: none; */
+    border-radius: 0px;
+    background: none;
+    opacity: 0.5;
+    color: var(--cc-danger);
+    border: none;
+    cursor: pointer;
+    font-size: 12px;
+    line-height: 20px;
+    text-align: center;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 16px;
+}
+.campaign-codex  .cc-remove-image:hover {
+    opacity: 1;
+}
+
+
+.campaign-codex .cc-remove-image:focus,
+.campaign-codex  .cc-remove-image:active {
+  outline: none;
+  box-shadow: none;
+}
+
+.campaign-codex summary::marker {
+ cursor: pointer;
+}
+
+.campaign-codex .editor-content.ProseMirror details {
+  border-top:1px dashed var(--cc-accent);
+  padding-top: 10px;
+  border-bottom:1px dashed var(--cc-accent);
+  padding-bottom: 10px;
+}
+
+.campaign-codex .editor-content.ProseMirror summary::marker {
+  cursor: unset;
+}
