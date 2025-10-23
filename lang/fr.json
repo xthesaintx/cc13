@@ -1,0 +1,243 @@
+{
+  "CAMPAIGN_CODEX": {
+    "welcomePageHTML": "<div> <p><strong>Bienvenue dans Campaign Codex</strong></p> <p>La gestion des dossiers, l'emplacement du prix des objets du système et l'emplacement de la devise des objets du système peuvent être modifiés dans les paramètres.</p> <div><button data-campaign-codex-handler=\"campaign-codex|openMenu|core_settings\"><i class=\"fas fa-wrench\"></i>Paramètres</button></div> <hr> <p><strong>Rejoignez la communauté Campaign Codex</strong></p> <p>Si vous souhaitez suggérer une fonctionnalité, signaler un bug ou simplement discuter, n'hésitez pas à nous rejoindre sur Discord.</p> <div><button data-campaign-codex-handler=\"campaign-codex|openWindow|https://discord.gg/fycwH79s2y\"><i class=\"fab fa-discord\"></i> Rejoindre le Discord</button></div> <p><strong>Vous avez trouvé un bug ?</strong></p> <p>Si vous souhaitez signaler un bug et que Discord n'est pas votre tasse de thé, rendez-vous sur GitHub.</p> <div><button data-campaign-codex-handler=\"campaign-codex|openWindow|https://github.com/xthesaintx/cc13\"><i class=\"fas fa-bug\"></i> Signaler un bug</button></div> <p><strong>Soutenir le développement</strong></p> <p>Si vous souhaitez soutenir le développement, envisagez de jeter un œil aux options d'adhésion sur Patreon</a>.</p> <div><button data-campaign-codex-handler=\"campaign-codex|openWindow|https://patreon.com/wgtngm\"><i class=\"fas fa-star\"></i> Devenir membre</button></div></div>",
+    "context": {
+      "export": "Exporter vers un Journal Standard",
+      "group": "Ajouter à {type}"
+    },
+    "button": {
+      "title": "Créer un(e) nouveau/nouvelle {type}",
+      "droptoscene": "Déposer {type} sur la scène actuelle",
+      "tagmode": "Mode Étiquette"
+    },
+    "info": {
+      "automatically": "Les {type} sont automatiquement remplis à partir de toutes les {source}.",
+      "refresh": "Actualiser",
+      "linkfound": "Liaison de {type} existant.",
+      "newlink": "{type} créé et lié depuis la scène.",
+      "linked": "{type} lié"
+    },
+    "sheet": {
+      "journal": "Journal de {type}"
+    },
+    "add": "Ajouter {type}",
+    "group": {
+      "notfound": "L'élément que vous essayez d'ajouter n'a pas été trouvé.",
+      "self": "Un groupe ne peut pas être ajouté à lui-même.",
+      "expandAll": "Tout déplier",
+      "collapseAll": "Tout replier",
+      "toggleItems": "Masquer/Afficher les Objets de l'inventaire",
+      "toggleNPCs": "Masquer/Afficher les PNJs",
+      "toggleNPCTags": "Masquer/Afficher les étiquettes sur les PNJs",
+      "toggleTagMode": "Mode Arborescence d'étiquettes"
+    },
+    "member": {
+      "type": "Membre {type}"
+    },
+    "heading": {
+      "in": "{type} dans {in}"
+    },
+    "names": {
+      "regionlocation": "Région ou Lieu",
+      "location": "Lieu",
+      "locations": "Lieux",
+      "group": "Groupe",
+      "groups": "Groupes",
+      "shop": "Entrée",
+      "shops": "Entrées",
+      "region": "Région",
+      "regions": "Régions",
+      "npc": "PNJ",
+      "npcs": "PNJs",
+      "items": "Objets",
+      "journal": "Journal",
+      "journals": "Journaux",
+      "organisation": "Organisation",
+      "organisations": "Organisations",
+      "associate": "Associé",
+      "associates": "Associés",
+      "members": "Membres",
+      "direct": "Direct",
+      "info": "Info",
+      "information": "Information",
+      "note": "Notes",
+      "actor": "Acteur",
+      "player": "Joueur",
+      "tag": "Étiquette",
+      "tags": "Étiquettes",
+      "inventory": "Inventaire",
+      "scene": "Scène",
+      "standard": "Standard",
+      "quest": "Quête",
+      "quests": "Quêtes",
+      "toc": "Table des Matières"
+    },
+    "settings": {
+      "colorPicker": {
+        "name": "Remplacer la couleur d'accentuation",
+        "hint": "Remplace la couleur d'accentuation du thème par défaut. Entrez un code hexadécimal comme #d4af37. Laissez vide pour restaurer la valeur par défaut."
+      },
+      "showOnlyPinned": {
+        "name": "Afficher uniquement les quêtes épinglées dans la TdM",
+        "hint": "Si cette case est cochée, la Table des Matières n'affichera que les quêtes marquées comme 'épinglées'."
+      },
+      "showStats": {
+        "name": "Afficher les statistiques dans le menu",
+        "hint": "Affichera (#) à côté d'un élément de menu dans les fiches pour indiquer le nombre de chaque type, visible uniquement par le MJ."
+      },
+      "roundFinalPrice": {
+        "name": "Arrondir le prix final à un nombre entier",
+        "hint": "Arrondira le prix final d'un objet au nombre entier le plus proche."
+      },
+      "maxRegionDepth": {
+        "name": "Remplacer la profondeur d'imbrication",
+        "hint": "Le nombre de niveaux de régions que vous pouvez créer. Par défaut 5, une valeur plus élevée consommera plus de ressources système."
+      },
+      "itemPricePath": {
+        "name": "Remplacer le chemin du prix de l'objet",
+        "hint": "Chemin vers la valeur du prix de l'objet (par ex. 'system.price.value' pour D&D5e). Laissez vide pour utiliser le système détecté."
+      },
+      "itemDenominationPath": {
+        "name": "Remplacer le chemin de la devise de l'objet",
+        "hint": "Chemin vers la dénomination de la devise de l'objet (par ex. 'system.price.denomination' pour D&D5e). Laissez vide pour utiliser le système détecté."
+      },
+      "itemDenominationOverride": {
+        "name": "Remplacer la dénomination",
+        "hint": "Dénomination de la devise (par ex. crédits, po, unités). Laissez vide pour utiliser le chemin de devise de l'objet ou le système détecté. Campaign Codex détectera automatiquement la valeur et la dénomination des objets en fonction du système de jeu actif (par ex. Dungeons and Dragons 5e, Pathfinder 2e, Starfinder, Savage Worlds Adventure Edition, Pathfinder 1e, Old-School Essentials et Daggerheart)."
+      },
+      "hideBaseCost": {
+        "name": "Masquer la colonne du coût de base",
+        "hint": "Si vous ne voulez pas que le coût de base soit visible, ou si le système n'a pas de chemin de prix, vous pouvez cocher cette case pour masquer la colonne dans l'onglet inventaire. Fermez et rouvrez les fiches pour mettre à jour."
+      },
+      "sortCardsAlpha": {
+        "name": "Trier automatiquement les cartes par ordre alphabétique",
+        "hint": "Si activé, les cartes seront affichées de A à Z."
+      },
+      "runonlyonce": {
+        "name": "Message de bienvenue - Désactivé",
+        "hint": "Si activé, vous ne verrez pas le message de bienvenue."
+      },
+      "useOrganizedFolders": {
+        "name": "Organiser dans des dossiers",
+        "hint": "Crée et organise automatiquement les journaux du Campaign Codex dans des dossiers."
+      },
+      "hideByPermission": {
+        "name": "Masquer les cartes par propriété",
+        "hint": "Masque les cartes si l'utilisateur n'a pas au minimum la permission d'observateur sur le journal ou l'objet."
+      },
+      "hideInventoryByPermission": {
+        "name": "Masquer les objets de l'inventaire par propriété",
+        "hint": "Masque les objets dans les inventaires si l'utilisateur n'a pas au minimum la permission d'observateur sur l'objet."
+      },
+      "resetItemPathsButton": {
+        "name": "Réinitialiser aux valeurs par défaut",
+        "hint": "Activez cette option et enregistrez pour réinitialiser les paramètres par défaut."
+      }
+    },
+    "notifications": {
+      "itemPricePathsReset": "Les chemins de prix des objets ont été réinitialisés aux valeurs par défaut de D&D5e."
+    },
+    "dropzone": {
+      "region": "Faites glisser {type} pour les ajouter",
+      "location": "Faites glisser des {type} ou des scènes ici pour les ajouter",
+      "shop": "Faites glisser des journaux {type} ici pour les ajouter",
+      "npc": "Faites glisser des {type} ou des Acteurs ici pour les ajouter",
+      "associate": "Faites glisser des {type} ou des Acteurs ici pour créer des relations",
+      "item": "Faites glisser {type} ici pour ajouter à l'inventaire",
+      "generic": "Faites glisser {type} ici",
+      "link": "Déposez {type} pour lier",
+      "empty": "Vider {type}"
+    },
+    "error": {
+      "faileditem": "Échec du transfert de l'objet"
+    },
+    "warn": {
+      "directly": "Impossible de supprimer {type} directement",
+      "remove": "Supprimer {type}",
+      "invaliddrop": "Aucun membre avec des acteurs liés trouvé à déposer !",
+      "nonpcfound": "Aucun PNJ disponible à déposer sur la carte !",
+      "actornotfound": "Acteur lié non trouvé !",
+      "failedtodrop": "Échec du dépôt du PNJ sur la carte !",
+      "scenenotfound": "Impossible de trouver la scène déposée."
+    },
+    "message": {
+      "open": "Ouvrir {type}",
+      "unlink": "Délier {type}",
+      "droptomap": "Déposer les membres de {type} sur la Scène",
+      "drop": "Déposer sur la Scène."
+    },
+    "title": {
+      "all": "Tout",
+      "open": {
+        "actor": "Ouvrir la Fiche d'Acteur",
+        "sheet": "Ouvrir la Fiche"
+      },
+      "unlink": {
+        "actor": "Délier la Fiche d'Acteur"
+      },
+      "sort": {
+        "alphabetically": "Trier l'inventaire par ordre alphabétique"
+      },
+      "send": {
+        "player": "Envoyer au Joueur",
+        "item": {
+          "player": "Envoyer l'objet au Personnage Joueur",
+          "typetoplayer": "{type} envoyé à {player}."
+        }
+      },
+      "remove": {
+        "item": "Supprimer l'objet",
+        "from": {
+          "group": "Retirer du Groupe"
+        }
+      },
+      "focus": {
+        "in": {
+          "tab": "Mettre au premier plan dans l'onglet"
+        }
+      }
+    },
+    "inventory": {
+      "added": "{type} ajouté à l'inventaire",
+      "price": {
+        "name": "Prix",
+        "base": "Prix de Base",
+        "final": "Prix Final"
+      },
+      "quantity": "Quantité",
+      "actions": "Actions",
+      "item": {
+        "name": "Nom de l'objet"
+      },
+      "global": {
+        "markup": "Majoration de prix globale"
+      },
+      "help": {
+        "markup": "Les objets sans prix personnalisé utiliseront le prix de base × majoration"
+      }
+    },
+    "ui": {
+      "addedto": "{type} ajouté à {typeb}",
+      "drag": {
+        "link": {
+          "journal": {
+            "standard": "Journal : Faites glisser un journal standard pour le lier"
+          }
+        }
+      },
+      "warn": {
+        "notfound": {
+          "player": {
+            "character": "Aucun personnage joueur trouvé"
+          }
+        }
+      },
+      "send": {
+        "item": {
+          "player": "Envoyer <strong>{type}</strong> à quel personnage joueur ?"
+        }
+      },
+      "cancel": "Annuler"
+    }
+  }
+}
