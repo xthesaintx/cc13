@@ -1113,7 +1113,7 @@ _onObjectiveDragStart(event) {
     event.stopPropagation(); 
     await this._saveFormData();
 
-    const journalUuid = event.currentTarget.dataset.journalUuid;
+    const journalUuid = event.target.dataset.journalUuid;
     if (!journalUuid) return;
 
     const currentData = this.document.getFlag("campaign-codex", "data") || {};
@@ -1173,7 +1173,7 @@ _onObjectiveDragStart(event) {
       if (regionUuid) regionDoc = await fromUuid(regionUuid);
     } else if (myType === "region") {
       regionDoc = this.document;
-      const locationUuid = event.currentTarget.dataset.locationUuid;
+      const locationUuid = event.target.dataset.locationUuid;
       if (locationUuid) locationDoc = await fromUuid(locationUuid);
     }
 
