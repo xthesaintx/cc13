@@ -17,6 +17,9 @@ pagesToSeparateSheets: Bool, will create a Campaign Codex sheet of type for each
 ### Open the ToC Sheet
 - campaignCodexAPI.openTOCSheet();
 
+## 9.4
+- moved the templates to an array
+
 ## 9.3
 - Updated Welcome message
 - Items on Quests

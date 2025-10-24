@@ -59,8 +59,7 @@ Hooks.once("init", async function () {
     "modules/campaign-codex/templates/partials/quest-sub-objective.hbs",
     ];
     foundry.applications.handlebars.loadTemplates(templatePaths);
-    // TEMPLATE MENU BUILD
-    templateManager.scanAllTemplates();
+
 
     game.campaignCodexImporting = true;
     await campaigncodexSettings();
@@ -114,7 +113,8 @@ Hooks.once("i18nInit", async function () {
 Hooks.once("ready", async function () {
     console.log("Campaign Codex | Ready");
     game.campaignCodex = new CampaignManager();
-// 
+    // TEMPLATE MENU BUILD
+    templateManager.scanAllTemplates();
     game.campaignCodex.initialize(); 
 
     game.campaignCodex.tocSheetInstance = null;

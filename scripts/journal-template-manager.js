@@ -1,13 +1,10 @@
+import { BUNDLED_TEMPLATES } from "./bundled-templates.js";
 /**
  * A singleton class to manage discovering and caching journal templates.
  */
 class JournalTemplateManager {
     constructor() {
-        // The hardcoded path for templates included with the module.
-        this.MODULE_TEMPLATE_PATH = "modules/campaign-codex/templates/journals/";
-
-        // Caches for the discovered template paths.
-        this.moduleTemplates = [];
+        this.bundledTemplates = [];
         this.userTemplates = [];
     }
 
@@ -24,11 +21,11 @@ class JournalTemplateManager {
      * @returns {Array<object>} An array of { title, filePath } objects.
      */
     get allTemplates() {
-        // Combine the two lists.
-        const combined = [...this.moduleTemplates, ...this.userTemplates];
-        const uniqueTemplates = Array.from(new Map(combined.map(item => [item.filePath, item])).values());
-        uniqueTemplates.sort((a, b) => a.title.localeCompare(b.title));
-        return uniqueTemplates;
+        const combined = [...this.bundledTemplates, ...this.userTemplates];
+        // const uniqueTemplates = Array.from(new Map(combined.map(item => [item.filePath, item])).values());
+        // uniqueTemplates.sort((a, b) => a.title.localeCompare(b.title));
+        // return uniqueTemplates;
+        return combined.sort((a, b) => a.title.localeCompare(b.title));
     }
 
     /**
@@ -36,15 +33,25 @@ class JournalTemplateManager {
      * This should be called on init and anytime the user setting changes.
      */
     async scanAllTemplates() {
-        if (this.moduleTemplates.length === 0) {
-            this.moduleTemplates = await this._scanPath(this.MODULE_TEMPLATE_PATH, "Module");
+        if (this.bundledTemplates.length === 0) {
+            this.bundledTemplates = this._loadBundledTemplates();
         }
-        if (this.MODULE_TEMPLATE_PATH !== this.userTemplatePath) {
-            this.userTemplates = await this._scanPath(this.userTemplatePath, "User");
-        }
+        this.userTemplates = await this._scanPath(game.settings.get("campaign-codex", "journalTemplateFolder"), "User");
     }
 
     /**
+     * A private helper method to load and format the bundled JS string templates.
+     * @returns {Array<object>} An array of template objects.
+     * @private
+     */
+    _loadBundledTemplates() {
+        return BUNDLED_TEMPLATES.map(template => ({
+            title: template.title,
+            content: template.content,
+            filePath: null 
+        }));
+    }
+/**
      * A private helper method to browse a given path and format the results.
      * @param {string} path The filesystem path to scan.
      * @param {string} prefix A prefix to add to the template title (e.g., "User").
@@ -52,7 +59,7 @@ class JournalTemplateManager {
      * @private
      */
     async _scanPath(path, prefix = "") {
-        if (!path) return []; 
+        if (!path) return [];
 
         try {
             const data = await foundry.applications.apps.FilePicker.implementation.browse("data", path, { extensions: [".html", ".hbs"] });
@@ -62,14 +69,18 @@ class JournalTemplateManager {
                 const fileName = filePath.split('/').pop().replace(/\.(html|hbs)$/, '');
                 let title = fileName.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
                 if (prefix) title = `[${prefix}] ${title}`;
-                
-                return { title, filePath };
+
+                return { 
+                    title, 
+                    filePath, 
+                    content: null 
+                };
             });
         } catch (error) {
-
             return [];
         }
     }
 }
+
 
 export const templateManager = new JournalTemplateManager();

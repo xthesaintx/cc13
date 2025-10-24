@@ -57,12 +57,23 @@ export default class DetailsExpanderPlugin extends ProseMirror.ProseMirrorPlugin
 
 Hooks.on("getProseMirrorMenuDropDowns", (proseMirrorMenu, dropdowns) => {
     const templates = templateManager.allTemplates;
-
     if (templates.length === 0) return;
 
-    const insertTemplate = async (templatePath) => {
+    const insertTemplate = async (template) => {
         try {
-            const contentHTML = await foundry.applications.handlebars.renderTemplate(templatePath);
+            let contentHTML;
+            if (template.content) {
+                const compiled = Handlebars.compile(template.content);
+                contentHTML = compiled({}); // Pass an empty context
+            } else if (template.filePath) {
+                contentHTML = await foundry.applications.handlebars.renderTemplate(template.filePath);
+            } else {
+                console.error("Campaign Codex | Invalid template object", template);
+                ui.notifications.error("Invalid template definition.");
+                return;
+            }
+
+            // const contentHTML = await foundry.applications.handlebars.renderTemplate(templatePath);
             if (!contentHTML) return;
 
             const tempDiv = document.createElement("div");
@@ -76,15 +87,15 @@ Hooks.on("getProseMirrorMenuDropDowns", (proseMirrorMenu, dropdowns) => {
             );
 
         } catch (error) {
-            console.error(`Campaign Codex | Failed to load or insert template: ${templatePath}`, error);
-            ui.notifications.error(`Failed to load template: ${templatePath}`);
+            console.error(`Campaign Codex | Failed to load or insert template: ${template.title}`, error);
+            ui.notifications.error(`Failed to load template: ${template.title}`);
         }
     };
 
     const entries = templates.map(template => ({
         title: template.title,
         action: `${template.title.slugify()}-template`,
-        cmd: () => insertTemplate(template.filePath)
+        cmd: () => insertTemplate(template)
     }));
 
     dropdowns.campaignCodexTemplates = {
