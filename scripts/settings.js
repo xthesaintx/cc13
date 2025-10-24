@@ -256,7 +256,7 @@ game.settings.registerMenu("campaign-codex", "themeColorPicker", {
         scope: "world",
         config: false, 
         type: String,
-        default: "modules/campaign-codex/templates/journals/",
+        default: "",
         onChange: () => templateManager.scanAllTemplates()
     });
 
