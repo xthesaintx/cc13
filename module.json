@@ -10,11 +10,11 @@
       "name": "English",
       "path": "lang/en.json"
     },
-            {
-            "lang": "fr",
-            "name": "Français",
-            "path": "lang/fr.json"
-        },
+    {
+      "lang": "fr",
+      "name": "Français",
+      "path": "lang/fr.json"
+    },
   ],
   "compatibility": {
     "minimum": "13",
