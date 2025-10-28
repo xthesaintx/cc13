@@ -62,6 +62,9 @@
   outline: 0 solid transparent;
 }
 
+.campaign-codex .prosemirror .editor-content *{
+  color: var(--cc-main-text);
+}
 /*
  * ---------------------------------------------
  * Main Sheet Layout

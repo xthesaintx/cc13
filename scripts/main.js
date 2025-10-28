@@ -282,7 +282,7 @@ Hooks.on("createJournalEntry", async (document, options, userId) => {
     if (!journalType) return;
     const tag = document.getFlag("campaign-codex", "data")?.tagMode;
     const folderType = (tag && journalType === "npc") ? 'tag' : journalType;
-    const folder = getCampaignCodexFolder(folderType);
+    const folder = getCampaignCodexFolder(folderType, document.folder);
     if (folder) {
         await document.update({ folder: folder.id });
     }

@@ -262,7 +262,7 @@ export function getFolderColor(type) {
  * @param {string} type - The type of the Campaign Codex entry.
  * @returns {Folder|null} The Foundry Folder object or null if not found/disabled.
  */
-export function getCampaignCodexFolder(type) {
+export function getCampaignCodexFolder(type, currentFolder =[]) {
     if (!game.settings.get("campaign-codex", "useOrganizedFolders"))
         return null;
 
@@ -276,6 +276,14 @@ export function getCampaignCodexFolder(type) {
     };
 
     const folderName = folderNames[type];
+    if (!folderName) return null;
+        if (currentFolder) {
+            const isSelf = currentFolder.name === folderName;
+            const isAncestor = currentFolder.ancestors.some(a => a.name === folderName);
+            if (isSelf || isAncestor) {
+            return null;
+            }
+    }
     return game.folders.find(
         (f) => f.name === folderName && f.type === "JournalEntry",
     );
