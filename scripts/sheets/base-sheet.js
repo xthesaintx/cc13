@@ -1474,7 +1474,7 @@ _onObjectiveDragStart(event) {
               ui.notifications.warn("Item already exists in this quest's inventory!");
               return;
           }
-          quest.inventory.push({ itemUuid: item.uuid, quantity: 1, customPrice: null });
+          quest.inventory.push({ itemUuid: item.uuid, quantity: item.system?.quantity ?? 1, customPrice: null });
           await this.document.setFlag("campaign-codex", "data.quests", quests);
           this.render(true);
           ui.notifications.info(`Added "${item.name}" to quest "${quest.title}"`);
