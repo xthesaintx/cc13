@@ -18,6 +18,11 @@ pagesToSeparateSheets: Bool, will create a Campaign Codex sheet of type for each
 - campaignCodexAPI.openTOCSheet();
 
 ## 9.7
+- fix to the path for templates
+- css fix player users themes
+
+
+## 9.7
 - folder auto organisation logic updated to not move journals duplicated in subfolder
 - css fix to apply main text colour to editable text in info and notes for themes
 

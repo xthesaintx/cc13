@@ -69,7 +69,7 @@ class JournalTemplateManager {
                 const fileName = filePath.split('/').pop().replace(/\.(html|hbs)$/, '');
                 let title = fileName.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
                 if (prefix) title = `[${prefix}] ${title}`;
-
+                filePath = decodeURIComponent(filePath);
                 return { 
                     title, 
                     filePath, 

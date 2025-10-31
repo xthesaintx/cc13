@@ -61,7 +61,9 @@
 .cc-editor {
   outline: 0 solid transparent;
 }
-
+.campaign-codex .tab-panel section.journal-page-content *{
+  color: var(--cc-main-text);
+}
 .campaign-codex .prosemirror .editor-content *{
   color: var(--cc-main-text);
 }
