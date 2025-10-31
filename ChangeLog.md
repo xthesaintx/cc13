@@ -17,7 +17,7 @@ pagesToSeparateSheets: Bool, will create a Campaign Codex sheet of type for each
 ### Open the ToC Sheet
 - campaignCodexAPI.openTOCSheet();
 
-## 9.7
+## 9.9
 - fix to the path for templates
 - css fix player users themes
 

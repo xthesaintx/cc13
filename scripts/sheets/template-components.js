@@ -83,7 +83,7 @@ export class TemplateComponents {
     if (!isOwner) {
       return `
         <article class="journal-entry-page cc-enriched${systemClass}">
-          <section class="journal-page-content">
+          <section class="journal-page-content cc-non-owner-view">
             ${enrichedValue}
           </section>
         </article>
