@@ -8,6 +8,9 @@
             <img src="{{#if customImage}}{{customImage}}{{/if}}" 
                  alt="{{document.name}}" 
                  onerror="this.src='{{defaultImage}}'">
+                             {{#if (and isGM userImage)}}
+                     <i class="fas fa-times-circle cc-remove-image" data-sound-id="{{id}}" title="Remove Image" data-action="cc-remove-image"></i>
+            {{/if}}
           </div>
           
           <h1 class="sheet-title">{{document.name}}</h1>

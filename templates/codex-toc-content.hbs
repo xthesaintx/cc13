@@ -1,14 +1,15 @@
-<section class="campaign-codex-toc-app scrollable tab{{#if tab.active}} active{{/if}}" data-group="{{tab.group}}" data-tab="{{tab.id}}">
+<section class="campaign-codex-toc-app scrollable tab{{#if tab.active}} active{{/if}}" {{#if tab.active}} active{{/if}} data-group="{{tab.group}}" data-tab="{{tab.id}}">
+
+
   {{#if tab.create}}<i class="fas fa-circle-plus cc-create" data-action="createSheet" data-group="{{tab.group}}" data-type="{{tab.type}}"  title="Create {{tab.title}} sheet"></i>{{/if}}
 
     {{#if hasContent}}
         <ul class="cc-toc-journal-list">
             {{#each items}}
             {{#if this.canView}}
-                <li class="document entry journalentry directory-item" draggable="true" data-drag="true" data-entry-id="{{this.id}}">
+                <li class="document entry journalentry directory-item" draggable="true" data-drag="true" data-entry-id="{{this.id}}" data-name="{{this.name}}">
                     
-                        <i class="{{getAsset 'icon' ../tab.type}}"></i> <a data-action="openDocument" data-uuid="{{this.uuid}}" >{{this.name}}
-                    </a>
+                        <i class="{{getAsset 'icon' ../tab.type}}"></i> <a data-action="openDocument" data-uuid="{{this.uuid}}" >{{this.name}}</a>
 
                  {{#if (and this.quests this.questsvisible)}}<i class ="fas fa-scroll"></i>{{else}}<span></span>{{/if}}                 
                  {{#if ../isGM}}<i class ="fa {{this.ownershipIcon}}" data-action="changeDefaultOwnership" data-uuid="{{this.uuid}}" data-ownership="{{this.ownershipLevel}}"></i>{{/if}} 
@@ -22,6 +23,3 @@
 
 </section>
 
-<!-- <li class="directory-item entry document journalentry flexrow" data-entry-id="YS8VioRjKYinHkko" draggable="true" style="display: flex;">
-                <a class="entry-name ellipsis" data-action="activateEntry" data-cursor="" style="cursor: var(--cursor-pointer-down);">Adult Black Dragon - Journal</a>
-            </li> -->

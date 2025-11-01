@@ -1,0 +1,11 @@
+<div class="form-body scrollable" >
+    {{#each fieldsets as |fieldset|}}
+    <fieldset>
+        <legend>{{fieldset.legend}}</legend>
+        {{#each fieldset.fields as |f|}}
+            {{formField f.field value=f.value readonly=f.readonly}}
+        {{/each}}
+    </fieldset>
+    {{/each}}
+</div>
+

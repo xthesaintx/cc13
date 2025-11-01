@@ -2,12 +2,18 @@
   "id": "campaign-codex",
   "title": "Campaign Codex",
   "version": "",
+  "scripts": ["scripts/jszip.min.js"],
   "esmodules": ["scripts/main.js"],
   "languages": [
     {
       "lang": "en",
       "name": "English",
       "path": "lang/en.json"
+    },
+    {
+      "lang": "fr",
+      "name": "Français",
+      "path": "lang/fr.json"
     }
   ],
   "compatibility": {

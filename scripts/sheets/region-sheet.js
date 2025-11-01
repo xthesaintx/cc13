@@ -43,6 +43,7 @@ export class RegionSheet extends CampaignCodexBaseSheet {
       rawRegions,
       rawLocations,
       rawNPCs,
+      regionNPCs,
       rawShops,
       rawdirectShops,
       rawShopNPCs,
@@ -54,6 +55,7 @@ export class RegionSheet extends CampaignCodexBaseSheet {
       CampaignCodexLinkers.getLinkedRegions(this.document, regionUuids, true),
       CampaignCodexLinkers.getLinkedLocations(this.document, locationUuids),
       CampaignCodexLinkers.getAllNPCs(locationUuids),
+      CampaignCodexLinkers.getAllNPCs(regionUuids),
       CampaignCodexLinkers.getAllShops(locationUuids),
       CampaignCodexLinkers.getLinkedShops(this.document, shopUuids),
       CampaignCodexLinkers.getShopNPCs(this.document, regionData.linkedShops),
@@ -61,7 +63,7 @@ export class RegionSheet extends CampaignCodexBaseSheet {
       this.constructor.canUserView(regionData.parentRegion),
     ]);
     
-    return { regionData, parentRegion, rawLinkedNPCs, rawRegions, rawLocations, rawNPCs, rawShops, rawdirectShops, rawShopNPCs, linkedScene, canViewScene, canViewRegion };
+    return { regionData, parentRegion, rawLinkedNPCs, rawRegions, rawLocations, rawNPCs, regionNPCs, rawShops, rawdirectShops, rawShopNPCs, linkedScene, canViewScene, canViewRegion };
   }
 
   async getData() {
@@ -69,7 +71,7 @@ export class RegionSheet extends CampaignCodexBaseSheet {
     if (!this._processedData) {
       this._processedData = await this._processRegionData();
     }
-    const { regionData, parentRegion, rawLinkedNPCs, rawRegions, rawLocations, rawNPCs, rawShops, rawdirectShops, rawShopNPCs, linkedScene, canViewScene, canViewRegion } = this._processedData;
+    const { regionData, parentRegion, rawLinkedNPCs, rawRegions, rawLocations, rawNPCs, regionNPCs, rawShops, rawdirectShops, rawShopNPCs, linkedScene, canViewScene, canViewRegion } = this._processedData;
     
     // --- Assign fetched data ---
     data.parentRegion = parentRegion;
@@ -83,7 +85,7 @@ export class RegionSheet extends CampaignCodexBaseSheet {
     data.canViewScene = canViewScene;
     data.linkedRegions = rawRegions;
     data.canViewRegion = canViewRegion;
-
+    data.regionNPCs = regionNPCs,
     // --- Basic Sheet Info ---
     data.sheetType = "region";
     if (data.sheetTypeLabelOverride !== undefined && data.sheetTypeLabelOverride !== "") {
@@ -112,6 +114,11 @@ export class RegionSheet extends CampaignCodexBaseSheet {
     const directEntryUuids = new Set(data.shopNPCsWithoutTaggedNPCsnoDirect.map((npc) => npc.uuid));
     data.shopNPCsWithoutTaggedNPCsnoDirectnoShop = data.allNPCsWithoutTaggedNPCsnoDirect.filter((associate) => !directEntryUuids.has(associate.uuid));
 
+    // region npcs
+    const filteredRegioiNPCs = data.regionNPCs.filter((associate) => !directUuids.has(associate.uuid));
+    data.regionNPCsProcessed = filteredRegioiNPCs.filter((npc) => npc.tag !== true);
+
+
     // --- UI Component Data ---
     data.tabs = [
       { key: "info", label: localize("names.info"), icon: "fas fa-info-circle" },
@@ -131,7 +138,7 @@ export class RegionSheet extends CampaignCodexBaseSheet {
         key: "npcs",
         label: localize("names.npcs"),
         icon: TemplateComponents.getAsset("icon", "npc"),
-        statistic: { value: data.linkedNPCsWithoutTaggedNPCs.length + data.shopNPCsWithoutTaggedNPCsnoDirect.length + data.shopNPCsWithoutTaggedNPCsnoDirectnoShop.length, view:data.linkedNPCsWithoutTaggedNPCs.length + data.shopNPCsWithoutTaggedNPCsnoDirect.length + data.shopNPCsWithoutTaggedNPCsnoDirectnoShop.length >0 },
+        statistic: { value: data.linkedNPCsWithoutTaggedNPCs.length  + data.regionNPCsProcessed.length  + data.shopNPCsWithoutTaggedNPCsnoDirect.length + data.shopNPCsWithoutTaggedNPCsnoDirectnoShop.length, view:data.linkedNPCsWithoutTaggedNPCs.length + data.shopNPCsWithoutTaggedNPCsnoDirect.length + data.shopNPCsWithoutTaggedNPCsnoDirectnoShop.length + data.regionNPCsProcessed.length >0 },
       },
       {
         key: "shops",
@@ -248,6 +255,8 @@ export class RegionSheet extends CampaignCodexBaseSheet {
   async _handleDrop(data, event) {
     if (data.type === "Scene") {
       await this._handleSceneDrop(data, event);
+    } else if (data.type === "Item") {
+      await this._handleItemDrop(data, event);
     } else if (data.type === "JournalEntry" || data.type === "JournalEntryPage") {
       await this._handleJournalDrop(data, event);
     } else if (data.type === "Actor") {
@@ -359,6 +368,10 @@ export class RegionSheet extends CampaignCodexBaseSheet {
       content += `<div class="npc-section"><h3><i class="${TemplateComponents.getAsset("icon", "shop")}"></i> ${localize("names.shop")} ${localize("names.npcs")}</h3>${TemplateComponents.entityGrid(directShopNPCs, "npc", true, true)}</div>`;
     }
 
+    if (data.regionNPCsProcessed.length > 0) {
+      content += `<div class="npc-section"><h3><i class="${TemplateComponents.getAsset("icon", "region")}"></i>${localize("names.region")} ${localize("names.npcs")}</h3>${TemplateComponents.entityGrid(data.regionNPCsProcessed, "npc", true, true)}</div>`;
+    }
+
     if (locationNPCs.length > 0) {
       content += `<div class="npc-section"><h3><i class="${TemplateComponents.getAsset("icon", "location")}"></i>${localize("names.location")} ${localize("names.npcs")}</h3>${TemplateComponents.entityGrid(locationNPCs, "npc", true, true)}</div>`;
     }
@@ -366,7 +379,7 @@ export class RegionSheet extends CampaignCodexBaseSheet {
     if (locationShopNPCs.length > 0) {
       content += `<div class="npc-section"><h3><i class="${TemplateComponents.getAsset("icon", "shop")}"></i> ${localize("names.location")} - ${localize("names.shop")} ${localize("names.npcs")}</h3>${TemplateComponents.entityGrid(locationShopNPCs, "npc", true, true)}</div>`;
     }
-    if (data.linkedNPCsWithoutTaggedNPCs.length + directShopNPCs.length + locationNPCs.length + locationShopNPCs.length === 0) {
+    if (data.linkedNPCsWithoutTaggedNPCs.length + directShopNPCs.length + locationNPCs.length + locationShopNPCs.length +data.regionNPCsProcessed.length === 0) {
       content = TemplateComponents.emptyState("npc");
     }
     return content;

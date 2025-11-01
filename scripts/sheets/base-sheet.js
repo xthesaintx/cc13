@@ -1,6 +1,6 @@
 import { CampaignCodexLinkers } from "./linkers.js";
 import { TemplateComponents } from "./template-components.js";
-import { localize, format, promptForName } from "../helper.js";
+import { localize, format, promptForName, confirmationDialog } from "../helper.js";
 
 export class CampaignCodexBaseSheet extends foundry.appv1.sheets.JournalSheet {
   // =========================================================================
@@ -101,8 +101,17 @@ async _render(force, options) {
     data.isOwnerOrHigher = this.constructor.isOwnerOrHigher(this.document);
     data.showStats = game.settings.get("campaign-codex", "showStats");
     data.sheetTypeLabelOverride = sheetData.sheetTypeLabelOverride;
+    const imagePath = this.document.getFlag("campaign-codex", "image") || null;
+    data.userImage = !!imagePath && typeof imagePath === 'string' && imagePath.trim() !== "";
+    
 
-    const allTags = await game.campaignCodex.getTagCache();
+    // const allTags = await game.campaignCodex.getTagCache();
+    let allTags = []; 
+    if (typeof game.campaignCodex?.getTagCache === 'function') {
+        allTags = await game.campaignCodex.getTagCache();
+    } else {
+        console.warn("Campaign Codex | getTagCache() was not available during _prepareContext. Proceeding with empty tags.");
+    }
     const linkedTagUuids = this.object.getFlag("campaign-codex", "data")?.associates || this.object.getFlag("campaign-codex", "data")?.linkedNPCs || [];
     const isThisDocATag = this.object.getFlag("campaign-codex", "data")?.tagMode;
     data.existingTags = allTags.filter(tag => {
@@ -207,6 +216,27 @@ async _render(force, options) {
         });
     });
 
+  // --- Listeners for multiple elements with simple click handlers ---
+    const multiActionMap = {
+      ".remove-quest-item": this._onRemoveQuestItem,
+      ".open-item": this._onOpenItem,
+      ".send-to-player": this._onSendToPlayer,      
+    };
+
+    // for (const [selector, handler] of Object.entries(multiActionMap)) {
+    //   nativeHtml.querySelectorAll(selector).forEach((el) => el.addEventListener("click", handler.bind(this)));
+    // }
+
+          nativeHtml.querySelector('.cc-remove-image')?.addEventListener('click', this._onRemoveImage.bind(this));
+
+
+    for (const [selector, handler] of Object.entries(multiActionMap)) {
+      nativeHtml.querySelectorAll(selector).forEach((el) => {el.addEventListener("click", async (e) => {e.stopPropagation();
+          await handler.call(this, e);
+        });
+      });
+    }
+
     if (!game.user.isGM) {
       const safeButtons = nativeHtml.querySelectorAll('[class*="open-"], .btn-expand-all, .btn-collapse-all, [class*="toggle-tree-"], .filter-btn');
       safeButtons.forEach((button) => {
@@ -306,14 +336,10 @@ async _render(force, options) {
       }
     }
 
-  /**
-   * Activates event listeners for quest objectives.
-   * @param {HTMLElement} html The sheet's HTML element.
-   */
   _activateObjectiveListeners(html) {
     if (!game.user.isGM) return;
 
-    html.querySelectorAll('.add-objective').forEach(el => {
+    html.querySelectorAll('.add-objective, .add-sub-objective').forEach(el => {
       el.addEventListener('click', this._onAddObjective.bind(this));
     });
 
@@ -333,8 +359,26 @@ async _render(force, options) {
       list.addEventListener('blur', this._onObjectiveTextSave.bind(this), true);
       list.addEventListener('keypress', this._onObjectiveTextSave.bind(this), true);
     });
-  }
 
+    html.querySelectorAll('.objective-item').forEach(el => {
+      el.setAttribute('draggable', true);
+      el.addEventListener('dragstart', this._onObjectiveDragStart.bind(this));
+      el.addEventListener('dragenter', this._onObjectiveDragEnter.bind(this));
+      el.addEventListener('dragleave', this._onObjectiveDragLeave.bind(this));
+      el.addEventListener('dragover', this._onObjectiveDragOver.bind(this));
+      el.addEventListener('drop', this._onObjectiveDrop.bind(this));
+      el.addEventListener('dragend', this._onObjectiveDragEnd.bind(this));
+    });
+
+    // // Add Drag and Drop listeners for objectives
+    // html.querySelectorAll('.objective-item').forEach(el => {
+    //   el.setAttribute('draggable', true);
+    //   el.addEventListener('dragstart', this._onObjectiveDragStart.bind(this));
+    //   el.addEventListener('dragover', this._onObjectiveDragOver.bind(this));
+    //   el.addEventListener('drop', this._onObjectiveDrop.bind(this));
+    //   el.addEventListener('dragend', this._onObjectiveDragEnd.bind(this));
+    // });
+  }
 
   _activateQuestListeners(html) {
     if (game.user.isGM) {
@@ -416,7 +460,13 @@ async _render(force, options) {
         }
     }
   }
-
+async _onRemoveImage(event){
+    const proceed = await confirmationDialog("Are you sure you want to remove this image?");
+    if (proceed){await this.document.setFlag("campaign-codex", "image", null);
+    }
+this.render(true)
+  }
+  
 _onToggleTags(event) {
     event.preventDefault();
     const sheetElement = event.currentTarget.closest('.campaign-codex');
@@ -454,61 +504,52 @@ _onToggleTags(event) {
     }
     this.render(false);
   }
-  // async _linkTagToSheet(tagUuid) {
-  //   const myDoc = this.document;
-  //   const myData = myDoc.getFlag("campaign-codex", "data") || {};
-  //   const myType = myDoc.getFlag("campaign-codex", "type");
-  //   let listName;
 
-  //   switch (myType) {
-  //       case 'npc':
-  //           listName = 'associates';
-  //           break;
-  //       case 'location':
-  //       case 'region':
-  //       case 'shop':
-  //           listName = 'linkedNPCs';
-  //           break;
-  //       default:
-  //           return;
-  //   }
-
-  //   if (!myData[listName]) {
-  //       myData[listName] = [];
-  //   }
-  //   if (!myData[listName].includes(tagUuid)) {
-  //       myData[listName].push(tagUuid);
-  //       await myDoc.setFlag("campaign-codex", "data", myData);
-  //       this.render(false);
-  //   }
-  // }
-
-
-  /**
-   * Handle adding a new objective to a quest.
-   * @param {MouseEvent} event The triggering click event.
-   */
   async _onAddObjective(event) {
     event.preventDefault();
+    event.stopPropagation();
     const questId = event.currentTarget.dataset.questId;
+    const parentId = event.currentTarget.dataset.parentId; // Will be undefined for top-level objectives
     const currentData = this.document.getFlag("campaign-codex", "data") || {};
     const quests = foundry.utils.deepClone(currentData.quests || []);
     const quest = quests.find(q => q.id === questId);
     if (!quest) return;
 
-    quest.objectives = quest.objectives || [];
-    quest.objectives.push({
+    const newObjective = {
       id: foundry.utils.randomID(),
       text: "New Objective",
       completed: false,
       visible: false,
-    });
+      objectives: [] // For sub-objectives
+    };
+
+    if (parentId) {
+      // This is a sub-objective
+      const findParent = (objectives) => {
+        for (const obj of objectives) {
+          if (obj.id === parentId) return obj;
+          const found = findParent(obj.objectives || []);
+          if (found) return found;
+        }
+        return null;
+      };
+      const parentObjective = findParent(quest.objectives || []);
+      if (parentObjective) {
+        parentObjective.objectives = parentObjective.objectives || [];
+        parentObjective.objectives.push(newObjective);
+      }
+    } else {
+      // This is a top-level objective
+      quest.objectives = quest.objectives || [];
+      quest.objectives.push(newObjective);
+    }
 
     await this.document.setFlag("campaign-codex", "data.quests", quests);
     this.render(true);
   }
 
-  /**
+
+/**
    * Handle removing an objective from a quest.
    * @param {MouseEvent} event The triggering click event.
    */
@@ -521,13 +562,24 @@ _onToggleTags(event) {
     const quest = quests.find(q => q.id === questId);
     if (!quest || !quest.objectives) return;
 
-    quest.objectives = quest.objectives.filter(o => o.id !== objectiveId);
+    const findAndRemove = (objectives) => {
+        for (let i = 0; i < objectives.length; i++) {
+            if (objectives[i].id === objectiveId) {
+                objectives.splice(i, 1);
+                return true;
+            }
+            if (findAndRemove(objectives[i].objectives || [])) return true;
+        }
+        return false;
+    };
+
+    findAndRemove(quest.objectives);
 
     await this.document.setFlag("campaign-codex", "data.quests", quests);
     this.render(true);
   }
 
-  /**
+/**
    * Handle updating a boolean field on an objective (e.g., 'completed' or 'visible').
    * @param {MouseEvent} event The triggering click event.
    */
@@ -538,15 +590,24 @@ _onToggleTags(event) {
     const quests = foundry.utils.deepClone(currentData.quests || []);
     const quest = quests.find(q => q.id === questId);
     if (!quest || !quest.objectives) return;
-    const objective = quest.objectives.find(o => o.id === objectiveId);
-    if (!objective) return;
 
-    // Toggle the boolean value
-    objective[field] = !objective[field];
+    const findAndUpdate = (objectives) => {
+      for (const obj of objectives) {
+        if (obj.id === objectiveId) {
+          obj[field] = !obj[field];
+          return true;
+        }
+        if (findAndUpdate(obj.objectives || [])) return true;
+      }
+      return false;
+    };
+
+    findAndUpdate(quest.objectives);
 
     await this.document.setFlag("campaign-codex", "data.quests", quests);
     this.render(true);
   }
+
 
   /**
    * Handle clicking on an objective's text to make it editable.
@@ -567,8 +628,7 @@ _onToggleTags(event) {
     input.focus();
     input.select();
   }
-
-  /**
+ /**
    * Handle saving the edited objective text when the input loses focus or Enter is pressed.
    * @param {FocusEvent|KeyboardEvent} event The triggering event.
    */
@@ -584,19 +644,125 @@ _onToggleTags(event) {
     const quests = foundry.utils.deepClone(currentData.quests || []);
     const quest = quests.find(q => q.id === questId);
     if (!quest) return;
-    const objective = quest.objectives.find(o => o.id === objectiveId);
-    if (!objective) return;
 
-    // Only update if the text has changed
-    if (newText && objective.text !== newText) {
-      objective.text = newText;
+    const findAndUpdate = (objectives) => {
+      for (const obj of objectives) {
+        if (obj.id === objectiveId) {
+          obj.text = newText;
+          return true;
+        }
+        if (findAndUpdate(obj.objectives || [])) return true;
+      }
+      return false;
+    };
+
+    if (newText) {
+      findAndUpdate(quest.objectives);
       await this.document.setFlag("campaign-codex", "data.quests", quests);
     }
 
-    // We must re-render to replace the input with a span correctly
     this.render();
   }
 
+  // // --- Drag and Drop Methods for Objectives ---
+_onObjectiveDragStart(event) {
+    event.stopPropagation(); 
+    const questId = event.currentTarget.dataset.questId;
+    const objectiveId = event.currentTarget.dataset.objectiveId;
+    event.dataTransfer.setData("text/plain", JSON.stringify({ questId, objectiveId }));
+    event.currentTarget.classList.add("dragging");
+  }
+
+  _onObjectiveDragEnter(event) {
+    event.preventDefault();
+    const target = event.currentTarget;
+    const rect = target.getBoundingClientRect();
+    const midY = rect.top + (rect.height / 2);
+    if (event.clientY < midY) {
+      target.classList.add("drag-over-top");
+    } else {
+      target.classList.add("drag-over-bottom");
+    }
+  }
+
+  _onObjectiveDragLeave(event) {
+    event.preventDefault();
+    event.currentTarget.classList.remove("drag-over-top", "drag-over-bottom");
+  }
+
+  _onObjectiveDragOver(event) {
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "move";
+    const target = event.currentTarget;
+    // Clear existing classes before adding new one to prevent flickering
+    target.classList.remove("drag-over-top", "drag-over-bottom");
+    const rect = target.getBoundingClientRect();
+    const midY = rect.top + (rect.height / 2);
+    if (event.clientY < midY) {
+      target.classList.add("drag-over-top");
+    } else {
+      target.classList.add("drag-over-bottom");
+    }
+  }
+
+  async _onObjectiveDrop(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    const dragData = JSON.parse(event.dataTransfer.getData("text/plain"));
+    const dropTarget = event.currentTarget;
+    const insertBefore = dropTarget.classList.contains("drag-over-top");
+    dropTarget.classList.remove("drag-over-top", "drag-over-bottom");
+
+    const questId = dropTarget.dataset.questId;
+    const targetId = dropTarget.dataset.objectiveId;
+
+    if (dragData.questId !== questId || dragData.objectiveId === targetId) return;
+
+    const currentData = this.document.getFlag("campaign-codex", "data") || {};
+    const quests = foundry.utils.deepClone(currentData.quests || []);
+    const quest = quests.find(q => q.id === questId);
+    if (!quest) return;
+
+    let draggedObjective = null;
+    const findAndRemove = (objectives) => {
+        for (let i = 0; i < objectives.length; i++) {
+            if (objectives[i].id === dragData.objectiveId) {
+                [draggedObjective] = objectives.splice(i, 1);
+                return true;
+            }
+            if (findAndRemove(objectives[i].objectives || [])) return true;
+        }
+        return false;
+    };
+    findAndRemove(quest.objectives);
+
+    if (!draggedObjective) return;
+
+    const findAndInsert = (objectives) => {
+        for (let i = 0; i < objectives.length; i++) {
+            if (objectives[i].id === targetId) {
+                const insertIndex = insertBefore ? i : i + 1;
+                objectives.splice(insertIndex, 0, draggedObjective);
+                return true;
+            }
+            if (findAndInsert(objectives[i].objectives || [])) return true;
+        }
+        return false;
+    };
+
+    if (!findAndInsert(quest.objectives)) {
+        quest.objectives.push(draggedObjective);
+    }
+
+    await this.document.setFlag("campaign-codex", "data.quests", quests);
+    this.render(true);
+  }
+
+  _onObjectiveDragEnd(event) {
+    event.currentTarget.classList.remove("dragging");
+    // Clean up any lingering drag-over classes on all items
+    document.querySelectorAll('.objective-item').forEach(el => el.classList.remove('drag-over-top', 'drag-over-bottom'));
+  }
 
   _onQuestTitleEdit(event) {
     const titleElement = event.currentTarget;
@@ -609,9 +775,9 @@ _onToggleTags(event) {
       }
       });
     input.type = "text";
-    input.className = "quest-title-input"; // Use a specific class for the input
+    input.className = "quest-title-input"; 
     input.value = titleElement.textContent.trim();
-    input.dataset.questId = titleElement.dataset.questId; // Carry over the ID
+    input.dataset.questId = titleElement.dataset.questId; 
 
     titleElement.replaceWith(input);
     input.focus();
@@ -638,7 +804,7 @@ _onToggleTags(event) {
     titleElement.className = "quest-title quest-input-title";
     titleElement.dataset.questId = questId;
     titleElement.dataset.editable = "true";
-    titleElement.textContent = quest ? quest.title : 'New Quest'; // Fallback text
+    titleElement.textContent = quest ? quest.title : 'New Quest'; 
 
     input.replaceWith(titleElement);
     titleElement.addEventListener('click', this._onQuestTitleEdit.bind(this));
@@ -667,10 +833,13 @@ _onToggleTags(event) {
     event.stopPropagation();
     const questId = event.currentTarget.dataset.questId;
     const currentData = this.document.getFlag("campaign-codex", "data") || {};
-    let quests = currentData.quests || [];
-    quests = quests.filter(q => q.id !== questId);
-    await this.document.setFlag("campaign-codex", "data.quests", quests);
-    this.render(true);
+    const proceed = await confirmationDialog("Are you sure you want to delete this quest?");
+    if (proceed){
+      let quests = currentData.quests || [];
+      quests = quests.filter(q => q.id !== questId);
+      await this.document.setFlag("campaign-codex", "data.quests", quests);
+      this.render(true);
+    }
   }
 
   async _onUpdateQuest(event) {
@@ -797,6 +966,7 @@ _onToggleTags(event) {
     nameElement.textContent = this.document.name;
     input.replaceWith(nameElement);
     nameElement.addEventListener("click", this._onNameEdit.bind(this));
+    if(this.document.getFlag("campaign-codex", "data")?.tagMode) {game.campaignCodex.updateTagInCache(this.document);}
   }
 
   async _onNameKeypress(event) {
@@ -856,8 +1026,8 @@ _onToggleTags(event) {
 
   async _onRemoveFromList(event, listName) {
     await this._saveFormData();
-
-    const itemUuid = event.currentTarget.dataset[Object.keys(event.currentTarget.dataset)[0]];
+    const itemUuid = event.target.dataset[Object.keys(event.target.dataset)[0]];
+    // const itemUuid = event.currentTarget.dataset[Object.keys(event.currentTarget.dataset)[0]];
     const myDoc = this.document;
     const myData = myDoc.getFlag("campaign-codex", "data") || {};
     const myType = myDoc.getFlag("campaign-codex", "type");
@@ -943,7 +1113,7 @@ _onToggleTags(event) {
     event.stopPropagation(); 
     await this._saveFormData();
 
-    const journalUuid = event.currentTarget.dataset.journalUuid;
+    const journalUuid = event.target.dataset.journalUuid;
     if (!journalUuid) return;
 
     const currentData = this.document.getFlag("campaign-codex", "data") || {};
@@ -1003,7 +1173,7 @@ _onToggleTags(event) {
       if (regionUuid) regionDoc = await fromUuid(regionUuid);
     } else if (myType === "region") {
       regionDoc = this.document;
-      const locationUuid = event.currentTarget.dataset.locationUuid;
+      const locationUuid = event.target.dataset.locationUuid;
       if (locationUuid) locationDoc = await fromUuid(locationUuid);
     }
 
@@ -1230,6 +1400,127 @@ _onToggleTags(event) {
   }
 
   // =========================================================================
+  // helper functions
+  // =========================================================================
+  async _onRemoveQuestItem(event) {
+    event.stopPropagation();
+    const { questId, itemUuid } = event.currentTarget.dataset;
+    const currentData = this.document.getFlag("campaign-codex", "data") || {};
+    const quests = foundry.utils.deepClone(currentData.quests || []);
+    const quest = quests.find(q => q.id === questId);
+
+    if (quest) {
+      quest.inventory = (quest.inventory || []).filter((i) => i.itemUuid !== itemUuid);
+      await this.document.setFlag("campaign-codex", "data.quests", quests);
+      this.render(true);
+    }
+  }
+
+  async _transferItemToActor(item, targetActor, document) {
+    try {
+      const itemData = item.toObject();
+      delete itemData._id;
+
+      const currentData = document.getFlag("campaign-codex", "data") || {};
+      const inventory = currentData.inventory || [];
+      const shopItem = inventory.find((i) => i.itemUuid === item.uuid);
+      const quantity = shopItem ? shopItem.quantity : 1;
+
+      itemData.system.quantity = Math.min(quantity, 1);
+
+      await targetActor.createEmbeddedDocuments("Item", [itemData]);
+
+      if (shopItem && shopItem.quantity > 0) {
+        await this._updateInventoryItem(item.uuid, {
+          quantity: shopItem.quantity - 1,
+        });
+      }
+
+      ui.notifications.info(format("title.send.item.typetoplayer", { type: item.name, player: targetActor.name }));
+
+      const targetUser = game.users.find((u) => u.character?.id === targetActor.id);
+      if (targetUser && targetUser.active) {
+        ChatMessage.create({
+          content: `<p><strong>${game.user.name}</strong> sent you <strong>${item.name}</strong> from ${document.name}!</p>`,
+          whisper: [targetUser.id],
+        });
+      }
+    } catch (error) {
+      console.error("Error transferring item:", error);
+      ui.notifications.error(localize("error.faileditem"));
+    }
+  }
+
+  async _handleItemDrop(data, event) {
+  if (!data.uuid) {
+    ui.notifications.warn("Could not find item to add to entry");
+    return;
+  }
+  const item = await fromUuid(data.uuid);
+  if (!item) {
+    ui.notifications.warn("Could not find item to add to entry");
+    return;
+  }
+  const currentData = this.document.getFlag("campaign-codex", "data") || {};
+  // Quest Item
+  const dropOnQuest = event.target.closest('.quest-item');
+  if (dropOnQuest) {
+    const questId = dropOnQuest.dataset.questId;
+    const quests = foundry.utils.deepClone(currentData.quests || []);
+    const quest = quests.find(q => q.id === questId);
+      if (quest) {
+          quest.inventory = quest.inventory || [];
+          if (quest.inventory.find((i) => i.itemUuid === item.uuid)) {
+              ui.notifications.warn("Item already exists in this quest's inventory!");
+              return;
+          }
+          quest.inventory.push({ itemUuid: item.uuid, quantity: 1, customPrice: null });
+          await this.document.setFlag("campaign-codex", "data.quests", quests);
+          this.render(true);
+          ui.notifications.info(`Added "${item.name}" to quest "${quest.title}"`);
+        }
+    } else{
+  // inventory
+  const inventory = currentData.inventory || [];
+  if (inventory.find((i) => i.itemUuid === item.uuid)) {
+    ui.notifications.warn("Item already exists in inventory!");
+    return;
+  }
+  await game.campaignCodex.addItemToShop(this.document, item, 1);
+  this.render(true);
+  ui.notifications.info(format("inventory.added", { type: item.name }));
+  }
+  }
+
+  async _onOpenItem(event) {
+    event.stopPropagation();
+    const itemUuid = event.currentTarget.dataset.itemUuid;
+    const item = (await fromUuid(itemUuid)) || game.items.get(itemUuid);
+
+    if (item) {
+      item.sheet.render(true);
+    } else {
+      ui.notifications.warn("Item not found in world items");
+    }
+  }
+  
+  async _onSendToPlayer(event) {
+    event.stopPropagation();
+    const itemUuid = event.currentTarget.dataset.itemUuid;
+    const item = (await fromUuid(itemUuid)) || game.items.get(itemUuid);
+
+    if (!item) {
+      ui.notifications.warn("Item not found");
+      return;
+    }
+
+    TemplateComponents.createPlayerSelectionDialog(item.name, async (targetActor) => {
+      await this._transferItemToActor(item, targetActor, this.document);
+    });
+  }
+
+
+  // =========================================================================
   // Methods for Subclass Overrides
   // =========================================================================
 
@@ -1253,4 +1544,10 @@ _onToggleTags(event) {
   getSheetType() {
     return "base";
   }
+
+
 }
+
+
+
+

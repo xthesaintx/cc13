@@ -50,6 +50,54 @@ export const getButtonGrouphead = () => `
     </div>
 `;
 
+
+/**
+ * Handles the conversion of a standard journal to a Campaign Codex sheet.
+ * @param {object} journal - The journal entry being updated.
+ * @param {object} changed - The data being changed in the update.
+ */
+export async function handleJournalConversion(journal, changed) {
+    const originalSheetClass = journal.flags?.core?.sheetClass || "";
+    const newSheetClass = changed.flags?.core?.sheetClass;
+
+    if (!newSheetClass || !newSheetClass.startsWith('campaign-codex.') || originalSheetClass.startsWith('campaign-codex.')) {
+        return;
+    }
+    if (journal.getFlag("campaign-codex", "converted")) {
+        return;
+    }
+    const textPages = journal.pages.filter(p => p.type === 'text' && p.text.content);
+    if (textPages.length === 0) {
+        return;
+    }
+    const proceed = await confirmationDialog(
+        `Do you want to import the existing text content from "${journal.name}" into the Campaign Codex description?`
+    );
+    if (proceed) {
+        const combinedContent = textPages.map(p => `<h2>${p.name}</h2>\n${p.text.content}`).join('\n<hr>\n');
+        if (!journal.flags["campaign-codex"]) {
+            journal.flags["campaign-codex"] = {};
+        }
+        if (!journal.flags["campaign-codex"].data) {
+            journal.flags["campaign-codex"].data = {};
+        }
+        journal.flags["campaign-codex"].data.description += combinedContent;
+        // journal.flags["campaign-codex"].data.converted = true;
+    }
+    journal.render();
+}
+
+
+
+export async function confirmationDialog(message = "Are you sure?"){
+    const proceed = await foundry.applications.api.DialogV2.confirm({
+        content: message,
+        rejectClose: false,
+        modal: true
+    });
+    return proceed;
+}
+
 /**
  * Handles clicks on elements with data-campaign-codex-handler attributes.
  * Parses the attribute value to determine the action and arguments.
@@ -214,7 +262,7 @@ export function getFolderColor(type) {
  * @param {string} type - The type of the Campaign Codex entry.
  * @returns {Folder|null} The Foundry Folder object or null if not found/disabled.
  */
-export function getCampaignCodexFolder(type) {
+export function getCampaignCodexFolder(type, currentFolder =[]) {
     if (!game.settings.get("campaign-codex", "useOrganizedFolders"))
         return null;
 
@@ -228,6 +276,14 @@ export function getCampaignCodexFolder(type) {
     };
 
     const folderName = folderNames[type];
+    if (!folderName) return null;
+        if (currentFolder) {
+            const isSelf = currentFolder.name === folderName;
+            const isAncestor = currentFolder.ancestors.some(a => a.name === folderName);
+            if (isSelf || isAncestor) {
+            return null;
+            }
+    }
     return game.folders.find(
         (f) => f.name === folderName && f.type === "JournalEntry",
     );
@@ -496,4 +552,111 @@ export function applyThemeColors() {
         document.head.appendChild(styleElement);
     }
     styleElement.innerHTML = `.campaign-codex { ${cssOverrides} }`;
+    applyTocButtonStyle();
+}
+
+export function applyTocButtonStyle() {
+    let useStyled = game.settings.get("campaign-codex", "useStyledTocButton");
+
+    const styleId = 'cc-toc-button-style-override';
+    let styleElement = document.getElementById(styleId);
+    if (!styleElement) {
+        styleElement = document.createElement('style');
+        styleElement.id = styleId;
+        document.head.appendChild(styleElement);
+    }
+    const uiColor = game.settings.get("campaign-codex", "color-ui");
+    if (useStyled) {
+        styleElement.innerHTML = `
+            button.control.ui-control.layer.icon.fas.fa-closed-captioning[data-control="campaign-codex"] {
+                background: ${uiColor};
+                color: black;
+            }
+        `;
+    } else {
+        styleElement.innerHTML = `
+            button.control.ui-control.layer.icon.fas.fa-closed-captioning[data-control="campaign-codex"] {
+                background: revert-layer;
+                color: revert-layer;
+            }
+        `;
+    }
+}
+
+
+/**
+* Converts a standard Journal Entry to a Campaign Codex sheet.
+* Can be called via the API: game.campaignCodex.convertJournalToCCSheet(uuid, type, pagesToSeparateSheets)
+ * @param {string} uuid - The UUID of the Journal Entry to convert.
+ * @param {string} type - The target Campaign Codex type (e.g., "location", "npc", "region").
+ * @param {boolean} [pagesToSeparateSheets=false] - If true, creates a new sheet for each page instead of combining them.
+ * @returns {Promise<JournalEntry|Array<JournalEntry>|null>} The created journal entry (or array of entries), or null if conversion failed.
+ */
+export async function convertJournalToCCSheet(uuid, type, pagesToSeparateSheets = false) {
+    const journal = await fromUuid(uuid);
+
+    if (!journal) {
+        ui.notifications.error(`Campaign Codex | Could not find Journal Entry with UUID: ${uuid}`);
+        console.error(`Campaign Codex | Could not find Journal Entry with UUID: ${uuid}`);
+        return null;
+    }
+
+    const validTypes = ["location", "npc", "region", "shop", "group"];
+    if (!validTypes.includes(type)) {
+        ui.notifications.error(`Campaign Codex | Invalid conversion type "${type}".`);
+        console.error(`Campaign Codex | Invalid conversion type "${type}".`);
+        return null;
+    }
+
+    const textPages = journal.pages.filter(p => p.type === 'text' && p.text.content && p.text.content.trim() !== "");
+
+    const createJournal = async (name) => {
+        switch (type) {
+            case "location":
+                return await game.campaignCodex.createLocationJournal(name);
+            case "npc":
+                return await game.campaignCodex.createNPCJournal(null, name, true);
+            case "npc":
+                return await game.campaignCodex.createNPCJournal(null, name);
+            case "region":
+                return await game.campaignCodex.createRegionJournal(name);
+            case "shop":
+                return await game.campaignCodex.createShopJournal(name);
+            case "group":
+                return await game.campaignCodex.createGroupJournal(name);
+            default:
+                return null;
+        }
+    };
+
+    if (pagesToSeparateSheets) {
+        if (textPages.length === 0) {
+            ui.notifications.warn(`Journal "${journal.name}" has no text pages with content to convert.`);
+            return [];
+        }
+
+        const createdJournals = [];
+        for (const page of textPages) {
+            const newJournal = await createJournal(page.name);
+            if (newJournal) {
+                await newJournal.setFlag("campaign-codex", "data", { description: page.text.content });
+                createdJournals.push(newJournal);
+            }
+        }
+        ui.notifications.info(`Created ${createdJournals.length} new ${type} sheet(s) from the pages of "${journal.name}".`);
+        return createdJournals;
+    }
+
+    else {
+        const combinedContent = textPages.map(p => `<h2>${p.name}</h2>\n${p.text.content}`).join('\n<hr>\n');
+        const newJournal = await createJournal(journal.name);
+
+        if (newJournal) {
+            await newJournal.setFlag("campaign-codex", "data", { description: combinedContent });
+            ui.notifications.info(`Successfully created a new ${type} sheet from "${journal.name}".`);
+            newJournal.sheet.render(true);
+            return newJournal;
+        }
+        return null;
+    }
 }

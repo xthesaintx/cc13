@@ -1,3 +1,5 @@
+import { CampaignCodexLinkers } from "./sheets/linkers.js";
+
 export class CampaignCodexJournalConverter {
   /**
    * Export a Campaign Codex journal to a standard Foundry journal
@@ -5,7 +7,7 @@ export class CampaignCodexJournalConverter {
    * @param {Object} options - Export options
    * @returns {Promise<JournalEntry>} The created standard journal
    */
-  static async exportToStandardJournal(sourceJournal, options = {}) {
+static async exportToStandardJournal(sourceJournal, options = {}) {
     try {
       const ccType = sourceJournal.getFlag("campaign-codex", "type");
       if (!ccType) {
@@ -16,7 +18,7 @@ export class CampaignCodexJournalConverter {
       const ccData = sourceJournal.getFlag("campaign-codex", "data") || {};
       const customImage = sourceJournal.getFlag("campaign-codex", "image");
 
-      const content = await this._generateStandardContent(
+      const pages = await this._generateStandardContent(
         sourceJournal,
         ccType,
         ccData,
@@ -25,13 +27,7 @@ export class CampaignCodexJournalConverter {
       const standardJournalData = {
         name: options.customName || sourceJournal.name,
         img: customImage || sourceJournal.img,
-        pages: [
-          {
-            name: "Content",
-            type: "text",
-            text: { content: content, format: 1 },
-          },
-        ],
+        pages: pages,
         flags: {
           "campaign-codex": {
             exportedFrom: {
@@ -70,169 +66,228 @@ export class CampaignCodexJournalConverter {
     }
   }
 
-  static async _generateStandardContent(journal, type, data) {
-    let content = `<h1>${journal.name}</h1>\n`;
-    content += `<p><em>Exported from Campaign Codex (${type})</em></p>\n<hr>\n`;
+static async _generateAdditionalContext(data, type) {
+  if (!type) return null;
 
-    switch (type) {
-      case "location":
-        content += await this._generateLocationContent(data);
-        break;
-      case "shop":
-        content += await this._generateShopContent(data);
-        break;
-      case "npc":
-        content += await this._generateNPCContent(data);
-        break;
-      case "region":
-        content += await this._generateRegionContent(data);
-        break;
-      default:
-        content += await this._generateGenericContent(data);
-    }
-
-    return content;
+  let uuid;
+  if (type === "location") {
+    uuid = data.parentRegion;
+  } else if (type === "shop") {
+    uuid = data.linkedLocation;
+  } else if (type === "npc" && data.tagMode) {
+    return `Tag<hr>`;
   }
 
-  static async _generateLinkList(title, uuids) {
-    if (!uuids || uuids.length === 0) return "";
+  if (uuid) {
+    const uuidNameArray = await CampaignCodexLinkers.getNameFromUuids([uuid]);
+    const uuidName = uuidNameArray[0] || "";
+    return `@UUID[${uuid}]{${uuidName}}\n<hr>`;
+  }
 
-    let content = `<h2>${title}</h2>\n<ul>\n`;
+  return null;
+}
 
-    const docs = (
-      await Promise.all(uuids.map((uuid) => fromUuid(uuid)))
-    ).filter(Boolean);
+static async _generateQuestsPage(data) {
+    if (!data.quests || data.quests.length === 0) return null;
+
+    let content = ``;
+    for (const quest of data.quests) {
+        content += `<h3>${quest.title}</h3>\n`;
+        content += `${quest.description}\n`;
+      if (quest.inventory && quest.inventory.length > 0) {
+        const itemUuids = quest.inventory.map(item => item.itemUuid);
+        const questInventory = await CampaignCodexLinkers.getNameFromUuids(itemUuids || []);
+        content += `<h4>Rewards</h4>\n<ul>\n`;
+        for (const questItem of questInventory) {
+          content += `<li>${questItem}</li>\n`;
+        }
+        content += `</ul>\n`;
+        }
+        if (quest.objectives && quest.objectives.length > 0) {
+        content += `<h4>Objectives</h4>\n<ul>\n`;
+        for (const objective of quest.objectives) {
+          content += `<li>${objective.completed ? "[x]" : "[ ]"} ${objective.text}</li>\n`;
+          if (objective.objectives && objective.objectives.length > 0) {
+            content += `<ul>`;
+            for (const subobjective of objective.objectives) {
+              content += `<li>${subobjective.completed ? "[x]" : "[ ]"} ${subobjective.text}</li>\n`;
+            }
+            content += `</ul>\n`;
+          }
+        }
+        content += `</ul>\n`;
+      }
+    }
+    content += `\n`;
+    return {
+        name: "Quests",
+        type: "text",
+        text: { content: content, format: 1 },
+    };
+}
+
+
+static async _generateStandardContent(journal, type, data) {
+    const pages = [];
+    let mainContent = '';
+    const additionalContext = await this._generateAdditionalContext(data, type);
+    if (additionalContext) {
+      mainContent += additionalContext;
+    }
+    if (data.description) {
+        mainContent += `<br><hr><br>${data.description}`;
+    }
+    pages.push({
+        name: "Overview",
+        type: "text",
+        text: { content: mainContent, format: 1 },
+    });
+
+    const contentGenerators = {
+        location: this._generateLocationContent,
+        shop: this._generateShopContent,
+        npc: this._generateNPCContent,
+        region: this._generateRegionContent,
+        default: this._generateGenericContent,
+    };
+    
+    const additionalPages = await (contentGenerators[type] || contentGenerators.default).bind(this)(data);
+    pages.push(...additionalPages);
+
+    return pages;
+}
+
+
+static async _generateLinkListPage(title, uuids) {
+    if (!uuids || uuids.length === 0) return null;
+
+    let content = ``;
+    const docs = (await Promise.all(uuids.map((uuid) => fromUuid(uuid)))).filter(Boolean);
 
     for (const doc of docs) {
-      content += `<li>@UUID[${doc.uuid}]{${doc.name}}</li>\n`;
+        const tagged = doc.getFlag("campaign-codex", "data");
+        const type = doc.getFlag("campaign-codex", "type");
+        let taggedText = '';
+        if (tagged && tagged.tagMode && type === "npc") {
+            taggedText = ' [TAG]';
+        }
+        content += `<li>@UUID[${doc.uuid}]{${doc.name}}${taggedText}</li>\n`;
     }
     content += `</ul>\n\n`;
-    return content;
-  }
+
+    return {
+        name: title,
+        type: "text",
+        text: { content: content, format: 1 },
+    };
+}
 
   static async _generateLocationContent(data) {
-    let content = "";
-    if (data.description) {
-      content += `<h2>Description</h2>\n${data.description}\n\n`;
-    }
-    content += await this._generateLinkList(
-      "NPCs at this Location",
-      data.linkedNPCs,
-    );
-    content += await this._generateLinkList(
-      "Shops at this Location",
-      data.linkedShops,
-    );
+    const pages = [];
+    pages.push(await this._generateLinkListPage("NPCs", data.linkedNPCs));
+    pages.push(await this._generateLinkListPage("Shops", data.linkedShops));
+    pages.push(await this._generateQuestsPage(data));
     if (data.notes) {
-      content += `<h2>GM Notes</h2>\n${data.notes}\n\n`;
+        pages.push({
+            name: "GM Notes",
+            type: "text",
+            text: { content: `${data.notes}\n\n`, format: 1 },
+        });
     }
-    return content;
+    return pages.filter(Boolean);
   }
 
-  static async _generateShopContent(data) {
-    let content = "";
-    if (data.description) {
-      content += `<h2>Description</h2>\n${data.description}\n\n`;
-    }
-
-    if (data.linkedLocation) {
-      const location = await fromUuid(data.linkedLocation);
-      if (location) {
-        content += `<h2>Location</h2>\n<p>Located in @UUID[${location.uuid}]{${location.name}}</p>\n\n`;
-      }
-    }
+ static async _generateShopContent(data) {
+    const pages = [];
+    pages.push(await this._generateLinkListPage("NPCs", data.linkedNPCs));
+    pages.push(await this._generateQuestsPage(data));
 
     if (data.inventory && data.inventory.length > 0) {
-      content += `<h2>Shop Inventory</h2>\n`;
-      content += `<p><strong>Markup:</strong> ${data.markup || 1.0}x base price</p>\n`;
-      content += `<table style="width: 100%; border-collapse: collapse;">\n`;
-      content += `<tr style="background: #f0f0f0;"><th style="border: 1px solid #ccc; padding: 8px;">Item</th><th style="border: 1px solid #ccc; padding: 8px;">Quantity</th><th style="border: 1px solid #ccc; padding: 8px;">Price</th></tr>\n`;
+        let content = ``;
+        content += `<p><strong>Markup:</strong> ${data.markup || 1.0}x base price</p>\n`;
+        content += `<table style="width: 100%; border-collapse: collapse;">\n`;
+        content += `<tr style="background: #f0f0f0;"><th style="border: 1px solid #ccc; padding: 8px;">Item</th><th style="border: 1px solid #ccc; padding: 8px;">Quantity</th><th style="border: 1px solid #ccc; padding: 8px;">Price</th></tr>\n`;
 
-      const itemPromises = data.inventory.map((itemData) =>
-        fromUuid(itemData.itemUuid),
-      );
-      const items = (await Promise.all(itemPromises)).filter(Boolean);
+        const itemPromises = data.inventory.map((itemData) => fromUuid(itemData.itemUuid));
+        const items = (await Promise.all(itemPromises)).filter(Boolean);
 
-      for (const item of items) {
-        const itemData = data.inventory.find((i) => i.itemUuid === item.uuid);
-        const basePrice = item.system.price?.value || 0;
-        const currency = item.system.price?.denomination || "gp";
-        const finalPrice =
-          itemData.customPrice ?? basePrice * (data.markup || 1.0);
+        for (const item of items) {
+            const itemData = data.inventory.find((i) => i.itemUuid === item.uuid);
+            const basePrice = item.system.price?.value || 0;
+            const currency = item.system.price?.denomination || "gp";
+            const finalPrice = itemData.customPrice ?? basePrice * (data.markup || 1.0);
 
-        content += `<tr>`;
-        content += `<td style="border: 1px solid #ccc; padding: 8px;">@UUID[${item.uuid}]{${item.name}}</td>`;
-        content += `<td style="border: 1px solid #ccc; padding: 8px;">${itemData.quantity || 1}</td>`;
-        content += `<td style="border: 1px solid #ccc; padding: 8px;">${finalPrice.toFixed(2)} ${currency}</td>`;
-        content += `</tr>\n`;
-      }
-      content += `</table>\n\n`;
+            content += `<tr>`;
+            content += `<td style="border: 1px solid #ccc; padding: 8px;">@UUID[${item.uuid}]{${item.name}}</td>`;
+            content += `<td style="border: 1px solid #ccc; padding: 8px;">${itemData.quantity || 1}</td>`;
+            content += `<td style="border: 1px solid #ccc; padding: 8px;">${finalPrice.toFixed(2)} ${currency}</td>`;
+            content += `</tr>\n`;
+        }
+        content += `</table>\n\n`;
+        pages.push({
+            name: "Inventory",
+            type: "text",
+            text: { content: content, format: 1 },
+        });
     }
 
-    content += await this._generateLinkList("Shop Staff", data.linkedNPCs);
     if (data.notes) {
-      content += `<h2>GM Notes</h2>\n${data.notes}\n\n`;
+        pages.push({
+            name: "GM Notes",
+            type: "text",
+            text: { content: `${data.notes}\n\n`, format: 1 },
+        });
     }
-    return content;
+    return pages.filter(Boolean);
   }
 
   static async _generateNPCContent(data) {
-    let content = "";
-    if (data.linkedActor) {
-      const actor = await fromUuid(data.linkedActor);
-      if (actor) {
-        content += `<h2>Character Stats</h2>\n`;
-        content += `<p><strong>Linked Actor:</strong> @UUID[${actor.uuid}]{${actor.name}}</p>\n`;
-        const details = actor.system.details;
-        const attrs = actor.system.attributes;
-        content += `<p><strong>Race/Class:</strong> ${details?.race || "Unknown"} ${details?.class || "Unknown"}</p>\n`;
-        if (details?.level)
-          content += `<p><strong>Level:</strong> ${details.level}</p>\n`;
-        content += `\n`;
-      }
-    }
+    const pages = [];
+    pages.push(await this._generateLinkListPage("Locations", data.linkedLocations));
+    pages.push(await this._generateLinkListPage("Associated Shops", data.linkedShops));
+    pages.push(await this._generateLinkListPage("Associates & Contacts", data.associates));
+    pages.push(await this._generateQuestsPage(data));
 
-    if (data.description) {
-      content += `<h2>Description</h2>\n${data.description}\n\n`;
-    }
-    content += await this._generateLinkList("Locations", data.linkedLocations);
-    content += await this._generateLinkList(
-      "Associated Shops",
-      data.linkedShops,
-    );
-    content += await this._generateLinkList(
-      "Associates & Contacts",
-      data.associates,
-    );
     if (data.notes) {
-      content += `<h2>GM Notes</h2>\n${data.notes}\n\n`;
+        pages.push({
+            name: "GM Notes",
+            type: "text",
+            text: { content: `${data.notes}\n\n`, format: 1 },
+        });
     }
-    return content;
+    return pages.filter(Boolean);
   }
 
   static async _generateRegionContent(data) {
-    let content = "";
-    if (data.description) {
-      content += `<h2>Description</h2>\n${data.description}\n\n`;
-    }
-    content += await this._generateLinkList(
-      "Locations in this Region",
-      data.linkedLocations,
-    );
+    const pages = [];
+    pages.push(await this._generateLinkListPage("Locations", data.linkedLocations));
+    pages.push(await this._generateLinkListPage("Associated Shops", data.linkedShops));
+    pages.push(await this._generateLinkListPage("Regions", data.linkedRegions));
+    pages.push(await this._generateLinkListPage("NPCs", data.linkedNPCs));
+    pages.push(await this._generateQuestsPage(data));
     if (data.notes) {
-      content += `<h2>GM Notes</h2>\n${data.notes}\n\n`;
+        pages.push({
+            name: "GM Notes",
+            type: "text",
+            text: { content: `${data.notes}\n\n`, format: 1 },
+        });
     }
-    return content;
+    return pages.filter(Boolean);
   }
 
-  static async _generateGenericContent(data) {
-    let content = "";
-    if (data.description)
-      content += `<h2>Description</h2>\n${data.description}\n\n`;
-    if (data.notes) content += `<h2>Notes</h2>\n${data.notes}\n\n`;
-    return content;
-  }
 
+static async _generateGenericContent(data) {
+    const pages = [];
+    pages.push(await this._generateQuestsPage(data));
+    if (data.notes) {
+        pages.push({
+            name: "Notes",
+            type: "text",
+            text: { content: `${data.notes}\n\n`, format: 1 },
+        });
+    }
+    return pages.filter(Boolean);
+  }
 
 static async showExportDialog(sourceJournal) {
     const ccType = sourceJournal.getFlag("campaign-codex", "type");

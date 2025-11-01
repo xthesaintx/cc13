@@ -202,6 +202,7 @@ export class GroupSheet extends CampaignCodexBaseSheet {
     }
 
     const documentOpenMap = {
+      ".open-item": { flag: "item", handler: this._onOpenDocument },
       ".btn-open-sheet, .group-location-card": { flag: "sheet", handler: this._onOpenDocument },
       ".open-location": { flag: "location", handler: this._onOpenDocument },
       ".open-shop": { flag: "shop", handler: this._onOpenDocument },
@@ -675,7 +676,6 @@ _prepareTreeNodes(nodes, nestedData) {
         if (!shouldRender) return null; 
         const children = this._getChildrenForMember(node, nestedData);
         const processedChildren = this._prepareTreeNodes(children, nestedData); 
-
         return {
             ...node,
             isSelected: this._selectedSheet?.uuid === node.uuid,
@@ -810,14 +810,17 @@ async _generateQuestsTab(data) {
     const docData = doc.getFlag("campaign-codex", "data") || {};
     if (!docData.quests || docData.quests.length === 0) return null;
     const docType = doc.getFlag("campaign-codex", "type") || "quest";
+    const visibleQuests = game.user.isGM ? docData.quests : docData.quests.filter(q => q.visible);
+    const hideSection = !visibleQuests || visibleQuests.length === 0;
   return {
       name: doc.name,
+      hide: hideSection,
       icon: TemplateComponents.getAsset("icon", docType),
       questListHtml: await TemplateComponents.questList(doc, docData.quests, game.user.isGM, true)
     };
   });
-  const processedEntities = (await Promise.all(templateDataPromises)).filter(Boolean);
 
+  const processedEntities = (await Promise.all(templateDataPromises)).filter(Boolean);
   return renderTemplate("modules/campaign-codex/templates/partials/group-tab-quests.hbs", {
     entities: processedEntities
   });
@@ -1208,44 +1211,44 @@ async _generateLocationsTab(data) {
     });
   }
 
-  async _transferItemToActor(item, targetActor, shopDoc) {
-    try {
-      const itemData = item.toObject();
-      delete itemData._id;
+  // async _transferItemToActor(item, targetActor, shopDoc) {
+  //   try {
+  //     const itemData = item.toObject();
+  //     delete itemData._id;
 
-      const currentData = shopDoc.getFlag("campaign-codex", "data") || {};
-      const inventory = currentData.inventory || [];
-      const shopItem = inventory.find((i) => i.itemUuid === item.uuid);
-      const quantity = shopItem ? shopItem.quantity : 1;
+  //     const currentData = shopDoc.getFlag("campaign-codex", "data") || {};
+  //     const inventory = currentData.inventory || [];
+  //     const shopItem = inventory.find((i) => i.itemUuid === item.uuid);
+  //     const quantity = shopItem ? shopItem.quantity : 1;
 
-      itemData.system.quantity = Math.min(quantity, 1);
+  //     itemData.system.quantity = Math.min(quantity, 1);
 
-      await targetActor.createEmbeddedDocuments("Item", [itemData]);
+  //     await targetActor.createEmbeddedDocuments("Item", [itemData]);
 
-      if (shopItem && shopItem.quantity > 1) {
-        shopItem.quantity -= 1;
-        await shopDoc.setFlag("campaign-codex", "data", currentData);
-      } else {
-        currentData.inventory = inventory.filter((i) => i.itemUuid !== item.uuid);
-        await shopDoc.setFlag("campaign-codex", "data", currentData);
-      }
+  //     if (shopItem && shopItem.quantity > 1) {
+  //       shopItem.quantity -= 1;
+  //       await shopDoc.setFlag("campaign-codex", "data", currentData);
+  //     } else {
+  //       currentData.inventory = inventory.filter((i) => i.itemUuid !== item.uuid);
+  //       await shopDoc.setFlag("campaign-codex", "data", currentData);
+  //     }
 
-      ui.notifications.info(`Sent "${item.name}" to ${targetActor.name}`);
+  //     ui.notifications.info(`Sent "${item.name}" to ${targetActor.name}`);
 
-      const targetUser = game.users.find((u) => u.character?.id === targetActor.id);
-      if (targetUser && targetUser.active) {
-        ChatMessage.create({
-          content: `<p><strong>${game.user.name}</strong> sent you <strong>${item.name}</strong> from ${shopDoc.name}!</p>`,
-          whisper: [targetUser.id],
-        });
-      }
+  //     const targetUser = game.users.find((u) => u.character?.id === targetActor.id);
+  //     if (targetUser && targetUser.active) {
+  //       ChatMessage.create({
+  //         content: `<p><strong>${game.user.name}</strong> sent you <strong>${item.name}</strong> from ${shopDoc.name}!</p>`,
+  //         whisper: [targetUser.id],
+  //       });
+  //     }
 
-      this.render(false);
-    } catch (error) {
-      console.error("Error transferring item:", error);
-      ui.notifications.error("Failed to transfer item");
-    }
-  }
+  //     this.render(false);
+  //   } catch (error) {
+  //     console.error("Error transferring item:", error);
+  //     ui.notifications.error("Failed to transfer item");
+  //   }
+  // }
 
   async _onDropSingleNPCToMapClick(event) {
     event.preventDefault();

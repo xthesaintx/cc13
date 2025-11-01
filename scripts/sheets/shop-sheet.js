@@ -243,8 +243,8 @@ export class ShopSheet extends CampaignCodexBaseSheet {
       ".remove-location": this._onRemoveLocation,
       ".quantity-decrease": this._onQuantityDecrease,
       ".quantity-increase": this._onQuantityIncrease,
-      ".open-item": this._onOpenItem,
-      ".send-to-player": this._onSendToPlayer,
+      // ".open-item": this._onOpenItem,
+      // ".send-to-player": this._onSendToPlayer,
     };
 
     for (const [selector, handler] of Object.entries(multiActionMap)) {
@@ -569,32 +569,32 @@ export class ShopSheet extends CampaignCodexBaseSheet {
     }
   }
 
-  async _onOpenItem(event) {
-    event.stopPropagation();
-    const itemUuid = event.currentTarget.dataset.itemUuid;
-    const item = (await fromUuid(itemUuid)) || game.items.get(itemUuid);
+  // async _onOpenItem(event) {
+  //   event.stopPropagation();
+  //   const itemUuid = event.currentTarget.dataset.itemUuid;
+  //   const item = (await fromUuid(itemUuid)) || game.items.get(itemUuid);
 
-    if (item) {
-      item.sheet.render(true);
-    } else {
-      ui.notifications.warn("Item not found in world items");
-    }
-  }
+  //   if (item) {
+  //     item.sheet.render(true);
+  //   } else {
+  //     ui.notifications.warn("Item not found in world items");
+  //   }
+  // }
 
-  async _onSendToPlayer(event) {
-    event.stopPropagation();
-    const itemUuid = event.currentTarget.dataset.itemUuid;
-    const item = (await fromUuid(itemUuid)) || game.items.get(itemUuid);
+  // async _onSendToPlayer(event) {
+  //   event.stopPropagation();
+  //   const itemUuid = event.currentTarget.dataset.itemUuid;
+  //   const item = (await fromUuid(itemUuid)) || game.items.get(itemUuid);
 
-    if (!item) {
-      ui.notifications.warn("Item not found");
-      return;
-    }
+  //   if (!item) {
+  //     ui.notifications.warn("Item not found");
+  //     return;
+  //   }
 
-    TemplateComponents.createPlayerSelectionDialog(item.name, async (targetActor) => {
-      await this._transferItemToActor(item, targetActor);
-    });
-  }
+  //   TemplateComponents.createPlayerSelectionDialog(item.name, async (targetActor) => {
+  //     await this._transferItemToActor(item, targetActor, this.document);
+  //   });
+  // }
 
   _onItemDragStart(event) {
     const itemUuid = event.currentTarget.dataset.itemUuid;
@@ -670,30 +670,32 @@ export class ShopSheet extends CampaignCodexBaseSheet {
     this.render(true);
   }
 
-  async _handleItemDrop(data, event) {
-    if (!data.uuid) {
-      ui.notifications.warn("Could not find item to add to entry");
-      return;
-    }
+  // async _handleItemDrop(data, event) {
+  // const dropOnInfoTab = event.target.closest('.tab-panel[data-tab="info"]');
 
-    const item = await fromUuid(data.uuid);
-    if (!item) {
-      ui.notifications.warn("Could not find item to add to entry");
-      return;
-    }
+  //   if (!data.uuid) {
+  //     ui.notifications.warn("Could not find item to add to entry");
+  //     return;
+  //   }
 
-    const currentData = this.document.getFlag("campaign-codex", "data") || {};
-    const inventory = currentData.inventory || [];
+  //   const item = await fromUuid(data.uuid);
+  //   if (!item) {
+  //     ui.notifications.warn("Could not find item to add to entry");
+  //     return;
+  //   }
 
-    if (inventory.find((i) => i.itemUuid === item.uuid)) {
-      ui.notifications.warn("Item already exists in inventory!");
-      return;
-    }
+  //   const currentData = this.document.getFlag("campaign-codex", "data") || {};
+  //   const inventory = currentData.inventory || [];
 
-    await game.campaignCodex.addItemToShop(this.document, item, 1);
-    this.render(true);
-    ui.notifications.info(format("inventory.added", { type: item.name }));
-  }
+  //   if (inventory.find((i) => i.itemUuid === item.uuid)) {
+  //     ui.notifications.warn("Item already exists in inventory!");
+  //     return;
+  //   }
+
+  //   await game.campaignCodex.addItemToShop(this.document, item, 1);
+  //   this.render(true);
+  //   ui.notifications.info(format("inventory.added", { type: item.name }));
+  // }
 
   async _handleJournalDrop(data, event) {
     const journal = await fromUuid(data.uuid);
@@ -749,38 +751,38 @@ export class ShopSheet extends CampaignCodexBaseSheet {
     }
   }
 
-  async _transferItemToActor(item, targetActor) {
-    try {
-      const itemData = item.toObject();
-      delete itemData._id;
+  // async _transferItemToActor(item, targetActor, document) {
+  //   try {
+  //     const itemData = item.toObject();
+  //     delete itemData._id;
 
-      const currentData = this.document.getFlag("campaign-codex", "data") || {};
-      const inventory = currentData.inventory || [];
-      const shopItem = inventory.find((i) => i.itemUuid === item.uuid);
-      const quantity = shopItem ? shopItem.quantity : 1;
+  //     const currentData = document.getFlag("campaign-codex", "data") || {};
+  //     const inventory = currentData.inventory || [];
+  //     const shopItem = inventory.find((i) => i.itemUuid === item.uuid);
+  //     const quantity = shopItem ? shopItem.quantity : 1;
 
-      itemData.system.quantity = Math.min(quantity, 1);
+  //     itemData.system.quantity = Math.min(quantity, 1);
 
-      await targetActor.createEmbeddedDocuments("Item", [itemData]);
+  //     await targetActor.createEmbeddedDocuments("Item", [itemData]);
 
-      if (shopItem && shopItem.quantity > 0) {
-        await this._updateInventoryItem(item.uuid, {
-          quantity: shopItem.quantity - 1,
-        });
-      }
+  //     if (shopItem && shopItem.quantity > 0) {
+  //       await this._updateInventoryItem(item.uuid, {
+  //         quantity: shopItem.quantity - 1,
+  //       });
+  //     }
 
-      ui.notifications.info(format("send.item.typetoplayer", { type: item.name, player: targetActor.name }));
+  //     ui.notifications.info(format("title.send.item.typetoplayer", { type: item.name, player: targetActor.name }));
 
-      const targetUser = game.users.find((u) => u.character?.id === targetActor.id);
-      if (targetUser && targetUser.active) {
-        ChatMessage.create({
-          content: `<p><strong>${game.user.name}</strong> sent you <strong>${item.name}</strong> from ${this.document.name}!</p>`,
-          whisper: [targetUser.id],
-        });
-      }
-    } catch (error) {
-      console.error("Error transferring item:", error);
-      ui.notifications.error(localize("error.faileditem"));
-    }
-  }
+  //     const targetUser = game.users.find((u) => u.character?.id === targetActor.id);
+  //     if (targetUser && targetUser.active) {
+  //       ChatMessage.create({
+  //         content: `<p><strong>${game.user.name}</strong> sent you <strong>${item.name}</strong> from ${document.name}!</p>`,
+  //         whisper: [targetUser.id],
+  //       });
+  //     }
+  //   } catch (error) {
+  //     console.error("Error transferring item:", error);
+  //     ui.notifications.error(localize("error.faileditem"));
+  //   }
+  // }
 }

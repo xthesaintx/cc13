@@ -1,0 +1,13 @@
+{{#each objectives}}
+  {{#if this.visible}}
+  <li>
+    {{#if this.completed}}<i class="fas fa-check-square"></i>{{else}}<i class="far fa-square"></i>{{/if}}
+    <span>{{{this.enrichedText}}}</span>
+    {{#if this.objectives.length}}
+      <ul class="quest-objectives">
+        {{> "modules/campaign-codex/templates/partials/toc-quest-objective.hbs" objectives=this.objectives}}
+      </ul>
+    {{/if}}
+  </li>
+  {{/if}}
+{{/each}}

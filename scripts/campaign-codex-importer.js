@@ -240,6 +240,18 @@ export class SimpleCampaignCodexImporter {
                 codexData.inventory.forEach((item) => addUuid(item.itemUuid));
             }
 
+              if (Array.isArray(codexData.quests)) {
+                for (const quest of codexData.quests) {
+                  if (Array.isArray(quest.inventory)) {
+                    for (const item of quest.inventory) {
+                      addUuid(item.itemUuid);
+                    }
+                  }
+                }
+              }
+
+
+
             for (const page of journal.pages) {
                 const content = page.text?.content;
                 if (!content) continue;
@@ -655,6 +667,18 @@ static _folderContainsImportableDocs(folder, docsToImport) {
                 if (item.itemUuid) item.itemUuid = relink(item.itemUuid);
             });
         }
+    if (Array.isArray(newCodexData.quests)) {
+        newCodexData.quests.forEach((quest) => {
+            if (Array.isArray(quest.inventory)) {
+                quest.inventory.forEach((item) => {
+                    if (item.itemUuid) {
+                        item.itemUuid = relink(item.itemUuid);
+                    }
+                });
+            }
+        });
+    }
+
 
         foundry.utils.setProperty(updateData, `flags.${this.CONSTANTS.FLAG_SCOPE}.${this.CONSTANTS.FLAG_DATA}`, newCodexData);
 

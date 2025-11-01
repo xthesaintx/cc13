@@ -1,4 +1,4 @@
-<div class="campaign-codex {{sheetType}}-sheet cc-scroll-fix">
+<div class="campaign-codex hide-existing-tags  {{sheetType}}-sheet cc-scroll-fix">
   <div class="sheet-container">
     {{!-- Sidebar --}}
     <aside class="sheet-sidebar">
@@ -6,6 +6,9 @@
       <div class="sidebar-header">
         <div class="sheet-image">
           <img src="{{#if customImage}}{{customImage}}{{/if}}" alt="{{document.name}}" onerror="this.src='{{defaultImage}}'" />
+            {{#if (and isGM userImage)}}
+                     <i class="fas fa-times-circle cc-remove-image" data-sound-id="{{id}}" title="Remove Image" data-action="cc-remove-image"></i>
+            {{/if}}
         </div>
 
         <h1 class="sheet-title">{{document.name}}</h1>
@@ -31,9 +34,9 @@
         </nav>
         {{{customFooterContent}}}
         {{!-- Tags --}}
-        <div class="sidebar-links tags">
-            <h3 class="tags">Tags
-              <i class="fas fa-circle-plus create-tag-btn" title="Create new Tag"></i><i class="fas fa-eye toggletags" title="Toggle Existing Tags"></i>
+        <div class="sidebar-links cc-tags">
+            <h3 class="cc-tags">Tags
+              <i class="fas fa-circle-plus create-tag-btn" title="Create new Tag"></i><i class="fas fa-eye toggletags " title="Toggle Existing Tags"></i>
 
          </h3>
           <div class="link-tags">
@@ -44,7 +47,7 @@
             </div>
             {{/each}}
             {{#each existingTags}}
-            <div class="link-card existing-tag" data-npc-uuid="{{this.uuid}}" title="{{this.name}}">
+            <div class="link-card existing-tag " data-npc-uuid="{{this.uuid}}" title="{{this.name}}">
               <span class="link-name">{{this.name}}</span>
             </div>
             {{/each}}

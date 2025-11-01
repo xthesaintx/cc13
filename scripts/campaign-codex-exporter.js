@@ -1,3 +1,5 @@
+import { CampaignCodexLinkers } from "./sheets/linkers.js";
+
 export class SimpleCampaignCodexExporter {
     static CONSTANTS = {
         FLAG_SCOPE: "campaign-codex",
@@ -227,7 +229,8 @@ export class SimpleCampaignCodexExporter {
                 <input type="checkbox" name="pruneFolders" id="pruneFoldersCheckbox" />
                 Prune empty folders after export
             </label>
-        </div>            
+        </div>
+    
     `;
 
         const data = await foundry.applications.api.DialogV2.wait({
@@ -512,6 +515,17 @@ static async _collectExportData(config) {
                 }
             }
         }
+            if (Array.isArray(codexData.quests)) {
+              for (const quest of codexData.quests) {
+                if (Array.isArray(quest.inventory)) {
+                  for (const item of quest.inventory) {
+                    if (item.itemUuid) {
+                      uuids.push(item.itemUuid);
+                    }
+                  }
+                }
+              }
+            }
 
         return uuids.filter(Boolean);
     }
@@ -876,6 +890,18 @@ static async _pruneEmptyFolders(pack, exemptFolderId = null) {
             });
         }
 
+    if (Array.isArray(newCodexData.quests)) {
+      newCodexData.quests.forEach((quest) => {
+        if (Array.isArray(quest.inventory)) {
+          quest.inventory.forEach((item) => {
+            if (item.itemUuid) {
+              item.itemUuid = relink(item.itemUuid);
+            }
+          });
+        }
+      });
+    }
+
         foundry.utils.setProperty(updateData, `flags.${this.CONSTANTS.FLAG_SCOPE}.${this.CONSTANTS.FLAG_DATA}`, newCodexData);
 
         const newPages = journal.pages.map((page) => {
@@ -982,5 +1008,177 @@ static async _pruneEmptyFolders(pack, exemptFolderId = null) {
         }
 
         return pack;
+    }
+
+  /**
+   * Generates the markdown content for a single Campaign Codex journal.
+   * @param {JournalEntry} journal - The journal to convert.
+   * @returns {Promise<string>} The markdown content.
+   * @private
+   */
+  static async _generateObsidianFileContent(journal) {
+    let content = `# ${journal.name}\n\n`;
+    const data = journal.getFlag("campaign-codex", "data") || {};
+
+    if (data.description) {
+      content += `## Description\n${data.description}\n\n`;
+    }
+
+    const linkFields = {
+      "Regions": "linkedRegions",
+      "Locations": "linkedLocations",
+      "NPCs": "linkedNPCs",
+      "Shops": "linkedShops",
+      "Associates": "associates",
+      "Members": "members",
+    };
+
+    for (const [title, field] of Object.entries(linkFields)) {
+      if (data[field] && data[field].length > 0) {
+        content += `## ${title}\n`;
+        const docs = (await Promise.all(data[field].map(uuid => fromUuid(uuid)))).filter(Boolean);
+        for (const doc of docs) {
+          content += `- [[${doc.name}]]\n`;
+        }
+        content += '\n';
+      }
+    }
+    
+    if (data.parentRegion) {
+        const parent = await fromUuid(data.parentRegion);
+        if (parent) {
+            content += `## Parent Region\n- [[${parent.name}]]\n\n`;
+        }
+    }
+    
+    if (data.linkedLocation) {
+        const location = await fromUuid(data.linkedLocation);
+        if (location) {
+            content += `## Location\n- [[${location.name}]]\n\n`;
+        }
+    }
+
+    if (data.inventory && data.inventory.length > 0) {
+      content += "## Inventory\n";
+      const itemPromises = data.inventory.map(itemData => fromUuid(itemData.itemUuid));
+      const items = (await Promise.all(itemPromises)).filter(Boolean);
+      for (const item of items) {
+        content += `- ${item.name}\n`;
+      }
+      content += '\n';
+    }
+
+
+    if (data.quests) {
+      content += "## Quests\n";
+
+    for (const quest of data.quests) {
+        content += `### ${quest.title}\n`;
+        content += `${quest.description}\n`;
+      if (quest.inventory && quest.inventory.length > 0) {
+        const itemUuids = quest.inventory.map(item => item.itemUuid);
+        const questInventory = await CampaignCodexLinkers.getNameFromUuids(itemUuids || []);
+        content += `#### Rewards\n`;
+        for (const questItem of questInventory) {
+          content += `- ${questItem}\n`;
+        }
+        content += `\n`;
+        }
+        if (quest.objectives && quest.objectives.length > 0) {
+        content += `#### Objectives\n`;
+        for (const objective of quest.objectives) {
+          content += `- ${objective.completed ? "[x]" : "[ ]"} ${objective.text}\n`;
+
+          if (objective.objectives && objective.objectives.length > 0) {
+            for (const subobjective of objective.objectives) {
+              content += `    - ${subobjective.completed ? "[x]" : "[ ]"} ${subobjective.text}\n`;
+            }
+          }
+
+        }
+        content += `\n`;
+      }
+    }
+    content += `\n`;
+}
+
+
+    if (data.notes) {
+      content += `## GM Notes\n${data.notes}\n\n`;
+    }
+
+    return content;
+  }
+
+    /**
+     * Exports all Campaign Codex journals to a downloadable zip archive of Obsidian-compatible markdown files,
+     * replicating the folder structure.
+     * @returns {Promise<void>}
+     */
+    static async exportToObsidian() {
+        if (typeof JSZip === "undefined") {
+            ui.notifications.error("JSZip library is not available. Please ensure it is loaded.");
+            console.error("Campaign Codex | JSZip is not defined.");
+            return;
+        }
+
+        const codexJournals = game.journal.filter((j) => j.getFlag("campaign-codex", "type"));
+
+        if (codexJournals.length === 0) {
+            ui.notifications.warn("No Campaign Codex documents found to export!");
+            return;
+        }
+
+        ui.notifications.info(`Generating ${codexJournals.length} files for Obsidian export...`);
+
+        const zip = new JSZip();
+        for (const journal of codexJournals) {
+            const content = await this._generateObsidianFileContent(journal);
+            const folderPath = this._getJournalFolderPath(journal);
+            const fileName = journal.name.replace(/[/\\?%*:|"<>]/g, '-') + ".md";
+            const fullPath = folderPath + fileName;
+            zip.file(fullPath, content);
+        }
+
+        try {
+            const blob = await zip.generateAsync({ type: "blob" });
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+            const zipFileName = `campaign-codex-obsidian-export-${timestamp}.zip`;
+
+            if (typeof saveAs !== "undefined") {
+                saveAs(blob, zipFileName);
+            } else {
+                const link = document.createElement("a");
+                link.href = URL.createObjectURL(blob);
+                link.download = zipFileName;
+                document.body.appendChild(link);
+                link.click();
+                setTimeout(() => {
+                    URL.revokeObjectURL(link.href);
+                    document.body.removeChild(link);
+                }, 100);
+            }
+
+            ui.notifications.info(`Successfully exported journals to ${zipFileName}`);
+
+        } catch (error) {
+            ui.notifications.error("Failed to generate the zip file. See the console for details.");
+            console.error("Campaign Codex | Error generating zip file for Obsidian export:", error);
+        }
+    }
+   /**
+     * Recursively gets the full folder path for a journal entry.
+     * @param {JournalEntry} journal - The journal entry.
+     * @returns {string} The folder path, e.g., "Main Folder/Sub Folder/".
+     * @private
+     */
+    static _getJournalFolderPath(journal) {
+      let path = "";
+      let currentFolder = journal.folder;
+      while (currentFolder) {
+        path = `${currentFolder.name}/${path}`;
+        currentFolder = currentFolder.folder;
+      }
+      return path;
     }
 }

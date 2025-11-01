@@ -1,10 +1,9 @@
-<div class="quest-item">
+<div class="quest-item" data-quest-id="{{quest.id}}">
   <div class="quest-title-wrap">
     <h4 class="quest-title quest-input-title" data-quest-id="{{quest.id}}" {{#if (and isGM (not isGroupSheet))}}data-editable="true"{{/if}}>
       {{quest.title}}
     </h4>
   </div>
-
   {{!-- The description section --}}
   <article class="journal-entry-page cc-enriched {{systemClass}}">
     <section class="journal-page-content">
@@ -38,43 +37,52 @@
       {{/if}}
     {{/if}}
   </div>
+
+{{! Quest Items Section }}
+{{#if inventory.length}}
+  <div class="objectives-section quest-inventory">
+    <div class="objectives-header">
+      <h5>Rewards</h5>
+    </div>
+    <div class="shop-items">
+      {{#each inventory as |item|}}
+        <div class="group-item-card open-item" data-item-uuid="{{item.uuid}}">
+          <img src="{{getAsset "image" "item" item.img}}" alt="{{item.name}}" class="item-icon">
+          <div class="item-info">
+            <span class="item-name">{{item.name}}</span>
+            <span class="item-price">{{item.quantity}}x {{item.finalPrice}}{{item.currency}}</span>
+          </div>
+          <div class="item-actions">
+            {{#if (and ../isGM (not ../isGroupSheet))}}
+              <button type="button" class="action-btn remove-quest-item" data-quest-id="{{../quest.id}}" data-item-uuid="{{item.itemUuid}}" title="Remove Item">
+                <i class="fas fa-trash"></i>
+              </button>
+            {{/if}}
+            {{#if ../isGM}}
+              <button type="button" class="action-btn send-to-player" data-quest-id="{{../quest.id}}" data-item-uuid="{{item.itemUuid}}" title="Send to Player">
+                <i class="fas fa-paper-plane"></i>
+              </button>
+
+            {{/if}}
+          </div>
+        </div>
+      {{/each}}
+    </div>
+  </div>
+{{/if}}
+
+
   {{!-- Objectives Section --}}
   <div class="objectives-section">
     <div class="objectives-header">
       <h5>Objectives</h5>
       {{#if (and isGM (not isGroupSheet))}}
-        <a class="add-objective" data-quest-id="{{id}}" title="Add Objective"><i class="fas fa-circle-plus"></i></a>
+        <a class="add-objective" data-quest-id="{{quest.id}}" title="Add Objective"><i class="fas fa-circle-plus"></i></a>
       {{/if}}
     </div>
 
     <ul class="objective-list">
-      {{#each objectives}}
-          {{#if ../isGM}}
-          <li class="objective-item" data-objective-id="{{id}}">
-            <a class="objective-toggle-icon" data-quest-id="{{../id}}" data-objective-id="{{id}}" data-field="completed" title="Toggle Completion">
-              <i class="{{#if completed}}fas fa-circle-check{{else}}far fa-circle{{/if}}"></i>
-            </a>
-            <span class="objective-text editable" data-quest-id="{{../id}}" data-objective-id="{{id}}">{{text}}</span>
-            <div class="objective-controls">
-              <a class="objective-toggle-icon" data-quest-id="{{../id}}" data-objective-id="{{id}}" data-field="visible" title="Toggle Player Visibility">
-                <i class="fas {{#if visible}}fa-eye{{else}}fa-eye-slash{{/if}}"></i>
-              </a>
-              {{#if (not ../isGroupSheet)}}
-              <a class="remove-objective" data-quest-id="{{../id}}" data-objective-id="{{id}}" title="Delete Objective">
-                <i class="fas fa-trash"></i>
-              </a>
-              {{/if}}
-            </div>
-          </li>
-          {{else}}
-            {{#if visible}}
-              <li class="objective-item" data-objective-id="{{id}}">
-              <i class="far {{#if completed}}fas fa-circle-check{{else}}far fa-circle{{/if}}"></i>
-              <span class="objective-text">{{text}}</span>
-            </li>
-            {{/if}}
-          {{/if}}
-      {{/each}}
+      {{> "modules/campaign-codex/templates/partials/quest-objective.hbs" objectives=quest.objectives quest=quest isGM=isGM isGroupSheet=isGroupSheet}}
     </ul>
   </div>
 
