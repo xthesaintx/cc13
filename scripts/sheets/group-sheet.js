@@ -385,6 +385,12 @@ export class GroupSheet extends CampaignCodexBaseSheet {
           1,
           0,
           {
+            key: "regions",
+            label: localize("names.regions"),
+            icon: TemplateComponents.getAsset("icon", "region"),
+            count: (data.linkedRegions || []).length,
+          },
+          {
             key: "locations",
             label: localize("names.locations"),
             icon: TemplateComponents.getAsset("icon", "location"),
@@ -447,6 +453,9 @@ export class GroupSheet extends CampaignCodexBaseSheet {
       case "locations":
         return await this._generateSelectedLocationsContent(selectedDoc, selectedData);
       
+      case "regions":
+        return await this._generateSelectedRegionsContent(selectedDoc, selectedData);
+
       case "quests":
         return await TemplateComponents.questList(selectedDoc, selectedData.quests, game.user.isGM, true);
 
@@ -542,6 +551,21 @@ async _generateSelectedNPCsContent(selectedDoc, selectedData) {
       <div class="selected-content-section">
         <div class="shops-list">
          ${TemplateComponents.entityGrid(preparedShops, "shop", false, true)}
+        </div>
+      </div>
+    `;
+  }
+
+  async _generateSelectedRegionsContent(selectedDoc, selectedData) {
+    const regions = await CampaignCodexLinkers.getLinkedRegions(selectedDoc, selectedData.linkedRegions || []);
+    if (regions.length === 0) {
+      return "";
+    }
+
+    return `
+      <div class="selected-content-section">
+        <div class="locations-list">
+          ${TemplateComponents.entityGrid(regions, "location", false, true)}
         </div>
       </div>
     `;

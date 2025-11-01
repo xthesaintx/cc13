@@ -2656,13 +2656,16 @@ left: 296px;
 }
 .campaign-codex .selected-sheet-actions.location .btn-open-scene,
 .campaign-codex .selected-sheet-actions.shop .btn-open-scene,
-.campaign-codex .selected-sheet-actions.npc .btn-open-actor,
-.campaign-codex .selected-sheet-actions.region .btn-open-sheet{
+.campaign-codex .selected-sheet-actions.npc .btn-open-actor{
   left: 334px;
 }
 .campaign-codex .selected-sheet-actions.npc .btn-npc-to-scene,
-.campaign-codex .selected-sheet-actions.region .btn-open-scene{
+.campaign-codex .selected-sheet-actions.region .btn-open-sheet{
   left: 372px;
+}
+
+.campaign-codex .selected-sheet-actions.region .btn-open-scene{
+    left: 410px;
 }
 
 /*LEFT 30*/
@@ -2692,9 +2695,6 @@ left: 296px;
 
 /*RIGHT 30*/
 .campaign-codex .content-header .refresh-btn,
-/*.campaign-codex .quest-container .content-header .refresh-btn,*/
-/*.campaign-codex .image-change-btn.refresh-btn, */
-/*.campaign-codex .selected-sheet-actions .btn-open-sheet,*/
 .campaign-codex .group-sheet .selected-sheet-content .npcs-to-map-button,
 .campaign-codex .region-sheet .tab-panel.active[data-tab="shops"] .refresh-btn,
 .campaign-codex .region-sheet .tab-panel.active[data-tab="npcs"] .refresh-btn,
@@ -2714,18 +2714,13 @@ left: 296px;
   top: 0px;
   right: 30px;
   border-radius: 0 0 16px 16px;
-/*  padding: 8px 0px 8px 0px;*/
-justify-content: center;
-    display: flex;
-
-/*  gap: 12px;*/
+  justify-content: center;
+  display: flex;
   background: var(--cc-accent);
   box-shadow: var(--cc-shadow);
   line-height: 20px;
 }
 /*RIGHT 80*/
-/*.campaign-codex .selected-sheet-actions .btn-open-actor,*/
-/*.campaign-codex .selected-sheet-actions .btn-open-scene,*/
 .campaign-codex .region-sheet .tab-panel.active[data-tab="npcs"] .create-npc-button,
 .campaign-codex .npc-sheet .tab-panel.active[data-tab="locations"] .create-location-button,
 .campaign-codex :is(.npc-sheet, .shop-sheet, .location-sheet) .tab-panel.active[data-tab="npcs"] .npcs-to-map-button,
@@ -2748,7 +2743,6 @@ justify-content: center;
 }
 
 /*RIGHT 130*/
-/*.campaign-codex .selected-sheet-actions .btn-npc-to-scene,*/
 .campaign-codex :is(.region-sheet) .tab-panel.active[data-tab="npcs"] .npcs-to-map-button {
   width: 40px;
   max-width: 300px;
@@ -2766,8 +2760,6 @@ justify-content: center;
  
 }
 .campaign-codex .content-header .refresh-btn i,
-/*.campaign-codex .quest-container .content-header .refresh-btn i,*/
-/*.campaign-codex .image-change-btn.refresh-btn i,*/
 .campaign-codex .group-sheet .selected-sheet-content .npcs-to-map-button i,
 .campaign-codex .selected-sheet-actions .btn-npc-to-scene i,
 .campaign-codex .selected-sheet-actions .btn-open-actor i,
@@ -3532,26 +3524,29 @@ color: var(--cc-sidebar-text);
 .campaign-codex .group-sheet .selected-sheet-tabs.region .selected-sheet-tab[data-tab="info"]{
   left: 30px;
 }
-.campaign-codex .group-sheet .selected-sheet-tabs.region .selected-sheet-tab[data-tab="locations"]{
+.campaign-codex .group-sheet .selected-sheet-tabs.region .selected-sheet-tab[data-tab="regions"]{
   left: 68px;
 }
-.campaign-codex .group-sheet .selected-sheet-tabs.region .selected-sheet-tab[data-tab="npcs"]{
+.campaign-codex .group-sheet .selected-sheet-tabs.region .selected-sheet-tab[data-tab="locations"]{
   left: 106px;
 }
-.campaign-codex .group-sheet .selected-sheet-tabs.region .selected-sheet-tab[data-tab="tags"]{
+.campaign-codex .group-sheet .selected-sheet-tabs.region .selected-sheet-tab[data-tab="npcs"]{
   left: 144px;
 }
-.campaign-codex .group-sheet .selected-sheet-tabs.region .selected-sheet-tab[data-tab="shops"]{
+.campaign-codex .group-sheet .selected-sheet-tabs.region .selected-sheet-tab[data-tab="tags"]{
   left: 182px;
 }
-.campaign-codex .group-sheet .selected-sheet-tabs.region .selected-sheet-tab[data-tab="quests"]{
+.campaign-codex .group-sheet .selected-sheet-tabs.region .selected-sheet-tab[data-tab="shops"]{
   left: 220px;
 }
-.campaign-codex .group-sheet .selected-sheet-tabs.region .selected-sheet-tab[data-tab="journals"]{
+.campaign-codex .group-sheet .selected-sheet-tabs.region .selected-sheet-tab[data-tab="quests"]{
   left: 258px;
 }
-.campaign-codex .group-sheet .selected-sheet-tabs.region .selected-sheet-tab[data-tab="notes"]{
+.campaign-codex .group-sheet .selected-sheet-tabs.region .selected-sheet-tab[data-tab="journals"]{
   left: 296px;
+}
+.campaign-codex .group-sheet .selected-sheet-tabs.region .selected-sheet-tab[data-tab="notes"]{
+  left: 334px;
 }
 
 .campaign-codex .group-sheet .selected-sheet-tabs .selected-sheet-tab:hover{
