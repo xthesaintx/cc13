@@ -1,0 +1,247 @@
+{
+  "CAMPAIGN_CODEX": {
+    "welcomePageHTML": "<div> <p><strong>Bienvenido a Campaign Codex</strong></p> <p>La gestión de carpetas, la ubicación del precio del sistema y la moneda del sistema, y otras configuraciones pueden modificarse en los ajustes.</p> <div><button data-campaign-codex-handler=\"campaign-codex|openMenu|core_settings\"><i class=\"fas fa-wrench\"></i>Configuración</button></div> <hr> <p><strong>Forma parte de la comunidad de Campaign Codex</strong></p> <p>Si quieres sugerir una función, reportar un error o simplemente charlar, únete a nosotros en Discord.</p> <div><button data-campaign-codex-handler=\"campaign-codex|openWindow|https://discord.gg/fycwH79s2y\"><i class=\"fab fa-discord\"></i> Unirse a Discord</button></div> <p><strong>¿Encontraste un error?</strong></p> <p>Si deseas reportar un error y no usas Discord, visita nuestro GitHub.</p> <div><button data-campaign-codex-handler=\"campaign-codex|openWindow|https://github.com/xthesaintx/cc13\"><i class=\"fas fa-bug\"></i> Reportar un error</button></div> <p><strong>Apoya el desarrollo</strong></p> <p>Si quieres apoyar el desarrollo, considera revisar las opciones de membresía en Patreon.</p> <div><button data-campaign-codex-handler=\"campaign-codex|openWindow|https://patreon.com/wgtngm\"><i class=\"fas fa-star\"></i> Hazte miembro</button></div><p><strong>Documentación</strong></p> <p>¿Te sientes un poco perdido? Visita nuestra página de documentación para orientarte, o entra al Discord y haz una pregunta.</p> <div><button data-campaign-codex-handler=\"campaign-codex|openWindow|https://campaigncodex.wgtngm.com\"><i class=\"fas fa-book\"></i> Documentación</button></div></div>",
+    "context": {
+      "export": "Exportar al Diario Estándar",
+      "group": "Agregar a {type}"
+    },
+    "button": {
+      "title": "Crear nuevo {type}",
+      "droptoscene": "Soltar {type} en la escena actual",
+      "tagmode": "Modo de Etiquetas"
+    },
+    "info": {
+      "automatically": "{type} se rellenan automáticamente desde todas las {source}.",
+      "refresh": "Actualizar",
+      "linkfound": "Vinculando {type} existente.",
+      "newlink": "{type} creado y vinculado desde la escena.",
+      "linked": "{type} vinculado"
+    },
+    "sheet": {
+      "journal": "Diario de {type}"
+    },
+    "add": "Agregar {type}",
+    "group": {
+      "notfound": "El elemento que intentas agregar no se pudo encontrar.",
+      "self": "Un grupo no puede agregarse a sí mismo.",
+      "expandAll": "Expandir todo",
+      "collapseAll": "Colapsar todo",
+      "toggleItems": "Mostrar/Ocultar Objetos de Inventario",
+      "toggleNPCs": "Mostrar/Ocultar PNJs",
+      "toggleNPCTags": "Mostrar/Ocultar Etiquetas en PNJs",
+      "toggleTagMode": "Modo Árbol de Etiquetas"
+    },
+    "member": {
+      "type": "Miembro {type}"
+    },
+    "heading": {
+      "in": "{type} en {in}"
+    },
+    "names": {
+      "regionlocation": "Región o Ubicación",
+      "location": "Ubicación",
+      "locations": "Ubicaciones",
+      "group": "Grupo",
+      "groups": "Grupos",
+      "shop": "Entrada",
+      "shops": "Entradas",
+      "region": "Región",
+      "regions": "Regiones",
+      "npc": "PNJ",
+      "npcs": "PNJs",
+      "items": "Objetos",
+      "journal": "Diario",
+      "journals": "Diarios",
+      "organisation": "Organización",
+      "organisations": "Organizaciones",
+      "associate": "Asociado",
+      "associates": "Asociados",
+      "members": "Miembros",
+      "direct": "Directo",
+      "info": "Info",
+      "information": "Información",
+      "note": "Notas",
+      "actor": "Actor",
+      "player": "Jugador",
+      "tag": "Etiqueta",
+      "tags": "Etiquetas",
+      "inventory": "Inventario",
+      "scene": "Escena",
+      "standard": "Estándar",
+      "quest": "Misión",
+      "quests": "Misiones",
+      "toc": "Tabla de Contenidos"
+    },
+    "settings": {
+      "useStyledTocButton": {
+        "name": "Botón de TOC con Estilo",
+        "hint": "Activa para usar el tema de Campaign Codex en el botón de la Tabla de Contenidos en los controles de escena."
+      },
+      "colorPicker": {
+        "name": "Color de Acento Personalizado",
+        "hint": "Reemplaza el color de acento predeterminado del tema. Ingresa un código hex como #d4af37. Deja en blanco para restaurar el valor por defecto."
+      },
+      "showOnlyPinned": {
+        "name": "Mostrar solo Misiones Fijadas en TOC",
+        "hint": "Si está marcado, la Tabla de Contenidos solo mostrará misiones marcadas como 'fijadas'."
+      },
+      "showStats": {
+        "name": "Mostrar estadísticas en el menú",
+        "hint": "Mostrará (#) junto a un elemento del menú para indicar la cantidad de cada tipo, visible solo por el DM."
+      },
+      "roundFinalPrice": {
+        "name": "Redondear precio final a número entero",
+        "hint": "Redondeará el precio final de un objeto al número entero más cercano."
+      },
+      "maxRegionDepth": {
+        "name": "Profundidad máxima de anidamiento",
+        "hint": "Número de capas de regiones que puedes crear. Por defecto 5; valores mayores consumen más recursos."
+      },
+      "itemPricePath": {
+        "name": "Ruta de Precio del Objeto",
+        "hint": "Ruta hacia el valor de precio del objeto (ej., 'system.price.value' para D&D5e). Deja en blanco para usar la detección automática."
+      },
+      "itemDenominationPath": {
+        "name": "Ruta de Moneda del Objeto",
+        "hint": "Ruta hacia la denominación de moneda (ej., 'system.price.denomination' para D&D5e). Deja en blanco para usar la detección automática."
+      },
+      "itemDenominationOverride": {
+        "name": "Sobrescribir Denominación",
+        "hint": "Denominación de moneda (ej., créditos, po, unidades). Deja en blanco para usar la ruta o el sistema detectado automáticamente."
+      },
+      "hideBaseCost": {
+        "name": "Ocultar columna de Costo Base",
+        "hint": "Si no quieres que el costo base sea visible, o el sistema no tiene ruta de precio, puedes ocultar la columna en la pestaña de inventario. Cierra y reabre las hojas para actualizar."
+      },
+      "sortCardsAlpha": {
+        "name": "Ordenar cartas alfabéticamente",
+        "hint": "Si está activado, las cartas se mostrarán de la A a la Z."
+      },
+      "runonlyonce": {
+        "name": "Mensaje de Bienvenida - Desactivado",
+        "hint": "Si está activado, no volverás a ver el mensaje de bienvenida."
+      },
+      "useOrganizedFolders": {
+        "name": "Organizar en Carpetas",
+        "hint": "Crea y organiza automáticamente los diarios de Campaign Codex en carpetas."
+      },
+      "hideByPermission": {
+        "name": "Ocultar cartas por permisos",
+        "hint": "Oculta las cartas si el usuario no tiene permiso de observador o superior sobre el diario o ítem."
+      },
+      "hideInventoryByPermission": {
+        "name": "Ocultar objetos del inventario por permisos",
+        "hint": "Oculta objetos en inventarios si el usuario no tiene permiso de observador o superior sobre el ítem."
+      },
+      "resetItemPathsButton": {
+        "name": "Restablecer a valores predeterminados",
+        "hint": "Activa esta opción y guarda para restablecer los ajustes por defecto."
+      }
+    },
+    "notifications": {
+      "itemPricePathsReset": "Rutas de precios de objetos restablecidas a los valores predeterminados de D&D5e"
+    },
+    "dropzone": {
+      "region": "Arrastra {type} para agregarlos",
+      "location": "Arrastra {type} o escenas aquí para agregarlos",
+      "shop": "Arrastra diarios {type} aquí para agregarlos",
+      "npc": "Arrastra {type} o Actores aquí para agregarlos",
+      "associate": "Arrastra {type} o Actores aquí para crear relaciones",
+      "item": "Arrastra {type} aquí para agregar al inventario",
+      "generic": "Arrastra {type} aquí",
+      "link": "Suelta {type} para vincular",
+      "empty": "{type} vacío"
+    },
+    "error": {
+      "faileditem": "Error al transferir el objeto"
+    },
+    "warn": {
+      "directly": "No se puede eliminar {type} directamente",
+      "remove": "Eliminar {type}",
+      "invaliddrop": "¡No se encontraron miembros con actores vinculados para soltar!",
+      "nonpcfound": "¡No hay PNJs disponibles para soltar en el mapa!",
+      "actornotfound": "¡Actor vinculado no encontrado!",
+      "failedtodrop": "¡Error al soltar el PNJ en el mapa!",
+      "scenenotfound": "No se pudo encontrar la escena soltada."
+    },
+    "message": {
+      "open": "Abrir {type}",
+      "unlink": "Desvincular {type}",
+      "droptomap": "Soltar miembros {type} en la escena",
+      "drop": "Soltar en la escena."
+    },
+    "title": {
+      "all": "Todos",
+      "open": {
+        "actor": "Abrir hoja de Actor",
+        "sheet": "Abrir hoja"
+      },
+      "unlink": {
+        "actor": "Desvincular hoja de Actor"
+      },
+      "sort": {
+        "alphabetically": "Ordenar Inventario alfabéticamente"
+      },
+      "send": {
+        "player": "Enviar al Jugador",
+        "item": {
+          "player": "Enviar objeto al Personaje del Jugador",
+          "typetoplayer": "Se envió {type} a {player}."
+        }
+      },
+      "remove": {
+        "item": "Eliminar Objeto",
+        "from": {
+          "group": "Eliminar del Grupo"
+        }
+      },
+      "focus": {
+        "in": {
+          "tab": "Enfocar en Pestaña"
+        }
+      }
+    },
+    "inventory": {
+      "added": "{type} agregado al inventario",
+      "price": {
+        "name": "Precio",
+        "base": "Precio Base",
+        "final": "Precio Final"
+      },
+      "quantity": "Cantidad",
+      "actions": "Acciones",
+      "item": {
+        "name": "Nombre del Objeto"
+      },
+      "global": {
+        "markup": "Ajuste Global de Precio"
+      },
+      "help": {
+        "markup": "Los objetos sin precio personalizado usarán precio base × ajuste"
+      }
+    },
+    "ui": {
+      "addedto": "{type} agregado a {typeb}",
+      "drag": {
+        "link": {
+          "journal": {
+            "standard": "Diario: Arrastra el Diario Estándar para vincular"
+          }
+        }
+      },
+      "warn": {
+        "notfound": {
+          "player": {
+            "character": "No se encontraron personajes de jugador"
+          }
+        }
+      },
+      "send": {
+        "item": {
+          "player": "¿Enviar <strong>{type}</strong> a qué personaje de jugador?"
+        }
+      },
+      "cancel": "Cancelar"
+    }
+  }
+}
