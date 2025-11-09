@@ -2668,6 +2668,11 @@ left: 296px;
     left: 410px;
 }
 
+.campaign-codex .selected-sheet-actions.group .btn-open-sheet{
+  left: 182px;
+}
+
+
 /*LEFT 30*/
 .campaign-codex .image-change-btn { 
   box-shadow: none;
@@ -3519,6 +3524,17 @@ color: var(--cc-sidebar-text);
 .campaign-codex .group-sheet .selected-sheet-tabs .selected-sheet-tab[data-tab="notes"]{
   left: 258px;
 }
+
+.campaign-codex .group-sheet .selected-sheet-tabs.group .selected-sheet-tab[data-tab="quests"]{
+  left: 68px;
+}
+.campaign-codex .group-sheet .selected-sheet-tabs.group .selected-sheet-tab[data-tab="journals"]{
+  left: 106px;
+}
+.campaign-codex .group-sheet .selected-sheet-tabs.group .selected-sheet-tab[data-tab="notes"]{
+  left: 144px;
+}
+
 
 /* Region Specific Tag placement */
 .campaign-codex .group-sheet .selected-sheet-tabs.region .selected-sheet-tab[data-tab="info"]{
