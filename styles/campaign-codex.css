@@ -61,10 +61,10 @@
 .cc-editor {
   outline: 0 solid transparent;
 }
-.campaign-codex .tab-panel section.journal-page-content.cc-non-owner-view *{
+.campaign-codex .tab-panel section.journal-page-content.cc-non-owner-view{
   color: var(--cc-main-text);
 }
-.campaign-codex .prosemirror .editor-content *{
+.campaign-codex .prosemirror .editor-content{
   color: var(--cc-main-text);
 }
 /*
