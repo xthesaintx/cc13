@@ -36,7 +36,8 @@ export class CleanUp {
       tocSheet.render();
     }
 
-      for (const app of Object.values(ui.windows)) {
+    for (const app of foundry.applications.instances.values()) {
+      // for (const app of Object.values(ui.windows)) {
         if (app.document && app.document.id === document.id) {
           const isCampaignCodexSheet = [
             "LocationSheet",
@@ -507,7 +508,12 @@ export class CleanUp {
   async refreshAffectedGroupSheets(deletedDoc) {
     const deletedUuid = deletedDoc.uuid;
 
-    for (const app of Object.values(ui.windows)) {
+      // if (app.document && uuidSet.has(app.document.uuid)) {
+      //     app.render(true);
+      //   }
+      // }
+    for (const app of foundry.applications.instances.values()) {
+    // for (const app of Object.values(ui.windows)) {
       if (app.constructor.name === "GroupSheet" && app.document) {
         const groupData = app.document.getFlag("campaign-codex", "data") || {};
         const members = groupData.members || [];

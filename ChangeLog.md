@@ -15,21 +15,62 @@ pagesToSeparateSheets: Bool, will create a Campaign Codex sheet of type for each
 
 
 ### Open the ToC Sheet
-- campaignCodexAPI.openTOCSheet();
+- campaignCodexAPI.openTOCSheet(type);
 
-## 9.9
+## 1.5
+- Change ToC helper function to open to a tab (ie quests)
+- Customise tab names and sheet icons
+- Replicate the folder structure of the journal panel
+- Drag drop from group tree view to map
+- tighten up group tree spacing
+- Widget implementation
+- Inventory on all sheets
+- set default tab visibility for sheet types
+- hide, show, rename tabs (cog icon on sheet).
+- hide show image on sheet
+- Auto folder sorting not to auto sort duplication within sub folders if the subfolder is in the correct folder.
+- TOC - Either a Tags view improvement
+- group and standard linkers performance improvements
+- can drag group tree nodes to other sheets and scenes
+- All Sheets v2
+- pinned quests will only show on quest board if set to visible.
+- added custom icon override for sheets
+- added currency in hand for inventory
+- debounce on sheet refresh and tidy up of refreshes
+- Added custom map markers for Campaign Codex journal entries. If a journal's name is prefixed with a map code (e.g., A01 - Foyer, A01 : Foyer, A01: Foyer, A01 Foyer, A01), the map note will now render as a circular icon displaying the code "A01". The recognized pattern is {Optional Letter}{1-3 Digits}{Optional Letter}{: or - with or with spaces}{Optional Name}."^([A-Z]?\d{1,3}[A-Z]?)(?=\s*[-: ]"
+- Made openTOCSheet async and now takes an option to open a specific tab openTOCSheet("tab")
+groups, regions, locations, shops, npcs, tags, quests
+- Hide inventory toggle removed as tab visibility is now a thing
+- Updated Welcome message
+- Send Item to Player updated to V2
+- Drop NPC dialog updated to v2
+- Added templates
+- made AllTags more robust
+- max height added on the quest box description area
+- Fixed some UI compatability with styling
+- NPC card subtitle will come from sheet
+- CC scene control button is part of the UI
+- Templates in editor
+- filter for TOC
+- Styled CC Scene control toggle in settings (if on it uses the UI color from themes)
+- Add user templates from folder selected in settings (will scan dir for HBS/HTML)
+- Sheet Focus fix
+- sub objectives
+- reordering of sub objectives
+
+## 0.9.9
 - fix to the path for templates
 - css fix player users themes
 
 
-## 9.7
+## 0.9.7
 - folder auto organisation logic updated to not move journals duplicated in subfolder
 - css fix to apply main text colour to editable text in info and notes for themes
 
-## 9.4
+## 0.9.4
 - moved the templates to an array
 
-## 9.3
+## 0.9.3
 - Updated Welcome message
 - Items on Quests
 - Quests sub objectives

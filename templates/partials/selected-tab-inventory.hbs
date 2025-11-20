@@ -1,24 +1,22 @@
-<div class="selected-content-section">
+<div class="content-header">
+    <h2><i class="fas fa-boxes"></i> {{#if labelOverride}}{{labelOverride}}{{else}}{{ccLocalize "names.inventory" }}{{/if}}</h2>
+</div>
   {{#if inventory.length}}
     <div class="inventory-list">
       {{#each inventory as |item|}}
-        <div class="selected-inventory-item btn-open-sheet" data-sheet-uuid="{{item.itemUuid}}">
+        <div class="selected-inventory-item btn-open-sheet" data-uuid="{{item.uuid}}" data-action="openItem">
           <img src="{{getAsset "image" "item" item.img}}" alt="{{item.name}}" class="item-icon">
           <div class="item-info">
-            <h5>{{item.name}}</h5>
+            <span class="item-name">{{item.name}}</span>
             <span class="item-price">{{item.quantity}}x {{item.finalPrice}}{{item.currency}}</span>
           </div>
           <div class="item-actions">
             {{#if ../isGM}}
-              <button type="button" class="btn-send-to-player refresh-btn" data-sheet-uuid="{{../selectedSheetUuid}}" data-item-uuid="{{item.itemUuid}}" title="Send to Player">
-                <i class="fas fa-paper-plane"></i>
-              </button>
+              <i class="fas fa-paper-plane btn-send-to-player refresh-btn" data-sheet-uuid="{{../selectedSheetUuid}}" data-doc-uuid="{{../selectedSheetUuid}}" data-action="sendToPlayer" data-uuid="{{item.itemUuid}}" title="Send to Player">
+                </i>
             {{/if}}
           </div>
         </div>
       {{/each}}
     </div>
-  {{else}}
-    <p><em>No inventory items.</em></p>
   {{/if}}
-</div>

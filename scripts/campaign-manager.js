@@ -1,4 +1,4 @@
-import { localize, format } from "./helper.js";
+import { localize, format, targetedRefresh } from "./helper.js";
 import { CampaignCodexLinkers } from "./sheets/linkers.js";
 import { CampaignCodexTOCSheet } from "./campaign-codex-toc.js";
 
@@ -6,12 +6,15 @@ export class CampaignManager {
   // =========================================================================
   // Initialization
   // =========================================================================
+  _sheetRefreshQueue = new Set();
+  _sheetRefreshTimeout = null;
+  _globalRefreshTimeout = null;
+  _sheetRefreshDebounce = 100; 
 
   constructor() {
     this.relationshipCache = new Map();
     this._creationQueue = new Set();
     this.tagCache = [];
-// 
     this._ready = null; 
   }
 
@@ -75,9 +78,13 @@ export class CampaignManager {
    * Opens the Campaign Codex Table of Contents sheet.
    * If the sheet is already open, it brings it to the front.
    */
-  openTOCSheet() {
-    // Check if an instance already exists and is rendered
+  async openTOCSheet(tab = "") {
+    const validTabIds = CampaignCodexTOCSheet.TABS.sheet.tabs.map(t => t.id);
+    if (!validTabIds.includes(tab)) {
+        tab = "groups";
+    }
     if (game.campaignCodex.tocSheetInstance && game.campaignCodex.tocSheetInstance.rendered) {
+      game.campaignCodex.tocSheetInstance.changeTab(tab, "sheet", { force: true });
       return;
     }
 
@@ -89,11 +96,10 @@ export class CampaignManager {
             height: savedDimensions.height 
         } 
     });
-    game.campaignCodex.tocSheetInstance.render(true);
+    await game.campaignCodex.tocSheetInstance.render(true);
+    game.campaignCodex.tocSheetInstance.changeTab(tab, "sheet", { force: true });
+
   }
-
-
-
 
   async createNPCJournal(actor = null, name = null, tagged = false) {
     const journalName = name || (actor ? `${actor.name} - Journal` : "New NPC Journal");
@@ -301,7 +307,6 @@ export class CampaignManager {
         await oldLocationDoc.setFlag("campaign-codex", "data", oldLocData);
       }
     }
-    // Link to new location
     const locData = locationDoc.getFlag("campaign-codex", "data") || {};
     const locShops = new Set(locData.linkedShops || []);
     if (!locShops.has(shopDoc.uuid)) {
@@ -404,7 +409,8 @@ export class CampaignManager {
     locationData.parentRegion = regionDoc.uuid;
     await locationDoc.setFlag("campaign-codex", "data", locationData);
 
-    for (const app of Object.values(ui.windows)) {
+    for (const app of foundry.applications.instances.values()) {
+    // for (const app of Object.values(ui.windows)) {
       if (app.document && (app.document.uuid === regionDoc.uuid || app.document.uuid === locationDoc.uuid)) {
         app.render(false);
       }
@@ -437,7 +443,8 @@ export class CampaignManager {
       case "region": await this._handleRegionUpdates(document, changes); break;
       case "group": break;
     }
-    await this._scheduleSheetRefresh(document.uuid);
+    await this.scheduleSheetRefresh(document.uuid)
+    // await this._scheduleSheetRefresh(document.uuid);
   }
 
   async cleanupActorRelationships(actorDoc) {
@@ -664,6 +671,69 @@ export class CampaignManager {
   // =========================================================================
   // UI & Sheet Management
   // =========================================================================
+
+
+/**
+ * Schedules a global refresh of all open codex sheets.
+ * This is debounced to prevent multiple refreshes.
+ */
+async scheduleGlobalRefresh() {
+  console.log("Campaign Codex | Queued global refresh.");
+  if (this._sheetRefreshTimeout) {
+    clearTimeout(this._sheetRefreshTimeout);
+    this._sheetRefreshQueue.clear();
+    this._sheetRefreshTimeout = null;
+    console.log("Campaign Codex | Cleared pending targeted refresh in favor of global.");
+  }
+
+  if (this._globalRefreshTimeout) {
+    clearTimeout(this._globalRefreshTimeout);
+  }
+
+  this._globalRefreshTimeout = setTimeout(async () => {
+    console.log("Campaign Codex | Debounce timer fired. Processing global refresh.");
+    this._globalRefreshTimeout = null;
+    await this.refreshAllOpenCodexSheets(); 
+  }, this._sheetRefreshDebounce);
+}
+
+/**
+ * Schedules a refresh for a specific document's sheet and related sheets.
+ * This is debounced to prevent multiple refreshes from simultaneous updates.
+ * @param {string} changedDocUuid - The UUID of the document that was updated.
+ */
+async scheduleSheetRefresh(changedDocUuid) {
+  const originalWindow = ui.activeWindow;
+
+  if (this._globalRefreshTimeout) {
+    console.log("Campaign Codex | Global refresh pending, skipping targeted queue.");
+    return;
+  }
+
+  this._sheetRefreshQueue.add(changedDocUuid);
+
+  if (this._sheetRefreshTimeout) {
+    clearTimeout(this._sheetRefreshTimeout);
+  }
+
+  this._sheetRefreshTimeout = setTimeout(async () => {
+    // console.log("Campaign Codex | Debounce timer fired. Processing refresh queue.");
+    const uuidsToProcess = Array.from(this._sheetRefreshQueue);
+    this._sheetRefreshQueue.clear();
+    this._sheetRefreshTimeout = null;
+    
+    await this._processSheetRefresh(uuidsToProcess);
+
+    if (originalWindow?.document && originalWindow.rendered) {
+      originalWindow.bringToFront();
+    }
+  }, this._sheetRefreshDebounce);
+
+
+}
+
+
+
 /**
  * Refreshes all open Campaign Codex sheets.
  * This is useful when a global change occurs (like renaming or deleting a tag) 
@@ -672,127 +742,142 @@ export class CampaignManager {
 async refreshAllOpenCodexSheets() {
     const docsWithOpenEditors = new Set();
     const sheetsToRefresh = new Set();
-    for (const app of Object.values(ui.windows)) {
-      if (app.constructor.name === "DescriptionEditor" && app.document) {
-        docsWithOpenEditors.add(app.document.uuid);
-      }
-    }
-    for (const app of Object.values(ui.windows)) {
-      const isCodexSheet = app.document?.getFlag && app.document.getFlag("campaign-codex", "type");
-      if ( isCodexSheet && !docsWithOpenEditors.has(app.document.uuid) ) {
-        sheetsToRefresh.add(app);
-      }
-    }
     const activeWindow = ui.activeWindow;
-    for (const app of sheetsToRefresh) {
-        if (app !== activeWindow) {
-            app.render(true, { focus: false });
-        }
-    }
-    if (activeWindow && sheetsToRefresh.has(activeWindow)) {
-        await activeWindow.render(true);
-        activeWindow.bringToTop();
-    }
     const tocSheet = foundry.applications.instances.get("campaign-codex-toc-sheet");
     if (tocSheet) {
       tocSheet.render();
     }
+    for (const app of foundry.applications.instances.values()) {
+      const isCodexSheet = app.document?.getFlag && app.document.getFlag("campaign-codex", "type");
+      if ( isCodexSheet && !docsWithOpenEditors.has(app.document.uuid) ) {
+          if (app.rendered) app.render(true);
+          console.log("ALL");
+        }
+      }
+    if (activeWindow.rendered) activeWindow.bringToFront();
   }
 
-async _scheduleSheetRefresh(changedDocUuid) {
-    const sheetsToRefresh = new Set();
-    const docsWithOpenEditors = new Set();
-    
-    for (const app of Object.values(ui.windows)) {
-      if (app.constructor.name === "DescriptionEditor" && app.document) {
-        docsWithOpenEditors.add(app.document.uuid);
-      }
-    }
+/**
+ * Processes a batch of changed UUIDs and refreshes all affected sheets once.
+ * (This was formerly _scheduleSheetRefresh)
+ * @param {string[]} changedDocUuids - An array of document UUIDs that were updated.
+ */
+async _processSheetRefresh(changedDocUuids) {
+  if (changedDocUuids.length === 0) return;
 
-    const indirectlyRelatedUuids = new Set();
+  // console.log(`Campaign Codex | Processing refreshes for:`, changedDocUuids);
+
+  const allUuidsToRefresh = new Set();
+  const allIndirectUuids = new Set();
+
+  changedDocUuids.forEach(uuid => allUuidsToRefresh.add(uuid));
+
+  for (const changedDocUuid of changedDocUuids) {
     try {
       const changedDoc = await fromUuid(changedDocUuid);
-      if (changedDoc) {
-        const changedType = changedDoc.getFlag("campaign-codex", "type");
+      if (!changedDoc) continue;
 
-        if (changedType === "npc") {
-          const npcData = changedDoc.getFlag("campaign-codex", "data") || {};
-          const directLocationsAndRegions = (await CampaignCodexLinkers.getNameFromUuids(npcData.linkedLocations || [])).map(uuid => fromUuid(uuid));
-          const allLocations = await CampaignCodexLinkers.getAllLocations(changedDoc, npcData.linkedLocations || []);
-          const allRelatedLocations = [...allLocations];
+      const changedType = changedDoc.getFlag("campaign-codex", "type");
 
-          (await Promise.all(directLocationsAndRegions)).forEach(doc => {
-              if (doc) allRelatedLocations.push({uuid: doc.uuid});
-          });
-
-          allRelatedLocations.forEach(loc => indirectlyRelatedUuids.add(loc.uuid));
-
-          const regionPromises = allRelatedLocations.map(async (loc) => {
-            try {
-              const locationDoc = await fromUuid(loc.uuid);
-              return locationDoc ? locationDoc.getFlag("campaign-codex", "data.parentRegion") : null;
-            } catch {
-              return null;
-            }
-          });
-          const regionUuids = await Promise.all(regionPromises);
-          regionUuids.forEach(uuid => {
-            if (uuid) indirectlyRelatedUuids.add(uuid);
-          });
-        }
+      if (changedType === "npc") {
+        const npcData = changedDoc.getFlag("campaign-codex", "data") || {};
         
-        if(changedType === "shop") {
-            const shopData = changedDoc.getFlag("campaign-codex", "data") || {};
-            if(shopData.linkedLocation) {
-                indirectlyRelatedUuids.add(shopData.linkedLocation);
-                const locationDoc = await fromUuid(shopData.linkedLocation);
-                if(locationDoc) {
-                    const parentRegion = locationDoc.getFlag("campaign-codex", "data.parentRegion");
-                    if(parentRegion) indirectlyRelatedUuids.add(parentRegion);
-                }
-            }
-        }
+        (npcData.linkedLocations || []).forEach(uuid => allIndirectUuids.add(uuid));
 
+        const allLocations = await CampaignCodexLinkers.getAllLocations(changedDoc, npcData.linkedLocations || []);
+        allLocations.forEach(loc => allIndirectUuids.add(loc.uuid));
+
+        const regionPromises = allLocations.map(async (loc) => {
+          try {
+            const locationDoc = await fromUuid(loc.uuid);
+            return locationDoc ? locationDoc.getFlag("campaign-codex", "data.parentRegion") : null;
+          } catch {
+            return null;
+          }
+        });
+        const regionUuids = (await Promise.all(regionPromises)).filter(Boolean);
+        regionUuids.forEach(uuid => allIndirectUuids.add(uuid));
       }
+      
+      if(changedType === "shop") {
+        const shopData = changedDoc.getFlag("campaign-codex", "data") || {};
+        if(shopData.linkedLocation) {
+          allIndirectUuids.add(shopData.linkedLocation);
+          const locationDoc = await fromUuid(shopData.linkedLocation);
+          if(locationDoc) {
+            const parentRegion = locationDoc.getFlag("campaign-codex", "data.parentRegion");
+            if(parentRegion) allIndirectUuids.add(parentRegion);
+          }
+        }
+      }
+
     } catch (e) {
       console.warn(`Campaign Codex | Could not process indirect relationships for ${changedDocUuid}`, e);
     }
-
-    for (const app of Object.values(ui.windows)) {
-      if (!app.document?.getFlag) continue;
-      if (docsWithOpenEditors.has(app.document.uuid)) {
-        console.log(`Campaign Codex | Skipping refresh for ${app.document.name} because it has an open editor.`);
-        continue;
-      }
-      
-      if (app.document.uuid === changedDocUuid) {
-        sheetsToRefresh.add(app);
-        continue;
-      }
-
-      if (indirectlyRelatedUuids.has(app.document.uuid)) {
-        sheetsToRefresh.add(app);
-        continue;
-      }
-
-      if (app._isRelatedDocument && (await app._isRelatedDocument(changedDocUuid))) {
-        sheetsToRefresh.add(app);
-      }
-    }
-    const activeWindow = ui.activeWindow;
-
-    for (const app of sheetsToRefresh) {
-        if (app !== activeWindow) {
-            app.render(true, { focus: false });
-        }
-    }
-
-    if (activeWindow && sheetsToRefresh.has(activeWindow)) {
-        await activeWindow.render(true);
-        activeWindow.bringToTop();
-    }
-if (foundry.applications.instances.get("campaign-codex-toc-sheet")){foundry.applications.instances.get("campaign-codex-toc-sheet").render();}
   }
+
+  allIndirectUuids.forEach(uuid => allUuidsToRefresh.add(uuid));
+
+  const finalUuidsToRefresh = new Set(allUuidsToRefresh);
+
+  for (const app of foundry.applications.instances.values()) {
+    if (!app.document?.getFlag) continue;
+    
+    if (finalUuidsToRefresh.has(app.document.uuid)) {
+      continue;
+    }
+
+    let isRelated = false;
+    if (app._isRelatedDocument) {
+      for (const changedDocUuid of changedDocUuids) {
+        if (await app._isRelatedDocument(changedDocUuid)) {
+          isRelated = true;
+          break;
+        }
+      }
+    }
+
+    if (isRelated) {
+      finalUuidsToRefresh.add(app.document.uuid);
+    }
+  }
+
+  const tocSheet = foundry.applications.instances.get("campaign-codex-toc-sheet");
+  if (tocSheet) {
+    tocSheet.render();
+  }
+  
+  // if (!finalUuidsToRefresh || finalUuidsToRefresh.length === 0) {
+  //   if (activeWindow.rendered) activeWindow.bringToFront();
+  //   return;
+  // }
+
+  const renderPromises = [];
+  const uuidSet = new Set(finalUuidsToRefresh);
+  
+  for (const app of foundry.applications.instances.values()) {
+    if (app.document && uuidSet.has(app.document.uuid)) {
+      if (app.rendered) {
+        const renderPromise = app.render(true);
+        if (renderPromise instanceof Promise) {
+          renderPromises.push(renderPromise);
+        }
+      }
+    }
+  }
+  
+  if (renderPromises.length > 0) {
+    await Promise.allSettled(renderPromises);
+  }
+
+
+  // const uuidSet = new Set(finalUuidsToRefresh);
+  //   for (const app of foundry.applications.instances.values()) {
+  //     if (app.document && uuidSet.has(app.document.uuid)) {
+  //         if (app.rendered) app.render(true);
+  //       }
+  //     }
+ }
 
   // =========================================================================
   // Scene Management
@@ -830,11 +915,8 @@ if (foundry.applications.instances.get("campaign-codex-toc-sheet")){foundry.appl
     if (!linkedSceneUuid) {
       return ui.notifications.warn("No scene linked to this document");
     }
-    console.log(document);
-    console.log(linkedSceneUuid);
     try {
       const linkedScene = await fromUuid(linkedSceneUuid);
-      console.log(linkedScene);
       if (!linkedScene) {
         return ui.notifications.error("Linked scene not found");
       }
@@ -887,11 +969,6 @@ if (foundry.applications.instances.get("campaign-codex-toc-sheet")){foundry.appl
         }
     return `<span class="entity-type">${metaLabel}</span>`;
 
-    // const tag = npcData.tagMode;
-    // if (tag) return `<span class="entity-type" style="background: var(--cc-border);">${localize("names.tag")}</span>`;
-    // if (!actor) return `<span class="entity-type">${localize('names.npc')}</span>`;
-    // if (actor.type === "character") return `<span class="entity-type-player">${localize('names.player')}</span>`;
-    // return `<span class="entity-type">${localize('names.npc')}</span>`;
   }
 
   async findOrCreateNPCJournalForActor(actor) {
@@ -990,11 +1067,12 @@ if (foundry.applications.instances.get("campaign-codex-toc-sheet")){foundry.appl
 
     ui.notifications.info(`Moved "${childRegionDoc.name}" into "${parentRegionDoc.name}".`);
 
-    for (const app of Object.values(ui.windows)) {
+    for (const app of foundry.applications.instances.values()) {
+    // for (const app of Object.values(ui.windows)) {
       if (app.document && (app.document.uuid === parentRegionDoc.uuid || app.document.uuid === childRegionDoc.uuid || app.document.uuid ===  oldParentUuid)) {
 
       // if (app.document && [parentRegionDoc.uuid, childRegionDoc.uuid, oldParentUuid].includes(app.document.uuid)) {
-        app.render(true);
+      if (app.rendered) app.render(true);
       }
     }
   }

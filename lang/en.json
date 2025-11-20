@@ -1,17 +1,24 @@
 {
-  "CAMPAIGN_CODEX": {
+  "CAMPAIGN_CODEX": 
+  {
     "welcomePageHTML" : "<div> <p><strong>Welcome to Campaign Codex</strong></p> <p>Folder management, system item price location and system item currency location, and other configurations can be changed in settings.</p> <div><button data-campaign-codex-handler=\"campaign-codex|openMenu|core_settings\"><i class=\"fas fa-wrench\"></i>Settings</button></div> <hr> <p><strong>Be part of the Campaign Codex Community</strong></p> <p>If you would like to suggest a feature, report a bug, or just want to chat, feel free to join us on Discord.</p> <div><button data-campaign-codex-handler=\"campaign-codex|openWindow|https://discord.gg/fycwH79s2y\"><i class=\"fab fa-discord\"></i> Join Discord</button></div> <p><strong>Found a bug?</strong></p> <p>If you would like to report a bug and Discord is not your thing head on over to GitHub.</p> <div><button data-campaign-codex-handler=\"campaign-codex|openWindow|https://github.com/xthesaintx/cc13\"><i class=\"fas fa-bug\"></i> Report a Bug</button></div> <p><strong>Supporting the development</strong></p> <p>If you want to support the development, consider taking a look at the membership options on Patreon</a>.</p> <div><button data-campaign-codex-handler=\"campaign-codex|openWindow|https://patreon.com/wgtngm\"><i class=\"fas fa-star\"></i> Become a member</button></div><p><strong>Documentation</strong></p> <p>Feeling a little lost? Head over to our documentation page for some direction, or jump on Discord and ask a question</a>.</p> <div><button data-campaign-codex-handler=\"campaign-codex|openWindow|https://campaigncodex.wgtngm.com\"><i class=\"fas fa-book\"></i> Documentation</button></div></div>",   
     "context":{
         "export":"Export to Standard Journal",
         "group":"Add to {type}"
+    },
+    "tabs": {
+      "original-name": "Original Name",
+      "override-name": "Override Name",
+      "visible": "Visible",
+      "edit-title": "Configure Tabs",
+      "reset": "Reset to Defaults"
     },
     "button":{
         "title":"Create new {type}",
         "droptoscene" : "Drop  {type} to current scene",
         "tagmode": "Tag Mode"
     },
-    "info":
-    {
+    "info": {
         "automatically":"{type} are automatically populated from all {source}.",
         "refresh":"Refresh",
         "linkfound":"Linking existing {type}.",
@@ -27,6 +34,10 @@
       "self":"A group cannot be added to itself.",
       "expandAll": "Expand All",
       "collapseAll": "Collapse All",
+      "toggleRegions": "Hide/Show Regions",
+      "toggleShops": "Hide/Show Entries",
+      "toggleLocations": "Hide/Show Locations",
+      "toggleGroups": "Hide/Show Groups",
       "toggleItems": "Hide/Show Inventory Items",
       "toggleNPCs": "Hide/Show NPCs",
       "toggleNPCTags": "Hide/Show Tags on NPCs",
@@ -39,6 +50,7 @@
       "in":"{type} {in}"
     },
     "names": {
+      "widgets":"Widgets",
       "regionlocation": "Region or Location",
       "location": "Location",
       "locations": "Locations",
@@ -67,13 +79,19 @@
       "tag": "Tag",
       "tags": "Tags",
       "inventory":"Inventory",
+      "loot": "Loot",
       "scene":"Scene",
       "standard": "Standard",
       "quest":"Quest",
       "quests":"Quests",
-      "toc":"Table of Contents"
+      "toc":"Table of Contents",
+      "widgets": "Widgets"
     },
     "settings": {
+      "hideCCbutton": {
+        "name": "Hide CC Scene Button",
+        "hint": "Hide the CC scene button from NON GM users."
+      },
       "useStyledTocButton": {
         "name": "Styled TOC Button",
         "hint": "Enable to use the Campaign Codex theme for the Table of Contents button in the scene controls."
@@ -242,7 +260,8 @@
           "player": "Send <strong>{type}</strong> to which player character?"
         }
       },
-      "cancel": "Cancel"
+      "cancel": "Cancel",
+      "Save": "Save"
     }
   }
 }

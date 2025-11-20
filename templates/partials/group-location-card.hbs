@@ -1,9 +1,10 @@
-<div class="group-location-card" data-sheet-uuid="{{location.uuid}}">
-  <div class="location-image">
-    <img class="card-image-clickable" data-sheet-uuid="{{location.uuid}}" src="{{getAsset "image" location.type location.img}}" alt="{{location.name}}">
+<div class="group-location-card" data-action="openLocation" data-uuid="{{location.uuid}}">
+  <div class="location-image {{#if (not showImage)}}hide-loc-image{{/if}}">
+    <img class="card-image-clickable" data-uuid="{{location.uuid}}" src="{{getAsset "image" location.type location.img}}" alt="{{location.name}}">
   </div>
+  <i class="{{#if iconOverride}}{{iconOverride}}{{else}}{{location.displayIcon}}{{/if}} location-tag"></i>
   <div class="location-info">
-    <h4 class="location-name"><i class="{{location.displayIcon}}"></i> {{location.name}}</h4>
+    <h4 class="location-name">{{location.name}}</h4>
 
     {{#if location.region}}
       <div class="entity-locations">

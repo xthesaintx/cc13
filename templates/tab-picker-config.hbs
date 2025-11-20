@@ -1,0 +1,37 @@
+<div class="form-body">
+    <p class="notes">
+        Select which tabs are visible by default for each sheet type.
+        This setting applies to all users. GMs can override this for individual sheets using the "Configure Tabs" button <i class="fas fa-cog"></i> on the sheet header.
+    </p>
+
+    <div class="table-container">
+        <table class="cc-tab-picker">
+            <thead>
+                <tr>
+                    <th>Sheet Type</th>
+                    {{#each allTabs as |tab|}}
+                        <th title="{{tab.label}}">{{tab.label}}</th>
+                    {{/each}}
+                </tr>
+            </thead>
+            <tbody>
+                {{#each sheetRows as |row|}}
+                    <tr>
+                        <td><strong>{{row.name}}</strong></td>
+                        
+                        {{#each row.tabs as |tab|}}
+                            <td>
+                                {{#if tab.exists}}
+                                    <input type="checkbox" name="{{tab.name}}" {{checked tab.checked}} title="{{row.name}} - {{tab.label}}">
+                                {{else}}
+                                    <span class="no-tab">&mdash;</span>
+                                {{/if}}
+                            </td>
+                        {{/each}}
+                    </tr>
+                {{/each}}
+            </tbody>
+        </table>
+    </div>
+</div>
+

@@ -1,31 +1,26 @@
 <div class="group-tree">
   <div class="tree-header">
-    <button type="button" class="btn-expand-all" title="{{ccLocalize 'group.expandAll'}}" style="width:32px">
-      <i class="fas fa-expand-arrows-alt"></i>
-    </button>
-    <button type="button" class="btn-collapse-all" title="{{ccLocalize 'group.collapseAll'}}" style="width:32px">
-      <i class="fas fa-compress-arrows-alt"></i>
-    </button>
-    
+   <i class="fas fa-expand-arrows-alt btn-expand-all" title="{{ccLocalize 'group.expandAll'}}" data-action="expandAll"></i>
+    <i class="fas fa-compress-arrows-alt btn-collapse-all" title="{{ccLocalize 'group.collapseAll'}}" data-action="collapseAll"></i>
     {{#unless _showTreeTags}}
-      <button type="button" class="toggle-tree-items {{toggleClass}}" title="{{ccLocalize 'group.toggleItems'}}" style="width:32px">
-        <i class="fas fa-boxes"></i>
-      </button>
-      <button type="button" class="toggle-tree-npcs {{toggleClassNPC}}" title="{{ccLocalize 'group.toggleNPCs'}}" style="width:32px">
-        <i class="fas fa-user"></i>
-      </button>
-      <button type="button" class="toggle-tree-npctags {{toggleClassNPCTags}}" title="{{ccLocalize 'group.toggleNPCTags'}}" style="width:32px">
-        <i class="fas fa-user-tag"></i>
-      </button>
+      <i class="fas fa-sitemap toggle-tree-groups {{toggleClassGroups}}" title="{{ccLocalize 'group.toggleGroups'}}" data-action="toggleTreeGroups"></i>
+      <i class="fas fa-globe toggle-tree-regions {{toggleClassRegions}}" title="{{ccLocalize 'group.toggleRegions'}}" data-action="toggleTreeRegions"></i>
+      <i class="fas fa-map-marker-alt toggle-tree-locations {{toggleClassLocations}}" title="{{ccLocalize 'group.toggleLocations'}}" data-action="toggleTreeLocations"></i>
+      <i class="fas fa-house toggle-tree-shops {{toggleClassShops}}" title="{{ccLocalize 'group.toggleShops'}}" data-action="toggleTreeShops"></i>
+      <i class="fas fa-user toggle-tree-npcs {{toggleClassNPC}}" title="{{ccLocalize 'group.toggleNPCs'}}" data-action="toggleTreeNpcs"></i>
+      <i class="fas fa-boxes toggle-tree-items {{toggleClass}}" title="{{ccLocalize 'group.toggleItems'}}" data-action="toggleTreeItems"></i>
+      <i class="fas fa-user-tag toggle-tree-npctags {{toggleClassNPCTags}}" title="{{ccLocalize 'group.toggleNPCTags'}}" data-action="toggleTreeNpcTags"></i>
     {{else}}
+      <div></div>
+      <div></div>
+      <div></div>
+      <div></div>
       <div></div>
       <div></div>
       <div></div>
     {{/unless}}
 
-    <button type="button" class="toggle-tree-tags {{toggleClassTag}}" title="{{ccLocalize 'group.toggleTagMode'}}" style="width:32px">
-      <i class="fas fa-tag"></i>
-    </button>
+    <i class="fas fa-tag toggle-tree-tags {{toggleClassTag}}" title="{{ccLocalize 'group.toggleTagMode'}}" data-action="toggleTreeTags"></i>
   </div>
   <div class="tree-content scrollable">
     {{{treeContent}}}

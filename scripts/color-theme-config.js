@@ -45,7 +45,7 @@ export class ColorThemeConfig extends ColorThemeCC {
      * @override
      */
     static defineSchema() {
-        const fontChoices = FontConfig.getAvailableFontChoices();
+        const fontChoices = foundry.applications.settings.menus.FontConfig.getAvailableFontChoices();
 
         return new SchemaField({
             ui: new ColorField({ label: "UI Elements"}),
@@ -150,7 +150,7 @@ export class ColorThemeConfig extends ColorThemeCC {
     }
 
     static async #onResetDefaults() {
-        const fontChoices = FontConfig.getAvailableFontChoices();
+        const fontChoices = foundry.applications.settings.menus.FontConfig.getAvailableFontChoices();
         const schema = 
         new SchemaField({
             ui: new ColorField({ label: "UI Elements"}),

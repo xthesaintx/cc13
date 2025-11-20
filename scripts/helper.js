@@ -17,6 +17,9 @@ export const format = (key, data) => game.i18n.format(`CAMPAIGN_CODEX.${key}`, d
 
 export const renderTemplate = foundry.applications.handlebars.renderTemplate;
 
+// export const gameSystemClass = (id) => (id === "dnd5e" ? " dnd5e2-journal" : "");
+export const gameSystemClass = (id) => (id === "dnd5e" ? " dnd5e2-journal themed theme-light" : "");
+
 
 /**
  * HTML string for the main campaign codex action buttons.
@@ -173,6 +176,7 @@ export function getExportImportButtonsHtml(hasCampaignCodex) {
  * @returns {Promise<string|null>} A promise that resolves with the entered name or null if cancelled.
  */
 export async function promptForName(type) {
+    // console.log(type);
     try {
         const name = await foundry.applications.api.DialogV2.prompt({
             window: { title: `Create New ${type}` },
@@ -194,10 +198,12 @@ export async function promptForName(type) {
                 icon: '<i class="fas fa-times"></i>',
                 label: "Cancel"
             },
-            rejectClose: true,
+            rejectClose: false,
         });
         return name;
     } catch (e) {
+     // console.log(e);
+
         return null;
     }
 }
@@ -284,6 +290,7 @@ export function getCampaignCodexFolder(type, currentFolder =[]) {
             return null;
             }
     }
+
     return game.folders.find(
         (f) => f.name === folderName && f.type === "JournalEntry",
     );
@@ -585,6 +592,71 @@ export function applyTocButtonStyle() {
 
 
 /**
+ * Refreshes any open application windows that are associated with a
+ * document UUID from the provided list.
+ *
+ * @param {string[]} uuidsToRefresh - An array of document UUIDs to refresh.
+ */
+export function targetedRefresh(uuidsToRefresh = [], activeUuid = "") {
+  //   const activeWindow = ui.activeWindow;
+  //     if (!uuidsToRefresh || uuidsToRefresh.length === 0) {
+  //       return;
+  //     }
+  //     const uuidSet = new Set(uuidsToRefresh);
+  //     for (const app of foundry.applications.instances.values()) {
+  //       if (app.document && uuidSet.has(app.document.uuid)) {
+  //         app.render();
+  //       }
+  //     }
+  // if (activeWindow.document && uuidSet.has(activeWindow.document.uuid)) {
+  //   activeWindow.render();
+  // }
+  // console.log("targeted");
+}
+
+
+/**
+ * Migrates legacy widget data from 'flags.campaign-codex.data.widgets'
+ * to the new 'flags.campaign-codex.sheet-widgets' array.
+ *
+ * This is non-destructive and will not overwrite or remove any
+ * existing widgets in the 'sheet-widgets' array.
+ *
+ * @param {Document} document The document to migrate.
+ */
+export async function migrateLegacyWidgets(document) {
+  if (!document) return;
+  const legacyData = document.getFlag("campaign-codex", "data") || {};
+
+  const legacyWidgets = legacyData.widgets;
+  if (!legacyWidgets || typeof legacyWidgets !== "object") {
+    return;
+  }
+
+  const currentSheetWidgets = document.getFlag("campaign-codex", "sheet-widgets") || [];
+  const existingWidgetIds = new Set(currentSheetWidgets.map(w => w.id));
+  let widgetsWereAdded = false;
+  for (const [widgetName, widgetsById] of Object.entries(legacyWidgets)) {
+    for (const id of Object.keys(widgetsById)) {
+      if (!existingWidgetIds.has(id)) {
+        const newWidget = {
+          id: id,
+          widgetName: widgetName,
+          counter: 0,
+          active: false 
+        };
+        currentSheetWidgets.push(newWidget);
+        widgetsWereAdded = true;
+      }
+    }
+  }
+  if (widgetsWereAdded) {
+    await document.setFlag("campaign-codex", "sheet-widgets", currentSheetWidgets);
+    console.log(`Campaign Codex | Migrated ${currentSheetWidgets.length - existingWidgetIds.size} widgets for document: ${document.name}`);
+  }
+}
+
+/**
 * Converts a standard Journal Entry to a Campaign Codex sheet.
 * Can be called via the API: game.campaignCodex.convertJournalToCCSheet(uuid, type, pagesToSeparateSheets)
  * @param {string} uuid - The UUID of the Journal Entry to convert.
@@ -659,4 +731,23 @@ export async function convertJournalToCCSheet(uuid, type, pagesToSeparateSheets 
         }
         return null;
     }
+}
+
+
+/**
+ * Retrieves the default tab visibility settings for a specific sheet type.
+ * @param {string} sheetType - The sheet type (e.g., "npc", "location").
+ * @returns {object} An object with tab keys and their boolean visibility (e.g., {info: true, locations: false}).
+ */
+export function getDefaultSheetTabs(sheetType) {
+  const allSettings = game.settings.get("campaign-codex", "defaultTabVisibility");
+  const sheetSettings = {};
+  const prefix = `${sheetType}.`;
+  for (const key in allSettings) {
+    if (key.startsWith(prefix)) {
+      const tabKey = key.substring(prefix.length);
+      sheetSettings[tabKey] = allSettings[key];
+    }
+  }
+  return sheetSettings;
 }

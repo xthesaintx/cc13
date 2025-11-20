@@ -2,28 +2,24 @@
   <div class="tree-node-header {{#if node.hasChildren}}expandable{{/if}}">
     
     {{#if node.hasChildren}}
-      <i class="fas {{#if node.isExpanded}}fa-chevron-down{{else}}fa-chevron-right{{/if}} expand-icon expand-toggle"></i>
+      <i class="fas {{#if node.isExpanded}}fa-chevron-down{{else}}fa-chevron-right{{/if}} expand-icon expand-toggle" data-action="expantToggle"></i>
     {{else}}
       <i class="tree-spacer"></i>
     {{/if}}
 
     <i class="{{node.displayIcon}} node-icon" alt="{{node.name}}">&nbsp;</i>
-    <span class="tree-label {{#if node.isClickable}}clickable{{/if}}">
+    <span class="tree-label {{#if node.isClickable}}clickable{{/if}}{{#if (eq node.type 'item')}}clickable{{/if}}" data-type="{{node.type}}" {{#if (eq node.type 'item')}}data-uuid="{{node.uuid}}" data-action="openItem"{{else}}data-sheet-uuid="{{node.uuid}}" data-action="selectSheet"{{/if}} data-name="{{node.name}}" draggable="true" data-drag="true" data-entry-id="{{node.id}}" >
       {{node.name}}
       {{#if node.quests}}&nbsp;<i class="fas fa-scroll node-icon" style="font-size:10px">&nbsp;</i>{{/if}}
     </span>
     
     <div class="tree-actions">
       {{#if isGM}}
-        <button type="button" class="btn-remove-member" data-sheet-uuid="{{node.uuid}}" title="Remove from Group">
-          <i class="fas fa-times"></i>
-        </button>
+        <i class="fas fa-times btn-remove-member" data-uuid="{{node.uuid}}" data-action="removeMember" title="Remove from Group"></i>
       {{/if}}
     </div>
     <div class="tree-actions">
-      <button type="button" class="btn-open-sheet" data-sheet-uuid="{{node.uuid}}" title="Open Sheet">
-        <i class="fas fa-external-link-alt"></i>
-      </button>
+      <i class="fas fa-external-link-alt btn-open-sheet" data-action="open{{capitalize node.type}}" data-uuid="{{node.uuid}}" title="Open Sheet"></i>
     </div>
   </div>
 

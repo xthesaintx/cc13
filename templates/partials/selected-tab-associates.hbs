@@ -1,4 +1,6 @@
-<div class="selected-content-section">
+<div class="content-header">
+    <h2><i class="fas fa-user"></i> {{#if labelOverride}}{{labelOverride}}{{else}}{{ccLocalize "names.associates" }}{{/if}}</h2>
+</div>
   {{{dropToMapBtn}}}
 
   {{#if hasContent}}
@@ -8,4 +10,3 @@
   {{else}}
     <p><em>No associates linked.</em></p>
   {{/if}}
-</div>

@@ -1,16 +1,16 @@
 {{#each objectives}}
 <li class="objective-item" data-quest-id="{{../quest.id}}" data-objective-id="{{this.id}}" draggable="true">
   <div class="objective-content">
-      <a class="objective-toggle-icon" data-quest-id="{{../quest.id}}" data-objective-id="{{this.id}}" data-field="completed" title="Toggle Completion">
-          <i class="{{#if this.completed}}fas fa-circle-check{{else}}far fa-circle{{/if}}"></i>
-      </a>
+      <i class="far {{#if this.completed}}fa-circle-check{{else}}fa-circle{{/if}} objective-toggle-icon" data-quest-id="{{../quest.id}}" data-objective-id="{{this.id}}" data-field="completed" title="Toggle Completion" data-action="objectiveToggle" data-uuid="{{../uuid}}">
+      </i>
+      
       <span class="objective-text {{#if (not ../isGroupSheet)}}editable{{/if}}" data-quest-id="{{../quest.id}}" data-objective-id="{{this.id}}">{{this.text}}</span>
       <div class="objective-controls">
-          {{#if (not ../isGroupSheet)}} {{#if ../isGM}}
-          <a class="objective-toggle-icon" data-quest-id="{{../quest.id}}" data-objective-id="{{this.id}}" data-field="visible" title="Toggle Player Visibility">
+           {{#if ../isGM}} 
+          <a class="objective-toggle-icon" data-quest-id="{{../quest.id}}" data-objective-id="{{this.id}}" data-field="visible" title="Toggle Player Visibility"  data-action="objectiveToggle" data-uuid="{{../uuid}}">
               <i class="fas {{#if this.visible}}fa-eye{{else}}fa-eye-slash{{/if}}"></i>
           </a>
-         
+         {{#if (not ../isGroupSheet)}}
           <a class="remove-objective" data-quest-id="{{../quest.id}}" data-objective-id="{{this.id}}" title="Delete Objective">
               <i class="fas fa-trash"></i>
           </a>

@@ -37,6 +37,7 @@ class JournalTemplateManager {
             this.bundledTemplates = this._loadBundledTemplates();
         }
         this.userTemplates = await this._scanPath(game.settings.get("campaign-codex", "journalTemplateFolder"), "User");
+
     }
 
     /**
@@ -60,7 +61,6 @@ class JournalTemplateManager {
      */
     async _scanPath(path, prefix = "") {
         if (!path) return [];
-
         try {
             const data = await foundry.applications.apps.FilePicker.implementation.browse("data", path, { extensions: [".html", ".hbs"] });
             if (!data.files?.length) return [];

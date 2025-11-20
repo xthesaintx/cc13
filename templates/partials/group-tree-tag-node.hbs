@@ -2,18 +2,18 @@
   <div class="tree-node-header {{#if node.hasChildren}}expandable{{/if}}">
     
     {{#if node.hasChildren}}
-      <i class="fas {{#if node.isExpanded}}fa-chevron-down{{else}}fa-chevron-right{{/if}} expand-icon expand-toggle"></i>
+      <i class="fas {{#if node.isExpanded}}fa-chevron-down{{else}}fa-chevron-right{{/if}} expand-icon expand-toggle" data-action="expantToggle"></i>
     {{else}}
       <i class="tree-spacer"></i>
     {{/if}}
 
     <i class="{{node.displayIcon}} node-icon" alt="{{node.name}}">&nbsp;</i>
-    <span class="tree-label clickable"> {{node.name}}</span>
-
+    <span class="tree-label clickable" data-type="{{node.type}}" data-sheet-uuid="{{node.uuid}}" data-action="selectSheet" data-name="{{node.name}}" draggable="true" data-drag="true" data-entry-id="{{node.id}}" >
+      {{node.name}}
+      {{#if node.quests}}&nbsp;<i class="fas fa-scroll node-icon" style="font-size:10px">&nbsp;</i>{{/if}}
+    </span>
     <div class="tree-actions">
-      <button type="button" class="btn-open-sheet" data-sheet-type="{{node.type}}" data-sheet-uuid="{{node.uuid}}" title="Open Sheet">
-        <i class="fas fa-external-link-alt"></i>
-      </button>
+      <i class="fas fa-external-link-alt btn-open-sheet" data-action="open{{capitalize node.type}}" data-uuid="{{node.uuid}}" title="Open Sheet"></i>
     </div>
   </div>
 

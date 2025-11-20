@@ -1,8 +1,11 @@
+<div class="content-header">
+    <h2><i class="fas fa-scroll"></i> {{ccLocalize "names.quests" }}</h2>
+</div>
 {{#each entities as |entity|}}
 {{#unless entity.hide}}
   {{#if entity.questListHtml}}
-    <div class="quest-group">
-      <h3><i class="{{entity.icon}}">&nbsp;</i>{{entity.name}}</h3>
+    <div class="quest-group" data-doc-uuid="{{entity.uuid}}">
+      <h3 data-action="open{{capitalize entity.type}}" data-uuid="{{entity.uuid}}"><i class="{{#if entity.iconOverride}}{{entity.iconOverride}}{{else}}{{entity.icon}}{{/if}}">&nbsp;</i>{{entity.name}}</h3>
       {{{entity.questListHtml}}}
     </div>
   {{/if}}

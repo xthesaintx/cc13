@@ -3,29 +3,29 @@
     <div class="selected-sheet-info">
       <div class="selected-sheet-details">
         <h2>{{selectedSheet.name}}</h2>
+        {{#if selectedLabelOverride}}<p>{{selectedLabelOverride}}</p>{{/if}}
       </div>
+      <div class="selected-sheet-tags-content">
       {{{tagsContent}}}
+      </div>
+      <nav class="selected-sheet-tabs {{selectedSheet.type}}">
+        {{#each subTabs}}
+          <i class="{{this.icon}} selected-sheet-tab {{#if this.active}}active{{/if}}" data-tab="{{this.key}}" data-action="SelectedSheetTabChange" title="{{this.label}}"></i>
+        {{/each}}
+        {{{dropButtonHtml}}}
+        {{{sceneButtonHtml}}}
+        {{{actorButtonHtml}}}  
+        <i class="fas fa-external-link-alt btn-open-sheet selected-sheet-tab sheet-action" data-action="open{{capitalize selectedSheet.type}}" data-uuid="{{selectedSheet.uuid}}" title="{{ccLocalize "title.open.sheet"}}"></i>    
+      </nav>
     </div>
     <div class="selected-header-image">
       <img src="{{selectedImage}}">
     </div>
-    <div class="selected-sheet-actions {{selectedSheet.type}}">
-      {{{dropButtonHtml}}}
-      {{{sceneButtonHtml}}}
-      {{{actorButtonHtml}}}
-      <button type="button" class="btn-open-sheet" data-sheet-uuid="{{selectedSheet.uuid}}" title="{{ccLocalize "title.open.sheet"}}">
-        <i class="fas fa-external-link-alt"></i>
-      </button>
-    </div>
-    <nav class="selected-sheet-tabs {{selectedSheet.type}}">
-      {{#each subTabs}}
-        <div class="selected-sheet-tab {{#if this.active}}active{{/if}}" data-tab="{{this.key}}" title="{{this.label}}">
-          <i class="{{this.icon}}"></i>
-        </div>
-      {{/each}}
-    </nav>
   </div>
-  <div class="selected-sheet-content scrollable">
-    {{{selectedSheetContent}}}
-  </div>
+
+    {{#each selectedTabPanels}}
+      <section class="group-tab-panel-selected-sheet {{#if this.active}}active{{/if}} {{this.key}}" data-tab="{{this.key}}" {{#if (eq this.key 'widgets')}}data-preserve-scroll{{/if}}>
+      {{{this.content}}}
+      </section>
+    {{/each}}
 </div>

@@ -1,3 +1,6 @@
+import { widgetManager } from "./widgets/WidgetManager.js";
+import { CampaignCodexWidget} from "./widgets/CampaignCodexWidget.js";
+
 import { templateManager } from "./journal-template-manager.js";
 import { SimpleCampaignCodexExporter } from "./campaign-codex-exporter.js";
 import "./prosemirror-integration.js";
@@ -28,9 +31,10 @@ import {
     applyTocButtonStyle,
     handleJournalConversion, 
     confirmationDialog,
-    convertJournalToCCSheet
+    convertJournalToCCSheet,
+    migrateLegacyWidgets
 } from "./helper.js";
-
+import { CampaignCodexMapMarker, _getCampaignCodexIcon } from "./codex-map-marker.js";
 import { CampaignCodexTOCSheet } from "./campaign-codex-toc.js";
 // let tocSheetInstance = null;
 
@@ -45,6 +49,7 @@ Hooks.once("init", async function () {
     "modules/campaign-codex/templates/partials/group-sheet-sidebar.hbs",
     "modules/campaign-codex/templates/partials/group-tab-info.hbs",
     "modules/campaign-codex/templates/partials/group-tab-inventory.hbs",
+    "modules/campaign-codex/templates/partials/group-tab-regions.hbs",
     "modules/campaign-codex/templates/partials/group-tab-locations.hbs",
     "modules/campaign-codex/templates/partials/group-location-card.hbs",
     "modules/campaign-codex/templates/partials/selected-tab-inventory.hbs",
@@ -53,18 +58,53 @@ Hooks.once("init", async function () {
     "modules/campaign-codex/templates/partials/selected-tab-npcs.hbs",
     "modules/campaign-codex/templates/partials/selected-tab-tags.hbs",
     "modules/campaign-codex/templates/partials/selected-tab-associates.hbs",
+    "modules/campaign-codex/templates/partials/group-tab-journals.hbs",
     "modules/campaign-codex/templates/partials/group-tab-quests.hbs",
     "modules/campaign-codex/templates/partials/group-tab-npcs.hbs",
     "modules/campaign-codex/templates/partials/quest-objective.hbs",
     "modules/campaign-codex/templates/partials/quest-sub-objective.hbs",
+    "modules/campaign-codex/templates/partials/base-info.hbs",
+    "modules/campaign-codex/templates/partials/base-notes.hbs",
+    "modules/campaign-codex/templates/partials/group-widgets.hbs",
     ];
     foundry.applications.handlebars.loadTemplates(templatePaths);
+
+
+    // === [MAP MARKERS] ===
+    console.log("Campaign Codex | Initializing custom map markers");
+    CONFIG.CampaignCodex = CONFIG.CampaignCodex || {};
+    CONFIG.CampaignCodex.mapLocationMarker = {
+      default: {
+        icon: CampaignCodexMapMarker, 
+        backgroundColor: 0xd4af37,
+        borderColor: 0x2a2a2a,
+        borderHoverColor: 0xFF5500,
+        fontFamily: "Roboto Slab",
+        shadowColor: 0x000000,
+        textColor: 0x2a2a2a  
+      }
+    };
+    
+    const NoteClass = CONFIG.Note.objectClass;
+    NoteClass.prototype._getCampaignCodexIcon = _getCampaignCodexIcon;
+    const originalDrawControlIcon = NoteClass.prototype._drawControlIcon;
+    NoteClass.prototype._drawControlIcon = function(...args) {
+      const codexIcon = this._getCampaignCodexIcon();
+      if (codexIcon) {
+        codexIcon.x -= (this.document.iconSize / 2);
+        codexIcon.y -= (this.document.iconSize / 2);
+        return codexIcon;
+      }
+      return originalDrawControlIcon.apply(this, args);
+    };
+    // === [END MAP MARKERS] ===
 
 
     game.campaignCodexImporting = true;
     await campaigncodexSettings();
     Handlebars.registerHelper("ccLocalize", localize);
     Handlebars.registerHelper("getAsset", TemplateComponents.getAsset);
+    Handlebars.registerHelper("ccFormat", format);
     Handlebars.registerHelper("getIcon", function (entityType) { return TemplateComponents.getAsset("icon", entityType); });
     Handlebars.registerHelper("if_system", function (systemId, options) {
         if (game.system.id === systemId) {
@@ -72,7 +112,10 @@ Hooks.once("init", async function () {
         }
         return options.inverse(this);
     });
-
+    Handlebars.registerHelper('capitalize', function(string) {
+      if (typeof string !== 'string' || !string) return '';
+      return string.charAt(0).toUpperCase() + string.slice(1);
+    });
 });
 
 Hooks.once("i18nInit", async function () {
@@ -111,22 +154,26 @@ Hooks.once("i18nInit", async function () {
 
 
 Hooks.once("ready", async function () {
-    console.log("Campaign Codex | Ready");
-    game.campaignCodex = new CampaignManager();
     // TEMPLATE MENU BUILD
     templateManager.scanAllTemplates();
-    game.campaignCodex.initialize(); 
 
+    console.log("Campaign Codex | Ready");
+    game.campaignCodex = new CampaignManager();
+    game.campaignCodex.initialize(); 
     game.campaignCodex.tocSheetInstance = null;
 
     // Exporter Testing
     game.SimpleCampaignCodexExporter = SimpleCampaignCodexExporter; 
     game.campaignCodex.convertJournalToCCSheet = convertJournalToCCSheet;
+ 
     //API
     game.modules.get('campaign-codex').api = {
-      openTOCSheet: () => game.campaignCodex.openTOCSheet(),
+      openTOCSheet: game.campaignCodex.openTOCSheet,
       convertJournalToCCSheet: convertJournalToCCSheet,
-      exportToObsidian:()=> SimpleCampaignCodexExporter.exportToObsidian()
+      exportToObsidian:()=> SimpleCampaignCodexExporter.exportToObsidian(),
+      migrateLegacyWidgets:(document)=> migrateLegacyWidgets(document),
+      CampaignCodexWidget: CampaignCodexWidget, 
+      widgetManager: widgetManager
     };
 
 
@@ -339,6 +386,15 @@ Hooks.on("preUpdateJournalEntry", async (journal, changed, options, userId) => {
     }
 });
 
+Hooks.on("updateFolder", async (document, changes, options, userId) => {
+  if (document && document.type === "JournalEntry"){
+  const tocSheet = foundry.applications.instances.get("campaign-codex-toc-sheet");
+    if (tocSheet) {
+      tocSheet.render();
+    }
+}
+});
+ 
 Hooks.on("updateJournalEntry", async (document, changes, options, userId) => {
   if (
     document._skipRelationshipUpdates ||
@@ -369,12 +425,18 @@ Hooks.on("updateJournalEntry", async (document, changes, options, userId) => {
       );
     }
   }
-
-  if (isTag && changes.hasOwnProperty("name")) {
-    await game.campaignCodex.refreshAllOpenCodexSheets();
-  } else {
-    await game.campaignCodex._scheduleSheetRefresh(document.uuid);
-  }
+    if (isTag && changes.hasOwnProperty("name")) {
+         await game.campaignCodex.scheduleGlobalRefresh();
+     } else {
+         await game.campaignCodex.scheduleSheetRefresh(document.uuid);
+     }
+  // if (isTag && changes.hasOwnProperty("name")) {
+  //   await game.campaignCodex.refreshAllOpenCodexSheets();
+  //   console.log("all");
+  // } else {
+  //   await game.campaignCodex._scheduleSheetRefresh(document.uuid);
+  //   console.log("schedule");
+  // }
 });
 
 Hooks.on("updateActor", async (actor, changes, options, userId) => {
@@ -385,7 +447,7 @@ Hooks.on("updateActor", async (actor, changes, options, userId) => {
   );
 
   if (linkedNPC) {
-    await game.campaignCodex._scheduleSheetRefresh(linkedNPC.uuid);
+    await game.campaignCodex.scheduleSheetRefresh(linkedNPC.uuid);
   }
 });
 
@@ -419,7 +481,9 @@ Hooks.on("importAdventure", async (adventure, formData, created, updated) => {
     }
 });
 
+
 Hooks.on("getSceneControlButtons", (controls) => {
+  if (!game.settings.get("campaign-codex", "hideCCbutton") || game.user.isGM){
     controls["campaign-codex"] = {
         name: "campaign-codex",
         title: "Campaign Codex",
@@ -452,6 +516,7 @@ Hooks.on("getSceneControlButtons", (controls) => {
         },
         activeTool: "toc-sheet"
     };
+}
 });
 
 

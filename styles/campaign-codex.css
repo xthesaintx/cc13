@@ -4,46 +4,54 @@
  * ---------------------------------------------
  */
 
-/* Global and Root Variables */
 .campaign-codex img {
   border: 0px;
   outline: 0px !important;
+  cursor: default;
 }
 
-/* Base Application Overrides */
-
+.application.sheet.campaign-codex,
 .app.window-app.sheet.journal-sheet.campaign-codex,
 .application.window-app.sheet.journal-sheet.campaign-codex {
   border: none !important;
   border-radius: 0 !important;
   overflow: visible !important;
+  background: var(--color-cool-5-90);
 }
 
-.campaign-codex  {
+.campaign-codex {
   --cc-primary: #8b1538;
-  --cc-slate:#5a6268;
+  --cc-slate: #5a6268;
   --cc-text-muted: #888;
-  --cc-border-medium:#CCC;
+  --cc-border-medium: #ccc;
   --cc-sidebar-bg: #2a2a2a;
   --cc-sidebar-text: #ffffff;
   --cc-main-bg: #f8f9fa;
   --cc-main-text: #2a2a2a;
   --cc-ui: #d4af37;
   --cc-accent: #d4af37;
-  --cc-accent80: #d4af37CC;
-  --cc-accent30: #d4af374D;
-  --cc-accent10: #d4af371A;
+  --cc-accent80: #d4af37cc;
+  --cc-accent30: #d4af374d;
+  --cc-accent10: #d4af371a;
   --cc-success: #28a745;
   --cc-danger: #dc3545;
   --cc-border: #444444;
   --cc-card-bg: #ffffff;
-  --cc-dark:0,0,0;
-  --cc-windowheader:#2a2a2aAA;
+  --cc-dark: 0, 0, 0;
+  --cc-windowheader: #2a2a2aaa;
   --cc-shadow: 0 2px 8px rgba(var(--cc-dark), 0.1);
   --cc-border-light: #e9ecef;
   --cc-font-heading: "Modesto Condensed", serif;
   --cc-font-body: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 }
+
+.campaign-codex prose-mirror{
+  color: var(--cc-main-text);
+}
+.campaign-codex .cc-non-owner-view {
+  color: var(--cc-main-text);
+}
+
 .campaign-codex .window-header {
   background: var(--cc-windowheader);
 }
@@ -55,40 +63,32 @@
 }
 
 .sheet.journal-entry.cc-editor .window-content {
-/*  background: url(../ui/texture.jpg);*/
 }
 
 .cc-editor {
   outline: 0 solid transparent;
 }
-.campaign-codex .tab-panel section.journal-page-content.cc-non-owner-view{
-  color: var(--cc-main-text);
-}
-.campaign-codex .prosemirror .editor-content{
-  color: var(--cc-main-text);
-}
+
 /*
  * ---------------------------------------------
  * Main Sheet Layout
  * ---------------------------------------------
  */
 
-/* Sheet Container */
 .campaign-codex .sheet-container {
   display: flex;
   width: 100%;
   height: 100%;
   min-height: 420px;
   background: var(--cc-main-bg);
-/*  background: url(../ui/texture-white.jpg);*/
   box-shadow: 0 8px 32px rgba(var(--cc-dark), 0.15);
   overflow: hidden;
   font-family: var(--cc-font-body);
 }
 
-/* Sidebar */
 .campaign-codex .sheet-sidebar {
   width: 300px;
+  min-width: 250px;
   background: var(--cc-sidebar-bg);
   color: var(--cc-sidebar-text);
   display: flex;
@@ -117,7 +117,6 @@
   border-radius: 12px;
   overflow: hidden;
   margin: 0 auto 16px auto;
-/*  box-shadow: var(--cc-shadow);*/
   position: relative;
   display: flex;
   justify-content: center;
@@ -142,7 +141,6 @@
   transition: all 0.2s ease;
   line-height: 1.1;
   overflow-wrap: break-word;
-/*  overflow-x: hidden;*/
 }
 
 .campaign-codex .sheet-title:hover {
@@ -155,15 +153,26 @@
   letter-spacing: 1px;
   color: var(--cc-accent80);
   margin-bottom: 16px;
+  cursor: text;
 }
 
-/* Sidebar Navigation Tabs */
+.campaign-codex .sub-title i {
+  cursor: pointer;
+  color: var(--cc-accent);
+}
+
+
+.campaign-codex .sub-title {
+    display: flex;
+    flex-direction: row;
+    gap: 8px;
+    justify-content: center;
+  }
+
 .campaign-codex .sidebar-tabs {
   border-bottom: 1px solid var(--cc-border);
   display: grid;
   grid-template-columns: 1fr 1fr;
-  /*    display: flex;
-    overflow-x: auto;*/
 }
 
 .campaign-codex .tab-item {
@@ -207,19 +216,18 @@
 }
 
 .campaign-codex .tab-item .tab-stat {
-    font-size: 10px;
-    font-weight: 600;
-    opacity: 0.8;
-    flex-shrink: 0;
-    background: var(--cc-sidebar-text);
-    padding: 2px 2px;
-    border-radius: 32px;
-    color: var(--cc-sidebar-bg);
-    margin-right: -8px;
+  font-size: 10px;
+  font-weight: 600;
+  opacity: 0.8;
+  flex-shrink: 0;
+  background: var(--cc-sidebar-text);
+  padding: 2px 2px;
+  border-radius: 32px;
+  color: var(--cc-sidebar-bg);
+  margin-right: -8px;
 }
 
-*/
-.campaign-codex .tab-item.active .tab-stat {
+*/ .campaign-codex .tab-item.active .tab-stat {
   background: var(--cc-accent);
   color: var(--cc-sidebar-bg);
 }
@@ -228,9 +236,6 @@
   display: none;
 }
 
-
-
-/* Main Content Area */
 .campaign-codex .sheet-main {
   scrollbar-width: auto;
   flex: 1;
@@ -253,18 +258,17 @@
   display: none;
   padding: 32px;
   height: 100%;
-  overflow-y: auto;
+  overflow-y: scroll;
   flex: 1;
 }
 
 .campaign-codex .tab-panel.active {
   display: flex;
   flex-direction: column;
-  overflow-y: auto;
+  overflow-y: scroll;
   position: relative;
 }
 
-/* Content Headers */
 .campaign-codex .content-header {
   margin-bottom: 24px;
   padding-bottom: 12px;
@@ -293,9 +297,7 @@
   font-size: 20px;
 }
 
-/* Form Elements */
 .campaign-codex .form-section {
-/*  margin-bottom: 24px;*/
 }
 
 .campaign-codex .form-label {
@@ -339,7 +341,6 @@
  * ---------------------------------------------
  */
 
-/* Action Buttons */
 .campaign-codex .action-btn {
   width: 32px;
   height: 32px;
@@ -385,7 +386,6 @@
   transform: none !important;
 }
 
-/* Save Button */
 .campaign-codex .save-btn {
   position: absolute;
   top: 20px;
@@ -417,7 +417,6 @@
   background: var(--cc-danger);
 }
 
-/* Info Banners */
 .campaign-codex .info-banner {
   margin-bottom: 16px;
   display: flex;
@@ -445,7 +444,6 @@
   color: var(--cc-accent);
 }
 
-/* Refresh Button */
 .campaign-codex .refresh-btn {
   background: transparent;
   border: 1px solid var(--cc-accent);
@@ -474,7 +472,6 @@
   margin-left: auto;
 }
 
-/* Drop Zones */
 .campaign-codex .drop-zone {
   border-radius: 12px;
   padding: 10px;
@@ -512,7 +509,6 @@
   font-size: 14px;
 }
 
-/* Empty States */
 .campaign-codex .empty-state {
   text-align: center;
   padding: 60px 40px;
@@ -540,7 +536,6 @@
   margin: 0;
 }
 
-/*sort button*/
 .campaign-codex .sort-btn {
   background: none;
   border: 0px;
@@ -557,7 +552,6 @@
  * ---------------------------------------------
  */
 
-/* Generic Entity Grid */
 .campaign-codex .entity-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
@@ -578,17 +572,14 @@
   position: relative;
 }
 
-.campaign-codex .objectives-section.quest-inventory .shop-items .group-item-card:hover,
-.campaign-codex .shop-inventory-section .shop-items .group-item-card:hover{
-  transform: translateY(-1px);
-  box-shadow: 0 8px 25px rgba(var(--cc-dark), 0.15);
-  border-color: var(--cc-accent);
+.campaign-codex .entity-card.hide-entity-image {
+  padding: 16px 16px 16px 16px;
 }
 
 .campaign-codex .selected-inventory-item:hover,
 .campaign-codex .entity-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 25px rgba(var(--cc-dark), 0.15);
+/*  transform: translateY(-4px);
+  box-shadow: 0 8px 25px rgba(var(--cc-dark), 0.15);*/
   border-color: var(--cc-accent);
 }
 
@@ -602,6 +593,10 @@
   position: absolute;
   top: 0px;
   left: 0px;
+}
+
+.campaign-codex .entity-image.hide-entity-image {
+display: none;
 }
 
 .campaign-codex .entity-image img {
@@ -631,7 +626,6 @@
   display: inline-block;
   text-wrap: auto;
   word-wrap: break-word;
-  word-break: break-all;
 }
 
 .campaign-codex .entity-meta {
@@ -713,11 +707,9 @@
   max-width: 80%;
   white-space: nowrap;
   text-overflow: ellipsis;
-      overflow: hidden;
+  overflow: hidden;
 }
 
-
-/* NPC Card Styling */
 .campaign-codex .npc-section {
   margin-bottom: 16px;
 }
@@ -771,7 +763,6 @@
   margin-top: 8px;
 }
 
-/* Linked Actor Cards */
 .campaign-codex .linked-actor-card {
   background: var(--cc-card-bg);
   border: 1px solid var(--cc-border-light);
@@ -857,7 +848,6 @@
  * ---------------------------------------------
  */
 
-/* Inventory Table */
 .campaign-codex .inventory-table {
   background: var(--cc-card-bg);
   border-radius: 12px;
@@ -867,7 +857,7 @@
 
 .campaign-codex .table-header {
   display: grid;
-  grid-template-columns: 60px 1fr 100px 120px 120px 100px;
+
   gap: 16px;
   padding: 16px;
   background: var(--cc-main-bg);
@@ -881,7 +871,7 @@
 
 .campaign-codex .inventory-item {
   display: grid;
-  grid-template-columns: 60px 1fr 100px 120px 120px 100px;
+
   gap: 16px;
   padding: 16px;
   align-items: center;
@@ -942,13 +932,19 @@
 
 .campaign-codex .quantity-control {
   display: flex;
+  justify-content: center;
   align-items: center;
   gap: 6px;
 }
 
+.campaign-codex .quantity-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
 .campaign-codex .quantity-btn {
-  width: 28px;
-  height: 28px;
+  width: 12px;
+  height: 12px;
   border: 1px solid var(--cc-border-light);
   background: var(--cc-card-bg);
   border-radius: 4px;
@@ -956,7 +952,7 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  font-size: 12px;
+  font-size: 10px;
   color: var(--cc-text-muted);
   transition: all 0.2s ease;
 }
@@ -967,7 +963,14 @@
   border-color: var(--cc-accent);
 }
 
-.campaign-codex .quantity-input,
+.campaign-codex .quantity-input {
+  width: 40px;
+  padding: 6px 8px;
+  border: 1px solid var(--cc-border-light);
+  border-radius: 4px;
+  text-align: center;
+  font-size: 12px;
+}
 .campaign-codex .price-input {
   width: 60px;
   padding: 6px 8px;
@@ -979,13 +982,12 @@
 
 .campaign-codex .item-actions {
   display: grid;
-/*  grid-template-columns: 32px 32px;*/
-      grid-template-columns: auto auto;
+
+  grid-template-columns: auto auto;
   gap: 4px;
   min-width: 40px;
 }
 
-/* Loot Mode Inventory */
 .campaign-codex .inventory-table.loot-mode .table-header,
 .campaign-codex .inventory-table.loot-mode .inventory-item {
   grid-template-columns:
@@ -993,13 +995,15 @@
     minmax(100px, 120px) 68px;
 }
 
-/* Markup Control */
 .campaign-codex .markup-control {
   background: var(--cc-card-bg);
   border: 1px solid var(--cc-border-light);
   border-radius: 12px;
   padding: 20px;
   margin-bottom: 24px;
+  display: grid;
+  gap: 16px;
+  grid-template-columns: auto auto;
 }
 
 .campaign-codex .markup-control h3 {
@@ -1015,6 +1019,7 @@
   letter-spacing: 0.5px;
 }
 
+.campaign-codex .cash-input-group,
 .campaign-codex .markup-input-group {
   display: flex;
   align-items: center;
@@ -1022,6 +1027,7 @@
   margin-bottom: 8px;
 }
 
+.campaign-codex .cash-input,
 .campaign-codex .markup-input {
   width: 80px;
   padding: 8px 12px;
@@ -1031,6 +1037,7 @@
   font-weight: 600;
 }
 
+.campaign-codex .cash-label,
 .campaign-codex .markup-label {
   font-size: 12px;
   color: var(--cc-text-muted);
@@ -1048,7 +1055,6 @@
  * ---------------------------------------------
  */
 
-/* Journal Editor Dialog */
 .campaign-codex .dialog.journal-editor form {
   height: 100%;
 }
@@ -1065,7 +1071,6 @@
 .campaign-codex .dialog.journal-editor .editor-container {
 }
 
-/* Player Selection Dialog */
 .campaign-codex .player-selection {
   padding: 16px;
   max-height: 400px;
@@ -1083,11 +1088,9 @@
   gap: 8px;
 }
 
-
-.campaign-codex.send-to-player .form-footer{
-      padding: 0px 10px 10px 10px;
+.campaign-codex.send-to-player .form-footer {
+  padding: 0px 10px 10px 10px;
 }
-
 
 .campaign-codex .player-info {
   display: flex;
@@ -1097,7 +1100,7 @@
 
 .campaign-codex .character-name {
   font-weight: 600;
-/*  color: var(--cc-main-text);*/
+
   font-size: 14px;
 }
 
@@ -1111,8 +1114,7 @@
   font-weight: 500;
 }
 
-/* NPC Dropper Dialog */
-.campaign-codex.npc-dropper .window-content{
+.campaign-codex.npc-dropper .window-content {
   padding: 10px !important;
 }
 .campaign-codex .drop-to-map-dialog {
@@ -1125,7 +1127,7 @@
   padding: 8px;
 }
 
-.campaign-codex .drop-to-map-dialog .cc-info ul{
+.campaign-codex .drop-to-map-dialog .cc-info ul {
   padding-left: 0px;
   margin: 0px 0px 0px 0px;
   list-style: none;
@@ -1134,11 +1136,15 @@
   border: 1px dotted var(--cc-accent30);
   border-radius: 6px;
   padding: 16px;
-  }
+}
 
 .campaign-codex .player-option,
 .campaign-codex .drop-to-map-dialog .npc-selection label {
-  display: flex; align-items: center; margin: 8px 0; padding: 8px; border-radius: 4px;
+  display: flex;
+  align-items: center;
+  margin: 8px 0;
+  padding: 8px;
+  border-radius: 4px;
   cursor: pointer;
   transition: all 0.2s ease;
   border: 1px solid transparent;
@@ -1160,13 +1166,6 @@
   cursor: pointer;
 }
 
-/*.campaign-codex .drop-to-map-dialog p {
-  margin-bottom: 12px;
-  font-weight: 600;
-  color: var(--cc-main-text);
-}*/
-
-/* Shop Toggle Controls */
 .campaign-codex .shop-toggles {
   padding-top: 12px;
 }
@@ -1242,13 +1241,17 @@
  * Group Sheet Styles
  * ---------------------------------------------
  */
-
-/* Group Sheet Container */
-.campaign-codex.group-sheet .group-sheet-container {
+.application.campaign-codex.group-sheet:not(.minimized, .minimizing, .maximizing) {
   display: flex;
+
+    min-width: 800px;
+    min-height: 700px;
+  }
+.campaign-codex.group-sheet,
+.campaign-codex.group-sheet .group-sheet-container {
   width: 100%;
   height: 100%;
-  min-height: 420px;
+  display: flex;
   overflow: hidden;
 }
 
@@ -1256,14 +1259,14 @@
   top: 44px;
 }
 
-/* Group Sidebar (Tree View) */
 .campaign-codex.group-sheet .group-sidebar {
-  width: 350px;
+width: 300px;
+    min-width: 250px;
   background: var(--cc-sidebar-bg);
   color: var(--cc-sidebar-text);
   display: flex;
   flex-direction: column;
-  border-right: 2px solid var(--cc-border);
+/*  border-right: 2px solid var(--cc-border);*/
 }
 
 .campaign-codex.group-sheet .group-tree-container {
@@ -1279,15 +1282,24 @@
 }
 
 .campaign-codex .tree-header {
-    /* padding: 16px; */
-    border-bottom: 1px solid var(--cc-border);
+border-bottom: 1px solid var(--cc-border);
+    display: grid;
+    grid-template-columns: repeat(10, 24px);
+    gap: 2px;
+    justify-content: space-around;
+    align-content: center;
+    padding: 4px 12px 12px 12px;
+    align-items: anchor-center;
+    justify-items: center;
+/*    border-bottom: 1px solid var(--cc-border);
     display: grid;
     grid-template-columns: 32px 32px 32px 32px 32px 32px;
     gap: 16px;
-    align-items: center;
     justify-content: center;
     padding-top: 4px;
     padding-bottom: 12px;
+    align-content: center;
+    align-items: center;*/
 }
 
 .campaign-codex .tree-header h3 {
@@ -1303,52 +1315,48 @@
 
 .campaign-codex .tree-content {
   flex: 1;
-  overflow-y: auto;
-  padding: 8px 0;
+/*  padding: 8px 0;*/
+  overflow-y: scroll;
+  min-height: 0;
+  padding-bottom: 18px;
+  min-height: 0;
+  margin-right: 4px;
+/*  padding-right: var(--scroll-margin);*/
+  overflow-x: hidden;
+  scrollbar-gutter: stable;
+  scrollbar-color: var(--cc-accent) var(--color-scrollbar-track);
 }
 
 .campaign-codex .tree-actions {
-  padding: 8px 4px;
+  padding: 2px 2px;
   border-top: 0px solid var(--cc-border);
   display: flex;
   gap: 4px;
   transition: opacity 0.2s ease;
 }
-.campaign-codex .toggle-tree-npctags,
-.campaign-codex .toggle-tree-tags,
-.campaign-codex .toggle-tree-npcs,
-.campaign-codex .toggle-tree-items,
-.campaign-codex .btn-expand-all,
-.campaign-codex .btn-collapse-all {
-  width: 32px;
-  height: 32px;
-  background: transparent;
-  border: 0px solid var(--cc-accent);
+.campaign-codex .tree-header i {
+    background: transparent;
+    border: 0px solid var(--cc-accent);
+    color: var(--cc-accent30);
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 10px;
+    transition: all 0.2s ease;
+    text-align: center;
+    height: 32px;
+    align-content: center;
+    font-size: 14px;
+}
+
+.campaign-codex .tree-header i:hover {
+  color: var(--cc-accent80);
+/*  color: var(--cc-sidebar-text);*/
+}
+.campaign-codex .tree-header .btn-expand-all i,
+.campaign-codex .tree-header .btn-collapse-all i,
+.campaign-codex .tree-header i.active {
+/*  background-color: var(--cc-accent);*/
   color: var(--cc-accent);
-  padding: 2px 2px 2px 4px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 10px;
-  transition: all 0.2s ease;
-  text-align: center;
-}
-
-.campaign-codex .toggle-tree-npctags:hover,
-.campaign-codex .toggle-tree-tags:hover,
-.campaign-codex .toggle-tree-npcs:hover,
-.campaign-codex .toggle-tree-items:hover,
-.campaign-codex .btn-expand-all:hover,
-.campaign-codex .btn-collapse-all:hover {
-  background: var(--cc-accent);
-  color: var(--cc-sidebar-text);
-}
-
-.campaign-codex .toggle-tree-npctags.active,
-.campaign-codex .toggle-tree-tags.active,
-.campaign-codex .toggle-tree-npcs.active,
-.campaign-codex .toggle-tree-items.active {
-  background-color: var(--cc-accent);
-  color: var(--cc-sidebar-text);
 }
 
 .campaign-codex .tree-node {
@@ -1358,14 +1366,14 @@
 .campaign-codex .tree-node-header {
   display: flex;
   align-items: center;
-  padding: 8px 16px;
+  padding: 2px 0px 2px 16px;
   cursor: pointer;
   transition: all 0.2s ease;
   border-left: 3px solid transparent;
 }
 
 .campaign-codex .tree-node-header:hover {
-  background: var(--cc-accent10);
+  background: linear-gradient(to right, var(--cc-accent10), transparent);;
   border-left-color: var(--cc-accent);
 }
 
@@ -1423,23 +1431,20 @@
   margin-right: 2px;
 }
 
-.campaign-codex .tree-actions button {
-  width: 18px;
-  height: 18px;
-  background: var(--cc-accent10);
-  border: 0px solid var(--cc-accent);
-  color: var(--cc-accent);
-  padding: 0px 2px 0px 4px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 10px;
-  transition: all 0.2s ease;
-  text-align: center;
-  line-height: 16px;
+.campaign-codex .tree-actions i {
+    width: 18px;
+    height: 18px;
+    color: var(--cc-accent);
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 10px;
+    transition: all 0.2s ease;
+    text-align: center;
+    line-height: 16px;
 }
 
-.campaign-codex .tree-actions button:hover {
-  background: rgba(var(--cc-dark), 0.5);
+.campaign-codex .tree-actions i:hover {
+  background: var(--cc-accent30);
   transform: translateY(-1px);
 }
 
@@ -1528,7 +1533,7 @@
 }
 
 .campaign-codex .tree-node.selected {
-  background-color: var(--cc-accent10);
+  background: linear-gradient(to right, var(--cc-accent10), transparent);
   border-left: 3px solid var(--cc-accent);
   border-radius: 0px 8px 8px 0px;
 }
@@ -1548,8 +1553,9 @@
 
 .campaign-codex .expand-toggle {
   cursor: pointer;
-  padding: 2px;
-  border-radius: 2px;
+  padding: 10px;
+  padding-right: 18px;
+  border-radius: 6px;
   transition: background-color 0.2s ease;
   z-index: 10;
   position: relative;
@@ -1559,14 +1565,12 @@
   background-color: var(--cc-accent10);
 }
 
-/* Group Main Content Area */
 .campaign-codex.group-sheet .group-main {
   flex: 1;
   display: flex;
   flex-direction: column;
   overflow: hidden;
 }
-
 
 .campaign-codex .group-tab.selected-tab {
   background: linear-gradient(135deg, var(--cc-accent80), var(--cc-accent));
@@ -1590,23 +1594,39 @@
 
 .campaign-codex .group-tab-panel {
   display: none;
-  height: 100%;
+/*  height: 100%;*/
   overflow-y: auto;
   padding: 32px;
 }
 
 .campaign-codex .group-tab-panel.active {
-  display: block;
+    display: block;
+    position: relative;
+/*    overflow-y: scroll;*/
+    padding-bottom: 18px;
+    min-height: 0;
+    overflow-x: hidden;
+/*    padding-right: 18px;*/
+/*  display: block;
   position: relative;
+  overflow-y: scroll;
+  overflow-y: scroll;
+  min-height: 0;
+  padding-bottom: 18px;
+  min-height: 0;
+  margin-right: 2px;
+  padding-right: var(--scroll-margin);
+  overflow-x: hidden;
+  scrollbar-gutter: stable;
+  scrollbar-color: var(--cc-accent) var(--color-scrollbar-track);*/
 }
 
 .campaign-codex .group-content-area {
   flex: 1;
-  overflow-y: auto;
+  overflow-x: hidden;
   position: relative;
 }
 
-/* Group Stats Grid */
 .campaign-codex .group-stats-grid {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
@@ -1651,91 +1671,58 @@
   font-weight: 600;
 }
 
-/* NPC Grid & Filters */
-
-.campaign-codex .filter-btn.refresh-btn :hover {
+.campaign-codex i.filter-btn.refresh-btn :hover {
   border-color: var(--cc-accent);
   background: var(--cc-accent30);
 }
 
-.campaign-codex .filter-btn.refresh-btn.active {
+.campaign-codex i.filter-btn.refresh-btn.active {
   background: var(--cc-border);
   border: none;
 }
 
-.campaign-codex .filter-btn i{
-    font-size: 16px;
-    color: var(--cc-sidebar-text);
+.campaign-codex i.filter-btn {
+  font-size: 14px;
+  color: var(--cc-sidebar-text);
 }
 
-.campaign-codex .filter-btn.refresh-btn  {
+.campaign-codex .filter-btn.refresh-btn {
   border: none;
   width: 40px;
   max-width: 300px;
   max-height: 150px;
-  height: 36px;
-  position: absolute;
+  height: 32px;
+  position: relative;
   top: 0px;
   border-radius: 0 0 16px 16px;
   justify-content: center;
-/*  padding: 8px 0px 8px 4px;  */
-/*  gap: 12px;*/
   display: flex;
   background: var(--cc-accent);
   box-shadow: var(--cc-shadow);
 }
 
-/*RIGHT 30*/
-.campaign-codex .filter-btn.refresh-btn.npcs-tag {
-  right: 30px;
-}
-
-/*RIGHT 80*/
-.campaign-codex .filter-btn.refresh-btn.npcs-player {
-  right: 80px;
-}
-
-/*RIGHT 130*/
-.campaign-codex .filter-btn.refresh-btn.npcs-shop {
-  right: 130px;
-}
-
-/*RIGHT 180*/
-.campaign-codex .filter-btn.refresh-btn.npcs-location {
-  right: 180px;
-}
-
-/*RIGHT 180*/
-.campaign-codex .filter-btn.refresh-btn.npcs-all {
-  right: 230px;
-}
-
-
-
-
-
-    
-
-
 .campaign-codex .npc-filters {
   display: flex;
-  gap: 8px;
-  margin-bottom: 24px;
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  justify-items: end;
+  justify-content: flex-end;
+  gap: 6px;
+  flex-direction: row;
+  position: absolute;
+  top: 0px;
+  right: 32px;
+  z-index:10;
 }
 
 .campaign-codex .npc-grid-container {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 20px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+  margin-top: 24px;
 }
 
-
-
-.campaign-codex .npc-grid-container .entity-card{
-width: 100%;
-margin-bottom: 8px;
+.campaign-codex .npc-grid-container .entity-card {
+  width: 100%;
+  margin-bottom: 8px;
 }
 
 .campaign-codex .npc-avatar img {
@@ -1795,7 +1782,6 @@ margin-bottom: 8px;
   border-color: var(--cc-accent);
 }
 
-/* Location Grid */
 .campaign-codex .locations-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
@@ -1810,11 +1796,16 @@ margin-bottom: 8px;
   border: 1px solid var(--cc-border-light);
   transition: all 0.2s ease;
   cursor: pointer;
+  position: relative;
 }
 
 .campaign-codex .group-location-card:hover {
   transform: translateY(-4px);
   box-shadow: 0 8px 25px rgba(var(--cc-dark), 0.15);
+}
+
+.campaign-codex .group-location-card .location-image.hide-loc-image {
+  display:none;
 }
 
 .campaign-codex .location-image {
@@ -1829,12 +1820,27 @@ margin-bottom: 8px;
   object-position: 50% 5%;
 }
 
-.campaign-codex .location-info {
+.campaign-codex .group-location-card .location-info {
   padding: 16px;
 }
 
-.campaign-codex .location-name {
-  font-size: 16px;
+.campaign-codex .shop-header i.shop-custom-tag,
+.campaign-codex .group-location-card  i.location-tag{
+    color: var(--cc-sidebar-text);
+    background: var(--cc-accent);
+    position: absolute;
+    top: 0px;
+    right: 10px;
+    width: 32px;
+    height: 32px;
+    border-radius: 0px 0px 8px 8px;
+    font-size: 18px;
+    align-items: center;
+    display: flex;
+    justify-content: center;
+}
+.campaign-codex .group-location-card .location-name {
+/*  font-size: 16px;*/
   font-weight: 600;
   color: var(--cc-main-text);
   margin: 0 0 8px 0;
@@ -1871,16 +1877,15 @@ margin-bottom: 8px;
   transform: translateY(-1px);
 }
 
-/* Inventory Styles */
 .campaign-codex .inventory-summary {
-    display: flex;
-    gap: 32px;
-    margin-bottom: 32px;
-    padding: 16px;
-    background: var(--cc-card-bg);
-    border-radius: 12px;
-    box-shadow: var(--cc-shadow);
-    justify-content: space-around;
+  display: flex;
+  gap: 32px;
+  margin-bottom: 32px;
+  padding: 16px;
+  background: var(--cc-card-bg);
+  border-radius: 12px;
+  box-shadow: var(--cc-shadow);
+  justify-content: space-around;
 }
 
 .campaign-codex .summary-stat {
@@ -1912,46 +1917,60 @@ margin-bottom: 8px;
 }
 
 .campaign-codex .shop-header {
-    display: grid;
-    align-items: center;
-    grid-template-columns: 1fr;
-    gap: 12px;
-    padding: 16px 16px 16px 112px;
-    background: var(--cc-card-bg);
-    border-bottom: 1px solid var(--cc-border-light);
-    position: relative;
-    cursor: pointer;
+  display: grid;
+  align-items: center;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  padding: 16px 16px 16px 112px;
+  background: var(--cc-card-bg);
+  border-bottom: 1px solid var(--cc-border-light);
+  position: relative;
+  cursor: pointer;
+}
+
+.campaign-codex .shop-header.hide-shop-image {
+  padding: 16px 16px 16px 16px;
 }
 
 .campaign-codex .shop-icon {
-    width: 96px;
-    height: 100%;
-    object-fit: cover;
-    object-position: 50% 25%;
-    position: absolute;
+  width: 96px;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 25%;
+  position: absolute;
 }
 
+.campaign-codex .shop-header.hide-shop-image .shop-icon {
+  display:none;
+}
+
+
 .campaign-codex .shop-icon::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-        background: linear-gradient(to right, transparent 0%, white 50%);
-      -webkit-mask-image: linear-gradient(to right, black 50%, transparent 100%);
-            mask-image: linear-gradient(to right, black 50%, transparent 100%);
-  }
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(to right, transparent 0%, white 50%);
+  -webkit-mask-image: linear-gradient(to right, black 50%, transparent 100%);
+  mask-image: linear-gradient(to right, black 50%, transparent 100%);
+}
 
 .campaign-codex .shop-info {
   flex: 1;
 }
 
 .campaign-codex .shop-name {
-  font-size: 16px;
-  font-weight: 600;
+  font-size: 24px;
   color: var(--cc-main-text);
   margin: 0 0 4px 0;
+}
+
+.campaign-codex .shop-info .group-shop-tags{
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
 }
 
 .campaign-codex .shop-stats {
@@ -1977,7 +1996,22 @@ margin-bottom: 8px;
   border: 1px solid var(--cc-border-light);
   cursor: pointer;
   transition: all 0.2s ease;
+}
 
+.campaign-codex .group-item-card .item-info{
+    flex: 1;
+    display: flex;
+    gap: 2px;
+    flex-direction: column;
+    justify-content: center;
+}
+
+
+.campaign-codex .objectives-section.quest-inventory .shop-items .group-item-card:hover,
+.campaign-codex .shop-inventory-section .shop-items .group-item-card:hover {
+/*  transform: translateY(-1px);
+  box-shadow: 0 8px 25px rgba(var(--cc-dark), 0.15);*/
+  border-color: var(--cc-accent);
 }
 
 .campaign-codex .item-icon {
@@ -2010,16 +2044,15 @@ margin-bottom: 8px;
  * ---------------------------------------------
  */
 
-/* Region Info & Location Tags */
 .campaign-codex .region-info,
 .campaign-codex .scene-info {
   margin-top: 8px;
+  margin-bottom: 8px;
   padding-left: 12px;
   padding-top: 4px;
   padding-right: 4px;
   padding-bottom: 4px;
   background: var(--cc-accent10);
-  border: 1px solid var(--cc-accent30);
   border-radius: 6px;
   display: flex;
   align-items: center;
@@ -2074,18 +2107,44 @@ margin-bottom: 8px;
  * ---------------------------------------------
  */
 
+.campaign-codex .group-tab-panel-selected-sheet {
+  display: none;
+/*  height: 100%;*/
+  overflow-y: auto;
+  padding: 32px;
+  scrollbar-gutter: stable;
+
+}
+
+.campaign-codex .group-tab-panel-selected-sheet.active {
+  display: block;
+  position: relative;
+/*  overflow-y: scroll;*/
+/*  overflow-y: scroll;*/
+  min-height: 0;
+  padding-bottom: 18px;
+  min-height: 0;
+  margin-right: 2px;
+/*  padding-right: var(--scroll-margin);*/
+/*  overflow-x: hidden;*/
+/*  scrollbar-color: var(--cc-accent) var(--color-scrollbar-track);*/
+}
+
 .campaign-codex .selected-sheet-container {
   height: 100%;
   display: flex;
+/*  padding-left: 38px;*/
   flex-direction: column;
+/*  border-left: 4px solid var(--cc-accent);
+  border-right: 4px solid var(--cc-accent);*/
 }
 
-*/
-.campaign-codex .selected-sheet-info {
+/*.campaign-codex .selected-sheet-info {
   display: flex;
   align-items: center;
   gap: 1rem;
-}
+  margin-right: -15px;
+}*/
 
 .campaign-codex .selected-sheet-image {
   width: 48px;
@@ -2093,6 +2152,18 @@ margin-bottom: 8px;
   border-radius: 8px;
   object-fit: cover;
   border: 2px solid var(--cc-border-light);
+}
+.campaign-codex .selected-sheet-details {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 16px;
+}
+
+.campaign-codex .selected-sheet-details p {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
 }
 
 .campaign-codex .selected-sheet-details h3 {
@@ -2119,7 +2190,7 @@ margin-bottom: 8px;
 .campaign-codex .selected-sheet-content {
   flex: 1;
   overflow-y: auto;
-  padding: 0 1rem 1rem;
+/*  padding: 0 1rem 1rem;*/
   position: relative;
 }
 
@@ -2141,6 +2212,15 @@ margin-bottom: 8px;
   border-bottom: 0px;
 }
 
+.campaign-codex .selected-sheet-info{
+  padding-top: 8px;
+  display: grid;
+  grid-template-rows: auto auto 32px;
+  height: -webkit-fill-available;
+  align-content: end;
+  gap:4px;
+}
+
 .campaign-codex .selected-sheet-info i {
   color: var(--cc-accent);
   font-size: 24px;
@@ -2153,7 +2233,10 @@ margin-bottom: 8px;
 }
 
 .campaign-codex .selected-sheet-info .entity-locations {
-  align-items: baseline;
+    align-items: baseline;
+    overflow: scroll;
+    gap: 4px;
+    flex-wrap: wrap;
 }
 
 .campaign-codex .info-grid {
@@ -2201,7 +2284,7 @@ margin-bottom: 8px;
 .campaign-codex .selected-actions {
   display: flex;
   gap: 1rem;
-  margin-bottom: 1.5rem;
+/*  margin-bottom: 1.5rem;*/
 }
 
 .campaign-codex .locations-list,
@@ -2227,7 +2310,6 @@ margin-bottom: 8px;
   transition: all 0.2s ease;
 }
 
-
 .campaign-codex .selected-associate-card .associate-avatar,
 .campaign-codex .selected-npc-card .npc-avatar {
   width: 40px;
@@ -2244,7 +2326,7 @@ margin-bottom: 8px;
 
 .campaign-codex .selected-inventory-item .item-info h5,
 .campaign-codex .selected-shop-card .shop-info h5,
-.campaign-codex .selected-location-card .location-info h5, 
+.campaign-codex .selected-location-card .location-info h5,
 .campaign-codex .selected-associate-card .associate-info h5,
 .campaign-codex .selected-npc-card .npc-info h5 {
   margin: 0 0 0.25rem 0;
@@ -2262,7 +2344,6 @@ margin-bottom: 8px;
   display: flex;
   gap: 0.5rem;
 }
-
 
 .campaign-codex .selected-associate-card .associate-relationship {
   font-size: 0.8rem;
@@ -2320,7 +2401,6 @@ margin-bottom: 8px;
   border: 1px solid var(--cc-border-light);
 }
 
-
 .campaign-codex .selected-inventory-item .item-details {
   font-size: 0.8rem;
   color: var(--cc-slate);
@@ -2335,7 +2415,6 @@ margin-bottom: 8px;
   border: 2px solid var(--cc-border-light);
 }
 
-
 .campaign-codex .selected-shop-card .shop-info,
 .campaign-codex .selected-location-card .location-info {
   flex: 1;
@@ -2349,7 +2428,6 @@ margin-bottom: 8px;
   border-bottom: 1px solid var(--cc-border-light);
 }
 
-/* Selected view button styles */
 .campaign-codex .selected-sheet-actions button,
 .campaign-codex .selected-actions button {
   background: transparent;
@@ -2374,7 +2452,7 @@ margin-bottom: 8px;
   background: var(--cc-accent);
   color: var(--cc-sidebar-text);
 }
-
+/*
 .campaign-codex .btn-close-selected {
   background: var(--cc-danger);
   color: var(--cc-sidebar-text);
@@ -2382,7 +2460,7 @@ margin-bottom: 8px;
 
 .campaign-codex .btn-close-selected:hover {
   background: var(--cc-danger);
-}
+}*/
 
 .campaign-codex .shop-inventory-section .shop-header button,
 .campaign-codex .selected-location-card .location-actions button,
@@ -2441,7 +2519,8 @@ margin-bottom: 8px;
   }
   .campaign-codex .sheet-sidebar {
     width: 100%;
-    max-height: 300px;
+    width: 300px;
+    min-width: 250px;
   }
 
   .campaign-codex .tab-item {
@@ -2451,14 +2530,14 @@ margin-bottom: 8px;
 }
 
 @media (max-width: 768px) {
-  .campaign-codex .selected-sheet-header {
+/*  .campaign-codex .selected-sheet-header {
     flex-direction: column;
     gap: 1rem;
     align-items: flex-start;
-  }
-  .campaign-codex .selected-sheet-tabs {
+  }*/
+/*  .campaign-codex .selected-sheet-tabs {
     flex-wrap: wrap;
-  }
+  }*/
   .campaign-codex .selected-npc-card,
   .campaign-codex .selected-associate-card,
   .campaign-codex .selected-shop-card,
@@ -2486,13 +2565,13 @@ margin-bottom: 8px;
   background: var(--cc-border);
   border: none;
   color: var(--cc-sidebar-text);
-  position: sticky;
+/*  position: sticky;
   left: 50%;
   transform: translateY(-12px) translateX(-50%);
   margin-top: auto;
   width: auto;
   height: auto;
-  padding: 0px 4px 0px 4px;
+  padding: 0px 4px 0px 4px;*/
 }
 
 .campaign-codex section.secret {
@@ -2519,13 +2598,12 @@ margin-bottom: 8px;
   position: relative;
 }
 
-.campaign-codex .prosemirror .editor-menu{
-    position: sticky;
-    top: -22px;
-    z-index: 10;
-    background: var(--cc-border-light);
-    box-shadow: 0 2px 4px rgba(var(--cc-dark), 0.1);
-
+.campaign-codex .prosemirror .editor-menu {
+  position: sticky;
+  top: -22px;
+  z-index: 10;
+  background: var(--cc-border-light);
+  box-shadow: 0 2px 4px rgba(var(--cc-dark), 0.1);
 }
 
 .campaign-codex .sheet-main,
@@ -2540,13 +2618,15 @@ margin-bottom: 8px;
   height: 32px;
   top: -15px;
   right: -15px;
-  color: var(--cc-accent);
   background: none;
   border: none;
   font-size: 18px;
   display: block;
   text-align: right;
   box-shadow: none;
+}
+.campaign-codex prose-mirror > button.toggle i {
+  color: var(--cc-accent) !important;
 }
 
 .campaign-codex prose-mirror > button.toggle:hover {
@@ -2637,15 +2717,10 @@ margin-bottom: 8px;
   background: var(--cc-accent);
   box-shadow: var(--cc-shadow);
   line-height: 20px;
+  font-size: 16px;
+  color: var(--cc-sidebar-text);
+  margin:0 0 0 0;
 
-}
-.campaign-codex .selected-sheet-actions .btn-npc-to-scene i,
-.campaign-codex .selected-sheet-actions .btn-open-actor i,
-.campaign-codex .selected-sheet-actions .btn-open-scene i,
-.campaign-codex .selected-sheet-actions .btn-open-sheet i{
-    font-size: 12px;
-    color: var(--cc-sidebar-text);
-    margin:0px 0px 0px 0px;
 }
 
 /* 68, 106, 144, 182, 220, 258, 296, 334, 372, 410*/
@@ -2668,11 +2743,6 @@ left: 296px;
     left: 410px;
 }
 
-.campaign-codex .selected-sheet-actions.group .btn-open-sheet{
-  left: 182px;
-}
-
-
 /*LEFT 30*/
 .campaign-codex .image-change-btn { 
   box-shadow: none;
@@ -2685,22 +2755,25 @@ left: 296px;
   background: none;
   border: none;
   transition: 0.3s ease; /* Add a smooth transition */
-}
-
-/*LEFT 30*/
-.campaign-codex .image-change-btn i { 
  color: var(--cc-accent10);
  font-size: 16px;
  transition: 0.3s ease; /* Add a smooth transition */
 }
 
-.campaign-codex .image-change-btn:hover i{ 
+.campaign-codex .image-change-btn:hover{ 
  color: var(--cc-accent);
+}
+
+.campaign-codex .content-header .refresh-btn i{
+    font-size: 16px;
+    color: var(--cc-sidebar-text);
+    margin:0px 0px 0px 0px;
 }
 
 /*RIGHT 30*/
 .campaign-codex .content-header .refresh-btn,
-.campaign-codex .group-sheet .selected-sheet-content .npcs-to-map-button,
+.campaign-codex .region-sheet .tab-panel.active[data-tab="npcs"] .create-npc-button,
+.campaign-codex .group-sheet .group-tab-panel-selected-sheet i.npcs-to-map-button,
 .campaign-codex .region-sheet .tab-panel.active[data-tab="shops"] .refresh-btn,
 .campaign-codex .region-sheet .tab-panel.active[data-tab="npcs"] .refresh-btn,
 .campaign-codex .region-sheet .tab-panel.active[data-tab="regions"] .create-region-button,
@@ -2710,6 +2783,8 @@ left: 296px;
 .campaign-codex .shop-sheet .tab-panel.active[data-tab="npcs"] .create-npc-button,
 .campaign-codex .npc-sheet .tab-panel.active[data-tab="locations"] .refresh-btn,
 .campaign-codex :is(.location-sheet, .npc-sheet) .tab-panel.active[data-tab="shops"] .create-shop-button,
+.campaign-codex .npc-sheet .tab-panel.active[data-tab="locations"] .create-location-button,
+.campaign-codex .region-sheet .tab-panel.active[data-tab="shops"] .create-shop-button,
 .campaign-codex .npc-sheet .tab-panel.active[data-tab="info"] .npcs-to-map-button {
   width: 40px;
   max-width: 300px;
@@ -2724,12 +2799,14 @@ left: 296px;
   background: var(--cc-accent);
   box-shadow: var(--cc-shadow);
   line-height: 20px;
+  font-size: 16px;
+  color: var(--cc-sidebar-text);
+  margin:0 0 0 0;
 }
+
 /*RIGHT 80*/
-.campaign-codex .region-sheet .tab-panel.active[data-tab="npcs"] .create-npc-button,
-.campaign-codex .npc-sheet .tab-panel.active[data-tab="locations"] .create-location-button,
+.campaign-codex :is(.region-sheet) .tab-panel.active[data-tab="npcs"] .npcs-to-map-button,
 .campaign-codex :is(.npc-sheet, .shop-sheet, .location-sheet) .tab-panel.active[data-tab="npcs"] .npcs-to-map-button,
-.campaign-codex .region-sheet .tab-panel.active[data-tab="shops"] .create-shop-button,
 .campaign-codex .npc-sheet .tab-panel.active[data-tab="associates"] .members-to-map-button {
   width: 40px;
   max-width: 300px;
@@ -2744,49 +2821,12 @@ left: 296px;
   background: var(--cc-accent);
   box-shadow: var(--cc-shadow);
   line-height: 20px;
-
-}
-
-/*RIGHT 130*/
-.campaign-codex :is(.region-sheet) .tab-panel.active[data-tab="npcs"] .npcs-to-map-button {
-  width: 40px;
-  max-width: 300px;
-  max-height: 150px;
-  height: 36px;
-  position: absolute;
-  top: 0px;
-  right: 130px;
-  border-radius: 0 0 16px 16px;
-  justify-content: center;
-  display: flex;
-  background: var(--cc-accent);
-  box-shadow: var(--cc-shadow);
- line-height: 20px;
- 
-}
-.campaign-codex .content-header .refresh-btn i,
-.campaign-codex .group-sheet .selected-sheet-content .npcs-to-map-button i,
-.campaign-codex .selected-sheet-actions .btn-npc-to-scene i,
-.campaign-codex .selected-sheet-actions .btn-open-actor i,
-.campaign-codex .selected-sheet-actions .btn-open-scene i,
-.campaign-codex .selected-sheet-actions .btn-open-sheet i{
-    font-size: 16px;
-    color: var(--cc-sidebar-text);
-    margin:0px 0px 0px 0px;
-}
-
-.campaign-codex .region-sheet .tab-panel.active[data-tab="regions"] .create-region-button i,
-.campaign-codex .region-sheet .tab-panel.active[data-tab="npcs"] .refresh-btn i,
-.campaign-codex .region-sheet .tab-panel.active[data-tab="shops"] .refresh-btn i,
-.campaign-codex :is(.location-sheet, .npc-sheet, .shop-sheet) .tab-panel.active[data-tab="npcs"] :is(.create-npc-button, .npcs-to-map-button) i,
-.campaign-codex .npc-sheet .tab-panel.active[data-tab="associates"] :is(.create-npc-button, .members-to-map-button) i,
-.campaign-codex :is(.npc-sheet, .region-sheet) .tab-panel.active[data-tab="locations"] :is(.refresh-btn, .create-location-button) i,
-.campaign-codex :is(.location-sheet, .npc-sheet, .region-sheet) .tab-panel.active[data-tab="shops"] .create-shop-button i,
-.campaign-codex .npc-sheet .tab-panel.active[data-tab="info"] .npcs-to-map-button i {
-    font-size: 16px;
+       font-size: 16px;
     color: var(--cc-sidebar-text);
     margin:0 0 0 0;
+
 }
+
 
 /*
  * ---------------------------------------------
@@ -2834,6 +2874,14 @@ left: 296px;
   border: none;
 }
 
+.campaign-codex .tab-panel.active[data-tab="info"] .actor-actions .action-btn:hover {
+  height: 12px;
+  width: 12px;
+  font-size: 12px;
+  border: none;
+  background: none;
+  color: var(--cc-accent);
+}
 /*
  * ---------------------------------------------
  * Drop Zone Card
@@ -2889,41 +2937,51 @@ left: 296px;
   display: none;
 }
 
-.campaign-codex .selected-sheet-journals{
-  margin-top: 16px;
-}
-
-
 /*
  * ---------------------------------------------
- * Style Extraction from Code
+ * Selected Sheet Misc
  * ---------------------------------------------
  */
 
-/* Inventory Move Styles from Code */
+.campaign-codex .selected-sheet-journals {
+  margin-top: 16px;
+}
+
+/*
+ * ---------------------------------------------
+ * Inventory & Loot Table Variations
+ * ---------------------------------------------
+ */
+
 .campaign-codex .cc-inv-price-table {
   text-align: center;
   align-content: center;
 }
 
-.campaign-codex .cc-inv-price-table.item-final-price  {
-    display: flex;
-    align-items: center;
-    gap: 2px;
-} 
+.campaign-codex .cc-inv-price-table.item-final-price {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
 .campaign-codex .cc-loot-mode {
-  grid-template-columns: 60px minmax(100px, 2fr) minmax(100px, 120px) 68px;
+  grid-template-columns: 60px minmax(100px, 2fr) minmax(80px, 100px) 68px;
 }
 .campaign-codex .cc-hide-base {
   grid-template-columns:
-    60px minmax(100px, 2fr) minmax(80px, 100px) minmax(100px, 120px)
+    60px minmax(100px, 2fr) minmax(80px, 100px) minmax(80px, 100px)
     68px;
 }
 .campaign-codex .cc-shop-mode {
   grid-template-columns:
     60px minmax(100px, 2fr) minmax(80px, 100px) minmax(80px, 100px)
-    minmax(100px, 120px) 68px;
+    minmax(80px, 100px) 68px;
 }
+
+/*
+ * ---------------------------------------------
+ * Player/Creator Options
+ * ---------------------------------------------
+ */
 
 .campaign-codex .cc-player-create-option {
   width: 32px;
@@ -2931,20 +2989,25 @@ left: 296px;
   border-radius: 4px;
   margin-right: 8px;
 }
-.campaign-codex.campaign-codex-buttons
-{
-  margin: 0px 5px; 
-  display: flex; 
+
+/*
+ * ---------------------------------------------
+ * General UI Buttons
+ * ---------------------------------------------
+ */
+
+.campaign-codex.campaign-codex-buttons {
+  margin: 0px 5px;
+  display: flex;
   gap: 4px;
   flex-wrap: wrap;
 }
 
-.campaign-codex.campaign-codex-toc-buttons
-{
-    margin: 8px 5px 0px 5px;
-    display: flex;
-    gap: 4px;
-    flex-wrap: wrap;
+.campaign-codex.campaign-codex-toc-buttons {
+  margin: 8px 5px 0px 5px;
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
 }
 
 .campaign-codex.cc-export-btn,
@@ -2959,7 +3022,7 @@ left: 296px;
   border-radius: 4px;
   cursor: pointer;
 }
-.campaign-codex-buttons .cc-create-buttons, 
+.campaign-codex-buttons .cc-create-buttons,
 .campaign-codex-toc-buttons .cc-create-toc-buttons {
   flex: 1;
   min-width: 0;
@@ -2972,31 +3035,33 @@ left: 296px;
   cursor: pointer;
 }
 
+/*
+ * ---------------------------------------------
+ * NPC & Shop Toggles
+ * ---------------------------------------------
+ */
+
 .campaign-codex .npc-toggles {
-    margin-top: 2px;
-    display: flex;
-    gap: 4px;
-    align-items: center;
-    justify-content: center;
-    padding-top: 0px;
-    position: absolute;
-    top: 8px;
-    right: 16px;
-    opacity: 0.3;
-     transition: opacity 0.3s ease;
+  margin-top: 2px;
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  justify-content: center;
+  padding-top: 0px;
+  position: absolute;
+  top: 8px;
+  right: 16px;
+  opacity: 0.3;
+  transition: opacity 0.3s ease;
 }
 
 .campaign-codex .npc-toggles:hover {
-  opacity: 1; 
-  transition: opacity 0.3s ease; 
+  opacity: 1;
+  transition: opacity 0.3s ease;
 }
 
-
-
-.campaign-codex .shop-toggles .stat-label .fa-tag
-{
+.campaign-codex .shop-toggles .stat-label .fa-tag {
   font-size: 16px;
-
 }
 
 .campaign-codex .npc-sheet .npc-toggles .stat-label {
@@ -3014,7 +3079,7 @@ left: 296px;
  * ---------------------------------------------
  */
 .campaign-codex .campaign-codex.cc-scroll-fix,
-form.locked.campaign-codex.group-sheet, 
+form.locked.campaign-codex.group-sheet,
 form.editable.campaign-codex.group-sheet {
   display: flex;
   flex-direction: column;
@@ -3023,10 +3088,16 @@ form.editable.campaign-codex.group-sheet {
 }
 
 .campaign-codex .cc-scroll-group {
-  overflow-y: auto;
+  overflow-y: scroll;
   min-height: 0;
+  padding-bottom: 18px;
+  min-height: 0;
+  margin-right: 4px;
+  padding-right: var(--scroll-margin);
+  overflow-x: hidden;
+  scrollbar-gutter: stable;
+  scrollbar-color: var(--cc-accent) var(--color-scrollbar-track);
 }
-
 
 /*
  * ---------------------------------------------
@@ -3049,12 +3120,13 @@ form.editable.campaign-codex.group-sheet {
   position: absolute;
   right: 8px;
   top: 0px;
-
   border-radius: 0px 0px 8px 8px;
   background: var(--cc-primary);
+  font-size: 12px;
+  color: var(--cc-sidebar-text);  
 }
 
-.campaign-codex .selected-inventory-item .item-actions{
+.campaign-codex .selected-inventory-item .item-actions {
   grid-template-columns: 1fr;
 }
 
@@ -3066,6 +3138,9 @@ form.editable.campaign-codex.group-sheet {
   top: 0px;
   border-radius: 0px 0px 8px 8px;
   background: var(--cc-success);
+  align-self: center;
+  justify-content: center;
+  border:none;
 }
 
 .campaign-codex .entity-card .entity-actions .action-btn.open-actor {
@@ -3098,8 +3173,8 @@ form.editable.campaign-codex.group-sheet {
   grid-template-columns: none;
 }
 
-.campaign-codex .group-sheet .selected-sheet-content .section-heading i{
-  color:var(--cc-accent);
+.campaign-codex .group-sheet .selected-sheet-content .section-heading i {
+  color: var(--cc-accent);
 }
 
 .campaign-codex .group-sheet .selected-sheet-content .section-heading {
@@ -3111,114 +3186,105 @@ form.editable.campaign-codex.group-sheet {
   padding-bottom: 4px;
 }
 
-.campaign-codex .selected-sheet-content .selected-content-section .empty-state{
+.campaign-codex .selected-sheet-content .selected-content-section .empty-state {
   display: none;
 }
 
-.campaign-codex .selected-sheet-journals .entity-grid.journal-grid{
+.campaign-codex .selected-sheet-journals .entity-grid.journal-grid {
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap:16px;
+  gap: 16px;
 }
 
-.campaign-codex .journal-card .entity-name{
-    font-family: var(--cc-font-heading);
-    font-size: 16px;
-    font-weight: 700;
-    color: var(--cc-main-text);
-    margin: 0 0 0px 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: pre-wrap;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    vertical-align: top;
-  display: block
+.campaign-codex .journal-card .entity-name {
+  font-family: var(--cc-font-heading);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--cc-main-text);
+  margin: 0 0 0px 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: pre-wrap;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  vertical-align: top;
+  display: block;
 }
-.campaign-codex .journal-card i{
+.campaign-codex .journal-card i {
   color: var(--cc-accent);
   font-size: 24px;
 }
 
-.campaign-codex .entity-card.journal-card.open-journal{
-background: var(--cc-card-bg);
-    border-radius: 12px;
-    padding: 16px 44px 16px 16px;
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    box-shadow: var(--cc-shadow);
-    transition: all 0.2s ease;
-    border: 1px solid var(--cc-border-light);
-    min-height: 40px;
-    position: relative;
-    line-height: 20px;
+.campaign-codex .entity-card.journal-card.open-journal:hover {
+  border: 1px solid var(--cc-accent);
 }
 
-.campaign-codex code-mirror.source-editor{
-    overflow: visible;
-    min-height: 200px;
-    padding-bottom: 0px;
-    margin-bottom: 16px;
+.campaign-codex .entity-card.journal-card.open-journal {
+  background: var(--cc-card-bg);
+  border-radius: 12px;
+  padding: 16px 44px 16px 16px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  box-shadow: var(--cc-shadow);
+  transition: all 0.2s ease;
+  border: 1px solid var(--cc-border-light);
+  min-height: 40px;
+  position: relative;
+  line-height: 20px;
 }
 
-
+.campaign-codex code-mirror.source-editor {
+  overflow: visible;
+  min-height: 200px;
+  padding-bottom: 0px;
+  margin-bottom: 16px;
+}
 
 /*
  * ---------------------------------------------
  * Quest List Styles
  * ---------------------------------------------
  */
-.campaign-codex .quest-item .prose-mirror{
+.campaign-codex .quest-item .prose-mirror {
   min-height: 100px;
-
 }
 
-.campaign-codex .quest-item .prosemirror .editor-menu
-{
-    position: sticky;
-    width: 100%;
-    top: 4px;
+.campaign-codex .quest-item .prosemirror .editor-menu {
+  position: sticky;
+  width: 100%;
+  top: 4px;
 }
-.campaign-codex .quest-item button.icon.toggle:disabled
-{
-    display: none;
+.campaign-codex .quest-item button.icon.toggle:disabled {
+  display: none;
 }
 
-.campaign-codex .quest-item button.icon.toggle:hover
-{
-    background: var(--cc-accent);
-    transform: translateY(24px);
+.campaign-codex .quest-item button.icon.toggle:hover{
+color:var(--cc-slate);
+/*  background: var(--cc-accent30);
+  transform: translateY(24px);*/
 }
 
-
-.campaign-codex .quest-item button.icon.toggle
-{
-    position: absolute;
-    top: -24px;
-    right: 4px;
-    border-radius: 0px 0px 8px 8px;
-    justify-content: center;
-    display: grid;
-    transition: all 0.4s ease;
-    text-align: center;
+.campaign-codex .quest-item button.icon.toggle {
+    top: 0px;
+    right: 0px;
     padding: 0px;
-    font-size: 16px;
-    padding-left: 2px;
-    width: 40px;
-    background:rgb(from var(--cc-accent) r g b / 0.5);
-}
-
-.campaign-codex .quest-item button.icon.toggle i
-{
-color: var(--cc-sidebar-text);
+    justify-content: center;
+    display: flex;
+    max-height: 24px;
+    max-width: 24px;
+    opacity: 0.3;
 }
 
 
-.campaign-codex .quest-item article.journal-entry-page{
-    overflow-y: auto;
-    overflow-x: hidden;
-    max-height: 400px;
-  }
+.campaign-codex .quest-item button.icon.toggle:hover {
+     opacity: 1;
+}
+
+.campaign-codex .quest-item article.journal-entry-page {
+  overflow-y: auto;
+  overflow-x: hidden;
+  max-height: 400px;
+}
 
 .campaign-codex .quest-list {
   display: grid;
@@ -3232,475 +3298,307 @@ color: var(--cc-sidebar-text);
     grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
   }
   .campaign-codex .quest-item:last-child:nth-child(2n + 1) {
-    grid-column: 1 / -1; 
+    grid-column: 1 / -1;
   }
 }
 
 .campaign-codex .quest-item {
-    background: var(--cc-card-bg);
-    border-radius: 12px;
-    padding: 16px;
-    display: flex;
-    flex-direction: column;
-    box-shadow: var(--cc-shadow);
-    border: 1px solid var(--cc-border-light);
-    overflow: hidden;
-    position: relative;
-    height: fit-content;
-/*    max-height: 350px;*/
+  background: var(--cc-card-bg);
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: var(--cc-shadow);
+  border: 1px solid var(--cc-border-light);
+  overflow: hidden;
+  position: relative;
+  height: fit-content;
 }
 
 .campaign-codex .quest-title {
-    font-family: var(--cc-font-heading);
-    font-size: 16px;
-    font-weight: 700;
-    color: var(--cc-main-text);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    border: none;
-    border-bottom: 1px solid var(--cc-border-light);
-    padding-bottom: 8px;
-    background: transparent;
+  font-family: var(--cc-font-heading);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--cc-main-text);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border: none;
+  border-bottom: 1px solid var(--cc-border-light);
+  padding-bottom: 8px;
+  background: transparent;
 }
 
 .campaign-codex .quest-description {
-    font-size: 14px;
-    color: var(--cc-text-muted);
-    border: 1px solid var(--cc-border-light);
-    border-radius: 8px;
-    padding: 8px;
-    resize: vertical;
-    min-height: 80px;
-    background: transparent;
+  font-size: 14px;
+  color: var(--cc-text-muted);
+  border: 1px solid var(--cc-border-light);
+  border-radius: 8px;
+  padding: 8px;
+  resize: vertical;
+  min-height: 80px;
+  background: transparent;
 }
 
 .campaign-codex .quest-controls {
     display: flex;
     align-items: center;
     justify-content: flex-end;
-    gap: 16px;
-/*    margin-top: 8px;*/
+    gap: 8px;
+    position: absolute;
+    top: 0px;
+    width: fit-content;
+    right: 8px;
+    padding-left: 10px;
+    background: var(--cc-main-bg);
+    margin-right: -10px;
+    padding-right: 10px;
+    padding-bottom: 4px;
+    border-radius: 0px 0px 0px 12px;
 }
 
 .campaign-codex .quest-controls .checkbox-label {
     display: flex;
     align-items: center;
-    gap: 6px;
-    font-size: 12px;
-    font-weight: 500;
-    color: var(--cc-text-muted);
-    cursor: pointer;
+    justify-content: flex-end;
+    gap: 4px;
+    position: absolute;
+    top: 4px;
+    width: 100%;
+    right: 0px;
+    align-content: center;
+    flex-wrap: wrap;
 }
 
 .campaign-codex .quest-controls input[type="checkbox"] {
-    accent-color: var(--cc-accent);
+  accent-color: var(--cc-accent);
 }
 
 .campaign-codex .quest-controls .remove-quest {
-    background: var(--cc-danger);
-    color: var(--cc-sidebar-text);
+  color: var(--cc-sidebar-bg);
 }
 
 .campaign-codex .quest-controls .remove-quest:hover {
-    background: var(--cc-danger);
+  color: var(--cc-danger);
 }
-.campaign-codex input.quest-input-title{
-    font-family: var(--cc-font-heading);
-    font-size: 28px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 2px;
-    margin: 0 0 4px 0;
-    color: var(--cc-accent);
-    cursor: pointer;
-    transition: all 0.2s ease;
-    line-height: 1.1;
-    box-shadow: none;
-    background-color: var(--cc-main-bg);
-    padding: 8px;
-    height: auto;
-    border: none;
-}
-
-.campaign-codex .quest-toggle-icon{
-    cursor: pointer;
+.campaign-codex input.quest-input-title {
+  font-family: var(--cc-font-heading);
+  font-size: 28px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin: 0 0 4px 0;
+  color: var(--cc-accent);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  line-height: 1.1;
+  box-shadow: none;
+  background-color: var(--cc-main-bg);
+  padding: 8px;
+  height: auto;
+  border: none;
 }
 
-.campaign-codex .quest-toggle-icon i{
+
+.campaign-codex i.quest-toggle-icon {
     font-size: 16px;
-    color: var(--cc-sidebar-text);
-}
-
-.campaign-codex .quest-toggle-icon.quest-uncompleted-icon{
-    width: 40px;
-    max-width: 300px;
-    max-height: 150px;
-    height: 36px;
-    position: absolute;
-    top: 0px;
-    border-radius: 0px 0px 16px 16px;
+    min-width: 18px;
+    min-height: 24px;
+    position: relative;
     justify-content: center;
-    right: 20px;
-    border: 0px;
-    background: var(--cc-main-text);
-    box-shadow: var(--cc-shadow);
     display: grid;
     align-items: center;
     justify-items: center;
+    cursor: pointer;
+    margin-top: 4px;
+    border-radius: 8px;
+    color: var(--cc-slate);
 }
+.campaign-codex i.quest-toggle-icon.visible-toggle.fa-eye,
+.campaign-codex i.quest-toggle-icon.pinned-toggle.fa-thumbtack,
+.campaign-codex i.quest-toggle-icon.quest-completed-icon {
+  color: var(--cc-accent);
+}
+/*
 
-.campaign-codex .quest-toggle-icon.quest-completed-icon{
-    width: 40px;
-    max-width: 300px;
-    max-height: 150px;
-    height: 36px;
-    position: absolute;
-    top: 0px;
-    border-radius: 0px 0px 16px 16px;
-    justify-content: center;
-    right: 20px;
-    border: 0px;
-    background: var(--cc-accent);
-    box-shadow: var(--cc-shadow);
-    display: grid;
-    align-items: center;
-    justify-items: center;
-}
-
-.campaign-codex .quest-toggle-icon.pinned-toggle,
-.campaign-codex .quest-toggle-icon.visible-toggle{
-    width: 40px;
-    max-width: 300px;
-    max-height: 150px;
-    height: 36px;
-    position: absolute;
-    top: 0px;
-    border-radius: 0px 0px 16px 16px;
-    justify-content: center;
-    border: 0px;
-    background: var(--cc-accent);
-    box-shadow: var(--cc-shadow);
-    display: grid;
-    align-items: center;
-    justify-items: center;
-}
-
-.campaign-codex .quest-toggle-icon.visible-toggle{
-    right: 70px;
-}
-.campaign-codex .quest-toggle-icon.pinned-toggle{
-    right: 120px;
-}
 
 .campaign-codex .quest-toggle-icon.pinned-toggle[title="Pin to Quest Board"],
-.campaign-codex .quest-toggle-icon.visible-toggle[title="Show to Players"]{
-    background: var(--cc-main-text);
+.campaign-codex .quest-toggle-icon.visible-toggle[title="Show to Players"] {
+  background: var(--cc-main-text);
 }
 
 .campaign-codex .quest-toggle-icon.pinned-toggle[title="Remove from Quest Board"],
-.campaign-codex .quest-toggle-icon.visible-toggle[title="Hide from Players"]{
-    background: var(--cc-accent);
+.campaign-codex .quest-toggle-icon.visible-toggle[title="Hide from Players"] {
+  background: var(--cc-accent);
+}*/
+
+.campaign-codex i.remove-quest.action-btn {
+  width: 40px;
+  max-width: 300px;
+  max-height: 150px;
+  height: 36px;
+  position: absolute;
+  top: -30px;
+  border-radius: 0px 0px 8px 8px;
+  justify-content: center;
+  right: 170px;
+  border: 0px;
+  background: var(--cc-danger);
+  box-shadow: var(--cc-shadow);
+  display: grid;
+  align-items: center;
+  justify-items: center;
+  transition: all 0.2s ease;
 }
-.campaign-codex button.remove-quest.action-btn{
-    width: 40px;
-    max-width: 300px;
-    max-height: 150px;
-    height: 36px;
-    position: absolute;
-    top: -30px;
-    border-radius: 0px 0px 8px 8px;
-    justify-content: center;
-    right: 170px;
-    border: 0px;
-    background: var(--cc-danger);
-    box-shadow: var(--cc-shadow);
-    display: grid;
-    align-items: center;
-    justify-items: center;
-    transition: all 0.2s ease;
-  }
-.campaign-codex button.remove-quest.action-btn:hover
-{
-    transform: translateY(30px);
+.campaign-codex i.remove-quest.action-btn:hover {
+  transform: translateY(30px);
 }
 
-.campaign-codex .quest-title-wrap{
-      padding-right: 150px;
-  }
+.campaign-codex .quest-title-wrap {
+  padding-right: 150px;
+}
 .campaign-codex .quest-title {
-    font-family: var(--cc-font-heading);
-    font-size: 16px;
-    font-weight: 700;
-    color: var(--cc-main-text);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    border: none;
-    padding-bottom: 8px;
-    margin: 0;
-    line-height: 1.2;
-    cursor: pointer;
-    width: 100%;
+  font-family: var(--cc-font-heading);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--cc-main-text);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border: none;
+  padding-bottom: 8px;
+  margin: 0;
+  line-height: 1.2;
+  cursor: pointer;
+  width: 100%;
 }
 
-/* Style for the temporary input field */
 .campaign-codex .quest-title-input {
-    font-family: var(--cc-font-heading);
-    font-size: 16px;
-    font-weight: 700;
-    color: var(--cc-main-text);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    border: none;
-    border-bottom: 2px solid var(--cc-accent);
-    padding-bottom: 8px;
-    background: var(--cc-accent10);
-    width: 100%;
-    box-sizing: border-box; /* Ensures padding is included in width */
+  font-family: var(--cc-font-heading);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--cc-main-text);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border: none;
+  border-bottom: 2px solid var(--cc-accent);
+  padding-bottom: 8px;
+  background: var(--cc-accent10);
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .campaign-codex .quest-title-input:focus {
-    outline: none;
+  outline: none;
 }
 
 
-/* image and new group tab buttons */
-
-.campaign-codex .group-sheet .selected-sheet-tabs .selected-sheet-tab i{
-  font-size: 12px;
-  color: var(--cc-sidebar-text);
-
-}
-.campaign-codex .group-sheet .selected-sheet-tabs .selected-sheet-tab{
-    width: 32px;
-    height: 32px;
-    max-width: 300px;
-    max-height: 150px;
-    position: absolute;
-    border-radius: 8px 8px 0px 0px;
-    justify-content: center;
-    left: 0px;
-    bottom: 0px;
-    border: 0px;
-    background: var(--cc-main-text);
-    box-shadow: var(--cc-shadow);
+.campaign-codex.group-sheet .selected-sheet-header {
     display: grid;
-    padding-top: 4px;
-    align-items: center;
-    justify-items: center;
-    transition: all 0.2s ease;
-    cursor: pointer;
-}
-
-
-/*Default tag placement*/
-
-.campaign-codex .group-sheet .selected-sheet-tabs .selected-sheet-tab[data-tab="info"]{
-  left: 30px;
-}
-.campaign-codex .group-sheet .selected-sheet-tabs .selected-sheet-tab[data-tab="locations"]{
-  left: 68px;
-}
-.campaign-codex .group-sheet .selected-sheet-tabs .selected-sheet-tab[data-tab="npcs"]{
-  left: 68px;
-}
-.campaign-codex .group-sheet .selected-sheet-tabs .selected-sheet-tab[data-tab="associates"]{
-  left: 68px;
-}
-.campaign-codex .group-sheet .selected-sheet-tabs .selected-sheet-tab[data-tab="tags"]{
-  left: 106px;
-}
-.campaign-codex .group-sheet .selected-sheet-tabs .selected-sheet-tab[data-tab="shops"]{
-  left: 144px;
-}
-.campaign-codex .group-sheet .selected-sheet-tabs .selected-sheet-tab[data-tab="inventory"]{
-  left: 144px;
-}
-.campaign-codex .group-sheet .selected-sheet-tabs .selected-sheet-tab[data-tab="quests"]{
-  left: 182px;
-}
-.campaign-codex .group-sheet .selected-sheet-tabs .selected-sheet-tab[data-tab="journals"]{
-  left: 220px;
-}
-.campaign-codex .group-sheet .selected-sheet-tabs .selected-sheet-tab[data-tab="notes"]{
-  left: 258px;
-}
-
-.campaign-codex .group-sheet .selected-sheet-tabs.group .selected-sheet-tab[data-tab="quests"]{
-  left: 68px;
-}
-.campaign-codex .group-sheet .selected-sheet-tabs.group .selected-sheet-tab[data-tab="journals"]{
-  left: 106px;
-}
-.campaign-codex .group-sheet .selected-sheet-tabs.group .selected-sheet-tab[data-tab="notes"]{
-  left: 144px;
-}
-
-
-/* Region Specific Tag placement */
-.campaign-codex .group-sheet .selected-sheet-tabs.region .selected-sheet-tab[data-tab="info"]{
-  left: 30px;
-}
-.campaign-codex .group-sheet .selected-sheet-tabs.region .selected-sheet-tab[data-tab="regions"]{
-  left: 68px;
-}
-.campaign-codex .group-sheet .selected-sheet-tabs.region .selected-sheet-tab[data-tab="locations"]{
-  left: 106px;
-}
-.campaign-codex .group-sheet .selected-sheet-tabs.region .selected-sheet-tab[data-tab="npcs"]{
-  left: 144px;
-}
-.campaign-codex .group-sheet .selected-sheet-tabs.region .selected-sheet-tab[data-tab="tags"]{
-  left: 182px;
-}
-.campaign-codex .group-sheet .selected-sheet-tabs.region .selected-sheet-tab[data-tab="shops"]{
-  left: 220px;
-}
-.campaign-codex .group-sheet .selected-sheet-tabs.region .selected-sheet-tab[data-tab="quests"]{
-  left: 258px;
-}
-.campaign-codex .group-sheet .selected-sheet-tabs.region .selected-sheet-tab[data-tab="journals"]{
-  left: 296px;
-}
-.campaign-codex .group-sheet .selected-sheet-tabs.region .selected-sheet-tab[data-tab="notes"]{
-  left: 334px;
-}
-
-.campaign-codex .group-sheet .selected-sheet-tabs .selected-sheet-tab:hover{
-    background: var(--cc-accent);
-}
-
-.campaign-codex .group-sheet .selected-sheet-tabs .selected-sheet-tab.active i{
-    color:var(--cc-accent);
-    box-shadow: none;
-}
-
-.campaign-codex .group-sheet .selected-sheet-tabs .selected-sheet-tab.active:hover i{
-    color:var(--cc-main-text);
-    box-shadow: none;
+    grid-template-columns: auto minmax(50px, 150px);
+    align-items: flex-start;
+    padding-top: 0px;
+    background-color: var(--cc-border-light);
+    padding-left: 16px;
+    padding-bottom: 0px;
+    position: relative;
+    width: 100%;
+    gap: 16px;
+    align-content: space-between;
+    justify-content: space-between;
 }
 
 
 
-.campaign-codex .group-sheet .selected-sheet-header .selected-header-image{
+.campaign-codex .selected-sheet-header .selected-header-image {
+    position: relative;
+    /* max-height: 150px; */
+    justify-self: right;
+    border-radius: 8px;
+    align-self: center;
+    align-content: center;
     max-width: 150px;
-    /* object-fit: cover; */
-    /* object-position: 50% 0%; */
-    position: absolute;
-    top: 0px;
-    right: 0px;
-    height: 100%;
-    -webkit-mask-image: linear-gradient(to left, black 80%, transparent 100%);
-    mask-image: linear-gradient(to left, black 80%, transparent 100%);
+    height: 150px;
+    padding: 4px;
   }
 
-.campaign-codex .group-sheet .selected-sheet-header .selected-header-image img{
-    max-width: 100%;
+.campaign-codex .selected-sheet-header .selected-header-image img {
     height: 100%;
     object-fit: cover;
-    object-position: 50% 0%;
+    border-radius: 8px;
 }
 
-.campaign-codex .selected-sheet-header{
+.campaign-codex .selected-sheet-tabs{
+justify-content: flex-start;
     display: flex;
-    justify-content: unset; 
-    align-items: center;
-    padding: 1rem;
-    background:var(--cc-main-bg);
-    border-bottom: 2px solid var(--cc-border-light);
-    padding-left: 30px;
-    padding-right: 45px;
-    padding-bottom: 50px;
     position: relative;
+    gap: 6px;
+    flex-direction: row;
+    height: 100%;
   }
 
 
-
-/* Group Tabs top menu */
-
-.campaign-codex .group-tabs {
-  display: flex;
-  background: var(--cc-border);
-  padding: 0 32px;
-  position: relative;
-  z-index: 10;
-  height: 38px;
-}
-
-.campaign-codex .group-sheet .group-tabs .group-tab i{
-  font-size: 12px;
-  color:var(--cc-sidebar-text);
-
-}
-.campaign-codex .group-sheet .group-tabs .group-tab{
+.campaign-codex .selected-sheet-tabs i.selected-sheet-tab{
+font-size: 12px;
     width: 32px;
     height: 32px;
-    max-width: 300px;
-    max-height: 150px;
-    position: absolute;
+    position: relative;
     border-radius: 8px 8px 0px 0px;
-    justify-content: center;
-    left: 0px;
-    bottom: 0px;
     border: 0px;
-    background: var(--cc-main-text);
-    box-shadow: var(--cc-shadow);
     display: grid;
     align-items: center;
     justify-items: center;
-    padding: 0px 0px 0px 0px;
     transition: all 0.2s ease;
     cursor: pointer;
+    padding: 0px;
+    background: var(--cc-slate);
+    color: var(--cc-sidebar-text);
 }
 
-
-
-/*Default tag placement*/
-
-.campaign-codex .group-sheet .group-tabs .group-tab[data-tab="info"]{
-  left: 30px;
-}
-.campaign-codex .group-sheet .group-tabs .group-tab[data-tab="npcs"]{
-  left: 68px;
-}
-.campaign-codex .group-sheet .group-tabs .group-tab[data-tab="inventory"]{
-  left: 106px;
-}
-.campaign-codex .group-sheet .group-tabs .group-tab[data-tab="locations"]{
-  left: 144px;
-}
-.campaign-codex .group-sheet .group-tabs .group-tab[data-tab="journals"]{
-  left: 182px;
-}
-.campaign-codex .group-sheet .group-tabs .group-tab[data-tab="quests"]{
-  left: 220px;
-}
-.campaign-codex .group-sheet .group-tabs .group-tab[data-tab="notes"]{
-  left: 258px;
+.campaign-codex .selected-sheet-tabs i.selected-sheet-tab:hover {
+  background: var(--cc-accent);
 }
 
-.campaign-codex .group-sheet .group-tabs .group-tab:hover{
-    background: var(--cc-accent);
+.campaign-codex .selected-sheet-tags-content
+{
+/*  overflow-y: auto;*/
 }
 
-.campaign-codex .group-sheet .group-tabs .group-tab.active i{
-    color:var(--cc-accent);
+.campaign-codex .selected-sheet-tags-content .location-tag{
+      background: var(--cc-card-bg);
 }
-.campaign-codex .group-sheet .group-tabs .group-tab.active{
+
+.campaign-codex .selected-sheet-tabs i.selected-sheet-tab.active{
+  color: var(--cc-accent);
   background: var(--cc-main-bg);
-/*   background: url(../ui/texture-white.jpg);*/
-    box-shadow: none;
+/*  border: 2px solid var(--cc-accent);*/
 }
 
-.campaign-codex .group-sheet .group-tabs .group-tab .tab-label{
-    display:none;
+.campaign-codex .selected-sheet-tabs i.selected-sheet-tab.active:hover{
+  color: var(--cc-main-text);
 }
 
 
-/* Group Quest Sheet */
+.campaign-codex .selected-sheet-tabs i.selected-sheet-tab.sheet-action{
+    background: var(--cc-accent);
+    color: var(--cc-sidebar-bg);
+    border-radius: 8px 8px 8px 8px;
+    height: 28px;
+    width: 28px;
+}
 
+
+
+.campaign-codex .group-sheet .group-tabs .group-tab .tab-label {
+  display: none;
+}
+
+
+/*
+QUESTS
+*/
 .campaign-codex .group-tab-panel[data-tab="quests"] h3 i {
   color: var(--cc-accent);
 }
+
 
 .campaign-codex .group-tab-panel[data-tab="quests"] h3 {
   color: var(--cc-main-text);
@@ -3714,40 +3612,38 @@ color: var(--cc-sidebar-text);
   padding-bottom: 0px;
   display: flex;
   align-items: center;
+  cursor: pointer;
 }
 
-/* objectives */
-
 .campaign-codex .objectives-section.quest-inventory {
-    padding-top: 10px;
-    border-top: 1px solid var(--cc-accent);
-    background: var(--cc-main-bg);
-    margin-left: -20px;
-    padding-left: 20px;
-    margin-right: -20px;
-    padding-right: 20px;
-    padding-bottom: 20px;
-    margin-bottom: -20px;
+  padding-top: 10px;
+  border-top: 1px solid var(--cc-accent);
+  background: var(--cc-main-bg);
+  margin-left: -20px;
+  padding-left: 20px;
+  margin-right: -20px;
+  padding-right: 20px;
+  padding-bottom: 20px;
+  margin-bottom: -20px;
 }
 
 .campaign-codex .objectives-section.quest-inventory .shop-items {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 12px;
-    padding: 8px 0px 16px 0px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+  padding: 8px 0px 16px 0px;
 }
 
-
 .campaign-codex .objectives-section {
-    padding-top: 10px;
-    border-top: 1px solid var(--cc-accent);
-    background: var(--cc-main-bg);
-    margin-left: -20px;
-    padding-left: 20px;
-    margin-right: -20px;
-    padding-right: 20px;
-    padding-bottom: 20px;
-    margin-bottom: -20px;
+  padding-top: 10px;
+  border-top: 1px solid var(--cc-accent);
+  background: var(--cc-main-bg);
+  margin-left: -20px;
+  padding-left: 20px;
+  margin-right: -20px;
+  padding-right: 20px;
+  padding-bottom: 20px;
+  margin-bottom: -20px;
 }
 
 .campaign-codex .objectives-header {
@@ -3758,39 +3654,40 @@ color: var(--cc-sidebar-text);
   position: relative;
 }
 
-.campaign-codex .objectives-header i{
+.campaign-codex .objectives-header i {
   color: var(--cc-sidebar-text);
 }
 
-.campaign-codex .objectives-header .add-objective{
-    width: 24px;
-    height: 24px;
-    position: absolute;
-    top: -10px;
-    border-radius: 0px 0px 16px 16px;
-    justify-content: center;
-    right: 0px;
-    border: 0px;
-    background: var(--cc-accent);
-    box-shadow: var(--cc-shadow);
-    display: grid;
-    align-items: center;
-    justify-items: center;
-    font-size: 12px;
+.campaign-codex .objectives-header .add-objective {
+  width: 24px;
+  height: 24px;
+  position: absolute;
+  top: -10px;
+  border-radius: 0px 0px 16px 16px;
+  justify-content: center;
+  right: 0px;
+  border: 0px;
+  background: var(--cc-accent);
+  box-shadow: var(--cc-shadow);
+  display: grid;
+  align-items: center;
+  justify-items: center;
+  font-size: 12px;
 }
 
-.campaign-codex .objectives-header .add-objective i:hover{
+.campaign-codex .objectives-header .add-objective i:hover {
   box-shadow: none;
-    text-shadow: none;
+  text-shadow: none;
 }
 
-.campaign-codex .objectives-header .add-objective:hover{
+.campaign-codex .objectives-header .add-objective:hover {
   box-shadow: none;
-    text-shadow: none;
+  text-shadow: none;
 }
 .campaign-codex .objectives-header h5 {
   margin: 0;
   font-weight: bold;
+  font-family: var(--cc-font-body);
 }
 
 .campaign-codex .objectives-section .objective-list {
@@ -3800,8 +3697,7 @@ color: var(--cc-sidebar-text);
 }
 
 .campaign-codex .objective-item {
-/*  display: flex;*/
-  display:grid;
+  display: grid;
   align-items: center;
   padding: 4px 0;
   gap: 8px;
@@ -3821,17 +3717,16 @@ color: var(--cc-sidebar-text);
   margin-left: auto;
 }
 
-.campaign-codex .objective-item a {
+.campaign-codex .objective-item i {
   color: var(--cc-main-text);
   cursor: pointer;
 }
-
 
 .campaign-codex .objective-item .objective-toggle-icon .fa-eye {
   color: var(--cc-accent);
   text-shadow: none;
 }
-.campaign-codex .objective-item .remove-objective:hover{
+.campaign-codex .objective-item .remove-objective:hover {
   color: var(--cc-danger);
 }
 .campaign-codex .objective-item .fa-circle-check {
@@ -3845,44 +3740,53 @@ color: var(--cc-sidebar-text);
 }
 
 .campaign-codex input.objective-text-input {
-    color: var(--cc-main-text);
-    letter-spacing: 0.5px;
-    border: none;
-    border-bottom: 2px solid var(--cc-accent);
-    padding-bottom: 8px;
-    background: var(--cc-accent10);
-    width: 100%;
-    box-sizing: border-box; 
+  color: var(--cc-main-text);
+  letter-spacing: 0.5px;
+  border: none;
+  border-bottom: 2px solid var(--cc-accent);
+  padding-bottom: 8px;
+  background: var(--cc-accent10);
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .campaign-codex input.objective-text-input:focus {
-    outline: none;
+  outline: none;
 }
 
-.campaign-codex .sidebar-links.cc-tags{
-position: relative;
-}
-
-.campaign-codex .sidebar-links .cc-tags{
-    display: grid;
-    grid-template-columns: 1fr 24px 24px;
-    align-items: center;
-    user-select: none;
-}
-.campaign-codex .sidebar-links .cc-tags i{
-      cursor: pointer;
-      font-size: 14px;
-
-}
 /*
  * ---------------------------------------------
  * Link Tags & Quick Links (Refactored)
  * ---------------------------------------------
  */
 
+.campaign-codex .sidebar-links.cc-tags {
+  position: relative;
+}
+
+.campaign-codex .sidebar-links h3 {
+  display: grid;
+  align-items: center;
+  user-select: none;
+}
+
+.campaign-codex .sidebar-links .cc-tags {
+  grid-template-columns: 1fr 24px 24px;
+}
+
+.campaign-codex .sidebar-links .cc-quicklinks,
+.campaign-codex .sidebar-links .cc-widgets {
+  grid-template-columns: 1fr 24px;
+}
+
+.campaign-codex .sidebar-links i {
+  cursor: pointer;
+  font-size: 14px;
+}
+
 .campaign-codex .sidebar-links {
   flex: 1;
-  padding: 12px 24px 6px 24px;
+  padding: 12px 16px 6px 24px;
   overflow-y: auto;
   min-height: 0;
 }
@@ -3900,71 +3804,102 @@ position: relative;
 }
 
 .campaign-codex .existing-tags-list,
+.campaign-codex .link-widgets,
 .campaign-codex .link-tags {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    padding-bottom: 8px;
-    margin-bottom: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .campaign-codex .link-card {
-    align-items: center;
-    padding: 6px;
-    gap: 4px;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    text-align: left;
-    word-wrap: break-word;
-    word-break: break-all;
+  align-items: center;
+  padding: 6px;
+  gap: 4px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+  word-wrap: break-word;
+/*  word-break: break-all;*/
 }
 
 .campaign-codex .link-card:hover {
-    background: var(--cc-accent10);
-    transform: translateY(-2px);
+  background: var(--cc-accent10);
+  transform: translateY(-2px);
 }
 
+.campaign-codex .link-widgets .link-card.inactive .link-name,
+.campaign-codex .link-widgets .link-card.available .link-name,
 .campaign-codex .link-tags .existing-tag .link-name,
 .campaign-codex .link-card .link-name {
-    font-size: 10px;
-    line-height: 1.2;
-    color: var(--cc-accent80);
+  font-size: 10px;
+  line-height: 1.2;
+  color: var(--cc-accent80);
 }
-
+.campaign-codex .link-widgets .link-card,
 .campaign-codex .link-tags .tag-card {
-    display: grid;
-    grid-template-columns: 1fr 16px;
-    background: var(--cc-accent);
+  display: grid;
+  grid-template-columns: 1fr 16px;
+  background: var(--cc-accent);
 }
 
-
+.campaign-codex .link-widgets .link-card .link-name,
 .campaign-codex .link-tags .tag-card .link-name {
-    color: var(--cc-main-text);
+  color: var(--cc-main-text);
 }
+.campaign-codex .link-widgets .fa-trash {
+  font-size: 12px;
+  text-align: right;
+  color: var(--cc-danger);
+}
+
+.campaign-codex .link-widgets .fa-trash:hover {
+  color: var(--cc-accent);
+}
+
+.campaign-codex .link-widgets .fa-circle-x,
 .campaign-codex .link-tags .fa-trash {
-    font-size: 12px;
-    text-align: right;
-    color: var(--cc-main-text);
+  font-size: 12px;
+  text-align: right;
+  color: var(--cc-main-text);
 }
+
 .campaign-codex .link-tags .fa-trash:hover {
-    color: var(--cc-danger);
+  color: var(--cc-danger);
+}
+
+.campaign-codex .link-widgets .inactive {
+  display: grid;
+  grid-template-columns: 1fr 16px;
+  background: none;
+  border: dotted 1px var(--cc-accent);
 }
 
 .campaign-codex .link-tags .existing-tag {
-    display: grid;
-    grid-template-columns: 1fr;
-    background: var(--cc-accent10);
+  display: grid;
+  grid-template-columns: 1fr;
+  background: var(--cc-accent10);
 }
 
-.campaign-codex .collapsible-content .link-card {
-    display: grid;
-    grid-template-columns: 16px 1fr;
-    background: var(--cc-accent10);
+.campaign-codex .link-widgets .available {
+  display: grid;
+  grid-template-columns: 16px 1fr;
+  background: var(--cc-accent10);
+  align-items: start;
 }
-.campaign-codex .collapsible-content .link-card i {
-    font-size: 14px;
-    color: var(--cc-accent);
+
+.campaign-codex .link-widgets .available i {
+  color: var(--cc-accent);
+}
+
+.campaign-codex .cc-quicklinks .link-card {
+  display: grid;
+  grid-template-columns: 16px 1fr;
+  background: var(--cc-accent10);
+}
+.campaign-codex .cc-quicklinks .link-card i {
+  font-size: 14px;
+  color: var(--cc-accent);
 }
 
 /*
@@ -3981,21 +3916,17 @@ position: relative;
 }
 
 .campaign-codex .collapsible-content {
-  display: none; 
+  display: none;
 }
 
 .campaign-codex .collapsible-quicklinks.active + .collapsible-content {
-  display: flex; 
+  display: flex;
 }
 
 .campaign-codex .collapsible-quicklinks.active i {
   transform: rotate(180deg);
 }
 
-.campaign-codex.hide-existing-tags .link-card.existing-tag {
-  display: none;
-}
-/* Editors */
 .campaign-codex .name-input {
   background: transparent;
   border: 1px solid var(--cc-accent30);
@@ -4016,117 +3947,143 @@ position: relative;
   padding: 2px 6px;
   border-radius: 4px;
   text-transform: uppercase;
-/*  font-family: "Segoe UI", sans-serif;*/
+
   font-size: 12px;
   letter-spacing: 1px;
   width: 100%;
 }
 
-
-
-/*TOC*/
-
+/*
+ * ---------------------------------------------
+ * Table of Contents (TOC) App Styles
+ * ---------------------------------------------
+ */
 
 .campaign-codex-toc-app {
-padding: 10px 0px 10px 10px;
-    margin-right: 0px;
+  padding: 10px 0px 10px 10px;
+  margin-right: 0px;
 }
 
 .campaign-codex-toc-app .sheet-tabs {
-    border-bottom: 1px solid var(--cc-ui);
-    margin-bottom: 10px;
+  border-bottom: 1px solid var(--cc-ui);
+  margin-bottom: 10px;
 }
 
-
+.campaign-codex-toc-app .cc-toc-header-list, 
 .campaign-codex-toc-app .cc-toc-journal-list {
-    list-style: none;
-    padding: 0;
-    margin: 0;
+  list-style: none;
+  padding: 0;
+  margin: 0;
 }
 
+.campaign-codex-toc-app .cc-toc-header-list .cc-header-title,
 .campaign-codex-toc-app .cc-toc-journal-list li a {
-    display: block;
-    padding: 8px;
-    border-radius: 4px;
-    transition: background-color 0.2s ease;
-}
+  display: block;
+  padding: 8px;
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
 
+}
+.campaign-codex-toc-app .cc-toc-header-list .cc-header-title{
+    text-overflow: ellipsis;
+    overflow: hidden;
+  }
 .campaign-codex-toc-app .cc-toc-journal-list li a:hover {
-    background-color: rgba(var(--cc-dark), 0.05);
+  background-color: rgba(var(--cc-dark), 0.05);
 }
-
-
-/**/
-
 
 /*
  * Reposition and constrain the vertical tab navigation bar.
 */
 .campaign-codex.codex-toc .window-content nav.sheet-tabs {
-    position: sticky;
-    top: 0px;
-    left: 0px;
-    width: 100%;
-    background: none;
-    border: none;
-    padding: 0 5px 0 5px;
-    display: flex;
-    flex-direction: row;
-    gap: 5px;
-    border-bottom: 1px solid var(--cc-ui);
-    justify-content: flex-start;
+  position: sticky;
+  top: 0px;
+  left: 0px;
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 0 5px 0 5px;
+  display: flex;
+  flex-direction: row;
+  gap: 5px;
+  border-bottom: 1px solid var(--cc-ui);
+  justify-content: flex-start;
 }
 
 .campaign-codex.codex-toc .window-content nav.sheet-tabs i {
-text-shadow: none;
+  text-shadow: none;
 }
 
 .campaign-codex.codex-toc .window-content > nav.sheet-tabs a.cc-toc {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 40px;
-    min-width: 40px;
-    margin-bottom: -1px;
-    border: 1px solid var(--cc-ui);
-    border-radius: 8px 8px 0px 0px;
-    color: var(--cc-ui);
-    padding: 0.5rem;
-    border-bottom: none;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 40px;
+  min-width: 40px;
+  margin-bottom: -1px;
+  border: 1px solid var(--cc-ui);
+  border-radius: 8px 8px 0px 0px;
+  color: var(--cc-ui);
+  padding: 0.5rem;
+  border-bottom: none;
 }
 
-.campaign-codex.codex-toc  .window-content {
-      position: relative;
-      overflow:hidden;
-/*      scrollbar-gutter: stable;*/
+.campaign-codex.codex-toc .window-content {
+  position: relative;
+  overflow: hidden;
 }
-/* Style the active tab */
+
 .campaign-codex.codex-toc > .window-content > nav.sheet-tabs a.cc-toc.active {
-    background: var(--cc-ui);
-    border-color: var(--cc-ui);
-    color: var(--cc-main-text);
+  background: var(--cc-ui);
+  border-color: var(--cc-ui);
+  color: var(--cc-main-text);
 }
 
-
-.campaign-codex.codex-toc > .window-header{
-    z-index: 0;
-    background: transparent;
-    border: none;
+.campaign-codex.codex-toc > .window-header {
+  z-index: 0;
+  background: transparent;
+  border: none;
 }
 
+.campaign-codex-toc-app .cc-toc-header-list li {
+  display: grid;
+  grid-template-columns: 24px 1fr;
+  justify-content: center;
+  align-items: baseline;
+}
 .campaign-codex-toc-app .cc-toc-journal-list li {
-    display: grid;
-    grid-template-columns: 24px 1fr 24px 24px;
-    justify-content: center;
-    align-items: baseline;
+  display: grid;
+  grid-template-columns: 24px 1fr 24px 24px;
+  justify-content: center;
+  align-items: baseline;
 }
 
-.campaign-codex-toc-app .cc-toc-journal-list i{
-color:var(--cc-ui)
+.campaign-codex-toc-app .cc-toc-tags-left-col .directory-header {
+
 }
 
+.campaign-codex-toc-app .directory-header{
+    text-transform: uppercase;
+/*    border-bottom: 1px dotted var(--cc-ui);*/
+    padding-top: 4px;
+    background: var(--cc-accent10);
+    margin-left: -10px;
+    margin-right: -10px;
+    padding-left: 10px;
+    padding-right: 10px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top:2px;
+}
 
-/*collapsable quests*/
+.campaign-codex-toc-app .cc-toc-header-list i{
+/*  color: var(--cc-ui);*/
+
+}
+.campaign-codex-toc-app .cc-toc-journal-list i {
+  color: var(--cc-ui);
+}
+
 .campaign-codex.codex-toc .collapsible-quicklinks {
   cursor: pointer;
   display: flex;
@@ -4136,24 +4093,33 @@ color:var(--cc-ui)
 }
 
 .campaign-codex.codex-toc .toc-quest-item .toc-quest-body.collapsible-content {
-    padding: 0px 24px 0px 24px;
+  padding: 0px 24px 0px 24px;
 }
 
+.campaign-codex.codex-toc .toc-collapsable:not(.is-collapsed) {
+    border-bottom: 1px dotted var(--cc-ui);
+    margin-bottom: 4px;
+    margin-left: -10px;
+    margin-right: -10px;
+    padding: 6px 10px 6px 10px;
+    background: var(--cc-accent10);
+}
+
+.campaign-codex-toc-app .toc-collapsable.is-collapsed,
 .campaign-codex.codex-toc .toc-quest-item.is-collapsed .collapsible-content {
-  display: none; 
+  display: none;
 }
 
 .campaign-codex.codex-toc .toc-quest-item:not(.is-collapsed) .collapsible-content {
-  display: block; 
+  display: block;
 }
 
-.campaign-codex.codex-toc .toc-quest-item h4{
-    display: grid;
-    grid-template-columns: 24px 1fr 24px 24px 24px;
-    justify-content: center;
-    align-items: center;
+.campaign-codex.codex-toc .toc-quest-item h4 {
+  display: grid;
+  grid-template-columns: 24px 1fr 24px 24px 24px;
+  justify-content: center;
+  align-items: center;
 }
-
 
 .campaign-codex.codex-toc .toc-quest-item h4 i {
   font-size: 14px;
@@ -4164,149 +4130,243 @@ color:var(--cc-ui)
   color: var(--cc-ui);
 }
 .campaign-codex.codex-toc .toc-quest-item h4 .collaspable-quicklinks,
-.campaign-codex.codex-toc .toc-quest-item h4 .fa-book
-{
+.campaign-codex.codex-toc .toc-quest-item h4 .fa-book {
   cursor: pointer;
 }
 
-.campaign-codex.codex-toc .toc-quest-list{
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 20px;
-    margin-top: 24px;
-}    
+.campaign-codex.codex-toc .toc-quest-list {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+  margin-top: 24px;
+}
 .campaign-codex.codex-toc .toc-quest-item ul.quest-objectives {
-    list-style: none;
-/*    padding-left: 0;*/
-}   
+  list-style: none;
+}
 
 .campaign-codex.codex-toc .toc-quest-item .quest-objectives {
-    list-style: none;
-    padding-left: 0;
-}   
+  list-style: none;
+  padding-left: 0;
+}
 
 .campaign-codex.codex-toc .toc-quest-item .quest-objectives ul.quest-objectives {
-    list-style: none;
-    margin-left: 10px;
-    border-left: 1px dashed var(--cc-border-medium);
-    padding-left: 10px;
-} 
+  list-style: none;
+  margin-left: 10px;
+  border-left: 1px dashed var(--cc-border-medium);
+  padding-left: 10px;
+}
 
-
-.campaign-codex-toc-app .cc-toc-journal-list{
-    display:grid;
-    gap: 0px 16px;
-    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  }
-
+.campaign-codex-toc-app .cc-toc-journal-list {
+  display: grid;
+  gap: 0px 16px;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+}
 
 @media (min-width: 640px) {
   .campaign-codex-toc-app .cc-toc-journal-list {
     grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
   }
   .campaign-codex-toc-app .cc-toc-journal-list:last-child:nth-child(2n + 1) {
-    grid-column: 1 / -1; 
+    grid-column: 1 / -1;
   }
 }
 
-.campaign-codex.codex-toc .window-content .campaign-codex-toc-app.scrollable.tab .cc-create
-{
-    display: none;
+.campaign-codex.codex-toc .window-content .campaign-codex-toc-app.scrollable.tab .cc-create {
+  display: none;
 }
 
-.campaign-codex.codex-toc .window-content .campaign-codex-toc-app.scrollable.tab.active .cc-create
-{
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 40px;
-    width: 40px;
-    font-size: 20px;
-    color: var(--cc-ui);
-    box-shadow: none;
-    padding: 0.5rem;
-    position: absolute;
-    top: 0px;
-    right: 5px;
-    cursor: pointer;
-    margin-bottom: -2px;
-    border: none;
-    background-color: var(--cc-ui);
-    border-radius: 8px 8px 0px 0px;
-    color: var(--cc-main-text);
-    padding: 0.5rem;
-    justify-content: center;
-    align-items: center;
+.campaign-codex.codex-toc .window-content .campaign-codex-toc-app.scrollable.tab.active .cc-create {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 40px;
+  width: 40px;
+  font-size: 20px;
+  color: var(--cc-ui);
+  box-shadow: none;
+  padding: 0.5rem;
+  position: absolute;
+  top: 0px;
+  right: 5px;
+  cursor: pointer;
+  margin-bottom: -2px;
+  border: none;
+  background-color: var(--cc-ui);
+  border-radius: 8px 8px 0px 0px;
+  color: var(--cc-main-text);
+  padding: 0.5rem;
+  justify-content: center;
+  align-items: center;
 }
 
-.application.campaign-codex.codex-toc
-{
+.application.campaign-codex.codex-toc {
   min-width: 400px;
   min-height: 350px;
 }
 
-.application.campaign-codex.codex-toc.minimized
-{
+.application.campaign-codex.codex-toc.minimized {
   min-width: 0px;
   min-height: 0px;
 }
 
-.application.campaign-codex.codex-toc.minimized
-{
+.application.campaign-codex.codex-toc.minimized {
   min-width: 0px;
   min-height: 0px;
 }
+/*
+ * ---------------------------------------------
+ * TOC 2 Column
+ * ---------------------------------------------
+ */
+.campaign-codex-toc-app .two-column-layout {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  height: 100%;
+  padding: 0px;
+  gap: 5px;
+}
 
-.campaign-codex.campaign-codex-theme-config .form-body{
+.campaign-codex-toc-app .two-column-layout .cc-toc-tags-left-col  li {
+    display: grid;
+    grid-template-columns: 16px 1fr 12px;
+    justify-content: center;
+    align-items: baseline;
+    cursor: pointer;
+}
+
+.campaign-codex-toc-app .two-column-layout .cc-child-item {
+    cursor: pointer;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    word-wrap: break-word;
+}
+
+.campaign-codex-toc-app .two-column-layout .cc-toc-tags-left-col i {
+  color: var(--cc-ui);
+}
+
+.campaign-codex.codex-toc .toc-tags-left-col {
+  overflow-y: auto;
+  margin-right: -4px;
+  padding-right: 0px;
+    margin-left: -10px;
+  padding-left: 10px;
+}
+
+.campaign-codex.codex-toc .toc-tags-left-col ul{
+    margin: 0px;
+    padding: 0px;
+}
+
+.campaign-codex.codex-toc .toc-tags-right-col {
+    border-left: 1px dotted var(--cc-accent);
+    padding-left: 12px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    margin-top: 0px;
+    padding-top: 0px;
+}
+
+.campaign-codex.codex-toc .toc-tag-children-header {
+  flex: 0 0 auto;
+  border-bottom: 1px solid var(--color-border-light-primary);
+  padding-bottom: 5px;
+  margin: 0 5px 5px 5px;
+}
+.campaign-codex.codex-toc .toc-tag-children-header h3 {
+  margin: 0;
+  font-size: var(--font-size-16);
+  color: var(--color-text-hyperlink);
+}
+
+.campaign-codex.codex-toc .toc-tag-children-list {
+  flex: 1 1 100%;
+  overflow-y: auto;
+}
+ .campaign-codex.codex-toc .cc-toc-journal-list.tag-child-list{
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+/* Style for the active tag */
+.campaign-codex.codex-toc .toc-tag-item {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 3px 5px;
+}
+
+.campaign-codex.codex-toc .toc-tag-item a.tag-name-link {
+  flex: 1 1 auto;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-left: 5px;
+}
+
+.campaign-codex.codex-toc .toc-tag-item .child-count {
+  flex: 0 0 auto;
+  margin-left: 8px;
+  color: var(--color-text-dark-secondary);
+}
+
+.campaign-codex.codex-toc .toc-tag-item.active {
+    background: var(--color-border);
+   border-left: 3px solid var(--cc-ui);
+}
+/*
+ * ---------------------------------------------
+ * Theme Configuration Dialog
+ * ---------------------------------------------
+ */
+
+.campaign-codex.campaign-codex-theme-config .form-body {
   padding: 0px 10px 0px 10px;
-      scrollbar-width: inherit;
-    scrollbar-color: var(--cc-ui) !important;
-    --scroll-margin: auto;
+  scrollbar-width: inherit;
+  scrollbar-color: var(--cc-ui) !important;
+  --scroll-margin: auto;
 }
 
-.campaign-codex.campaign-codex-theme-config fieldset{
-    padding: 10px 10px 10px 10px;
-    margin: 10px 0px 0px 0px;
+.campaign-codex.campaign-codex-theme-config fieldset {
+  padding: 10px 10px 10px 10px;
+  margin: 10px 0px 0px 0px;
 }
 
-.campaign-codex.campaign-codex-theme-config .form-footer{
+.campaign-codex.campaign-codex-theme-config .form-footer {
   padding: 0px 10px 10px 10px;
 }
 
-
 .campaign-codex.campaign-codex-theme-config.dialog .dialog-form {
-padding: 0px 10px;
+  padding: 0px 10px;
 }
 
-/*button.control.ui-control.layer.icon.fas.fa-closed-captioning[data-control="campaign-codex"]{
-  background: #d4af37;
-  color: black;
-}
-*/
+/*
+ * ---------------------------------------------
+ * Objective List Dragging
+ * ---------------------------------------------
+ */
 
-
-
-/* styles for objective drag-and-drop */
 .objective-item.dragging {
   opacity: 0.5;
   background: var(--cc-accent10);
-  cursor:grabbing !important;
+  cursor: grabbing !important;
 }
 
 .objective-item .objective-list {
-    margin-left: 20px;
-    border-left: 1px dashed var(--cc-border-medium);
-    padding-left: 10px;
+  margin-left: 20px;
+  border-left: 1px dashed var(--cc-border-medium);
+  padding-left: 10px;
 }
 
 .objective-item .objective-content {
-    display: flex;
-    align-items: center;
-    gap: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .objective-item.drag-over-top::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: 0;
@@ -4317,7 +4377,7 @@ padding: 0px 10px;
 }
 
 .objective-item.drag-over-bottom::after {
-  content: '';
+  content: "";
   position: absolute;
   bottom: 0;
   left: 0;
@@ -4328,114 +4388,652 @@ padding: 0px 10px;
 }
 
 .objective-item {
-    position: relative; /* Needed for the absolute positioning of the lines */
+  position: relative;
 }
-
 
 .campaign-codex.codex-toc .form-group {
-    padding: 10px 10px 0px 10px;
-    margin-bottom: 0;
-
+  padding: 10px 10px 0px 10px;
+  margin-bottom: 0;
 }
-
 
 /*
- TEMPLATE STLYES 
+ * ---------------------------------------------
+ * TEMPLATE STLYES 
+ * ---------------------------------------------
  */
- .campaign-codex .cc-grid-layout {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 2rem;
-    }
-    .campaign-codex .cc-grid-layout .cc-main-content {
-        flex: 2; /* Takes up 2/3 of the space */
-        min-width: 300px;
-    }
-    .campaign-codex .cc-grid-layout .cc-sidebar {
-        flex: 1; /* Takes up 1/3 of the space */
-        min-width: 250px;
-        display: flex;
-        flex-direction: column;
-        gap: 1rem;
-    }
-   .campaign-codex .cc-grid-layout .cc-info-box {
-        background: var(--cc-bg-secondary, #0000001a);
-        padding: 1rem;
-        border-radius: 5px;
-        border: 1px solid var(--cc-border-light, #0000003b);
-    }
-    .campaign-codex .cc-grid-layout .cc-info-box h3 {
-        margin-top: 0;
-        border-bottom: 1px solid var(--cc-border-medium);
-        padding-bottom: 0.5rem;
-    }
-     .campaign-codex .cc-grid-layout .cc-info-box .info-item {
-        display: flex;
-        justify-content: space-between;
-        margin-bottom: 0.5rem;
-    }
-    .campaign-codex .cc-grid-layout .cc-info-box hr {
-        border-color: var(--cc-border-medium, #0000003b);
-    }
-
-
-    .cc-grid-layout .cc-image-frame img {
-        display: block;
-        width: 100%;
-        aspect-ratio: 1 / 1.5;
-        object-fit: cover;
-        border-radius: 3px;
-    }
-    .cc-grid-layout .cc-info-box .info-item:last-child {
-        border-bottom: none;
-        margin-bottom: 0;
-    }
-
-
-.campaign-codex .cc-remove-image{
-    position: absolute;
-    bottom: 8px;
-    right: 8px;
-    width: 10px;
-    height: 10px;
-    /* border: none; */
-    border-radius: 0px;
-    background: none;
-    opacity: 0.5;
-    color: var(--cc-danger);
-    border: none;
-    cursor: pointer;
-    font-size: 12px;
-    line-height: 20px;
-    text-align: center;
-    padding: 0;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-size: 16px;
+.campaign-codex .cc-grid-layout {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2rem;
 }
-.campaign-codex  .cc-remove-image:hover {
-    opacity: 1;
+.campaign-codex .cc-grid-layout .cc-main-content {
+  flex: 2;
+  min-width: 300px;
+}
+.campaign-codex .cc-grid-layout .cc-sidebar {
+  flex: 1;
+  min-width: 250px;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.campaign-codex .cc-grid-layout .cc-info-box {
+  background: var(--cc-bg-secondary, #0000001a);
+  padding: 1rem;
+  border-radius: 5px;
+  border: 1px solid var(--cc-border-light, #0000003b);
+}
+.campaign-codex .cc-grid-layout .cc-info-box h3 {
+  margin-top: 0;
+  border-bottom: 1px solid var(--cc-border-medium);
+  padding-bottom: 0.5rem;
+}
+.campaign-codex .cc-grid-layout .cc-info-box .info-item {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+.campaign-codex .cc-grid-layout .cc-info-box hr {
+  border-color: var(--cc-border-medium, #0000003b);
 }
 
+.cc-grid-layout .cc-image-frame img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1 / 1.5;
+  object-fit: cover;
+  border-radius: 3px;
+}
+.cc-grid-layout .cc-info-box .info-item:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+}
 
+.campaign-codex .cc-remove-image {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  width: 10px;
+  height: 10px;
+
+  border-radius: 0px;
+  background: none;
+  opacity: 0.5;
+  color: var(--cc-danger);
+  border: none;
+  cursor: pointer;
+  font-size: 12px;
+  line-height: 20px;
+  text-align: center;
+  padding: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 16px;
+}
+.campaign-codex .cc-customise-tabs:hover,
+.campaign-codex .cc-remove-image:hover {
+  opacity: 1;
+}
+
+.campaign-codex .cc-customise-tabs:focus,
+.campaign-codex .cc-customise-tabs:active,
 .campaign-codex .cc-remove-image:focus,
-.campaign-codex  .cc-remove-image:active {
+.campaign-codex .cc-remove-image:active {
   outline: none;
   box-shadow: none;
 }
 
+.campaign-codex .cc-customise-tabs {
+  position: absolute;
+  bottom: 8px;
+  left: 8px;
+  width: 10px;
+  height: 10px;
+  border-radius: 0px;
+  background: none;
+  opacity: 0.5;
+  color: var(--cc-accent);
+  border: none;
+  cursor: pointer;
+  font-size: 12px;
+  line-height: 20px;
+  text-align: center;
+  padding: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 16px;
+}
+
 .campaign-codex summary::marker {
- cursor: pointer;
+  cursor: pointer;
 }
 
 .campaign-codex .editor-content.ProseMirror details {
-  border-top:1px dashed var(--cc-accent);
+  border-top: 1px dashed var(--cc-accent);
   padding-top: 10px;
-  border-bottom:1px dashed var(--cc-accent);
+  border-bottom: 1px dashed var(--cc-accent);
   padding-bottom: 10px;
 }
 
 .campaign-codex .editor-content.ProseMirror summary::marker {
   cursor: unset;
 }
+
+/*
+ * ---------------------------------------------
+ * Widget Styles
+ * ---------------------------------------------
+ */
+
+.campaign-codex .cc-widget-container {
+  margin-bottom: 1rem;
+  min-height: 50px;
+  padding: 5px;
+}
+
+.campaign-codex .cc-widget {
+  border: 1px solid var(--cc-border-light);
+  border-radius: 8px;
+  padding: 1rem;
+  background-color: var(--cc-card-bg);
+  box-shadow: var(--cc-shadow);
+  margin-bottom: 1rem;
+}
+
+.campaign-codex .world-map-widget .map-container {
+  height: 400px;
+  width: 100%;
+  border-radius: 4px;
+  border: 1px solid var(--cc-border);
+  background-color: #eee;
+}
+
+.campaign-codex .world-map-widget .leaflet-control-zoom a {
+  color: var(--cc-main-text) !important;
+  background-color: var(--cc-card-bg) !important;
+  border-bottom: 1px solid var(--cc-border-light) !important;
+}
+.campaign-codex .world-map-widget .leaflet-control-zoom a:hover {
+  background-color: var(--cc-main-bg) !important;
+}
+
+.campaign-codex .widget-controls {
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+  display: flex;
+  gap: 0.5rem;
+  justify-content: space-between;
+}
+.campaign-codex .widget-controls button {
+  background: transparent;
+  border: 1px solid var(--cc-accent);
+  color: var(--cc-accent);
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  cursor: pointer;
+}
+.campaign-codex .widget-controls button:hover {
+  background: var(--cc-accent);
+  color: var(--cc-sidebar-text);
+}
+
+.campaign-codex .map-container.drag-over {
+  border: 2px dashed var(--cc-accent);
+  box-shadow: 0 0 10px var(--cc-accent30);
+}
+
+/*
+ * ---------------------------------------------
+ * Leaflet (Map) Overrides
+ * ---------------------------------------------
+ */
+
+.campaign-codex .leaflet-popup-content-wrapper {
+  background: var(--cc-card-bg) !important;
+  color: var(--cc-main-text) !important;
+  border-radius: 4px !important;
+}
+.campaign-codex .leaflet-popup-content {
+  font-family: var(--cc-font-body) !important;
+  font-size: 13px !important;
+}
+.campaign-codex .leaflet-popup-tip {
+  background: var(--cc-card-bg) !important;
+}
+.campaign-codex .leaflet-popup-close-button {
+  color: var(--cc-text-muted) !important;
+}
+.campaign-codex .leaflet-popup-close-button:hover {
+  color: var(--cc-main-text) !important;
+}
+
+.campaign-codex .leaflet-bottom.leaflet-right {
+  display: none;
+}
+
+.campaign-codex .context-menu {
+  background-color: var(--cc-card-bg) !important;
+  border: 1px solid var(--cc-border-light) !important;
+  box-shadow: var(--cc-shadow) !important;
+}
+.campaign-codex .context-menu .context-item {
+  color: var(--cc-main-text) !important;
+  font-family: var(--cc-font-body) !important;
+}
+.campaign-codex .context-menu .context-item:hover {
+  background-color: var(--cc-accent10) !important;
+  border-color: transparent !important;
+}
+.campaign-codex .context-menu .context-item i {
+  color: var(--cc-accent) !important;
+}
+
+/*
+ * ---------------------------------------------
+ * Map Pin Styles
+ * ---------------------------------------------
+ */
+
+.campaign-codex .cc-map-pin-container {
+  background: transparent;
+  border: none;
+}
+
+.campaign-codex .cc-map-pin-wrapper {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 32px;
+  height: 32px;
+}
+
+.campaign-codex .cc-map-pin-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background-color: var(--cc-primary, #8b1538);
+  color: var(--cc-sidebar-text, #fff);
+  border: 2px solid var(--cc-sidebar-text, #fff);
+  box-shadow: var(--cc-shadow);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.campaign-codex .cc-pin-type-location {
+  background-color: #28a745;
+}
+.campaign-codex .cc-pin-type-shop {
+  background-color: #6f42c1;
+}
+.campaign-curation .cc-pin-type-npc {
+  background-color: #fd7e14;
+}
+.campaign-codex .cc-pin-type-region {
+  background-color: #20c997;
+}
+.campaign-codex .cc-pin-type-group {
+  background-color: #17a2b8;
+}
+.campaign-codex .cc-pin-type-tag {
+  background-color: #a217b8;
+}
+.campaign-codex .cc-pin-type-default {
+  background-color: var(--cc-slate, #5a6268);
+}
+
+.campaign-codex .cc-map-pin-wrapper {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 32px;
+  height: 32px;
+
+  pointer-events: auto;
+}
+
+.campaign-codex .cc-map-pin-label {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-top: -2px;
+  background-color: rgba(0, 0, 0, 0.8);
+  color: white;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: bold;
+  white-space: nowrap;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease-in-out;
+  z-index: 1001;
+  padding: 3px 6px;
+}
+
+.campaign-codex .cc-map-pin-label .pin-note {
+  border-top: dotted 1px;
+}
+
+.campaign-codex .cc-map-pin-wrapper:hover .cc-map-pin-label {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.campaign-codex .cc-map-pin-label .pin-name {
+  cursor: pointer;
+  border-bottom: 1px dotted transparent;
+}
+.campaign-codex .cc-map-pin-label .pin-name:hover {
+  border-bottom-color: var(--cc-accent);
+}
+
+.campaign-codex .cc-map-pin-label .pin-name[data-uuid=""] {
+  cursor: default;
+}
+.campaign-codex .cc-map-pin-label .pin-name[data-uuid=""]:hover {
+  border-bottom-color: transparent;
+}
+
+.campaign-codex .cc-map-pin-label .pin-edit {
+  color: #aedcff;
+  cursor: pointer;
+  font-size: 11px;
+  padding: 0 2px;
+}
+.campaign-codex .cc-map-pin-label .pin-edit:hover {
+  color: #61aeff;
+}
+
+.campaign-codex .cc-map-pin-label .pin-delete {
+  color: #ffcccc;
+  cursor: pointer;
+  font-size: 11px;
+  padding: 0 2px;
+}
+.campaign-codex .cc-map-pin-label .pin-delete:hover {
+  color: var(--cc-danger);
+}
+
+/*
+ * ---------------------------------------------
+ * Tab Configuration Dialog
+ * ---------------------------------------------
+ */
+
+.campaign-codex.campaign-codex-tab-config .window-content {
+  padding: 1rem !important;
+}
+
+.campaign-codex .cc-tab-picker {
+  border-collapse: collapse;
+  margin: 0;
+}
+.campaign-codex .cc-tab-picker th,
+.campaign-codex .cc-tab-picker td {
+  border: 1px solid var(--color-border-light-tertiary);
+  padding: 4px 6px;
+  text-align: center;
+}
+.campaign-codex .cc-tab-picker th {
+  font-size: var(--font-size-12);
+
+  white-space: nowrap;
+  padding-bottom: 8px;
+  line-height: 1.5;
+}
+.campaign-codex .cc-tab-picker td:first-child {
+  text-align: left;
+  font-weight: bold;
+}
+.campaign-codex .cc-tab-picker .no-tab {
+  color: var(--color-text-light-5);
+  font-size: var(--font-size-20);
+}
+.campaign-codex .table-container {
+  overflow-x: auto;
+  max-width: 100%;
+}
+.campaign-codex.form-group.cc-disabled-row {
+  opacity: 0.6;
+  pointer-events: none;
+  cursor: not-allowed;
+}
+/*
+ * ---------------------------------------------
+ * Icon Picker
+ * ---------------------------------------------
+ */
+  .campaign-codex.cc-icon-picker-dialog .dialog-form{
+      padding: 10px;
+  }
+  .campaign-codex .cc-icon-picker-grid {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(32px, 1fr));
+    gap: 5px;
+  }
+  .campaign-codex .cc-icon-radio input[type="radio"] {
+    opacity: 0;
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    border: 0;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+  }
+  .campaign-codex .cc-icon-radio label {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 32px;
+    padding: 3px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-sizing: border-box; 
+  }
+
+  .campaign-codex .cc-icon-radio label {
+    font-size: 24px;
+  }
+  .campaign-codex .cc-icon-radio label:hover {
+    color: var(--color-background-modifier-hover);
+  }
+  /* Style for the selected icon */
+ .campaign-codex  .cc-icon-radio input[type="radio"]:checked + label {
+    color: var(--cc-accent);
+  }
+  /* Accessibility focus ring */
+ .campaign-codex  .cc-icon-radio input[type="radio"]:focus-visible + label {
+    outline: 2px solid var(--color-focus-outline);
+    outline-offset: 1px;
+  }
+
+.campaign-codex .cc-icon-radio.reset input[type="radio"]:checked + label {
+    color: var(--cc-primary);
+  }
+      
+/*
+ * ---------------------------------------------
+ * Group Sheet Experimental
+ * ---------------------------------------------
+ */
+
+.application.campaign-codex.group-sheet .window-content{
+    overflow: visible;
+    width: 100%;
+    height: calc(1vh - var(--header-height, 30px)) !important;
+}
+
+.campaign-codex .group-tabs {
+    display: flex;
+    background: none;
+    padding: 0px;
+    position: absolute;
+    z-index: -1;
+    left: 100%;
+    top: 48px;
+    gap: 4px;
+    flex-direction: column;
+}
+
+.campaign-codex .group-tabs i.group-tab.vertical{
+  width: 32px;
+  height: 32px;
+  max-width: 300px;
+  max-height: 150px;
+  position: absolute;
+  border-radius: 8px 8px 0px 0px;
+  justify-content: center;
+  border: 0px;
+  background: var(--cc-main-text);
+  box-shadow: var(--cc-shadow);
+  display: grid;
+  align-items: center;
+  justify-items: center;
+  padding: 0px 0px 0px 0px;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--cc-sidebar-text);
+}
+
+.campaign-codex .group-tabs i.group-tab.vertical{
+  width: 32px;
+  height: 32px;
+  max-width: 300px;
+  max-height: 150px;
+  position: relative;
+  border-radius: 0px 8px 8px 0px;
+  justify-content: center;
+  border: 0px;
+  background: var(--cc-main-text);
+  box-shadow: var(--cc-shadow);
+  color: var(--cc-sidebar-text);
+}
+
+.campaign-codex .group-tabs i.group-tab.vertical:hover {
+  background: var(--cc-accent);
+}
+
+.campaign-codex .group-tabs i.group-tab.vertical.active{
+  color: var(--cc-accent);
+  background: var(--cc-main-bg);
+}
+
+.campaign-codex .group-tabs i.group-tab.vertical.active:hover{
+  color: var(--cc-main-text);
+}
+
+/*
+ * ---------------------------------------------
+ * Group Sheet widgets
+ * ---------------------------------------------
+ */
+
+.campaign-codex .group-card.widget-card{
+  align-items: center;
+  padding: 6px;
+  gap: 4px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+  word-wrap: break-word;
+/*  word-break: break-all;*/
+  width: fit-content;
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--cc-accent);
+}
+
+.campaign-codex .group-card.widget-card .link-name{
+  font-size: 10px;
+  line-height: 1.2;
+  color: var(--cc-accent80);
+}
+
+.campaign-codex .group-card.widget-card i{
+  color: var(--cc-accent);
+}
+
+.campaign-codex .group-card.widget-card.active{
+  border: none;
+  background: var(--cc-accent);
+}
+
+.campaign-codex .group-card.widget-card.active:hover{
+  border: none;
+  background: var(--cc-accent80);
+}
+
+.campaign-codex .group-card.widget-card.active i,
+.campaign-codex .group-card.widget-card.active .link-name{
+      color: var(--cc-sidebar-text);
+}
+
+.campaign-codex .group-card.widget-card.available i:hover{
+    color: var(--cc-main-text);
+}
+
+.campaign-codex .group-card.widget-card.active i:hover,
+.campaign-codex .group-card.widget-card.inactive i:hover,
+.campaign-codex .group-card.widget-card i:hover{
+    color: var(--cc-primary);
+}
+
+.campaign-codex .group-card.widget-card.inactive{
+    border: 1px solid var(--cc-slate);
+}
+
+.campaign-codex .group-card.widget-card.inactive i,
+.campaign-codex .group-card.widget-card.inactive .link-name{
+      color: var(--cc-slate);
+}
+
+.campaign-codex .group-card.widget-card.available{
+    border: 1px dotted var(--cc-accent);
+    background: none;
+}
+
+.campaign-codex .group-card.widget-card:hover {
+  background: var(--cc-accent10);
+}
+
+
+.campaign-codex .group-card.widget-card.i{
+    color: var(--cc-sidebar-text);
+}
+
+
+.campaign-codex .group-links.cc-widgets.group-widgets{
+    width: 100%;
+    padding: 0;
+    margin-top: -12px;
+    display: flex;
+    margin-bottom: 12px;
+    justify-content: flex-end;
+    gap: 4px;
+    flex-wrap: wrap;
+}
+
+
+
+
+
+

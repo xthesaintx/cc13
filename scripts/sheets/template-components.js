@@ -1,11 +1,14 @@
 import { CampaignCodexBaseSheet } from "./base-sheet.js";
 import { localize, format, renderTemplate } from "../helper.js";
 import { CampaignCodexLinkers } from "./linkers.js";
+import { widgetManager } from "../widgets/WidgetManager.js";
+import { gameSystemClass } from "../helper.js";
 
 /**
  * A collection of static methods for generating HTML template components.
  */
 export class TemplateComponents {
+
   // =========================================================================
   // Core Utilities
   // =========================================================================
@@ -20,8 +23,8 @@ export class TemplateComponents {
   static getAsset(assetType, entityType, currentImg = null) {
     const myModulePath = "/modules/campaign-codex/";
     const ASSET_MAP = {
-      region: {icon: "fas fa-globe", image: myModulePath + "ui/region.webp" },
-      location: {icon: "fas fa-map-marker-alt", image: myModulePath + "ui/location.webp"},
+      region: { icon: "fas fa-globe", image: myModulePath + "ui/region.webp" },
+      location: { icon: "fas fa-map-marker-alt", image: myModulePath + "ui/location.webp" },
       shop: { icon: "fas fa-house", image: myModulePath + "ui/shop.webp" },
       npc: { icon: "fas fa-user", image: myModulePath + "ui/npc.webp" },
       item: { icon: "fas fa-box", image: myModulePath + "ui/item.webp" },
@@ -46,7 +49,6 @@ export class TemplateComponents {
 
     return ASSET_MAP.default.image;
   }
-
 
   // =========================================================================
   // General UI Components
@@ -77,8 +79,7 @@ export class TemplateComponents {
    * @returns {string} The HTML for the rich text section.
    */
   static richTextSection(docIn, enrichedValue, editlocation, isOwner = false) {
-    const systemClass =
-      game.system.id === "dnd5e" ? " dnd5e2-journal themed theme-light" : "";
+    const systemClass = gameSystemClass(game.system.id);
 
     if (!isOwner) {
       return `
@@ -148,13 +149,13 @@ export class TemplateComponents {
       location: format("dropzone.empty", { type: localize("names.locations") }),
       shop: format("dropzone.empty", { type: localize("names.shops") }),
       npc: format("dropzone.empty", { type: localize("names.npcs") }),
-      associate: format("dropzone.empty", {type: localize("names.associates")}),
+      associate: format("dropzone.empty", { type: localize("names.associates") }),
       item: format("dropzone.empty", { type: localize("names.items") }),
     };
 
     const descriptions = {
-      region: format("dropzone.region", {type: localize("names.regions"),}),
-      location: format("dropzone.location", {type: localize("names.locations"),}),
+      region: format("dropzone.region", { type: localize("names.regions") }),
+      location: format("dropzone.location", { type: localize("names.locations") }),
       shop: format("dropzone.shop", { type: localize("names.shop") }),
       npc: format("dropzone.npc", { type: localize("names.npcs") }),
       associate: format("dropzone.associate", { type: localize("names.npcs") }),
@@ -170,38 +171,24 @@ export class TemplateComponents {
     `;
   }
 
-  /**
-   * Generates an informational banner.
-   * @param {string} message - The message to display in the banner.
-   * @returns {string} The HTML for the banner.
-   */
-  static infoBanner(message) {
-    return `
-      <div class="info-banner">
-        <i class="fas fa-info-circle"></i>
-        <p>${message}</p>
-      </div>
-    `;
-  }
 
   /**
-   * Generates a set of filter buttons.
-   * @param {Array<object>} filters - An array of filter objects with 'key' and 'label' properties.
-   * @returns {string} The HTML for the filter buttons.
+   * Generates a control for setting a global price markup.
+   * @param {number} markup - The current markup value.
+   * @returns {string} The HTML for the markup control.
    */
-  static filterButtons(filters) {
+  static cashControl(inventoryCash) {
+    const currency = CampaignCodexLinkers.getCurrency();
+    if (!game.user.isGM) {
+      return "";
+    }
     return `
-      <div class="filter-buttons">
-        ${filters
-          .map(
-            (filter, index) => `
-          <button type="button" class="filter-btn ${index === 0 ? "active" : ""}" data-filter="${filter.key}">
-            ${filter.label}
-          </button>
-        `,
-          )
-          .join("")}
-      </div>
+        <div>
+        <h3>Held Currency</h3>
+        <div class="cash-input-group">
+          <input type="number" class="cash-input" value="${inventoryCash}" min="0" max="9999999" step="1">
+          <span class="cash-label">${currency}</span>
+        </div></div>
     `;
   }
 
@@ -214,15 +201,13 @@ export class TemplateComponents {
     if (!game.user.isGM) {
       return "";
     }
-    return `
-      <div class="markup-control">
+    return `<div>
         <h3><i class="fas fa-percentage"></i> ${localize("inventory.global.markup")}</h3>
         <div class="markup-input-group">
           <input type="number" class="markup-input" value="${markup}" min="0.1" max="10" step="0.1">
           <span class="markup-label">x ${localize("inventory.price.base")}</span>
         </div>
-        <p class="markup-help">${localize("inventory.help.markup")}</p>
-      </div>
+        <p class="markup-help">${localize("inventory.help.markup")}</p></div>
     `;
   }
 
@@ -252,51 +237,69 @@ export class TemplateComponents {
   // Quest Card Components
   // =========================================================================
 
-static async questList(docIn, quests, isGM, isGroupSheet = false) {
-  if (!quests){return};
-    const addButton = isGM ? '<button type="button" class="add-quest refresh-btn"><i class="fas fa-circle-plus"></i></button>' : '';
-    const visibleQuests = isGM ? quests : quests.filter(q => q.visible);
+  static async questList(docIn, quests, isGM, isGroupSheet = false) {
+    if (!quests) {
+      return;
+    }
+    let label = localize("names.quests");
+      if (docIn)
+      {
+        const tabOverrides = docIn.getFlag("campaign-codex", "tab-overrides");
+        if (Array.isArray(tabOverrides)) {
+        const override = tabOverrides.find(tab => tab.key === "quests");
+        if (override && override.label) label = override.label ;
+      }
+    }
+  
+    const addButton = isGM
+      ? '<i class="fas fa-circle-plus add-quest refresh-btn"></i>'
+      : "";
+    const visibleQuests = isGM ? quests : quests.filter((q) => q.visible);
 
     const hideInventoryByPermission = game.settings.get("campaign-codex", "hideInventoryByPermission");
 
-    const processedQuests = await Promise.all(visibleQuests.map(async quest => {
+    const processedQuests = await Promise.all(
+      visibleQuests.map(async (quest) => {
         const inventoryWithoutPerms = await CampaignCodexLinkers.getInventory(docIn, quest.inventory || []);
         const processedInventory = await Promise.all(
-            inventoryWithoutPerms.map(async (item) => {
-                const canView = await CampaignCodexBaseSheet.canUserView(item.uuid || item.itemUuid);
-                return { ...item, canView, type: "item" };
-            })
+          inventoryWithoutPerms.map(async (item) => {
+            const canView = await CampaignCodexBaseSheet.canUserView(item.uuid || item.itemUuid);
+            return { ...item, canView, type: "item" };
+          }),
         );
         const finalItems = hideInventoryByPermission
-            ? processedInventory.filter(item => item.canView)
-            : processedInventory;
+          ? processedInventory.filter((item) => item.canView)
+          : processedInventory;
         return {
-            ...quest,
-            inventory: finalItems, 
-            canEdit: isGM && !isGroupSheet
+          ...quest,
+          inventory: finalItems,
+          canEdit: isGM && !isGroupSheet,
         };
-    }));
-    
+      }),
+    );
+
     const hideSection = !processedQuests || processedQuests.length === 0;
 
-
     const templateData = {
-      hide: hideSection, 
+      hide: hideSection,
       doc: docIn,
       quests: processedQuests,
       isGM: isGM,
       isGroupSheet: isGroupSheet,
-      header: this.contentHeader("fas fa-scroll", "Quests", addButton),
-      systemClass: game.system.id === "dnd5e" ? " dnd5e2-journal themed theme-light" : ""
+      header: this.contentHeader("fas fa-scroll", label, addButton),
+      systemClass: gameSystemClass(game.system.id),
     };
 
     return renderTemplate("modules/campaign-codex/templates/quests/quest-list.hbs", templateData);
   }
 
-
   // =========================================================================
   // Entity & Card Components
   // =========================================================================
+  static getHandlerName(type) {
+    if (!type) return "remove"; // Handle empty input
+    return type.charAt(0).toUpperCase() + type.slice(1);
+  }
 
   /**
    * Generates a grid of entity cards.
@@ -307,15 +310,12 @@ static async questList(docIn, quests, isGM, isGroupSheet = false) {
    * @returns {string} The HTML for the entity grid.
    */
   static entityGrid(entities, type, showActorButton = false, disableRemove = false) {
-    // console.log(entities);
     if (!entities || entities.length === 0) {
       return this.emptyState(type);
     }
 
     const alphaCards = game.settings.get("campaign-codex", "sortCardsAlpha");
-    const entitiesToRender = alphaCards
-      ? [...entities].sort((a, b) => a.name.localeCompare(b.name))
-      : entities;
+    const entitiesToRender = alphaCards ? [...entities].sort((a, b) => a.name.localeCompare(b.name)) : entities;
 
     return `
       <div class="entity-grid">
@@ -336,60 +336,57 @@ static async questList(docIn, quests, isGM, isGroupSheet = false) {
     const customDataAttr = Object.entries(customData)
       .map(([key, value]) => `${key}="${value}"`)
       .join(" ");
-    const hideByPermission = game.settings.get(
-      "campaign-codex",
-      "hideByPermission",
-    );
+    const hideByPermission = game.settings.get("campaign-codex", "hideByPermission");
     if (hideByPermission && !entity.canView) {
       return "";
     }
 
     const actorButton =
       showActorButton && entity.actor && entity.canViewActor
-        ? `<button type="button" class="action-btn open-actor" data-actor-uuid="${entity.actor.uuid}" title="${localize("title.open.actor")}">
-            <i class="fas fa-user"></i>
-           </button>`
+        ? `<i class="fas fa-user action-btn open-actor" data-action="openActor" data-uuid="${entity.actor.uuid}" title="${localize("title.open.actor")}</i>`
         : "";
 
     const isShopSource = entity.source === "shop";
     const sourceAttr = entity.source ? `data-source="${entity.source}"` : "";
-    
+
     let removeButton = "";
     if (disableRemove) {
-      const entityTypeName =
-        type === "location" ? "shop-based locations" : "entry NPCs";
-      removeButton = `
-        <button type="button" class="action-btn disabled-rmv" title="${format('warn.directly', { type: localize('names.'+type) })}" style="opacity: 0.3; cursor: not-allowed; background: #dc3545; color: white; border-color: #dc3545;" disabled>
-          <i class="fas fa-link-slash"></i>
-        </button>
-      `;
+      const entityTypeName = type === "location" ? "shop-based locations" : "entry NPCs";
+      removeButton = `<span></span>`;
     } else {
       removeButton = `
-        <button type="button" class="action-btn remove-${type}" data-${type}-uuid="${entity.uuid}" title="${format('warn.remove', { type: localize('names.'+type) })}">
-          <i class="fas fa-link-slash"></i>
-        </button>
-      `;
+        <i class="fas fa-link-slash action-btn remove-${type}" data-action="remove${this.getHandlerName(type)}" data-uuid="${entity.uuid}" title="${format("warn.remove", { type: localize("names." + type) })}"></i>`;
     }
     return `
         ${
-            entity.canView
-              ? `<div class="entity-card ${type}-card open-${type}" data-${type}-uuid="${entity.uuid}" ${customDataAttr} style="cursor: pointer; position:relative;" ${sourceAttr}>`
-              : `<div class="entity-card ${type}-card" ${customDataAttr} ${sourceAttr}>`
-          } 
-        <div class="entity-image">
+          entity.canView
+            ? `<div class="entity-card ${type}-card open-${type} ${entity.showImage ? ``:`hide-entity-image`}" data-action="open${this.getHandlerName(type)}" data-uuid="${entity.uuid}" ${customDataAttr} style="cursor: pointer; position:relative;" ${sourceAttr}>`
+            : `<div class="entity-card ${type}-card ${entity.showImage ? ``:`hide-entity-image`}" ${customDataAttr} ${sourceAttr}>`
+        } 
+        <div class="entity-image ${entity.showImage ? ``:`hide-entity-image`}">
           <img src="${entity.img}" alt="${entity.name}">
         </div>
         <div class="entity-content">
           <h4 class="entity-name">${entity.name}</h4>
-          <div class="entity-meta">
+          ${entity.meta ? `<div class="entity-meta">
             ${entity.meta || `<span class="entity-type">${type}</span>`}
-          </div>
+          </div>` :``}
           ${
             entity.locations && entity.locations.length > 0
               ? `
             <div class="entity-locations">
               <i class="fas fa-map-marker-alt"></i>
               ${entity.locations.map((loc) => `<span class="location-tag">${loc}</span>`).join("")}
+            </div>
+          `
+              : ""
+          }
+          ${
+            entity.regions && entity.regions.length > 0
+              ? `
+            <div class="entity-locations">
+              <i class="fas fa-globe"></i>
+              ${entity.regions.map((reg) => `<span class="location-tag">${reg}</span>`).join("")}
             </div>
           `
               : ""
@@ -436,17 +433,12 @@ static async questList(docIn, quests, isGM, isGroupSheet = false) {
         ${
           actor.canView
             ? `
-          <button type="button" class="action-btn open-actor" data-actor-uuid="${actor.uuid}" title="${localize("title.open.actor")}">
-            <i class="fas fa-user"></i>
-          </button>
-        `
+          <i class="fas fa-user action-btn open-actor" data-action="openActor" data-uuid="${actor.uuid}" title="${localize("title.open.actor")}"></i>`
             : ""
         }
         ${
           game.user.isGM
-            ? `<button type="button" class="action-btn remove-actor" title="${localize("title.unlink.actor")}">
-                <i class="fas fa-unlink"></i>
-               </button>`
+            ? `<i class="fas fa-unlink action-btn remove-actor" data-action="removeActor" title="${localize("title.unlink.actor")}"></i>`
             : ""
         }
       </div>
@@ -478,10 +470,7 @@ static async questList(docIn, quests, isGM, isGroupSheet = false) {
    */
   static inventoryTable(inventory, isLootMode = false) {
     const hideBase = game.settings.get("campaign-codex", "hideBaseCost");
-      const hideByPermission = game.settings.get(
-          "campaign-codex",
-          "hideInventoryByPermission",
-        );
+    const hideByPermission = game.settings.get("campaign-codex", "hideInventoryByPermission");
 
     if (!inventory || inventory.length === 0) {
       return this.emptyState("item");
@@ -498,11 +487,7 @@ static async questList(docIn, quests, isGM, isGroupSheet = false) {
           <div class="cc-inv-price-table">${localize("inventory.price.final")}</div>
         `;
 
-    const gridColumns = isLootMode
-      ? "cc-loot-mode"
-      : hideBase
-        ? "cc-hide-base"
-        : "cc-shop-mode";
+    const gridColumns = isLootMode ? "cc-loot-mode" : hideBase ? "cc-hide-base" : "cc-shop-mode";
 
     const inventoryRows = inventory
       .map((item) => {
@@ -521,12 +506,12 @@ static async questList(docIn, quests, isGM, isGroupSheet = false) {
                 : ""
             }
             <div class="item-final-price cc-inv-price-table">
-              <input type="number" class="price-input" data-item-uuid="${item.itemUuid}" value="${item.finalPrice}" step="0.01" min="0">
+              <input type="number" class="price-input" data-uuid="${item.itemUuid}" value="${item.finalPrice}" step="0.01" min="0">
               <span class="price-currency">${item.currency}</span>
             </div>
           `;
         return `
-          <div class="inventory-item ${gridColumns}" data-item-uuid="${item.itemUuid}" data-item-name="${item.name}">
+          <div class="inventory-item ${gridColumns}" data-uuid="${item.itemUuid}" data-item-name="${item.name}">
             <div class="item-image">
               <img src="${item.img}" alt="${item.name}">
             </div>
@@ -535,24 +520,26 @@ static async questList(docIn, quests, isGM, isGroupSheet = false) {
             </div>
             ${priceColumns}
             <div class="quantity-control" style="text-align:center">
-              <button type="button" class="quantity-btn quantity-decrease" data-item-uuid="${item.itemUuid}">
-                <i class="fas fa-minus"></i>
-              </button>
-              <input type="number" class="quantity-input" data-item-uuid="${item.itemUuid}" value="${item.quantity}" min="0">
-              <button type="button" class="quantity-btn quantity-increase" data-item-uuid="${item.itemUuid}">
+              <input type="number" class="quantity-input" data-uuid="${item.itemUuid}" value="${item.quantity}" min="0">
+              <div class="cc-quantity-buttons" style="text-align:center">
+              <button type="button" class="quantity-btn quantity-increase" data-uuid="${item.itemUuid}">
                 <i class="fas fa-plus"></i>
               </button>
+              <button type="button" class="quantity-btn quantity-decrease" data-uuid="${item.itemUuid}">
+                <i class="fas fa-minus"></i>
+              </button>
+          </div>
             </div>
             <div class="item-actions" style="text-align:center">
-              <button type="button" class="action-btn open-item" data-item-uuid="${item.itemUuid}" title="${localize("title.open.sheet")}">
+              <button type="button" class="action-btn open-item" data-uuid="${item.itemUuid}" data-action="openItem" title="${localize("title.open.sheet")}">
                 <i class="fas fa-external-link-alt"></i>
               </button>
               ${
                 game.user.isGM
-                  ? `<button type="button" class="action-btn send-to-player" data-item-uuid="${item.itemUuid}" title="${localize("title.send.player")}">
+                  ? `<button type="button" class="action-btn send-to-player" data-type="inventory" data-action="sendToPlayer" data-uuid="${item.itemUuid}" title="${localize("title.send.player")}">
                       <i class="fas fa-paper-plane"></i>
                     </button>
-                    <button type="button" class="action-btn remove-item" data-item-uuid="${item.itemUuid}" title="${localize("title.remove.item")}">
+                    <button type="button" class="action-btn remove-item" data-uuid="${item.itemUuid}" title="${localize("title.remove.item")}">
                       <i class="fas fa-trash"></i>
                     </button>`
                   : ""
@@ -577,151 +564,77 @@ static async questList(docIn, quests, isGM, isGroupSheet = false) {
     `;
   }
 
-  // =========================================================================
-  // Group Components
-  // =========================================================================
-
-  /**
-   * Generates a card for a group member, which can be expanded to show children.
-   * @param {object} member - The primary group member data.
-   * @param {Array<object>} [children=[]] - An array of child members.
-   * @returns {string} The HTML for the group member card.
-   */
-  static groupMemberCard(member, children = []) {
-    const childrenCount = children.length;
-    const hasChildren = childrenCount > 0;
-
-    return `
-      <div class="group-member-card" data-uuid="${member.uuid}" data-type="${member.type}">
-        <div class="member-header ${hasChildren ? "expandable" : ""}" data-uuid="${member.uuid}">
-          ${hasChildren ? '<i class="fas fa-chevron-right expand-icon"></i>' : '<i class="member-spacer"></i>'}
-          <img src="${member.img}" class="member-icon" alt="${member.name}">
-          <div class="member-info">
-            <span class="member-name">${member.name}</span>
-            <span class="member-type">${member.type}</span>
-            ${hasChildren ? `<span class="member-count">(${childrenCount})</span>` : ""}
-          </div>
-          <div class="member-actions">
-            <button type="button" class="btn-open-sheet" data-uuid="${member.uuid}" title="${localize("title.open.sheet")}">
-              <i class="fas fa-external-link-alt"></i>
-            </button>
-            ${
-              game.user.isGM
-                ? `<button type="button" class="btn-remove-member" data-uuid="${member.uuid}" title="${localize("title.remove.from.group")}">
-                    <i class="fas fa-times"></i>
-                  </button>`
-                : ""
-            }
-          </div>
-        </div>
-        
-        ${
-          hasChildren
-            ? `
-          <div class="member-children" style="display: none;">
-            ${children
-              .map(
-                (child) => `
-              <div class="child-member" data-uuid="${child.uuid}">
-                <img src="${child.img}" class="child-icon" alt="${child.name}">
-                <span class="child-name">${child.name}</span>
-                <span class="child-type">${child.type}</span>
-                <div class="child-actions">
-                  <button type="button" class="btn-open-sheet" data-uuid="${child.uuid}" title="${localize("title.open.sheet")}">
-                    <i class="fas fa-external-link-alt"></i>
-                  </button>
-                  <button type="button" class="btn-focus-item" data-uuid="${child.uuid}" title="${localize("title.focus.in.tab")}">
-                    <i class="fas fa-search"></i>
-                  </button>
-                </div>
-              </div>
-            `,
-              )
-              .join("")}
-          </div>
-        `
-            : ""
-        }
-      </div>
-    `;
-  }
 
   // =========================================================================
   // Journal Components
   // =========================================================================
 
-
-/**
- * Creates a grid of cards for linked standard journals.
- * @param {Array<object>} journals - The array of linked journal data.
- * @param {boolean} isGM - Whether the current user is a GM.
- * @returns {string} The HTML for the journal grid.
- */
-static standardJournalGrid(journals, disableRemove = false) {
-    // If there are no journals to display
+  /**
+   * Creates a grid of cards for linked standard journals.
+   * @param {Array<object>} journals - The array of linked journal data.
+   * @param {boolean} isGM - Whether the current user is a GM.
+   * @returns {string} The HTML for the journal grid.
+   */
+  static standardJournalGrid(journals, disableRemove = false, disableDrop = false) {
     if (!journals || journals.length === 0) {
-        // Show a drop zone for GMs to add one
-        if (game.user.isGM) {
-            return this.dropZone("journal", "fas fa-book", format("dropzone.link", { type: localize("names.journals") }));
-        }
-        // Otherwise, show nothing
-        return "";
+      if (game.user.isGM && !disableDrop) {
+        return this.dropZone("journal", "fas fa-book", format("dropzone.link", { type: localize("names.journals") }));
+      }
+      return "";
     }
-
-    // Create a card for each journal
-    const journalCards = journals.map(journal => this.standardJournalCard(journal, disableRemove)).join("");
-
+    const journalCards = journals.map((journal) => this.standardJournalCard(journal, disableRemove)).join("");
     return `
         <div class="entity-grid journal-grid">
             ${journalCards}
         </div>
     `;
-}
+  }
 
-/**
- * Creates a single card for a linked standard journal.
- * @param {object} journal - The journal data object.
- * @param {boolean} isGM - Whether the user is a GM.
- * @returns {string} The HTML for the journal card.
- */
-static standardJournalCard(journal, disableRemove = false) {
+  /**
+   * Creates a single card for a linked standard journal.
+   * @param {object} journal - The journal data object.
+   * @param {boolean} isGM - Whether the user is a GM.
+   * @returns {string} The HTML for the journal card.
+   */
+  static standardJournalCard(journal, disableRemove = false) {
     // Only show the remove button to GMs
-    const removeButton = game.user.isGM ? `
-        <button type="button" class="action-btn remove-standard-journal" data-journal-uuid="${journal.uuid}" title="${format('message.unlink', { type: localize('names.journal') })}">
-            <i class="fas fa-unlink"></i>
-        </button>
-    ` : "";
+    const removeButton = game.user.isGM
+      ? `
+        <i class="fas fa-unlink action-btn remove-standard-journal" data-action="removeJournal" data-journal-uuid="${journal.uuid}" title="${format("message.unlink", { type: localize("names.journal") })}"></i>`
+      : "";
 
     // Determine the correct icon based on whether the UUID is for a page or a whole entry
     const iconClass = journal.uuid.includes("JournalEntryPage") ? "fas fa-book-bookmark" : "fas fa-book";
 
     return `
-        <div class="entity-card journal-card open-journal" data-journal-uuid="${journal.uuid}" style="cursor: pointer;">
+        <div class="entity-card journal-card open-journal" data-action="openJournal" data-uuid="${journal.uuid}" style="cursor: pointer;">
             <div class="entity-content" style="display: flex; align-items: center; gap: 8px; flex-grow: 1;">
                  <i class="${iconClass}" style="font-size: 1.5em; flex-shrink: 0;"></i>
                  <h4 class="entity-name">${journal.name}</h4>
             </div>
-            ${!disableRemove ? `<div class="entity-actions">
+            ${
+              !disableRemove
+                ? `<div class="entity-actions">
                 ${removeButton}
-            </div>`:""}
+            </div>`
+                : ""
+            }
         </div>
     `;
-}
-
+  }
 
   // =========================================================================
   // Dialogs
   // =========================================================================
 
-
   static async createPlayerSelectionDialog(itemName, onPlayerSelected) {
     // const playerCharacters = game.actors.filter(
     //   (actor) => actor.type === "character",
     // );
-const allowedTypes = ["character", "player"];
-const playerCharacters = game.actors.filter(
-  (actor) => actor.type && allowedTypes.includes(actor.type.toLowerCase()),
-);
+    const allowedTypes = ["character", "player", "group"];
+    const playerCharacters = game.actors.filter(
+      (actor) => actor.type && allowedTypes.includes(actor.type.toLowerCase()),
+    );
     if (playerCharacters.length === 0) {
       ui.notifications.warn("No player characters found");
       return;
@@ -733,12 +646,8 @@ const playerCharacters = game.actors.filter(
         <div class="player-list">
           ${playerCharacters
             .map((char) => {
-              const assignedUser = game.users.find(
-                (u) => u.character?.uuid === char.uuid,
-              );
-              const userInfo = assignedUser
-                ? ` (${assignedUser.name})`
-                : " (Unassigned)";
+              const assignedUser = game.users.find((u) => u.character?.uuid === char.uuid);
+              const userInfo = assignedUser ? ` (${assignedUser.name})` : " (Unassigned)";
 
               return `
               <div class="player-option" data-actor-uuid="${char.uuid}">
@@ -757,17 +666,17 @@ const playerCharacters = game.actors.filter(
 
     const dialog = new foundry.applications.api.DialogV2({
       window: {
-        title: "Send Item to Player Character"
+        title: "Send Item to Player Character",
       },
-      classes: ['campaign-codex', 'send-to-player'],
+      classes: ["campaign-codex", "send-to-player"],
       content: content,
       buttons: [
-          {
-            action: "cancel",
-            icon: "fas fa-times",
-            label: "Cancel"
-          }
-      ]
+        {
+          action: "cancel",
+          icon: "fas fa-times",
+          label: "Cancel",
+        },
+      ],
     });
 
     await dialog.render(true);
@@ -783,76 +692,4 @@ const playerCharacters = game.actors.filter(
       });
     });
   }
-
-
-  // /**
-  //  * Creates and renders a dialog for selecting a player character.
-  //  * @param {string} itemName - The name of the item being sent.
-  //  * @param {function} onPlayerSelected - The callback function to execute with the selected actor.
-  //  */
-  // static async createPlayerSelectionDialog(itemName, onPlayerSelected) {
-  //   const playerCharacters = game.actors.filter(
-  //     (actor) => actor.type === "character",
-  //   );
-
-  //   if (playerCharacters.length === 0) {
-  //     ui.notifications.warn("No player characters found");
-  //     return;
-  //   }
-
-  //   const content = `
-  //     <div class="player-selection campaign-codex">
-  //       <p>Send <strong>${itemName}</strong> to which player character?</p>
-  //       <div class="player-list">
-  //         ${playerCharacters
-  //           .map((char) => {
-  //             const assignedUser = game.users.find(
-  //               (u) => u.character?.uuid === char.uuid,
-  //             );
-  //             const userInfo = assignedUser
-  //               ? ` (${assignedUser.name})`
-  //               : " (Unassigned)";
-
-  //             return `
-  //             <div class="player-option" data-actor-uuid="${char.uuid}">
-  //               <img src="${char.img}" alt="${char.name}" style="width: 32px; height: 32px; border-radius: 4px; margin-right: 8px;">
-  //               <div class="player-info">
-  //                 <span class="character-name">${char.name}</span>
-  //                 <span class="user-info">${userInfo}</span>
-  //               </div>
-  //             </div>
-  //           `;
-  //           })
-  //           .join("")}
-  //       </div>
-  //     </div>
-  //   `;
-
-  //   new Dialog({
-  //     title: "Send Item to Player Character",
-  //     content: content,
-  //     buttons: {
-  //       cancel: {
-  //         icon: '<i class="fas fa-times"></i>',
-  //         label: "Cancel",
-  //       },
-  //     },
-  //     render: (html) => {
-  //       const nativeHtml = html instanceof jQuery ? html[0] : html;
-  //       nativeHtml.querySelectorAll(".player-option").forEach((element) => {
-  //         element.addEventListener("click", async (event) => {
-  //           const actorUuid = event.currentTarget.dataset.actorUuid;
-  //           const actor = await fromUuid(actorUuid);
-  //           if (actor) {
-  //             onPlayerSelected(actor);
-  //           }
-  //           nativeHtml
-  //             .closest(".dialog")
-  //             .querySelector(".dialog-button.cancel")
-  //             .click();
-  //         });
-  //       });
-  //     },
-  //   }).render(true);
-  // }
 }

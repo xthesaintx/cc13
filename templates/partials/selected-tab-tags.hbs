@@ -1,11 +1,10 @@
-<div class="selected-content-section">
+<div class="content-header">
+    <h2><i class="fas fa-tag"></i> {{ccLocalize "names.tags" }}</h2>
+</div>
   {{#if taggedNPCs.length}}
     <div class="npc-section">
       <div class="npc-list">
         {{{npcGridHtml}}}
       </div>
     </div>
-  {{else}}
-    <p><em>No tagged NPCs found.</em></p>
   {{/if}}
-</div>

@@ -1,17 +1,55 @@
 import { TemplateComponents } from "./template-components.js";
 import { CampaignCodexLinkers } from "./linkers.js";
 import { CampaignCodexBaseSheet } from "./base-sheet.js";
-import { localize, format } from "../helper.js";
+import { localize } from "../helper.js";
 
 export class GroupLinkers {
-  
-  /**
-   * Finds any "Tag" NPCs from the tag tree that are not already present in the main NPC list,
-   * and formats them for display.
-   * @param {Array<object>} treeTagNodes - The output from `buildTagTree`.
-   * @param {Array<object>} existingNpcs - The array of `allNPCs` to check against for duplicates.
-   * @returns {Promise<Array<object>>} A promise that resolves to an array of formatted "Tag" NPC objects.
-   */
+  // ===========================================================================
+  // Internal cache
+  // ===========================================================================
+  static _createOperationCache() {
+    return {
+      docs: new Map(),
+      flags: new Map(),
+      canView: new Map(),
+      taggedNPCs: new Map(),
+    };
+  }
+
+  static async _getCachedDoc(uuid, cache) {
+    if (!cache.docs.has(uuid)) {
+      cache.docs.set(uuid, await fromUuid(uuid).catch(() => null));
+    }
+    return cache.docs.get(uuid);
+  }
+
+  static _getCachedFlags(doc, cache) {
+    const key = doc.uuid;
+    if (!cache?.flags.has(key)) {
+      cache.flags.set(key, doc.getFlag("campaign-codex", "data") || {});
+    }
+    return cache.flags.get(key);
+  }
+
+  static async _getCachedCanView(uuid, cache) {
+    if (!cache.canView.has(uuid)) {
+      cache.canView.set(uuid, CampaignCodexBaseSheet.canUserView(uuid));
+    }
+    return cache.canView.get(uuid);
+  }
+
+  static async _getCachedTaggedNPCs(uuids, cache) {
+    const key = uuids.join(',');
+    if (!cache.taggedNPCs.has(key)) {
+      cache.taggedNPCs.set(key, CampaignCodexLinkers.getTaggedNPCs(uuids));
+    }
+    return cache.taggedNPCs.get(key);
+  }
+
+  // ===========================================================================
+  // ORIGINAL METHODS
+  // ===========================================================================
+
   static async formatMissingTags(treeTagNodes, existingNpcs) {
     const existingNpcUuids = new Set(existingNpcs.map(npc => npc.uuid));
     const missingTags = treeTagNodes.filter(
@@ -19,10 +57,12 @@ export class GroupLinkers {
     );
 
     if (missingTags.length === 0) return [];
+    
+    const cache = this._createOperationCache();
     const promises = missingTags.map(async (tagNode) => {
-      const doc = await fromUuid(tagNode.uuid);
+      const doc = await this._getCachedDoc(tagNode.uuid, cache);
       if (doc) {
-        return this._createNPCInfo(doc, null, null);
+        return this._createNPCInfo(doc, null, null, null, cache);
       }
       return null;
     });
@@ -31,62 +71,73 @@ export class GroupLinkers {
     return formattedTags;
   }
 
-  /**
-   * Builds a structured tree of tagged NPCs and their connections from the pre-processed nestedData.
-   * @param {object} nestedData The fully processed data object from GroupLinkers.getNestedData.
-   * @returns {Promise<Array<object>>} A promise that resolves to an array of tagged NPC objects with their connections.
-   */
   static async buildTagTree(nestedData) {
-  const validUuids = new Set([...nestedData.allGroups, ...nestedData.allRegions, ...nestedData.allLocations, ...nestedData.allShops, ...nestedData.allNPCs].map((e) => e.uuid));
+    const cache = this._createOperationCache();
+    const hideByPermission = game.settings.get("campaign-codex", "hideByPermission");
 
-  const rootTagMap = new Map();
-  const allNpcUuids = new Set(nestedData.allNPCs.map(npc => npc.uuid));
+    const validUuids = new Set([...nestedData.allGroups, ...nestedData.allRegions, ...nestedData.allLocations, ...nestedData.allShops, ...nestedData.allNPCs].map((e) => e.uuid));
 
-  const tagGatheringPromises = nestedData.allNPCs.map(async (npc) => {
-    if (npc.tag === true) {
-      rootTagMap.set(npc.uuid, npc);
-    }
+    const rootTagMap = new Map();
+    const allNpcUuids = new Set(nestedData.allNPCs.map(npc => npc.uuid));
+
+    const npcDocs = await Promise.all(
+      nestedData.allNPCs.map(npc => this._getCachedDoc(npc.uuid, cache))
+    );
+
+    const tagGatheringPromises = nestedData.allNPCs.map(async (npc, index) => {
+      const doc = npcDocs[index];
+      if (!doc) return;
+
+      if (npc.tag === true) {
+        rootTagMap.set(npc.uuid, npc);
+      }
+      
+      if (npc.tags.length > 0) {
+        const flags = this._getCachedFlags(doc, cache);
+        const associates = await CampaignCodexLinkers.getAssociates(doc, flags.associates || []);
+        associates.forEach(assoc => {
+          if (assoc.tag === true) {
+            rootTagMap.set(assoc.uuid, assoc);
+          }
+        });
+      }
+    });
     
-    if (npc.tags.length > 0) {
+    await Promise.all(tagGatheringPromises);
 
-
-      const doc = await fromUuid(npc.uuid);
-      const docData = doc.getFlag("campaign-codex", "data") || {};
-      const associates = await CampaignCodexLinkers.getAssociates(doc, docData.associates || []);
-  
-      associates.forEach(assoc => {
-        if (assoc.tag === true) {
-          rootTagMap.set(assoc.uuid, assoc);
-        }
-      });
-    }
-  });
-  
-  await Promise.all(tagGatheringPromises);
-
-  const rootTags = [...rootTagMap.values()];
-
+    const rootTags = [...rootTagMap.values()];
 
     const tagPromises = rootTags.map(async (taggedNpc) => {
-      const doc = await fromUuid(taggedNpc.uuid);
-      const docData = doc.getFlag("campaign-codex", "data") || {};
-      const associates = await CampaignCodexLinkers.getAssociates(doc, docData.associates || []);
+      const doc = await this._getCachedDoc(taggedNpc.uuid, cache);
+      const flags = doc ? this._getCachedFlags(doc, cache) : {};
+      const associates = doc ? await CampaignCodexLinkers.getAssociates(doc, flags.associates || []) : [];
+      
+      // const allLinkedLocationEntities = nestedData.allLocations.filter((loc) => taggedNpc.locations.includes(loc.name));
+      // Split them based on their 'typeData' property, just as you suggested
+      // const locations = allLinkedLocationEntities.filter(item => item.typeData !== "region");
+      // const regions = allLinkedLocationEntities.filter(item => item.typeData === "region");
+
       const locations = nestedData.allLocations.filter((loc) => taggedNpc.locations.includes(loc.name));
       const regions = nestedData.allRegions.filter((loc) => taggedNpc.locations.includes(loc.name));
       const shops = nestedData.allShops.filter((shop) => taggedNpc.shops.includes(shop.name));
+      
       const formatAndFilter = (entities) => {
         return entities
           .filter((entity) => validUuids.has(entity.uuid))
           .map((entity) => ({
+            id: entity.id,
             uuid: entity.uuid,
             type: entity.tag ? "tag" : entity.type,
             name: entity.name,
+            quests: entity.quests,
             canView: entity?.canView,
             tag: entity.tag || false,
+            iconOverride: entity.iconOverride,
           }));
       };
 
       return {
+        id: taggedNpc.id,
         uuid: taggedNpc.uuid,
         type: taggedNpc.type,
         tag: taggedNpc.tag,
@@ -102,21 +153,15 @@ export class GroupLinkers {
     return Promise.all(tagPromises);
   }
 
-/**
- * Processes an array of journal UUIDs into structured objects.
- * @param {string[]} journalUuids - An array of UUIDs for Journal Entries or Pages.
- * @returns {Promise<Array<object>>} A promise that resolves to an array of processed journal objects.
- */
-static async processJournalLinks(journalUuids) {
-    // Return an empty array if there's no input
+  static async processJournalLinks(journalUuids) {
     if (!journalUuids || !Array.isArray(journalUuids) || journalUuids.length === 0) {
         return [];
     }
 
-    // Process each UUID in parallel
+    const cache = this._createOperationCache();
     const journalPromises = journalUuids.map(async (uuid) => {
         try {
-            const document = await fromUuid(uuid);
+            const document = await this._getCachedDoc(uuid, cache);
             if (!document) {
                 console.warn(`Campaign Codex | Linked journal not found: ${uuid}`);
                 return null;
@@ -129,15 +174,15 @@ static async processJournalLinks(journalUuids) {
                 journal = document.parent;
                 displayName = `${journal.name}: ${document.name}`;
             } else {
-                journal = document; // Assume it's a Journal Entry
+                journal = document;
                 displayName = journal.name;
             }
 
             if (journal) {
-                const canView = await CampaignCodexBaseSheet.canUserView(document.uuid);
-            
+                const canView = await this._getCachedCanView(document.uuid, cache);
                 if (canView) {
                     return {
+                        id: document.id,
                         uuid: document.uuid,
                         name: displayName,
                         img: journal.img || "icons/svg/book.svg",
@@ -153,42 +198,44 @@ static async processJournalLinks(journalUuids) {
     });
 
     const resolvedJournals = await Promise.all(journalPromises);
-    
-    // Filter out any nulls from failed lookups or permission checks
     return resolvedJournals.filter(j => j !== null);
-}
+  }
 
   static async getGroupMembers(memberUuids) {
     const hideByPermission = game.settings.get("campaign-codex", "hideByPermission");
     if (!memberUuids) return [];
 
+    const cache = this._createOperationCache();
     const memberPromises = memberUuids.map(async (uuid) => {
       try {
-        const doc = await fromUuid(uuid);
+        const doc = await this._getCachedDoc(uuid, cache);
         if (!doc) return null;
-        const memberData = doc.getFlag("campaign-codex", "data") || {};
 
+        const flags = this._getCachedFlags(doc, cache);
         const [linkedTags, canView] = await Promise.all([
-          CampaignCodexLinkers.getTaggedNPCs(memberData.linkedNPCs || memberData.associates || []),
-          CampaignCodexBaseSheet.canUserView(doc.uuid),
+          this._getCachedTaggedNPCs(flags.linkedNPCs || flags.associates || [], cache),
+          this._getCachedCanView(doc.uuid, cache),
         ]);
 
         const filteredTags = (linkedTags || [])
           .filter((tag) => !hideByPermission || tag.canView)
           .map((tag) => tag.name)
           .sort();
-        const type = doc.getFlag?.("campaign-codex", "type") || "unknown";
+          
+        const type = doc.getFlag("campaign-codex", "type") || "unknown";
+        const quests = doc.getFlag("campaign-codex", "data")?.quests || [];
 
-    const allQuests = doc.getFlag("campaign-codex", "data")?.quests || [];
         return {
+          id: doc.id,
           uuid: doc.uuid,
           canView: canView,
           tags: filteredTags,
           name: doc.name,
-        quests: allQuests.length > 0 && (game.user.isGM || allQuests.some(q => q.visible)),
-          img: doc.getFlag?.("campaign-codex", "image") || doc.img,
-          type,
-          tag: doc.getFlag?.("campaign-codex", "data")?.tagMode || false,
+          iconOverride: doc.getFlag("campaign-codex", "icon-override") || null,
+          quests: quests.length > 0 && (game.user.isGM || quests.some(q => q.visible)),
+          img: doc.getFlag("campaign-codex", "image") || doc.img,
+          type: type,
+          tag: flags.tagMode || false,
         };
       } catch (error) {
         console.error(`Error processing group member ${uuid}:`, error);
@@ -197,7 +244,6 @@ static async processJournalLinks(journalUuids) {
     });
 
     const members = await Promise.all(memberPromises);
-
     return members.filter(Boolean);
   }
 
@@ -220,14 +266,18 @@ static async processJournalLinks(journalUuids) {
       itemsByShop: {},
       totalValue: 0,
     };
+    
     const processedUuids = new Set();
+    const cache = this._createOperationCache();
+    
     for (const member of groupMembers) {
-      await this._processEntity(member, nestedData, processedUuids);
+      await this._processEntity(member, nestedData, processedUuids, cache);
     }
     return nestedData;
   }
 
-  static async _processEntity(entity, nestedData, processedUuids, parent = null, locationContext = null) {
+  static async _processEntity(entity, nestedData, processedUuids, cache, parent = null, locationContext = null) {
+    // ORIGINAL: Check that allows NPC re-processing
     if (!entity || !entity.type || (processedUuids.has(entity.uuid) && entity.type !== "npc")) return;
     processedUuids.add(entity.uuid);
 
@@ -235,124 +285,82 @@ static async processJournalLinks(journalUuids) {
     if (entity.type === "location" || entity.type === "region") {
       newLocationContext = entity;
     }
+    
     switch (entity.type) {
       case "group":
-        await this._processGroup(entity, nestedData, processedUuids);
+        await this._processGroup(entity, nestedData, processedUuids, cache);
         break;
       case "region":
-        await this._processRegion(entity, nestedData, processedUuids, newLocationContext);
+        await this._processRegion(entity, nestedData, processedUuids, cache, parent, newLocationContext);
         break;
       case "location":
-        await this._processLocation(entity, nestedData, processedUuids, parent, newLocationContext);
+        await this._processLocation(entity, nestedData, processedUuids, cache, parent, newLocationContext);
         break;
       case "shop":
-        await this._processShop(entity, nestedData, processedUuids, parent, newLocationContext);
+        await this._processShop(entity, nestedData, processedUuids, cache, parent, newLocationContext);
         break;
       case "npc":
-        await this._processNPC(entity, nestedData, parent, newLocationContext);
+        await this._processNPC(entity, nestedData, processedUuids, cache, parent, newLocationContext);
         break;
     }
   }
 
-  static async _processGroup(group, nestedData, processedUuids) {
-    const groupDoc = await fromUuid(group.uuid);
+  static async _processGroup(group, nestedData, processedUuids, cache) {
+    if (nestedData.allGroups.some((g) => g.uuid === group.uuid)) return;
+
+    const groupDoc = await this._getCachedDoc(group.uuid, cache);
     if (!groupDoc) return;
 
+    // ORIGINAL: Enrichment logic preserved
     if (!nestedData.allGroups.some((g) => g.uuid === group.uuid)) {
-      group.canView = await CampaignCodexBaseSheet.canUserView(groupDoc.uuid);
+      group.canView = await this._getCachedCanView(groupDoc.uuid, cache);
       nestedData.allGroups.push(group);
     }
 
-    const groupData = groupDoc.getFlag("campaign-codex", "data") || {};
+    const groupData = this._getCachedFlags(groupDoc, cache);
     const members = await this.getGroupMembers(groupData.members);
     nestedData.membersByGroup[group.uuid] = members;
 
     for (const member of members) {
-      await this._processEntity(member, nestedData, processedUuids, group);
+      await this._processEntity(member, nestedData, processedUuids, cache, group);
     }
   }
 
-  static async _processRegion(region, nestedData, processedUuids, locationContext) {
+  static async _processRegion(region, nestedData, processedUuids, cache, parent, locationContext) {
     const hideByPermission = game.settings.get("campaign-codex", "hideByPermission");
-
-    const regionDoc = await fromUuid(region.uuid).catch(() => null);
+    
+    const regionDoc = await this._getCachedDoc(region.uuid, cache).catch(() => null);
     if (!regionDoc) return;
-    const regionData = regionDoc.getFlag("campaign-codex", "data") || {};
+
+    const regionData = this._getCachedFlags(regionDoc, cache);
+    await this._processInventory(nestedData, regionDoc, regionData, cache);
 
     if (!nestedData.allRegions.some((r) => r.uuid === region.uuid)) {
-      await this._enrichEntity(region, regionDoc);
+      await this._enrichEntity(region, regionDoc, cache);
       nestedData.allRegions.push(region);
     }
+
     const childTypes = { regions: "region", locations: "location", shops: "shop", npcs: "npc" };
-    const childLinks = { regions: regionData.linkedRegions, locations: regionData.linkedLocations, shops: regionData.linkedShops, npcs: regionData.linkedNPCs };
+    const childLinks = { 
+      regions: regionData.linkedRegions, 
+      locations: regionData.linkedLocations, 
+      shops: regionData.linkedShops, 
+      npcs: regionData.linkedNPCs 
+    };
 
-    for (const [key, type] of Object.entries(childTypes)) {
-      const listKey = `${key}ByRegion`;
-
-      const childPromises = (childLinks[key] || []).map(async (uuid) => {
-        const doc = await fromUuid(uuid).catch(() => null);
-        if (!doc) return null;
-        const childData = doc.getFlag("campaign-codex", "data") || {};
-        const [linkedTags, canView] = await Promise.all([
-          CampaignCodexLinkers.getTaggedNPCs(childData.linkedNPCs || childData.associates || []),
-          CampaignCodexBaseSheet.canUserView(doc.uuid),
-        ]);
-
-        const filteredTags = (linkedTags || [])
-          .filter((tag) => !hideByPermission || tag.canView)
-          .map((tag) => tag.name)
-          .sort();
-
-        const allQuests = doc.getFlag("campaign-codex", "data")?.quests || [];
-  
-
-        return {
-          uuid: doc.uuid,
-          name: doc.name,
-          quests: allQuests.length > 0 && (game.user.isGM || allQuests.some(q => q.visible)),
-          img: doc.getFlag("campaign-codex", "image") || doc.img,
-          type,
-          tags: filteredTags,
-          tag: doc.getFlag("campaign-codex", "data")?.tagMode,
-          canView: canView,
-        };
-      });
-
-      const processedInfos = (await Promise.all(childPromises)).filter(Boolean);
-
-      nestedData[listKey][region.uuid] = processedInfos;
-
-      for (const info of processedInfos) {
-        await this._processEntity(info, nestedData, processedUuids, region, type === "location" ? info : locationContext);
-      }
-    }
-  }
-
-  static async _processLocation(location, nestedData, processedUuids, parent, locationContext) {
-    const hideByPermission = game.settings.get("campaign-codex", "hideByPermission");
-    const locationDoc = await fromUuid(location.uuid).catch(() => null);
-    if (!locationDoc) return;
-    const locationData = locationDoc.getFlag("campaign-codex", "data") || {};
-
-    if (!nestedData.allLocations.some((l) => l.uuid === location.uuid)) {
-      await this._enrichEntity(location, locationDoc);
-      nestedData.allLocations.push(location);
-    }
-    const childTypes = { shops: "shop", npcs: "npc" };
-    const childLinks = { shops: locationData.linkedShops, npcs: locationData.linkedNPCs };
-
-    for (const [key, type] of Object.entries(childTypes)) {
-      const listKey = `${key}ByLocation`;
-
-      const childPromises = (childLinks[key] || []).map(async (uuid) => {
-        try {
-          const doc = await fromUuid(uuid);
+    await Promise.all(
+      Object.entries(childTypes).map(async ([key, type]) => {
+        const listKey = `${key}ByRegion`;
+        const uuids = childLinks[key] || [];
+        
+        const childPromises = uuids.map(async (uuid) => {
+          const doc = await this._getCachedDoc(uuid, cache).catch(() => null);
           if (!doc) return null;
 
-          const childData = doc.getFlag("campaign-codex", "data") || {};
+          const childData = this._getCachedFlags(doc, cache);
           const [linkedTags, canView] = await Promise.all([
-            CampaignCodexLinkers.getTaggedNPCs(childData.linkedNPCs || childData.associates || []),
-            CampaignCodexBaseSheet.canUserView(doc.uuid),
+            this._getCachedTaggedNPCs(childData.linkedNPCs || childData.associates || [], cache),
+            this._getCachedCanView(doc.uuid, cache),
           ]);
 
           const filteredTags = (linkedTags || [])
@@ -360,53 +368,130 @@ static async processJournalLinks(journalUuids) {
             .map((tag) => tag.name)
             .sort();
 
-          const allQuests = doc.getFlag("campaign-codex", "data")?.quests || [];
-
+          const allQuests = childData.quests || [];
           return {
+            id: doc.id,
             uuid: doc.uuid,
             name: doc.name,
             quests: allQuests.length > 0 && (game.user.isGM || allQuests.some(q => q.visible)),
             img: doc.getFlag("campaign-codex", "image") || doc.img,
             type,
             tags: filteredTags,
-            tag: doc.getFlag("campaign-codex", "data")?.tagMode,
+            tag: childData.tagMode,
             canView: canView,
+            iconOverride: doc.getFlag("campaign-codex", "icon-override") || null,
           };
-        } catch (error) {
-          console.error(`Campaign Codex | Error processing child entity ${uuid}:`, error);
-          return null;
+        });
+
+        const processedInfos = (await Promise.all(childPromises)).filter(Boolean);
+        nestedData[listKey][region.uuid] = processedInfos;
+
+        for (const info of processedInfos) {
+          await this._processEntity(info, nestedData, processedUuids, cache, region, 
+            type === "location" ? info : locationContext);
         }
-      });
-
-      const processedInfos = (await Promise.all(childPromises)).filter(Boolean);
-
-      nestedData[listKey][location.uuid] = processedInfos;
-
-      for (const info of processedInfos) {
-        await this._processEntity(info, nestedData, processedUuids, location, locationContext);
-      }
-    }
+      })
+    );
   }
 
-  static async _processShop(shop, nestedData, processedUuids, parent, locationContext) {
+  static async _processLocation(location, nestedData, processedUuids, cache, parent, locationContext) {
     const hideByPermission = game.settings.get("campaign-codex", "hideByPermission");
-    const shopDoc = await fromUuid(shop.uuid);
+    const locationDoc = await this._getCachedDoc(location.uuid, cache).catch(() => null);
+    if (!locationDoc) return;
+    
+    const locationData = this._getCachedFlags(locationDoc, cache);
+
+    if (!nestedData.allLocations.some((l) => l.uuid === location.uuid)) {
+      await this._enrichEntity(location, locationDoc, cache);
+      nestedData.allLocations.push(location);
+    }
+
+    const childTypes = { shops: "shop", npcs: "npc" };
+    const childLinks = { shops: locationData.linkedShops, npcs: locationData.linkedNPCs };
+    await this._processInventory(nestedData, locationDoc, locationData, cache);
+
+    await Promise.all(
+      Object.entries(childTypes).map(async ([key, type]) => {
+        const listKey = `${key}ByLocation`;
+        const uuids = childLinks[key] || [];
+
+        const childPromises = uuids.map(async (uuid) => {
+          try {
+            const doc = await this._getCachedDoc(uuid, cache);
+            if (!doc) return null;
+
+            const childData = this._getCachedFlags(doc, cache);
+            const [linkedTags, canView] = await Promise.all([
+              this._getCachedTaggedNPCs(childData.linkedNPCs || childData.associates || [], cache),
+              this._getCachedCanView(doc.uuid, cache),
+            ]);
+
+            const filteredTags = (linkedTags || [])
+              .filter((tag) => !hideByPermission || tag.canView)
+              .map((tag) => tag.name)
+              .sort();
+
+            const allQuests = childData.quests || [];
+            return {
+              id: doc.id,
+              uuid: doc.uuid,
+              name: doc.name,
+              quests: allQuests.length > 0 && (game.user.isGM || allQuests.some(q => q.visible)),
+              img: doc.getFlag("campaign-codex", "image") || doc.img,
+              type,
+              tags: filteredTags,
+              tag: childData.tagMode,
+              canView: canView,
+              tabOverrides: doc.getFlag("campaign-codex", "tab-overrides") || [],
+              iconOverride: doc.getFlag("campaign-codex", "icon-override") || null,
+            };
+          } catch (error) {
+            console.error(`Campaign Codex | Error processing child entity ${uuid}:`, error);
+            return null;
+          }
+        });
+
+        const processedInfos = (await Promise.all(childPromises)).filter(Boolean);
+        nestedData[listKey][location.uuid] = processedInfos;
+
+        for (const info of processedInfos) {
+          await this._processEntity(info, nestedData, processedUuids, cache, location, locationContext);
+        }
+
+      })
+    );
+  }
+
+  static async _processShop(shop, nestedData, processedUuids, cache, parent, locationContext) {
+    const hideByPermission = game.settings.get("campaign-codex", "hideByPermission");
+    const shopDoc = await this._getCachedDoc(shop.uuid, cache);
     if (!shopDoc) return;
-    const shopData = shopDoc.getFlag("campaign-codex", "data") || {};
+    
+    const shopData = this._getCachedFlags(shopDoc, cache);
 
     if (!nestedData.allShops.some((s) => s.uuid === shop.uuid)) {
-      const [linkedTags, canView] = await Promise.all([CampaignCodexLinkers.getTaggedNPCs(shopData.linkedNPCs) || [], CampaignCodexBaseSheet.canUserView(shopDoc.uuid)]);
+      const [linkedTags, canView] = await Promise.all([
+        this._getCachedTaggedNPCs(shopData.linkedNPCs || [], cache),
+        this._getCachedCanView(shopDoc.uuid, cache),
+      ]);
+      
       shop.tags = linkedTags
         .filter((tag) => !hideByPermission || tag.canView)
         .map((tag) => tag.name)
         .sort();
       shop.canView = canView;
-      shop.quests = !!(shopData.quests && shopData.quests.length),
+      shop.iconOverride = shopDoc.getFlag("campaign-codex", "icon-override") || null;
+      shop.tabOverrides = shopDoc.getFlag("campaign-codex", "tab-overrides") || [];
+      shop.quests = !!(shopData.quests && shopData.quests.length);
 
       nestedData.allShops.push(shop);
     }
 
-    const npcDocs = await Promise.all((shopData.linkedNPCs || []).map((npcUuid) => fromUuid(npcUuid).catch(() => null)));
+    const npcDocs = await Promise.all(
+      (shopData.linkedNPCs || []).map(uuid => 
+        this._getCachedDoc(uuid, cache).catch(() => null)
+      )
+    );
 
     nestedData.npcsByShop[shop.uuid] = [];
 
@@ -414,19 +499,19 @@ static async processJournalLinks(journalUuids) {
       if (!npcDoc) return null;
 
       const [npcCanView, rawTags] = await Promise.all([
-        CampaignCodexBaseSheet.canUserView(npcDoc.uuid),
-        CampaignCodexLinkers.getTaggedNPCs(npcDoc.getFlag("campaign-codex", "data")?.associates || []),
+        this._getCachedCanView(npcDoc.uuid, cache),
+        this._getCachedTaggedNPCs(npcDoc.getFlag("campaign-codex", "data")?.associates || [], cache),
       ]);
 
-      const npcData = npcDoc.getFlag("campaign-codex", "data");
+      const npcData = this._getCachedFlags(npcDoc, cache);
       const npcTags = (rawTags || [])
         .filter((tag) => !hideByPermission || tag.canView)
         .map((tag) => tag.name)
         .sort();
 
-    const allQuests = npcDoc.getFlag("campaign-codex", "data")?.quests || [];
-
+      const allQuests = npcData.quests || [];
       return {
+        id: npcDoc.id,
         uuid: npcDoc.uuid,
         name: npcDoc.name,
         quests: allQuests.length > 0 && (game.user.isGM || allQuests.some(q => q.visible)),
@@ -435,40 +520,46 @@ static async processJournalLinks(journalUuids) {
         tags: npcTags,
         tag: npcData?.tagMode,
         canView: npcCanView,
+        tabOverrides: npcDoc.getFlag("campaign-codex", "tab-overrides") || [],
+        iconOverride: npcDoc.getFlag("campaign-codex", "icon-override") || null,
       };
     });
 
     const processedNpcInfos = (await Promise.all(npcInfoPromises)).filter(Boolean);
-
     nestedData.npcsByShop[shop.uuid].push(...processedNpcInfos);
+
     for (const npcInfo of processedNpcInfos) {
-      await this._processEntity(npcInfo, nestedData, processedUuids, shop, locationContext);
+      await this._processEntity(npcInfo, nestedData, processedUuids, cache, shop, locationContext);
     }
+    
+    await this._processInventory(nestedData, shopDoc, shopData, cache);
+  }
 
-    const inventoryWithoutPerms = await CampaignCodexLinkers.getInventory(shopDoc, shopData.inventory || []);
-
+  static async _processInventory(nestedData, doc, data, cache) {
+    const inventoryWithoutPerms = await CampaignCodexLinkers.getInventory(doc, data.inventory || []);
+    
     const processedInventory = await Promise.all(
       inventoryWithoutPerms.map(async (item) => {
-        const canView = await CampaignCodexBaseSheet.canUserView(item.uuid || item.itemUuid);
+        const canView = await this._getCachedCanView(item.uuid || item.itemUuid, cache);
         return { ...item, canView, type: "item" };
-      }),
+      })
     );
 
-    nestedData.itemsByShop[shop.uuid] = [];
+    nestedData.itemsByShop[doc.uuid] = [];
     for (const itemInfo of processedInventory) {
-      nestedData.itemsByShop[shop.uuid].push(itemInfo);
-      if (!nestedData.allItems.some((i) => i.uuid === itemInfo.uuid && i.shopSource === shop.uuid)) {
-        nestedData.allItems.push({ ...itemInfo, shopSource: shop.uuid });
+      nestedData.itemsByShop[doc.uuid].push(itemInfo);
+      if (!nestedData.allItems.some((i) => i.uuid === itemInfo.uuid && i.shopSource === doc.uuid)) {
+        nestedData.allItems.push({ ...itemInfo, shopSource: doc.uuid });
         nestedData.totalValue += itemInfo.finalPrice * itemInfo.quantity;
       }
     }
   }
 
-  static async _processNPC(npc, nestedData, parent, locationContext) {
-    const npcDoc = await fromUuid(npc.uuid).catch(() => null);
+  static async _processNPC(npc, nestedData, processedUuids, cache, parent, locationContext) {
+    const npcDoc = await this._getCachedDoc(npc.uuid, cache).catch(() => null);
     if (!npcDoc) return;
 
-    const npcInfo = await this._createNPCInfo(npcDoc, parent, locationContext);
+    const npcInfo = await this._createNPCInfo(npcDoc, parent, locationContext, nestedData, cache);
 
     if (!nestedData.allNPCs.find((n) => n.uuid === npcInfo.uuid)) {
       nestedData.allNPCs.push(npcInfo);
@@ -492,12 +583,16 @@ static async processJournalLinks(journalUuids) {
     }
   }
 
-  static async _createNPCInfo(npcDoc, parent, locationContext) {
-    const npcData = npcDoc.getFlag("campaign-codex", "data") || {};
+  static async _createNPCInfo(npcDoc, parent, locationContext, nestedData, cache) {
+    const npcData = this._getCachedFlags(npcDoc, cache);
     const hideByPermission = game.settings.get("campaign-codex", "hideByPermission");
+    
     const sourceType = parent?.type || "direct";
     let sourceLocationName = null;
     let sourceShopName = null;
+
+    if (nestedData)  await this._processInventory(nestedData, npcDoc, npcData, cache);
+   
 
     if (sourceType === "shop") {
       sourceShopName = parent.name;
@@ -509,17 +604,28 @@ static async processJournalLinks(journalUuids) {
     }
 
     const [linkedTags, actor, allLocations, linkedShops, canView] = await Promise.all([
-      CampaignCodexLinkers.getTaggedNPCs(npcData.associates) || [],
-      npcData.linkedActor ? fromUuid(npcData.linkedActor) : null,
-      CampaignCodexLinkers.getNameFromUuids(npcData.linkedLocations || []),
+      this._getCachedTaggedNPCs(npcData.associates || [], cache),
+      npcData.linkedActor ? this._getCachedDoc(npcData.linkedActor, cache) : null,
+      CampaignCodexLinkers.getAllLocations(npcDoc, npcData.linkedLocations || []),
       CampaignCodexLinkers.getNameFromUuids(npcData.linkedShops || []),
-      CampaignCodexBaseSheet.canUserView(npcDoc.uuid),
+      this._getCachedCanView(npcDoc.uuid, cache),
     ]);
-    const imageData = npcDoc.getFlag("campaign-codex", "image") || actor?.img || TemplateComponents.getAsset("image", "npc");
+
+    const allLocationsNames = allLocations
+      .filter(item => item.typeData !== "region")
+      .map(item => item.name);
+    const allRegionsNames = allLocations
+      .filter(item => item.typeData === "region")
+      .map(item => item.name);
 
     const allQuests = npcDoc.getFlag("campaign-codex", "data")?.quests || [];
+    const imageData = npcDoc.getFlag("campaign-codex", "image") || actor?.img || TemplateComponents.getAsset("image", "npc");
+    const tabOverrides = npcDoc.getFlag("campaign-codex", "tab-overrides") || [];
+    const imageAreaOverride = tabOverrides?.find(override => override.key === "imageArea");
+
 
     return {
+      id: npcDoc.id,
       uuid: npcDoc.uuid,
       name: npcDoc.name,
       img: imageData,
@@ -534,26 +640,33 @@ static async processJournalLinks(journalUuids) {
       sourceLocation: sourceLocationName,
       sourceShop: sourceShopName,
       permission: npcData.permission,
-      locations: allLocations.sort(),
+      locations: allLocationsNames.sort(),
+      regions: allRegionsNames.sort(),
       shops: linkedShops.sort(),
       canView: canView,
+      showImage: imageAreaOverride?.visible ?? true,
+      tabOverrides: tabOverrides,
+      iconOverride: npcDoc.getFlag("campaign-codex", "icon-override") || null,
       meta: game.campaignCodex?.getActorDisplayMeta(actor, npcData) || `<span class="entity-type">${localize("names.npc")}</span>`,
       actor: actor ? { uuid: actor.uuid, name: actor.name, type: actor.type } : null,
     };
   }
 
-  static async _enrichEntity(entity, doc) {
+  static async _enrichEntity(entity, doc, cache) {
     const hideByPermission = game.settings.get("campaign-codex", "hideByPermission");
-    const data = doc.getFlag("campaign-codex", "data") || {};
+    const data = this._getCachedFlags(doc, cache);
+    
     const [linkedTags, linkedShops, canView, region, npcs, shopNpcCount] = await Promise.all([
-      CampaignCodexLinkers.getTaggedNPCs(data.linkedNPCs || data.associates || []) || [],
+      this._getCachedTaggedNPCs(data.linkedNPCs || data.associates || [], cache),
       CampaignCodexLinkers.getNameFromUuids(data.linkedShops || []),
-      CampaignCodexBaseSheet.canUserView(doc.uuid),
-      entity.type === "location" || entity.type === "region" ? CampaignCodexLinkers.getLinkedRegion(doc) : Promise.resolve(null),
+      this._getCachedCanView(doc.uuid, cache),
+      entity.type === "location" || entity.type === "region" ? CampaignCodexLinkers.getLinkedRegion(doc) : null,
       entity.type === "location" || entity.type === "region" ? CampaignCodexLinkers.getNameFromUuids(data.linkedNPCs || [], true) : Promise.resolve([]),
       entity.type === "location" ? CampaignCodexLinkers.getShopNPCs(doc, data.linkedShops || []).then((npcs) => npcs.length) : Promise.resolve(0),
     ]);
 
+    entity.tabOverrides = doc.getFlag("campaign-codex", "tab-overrides") || [];
+    entity.iconOverride = doc.getFlag("campaign-codex", "icon-override") || null;
     entity.canView = canView;
     entity.quests = !!(data.quests && data.quests.length);
     entity.permission = doc.permission;
@@ -563,7 +676,8 @@ static async processJournalLinks(journalUuids) {
       .map((tag) => tag.name)
       .sort();
     entity.npcs = npcs;
-   if (entity.type === "region") {
+    
+    if (entity.type === "region") {
       entity.region = region?.name;
     }
 
@@ -575,6 +689,7 @@ static async processJournalLinks(journalUuids) {
     }
   }
 
+  // ORIGINAL: _removeDuplicates preserved exactly
   static _removeDuplicates(array) {
     return array.filter((item, index, self) => index === self.findIndex((t) => t.uuid === item.uuid));
   }

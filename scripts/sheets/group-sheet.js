@@ -2,13 +2,76 @@ import { CampaignCodexBaseSheet } from "./base-sheet.js";
 import { TemplateComponents } from "./template-components.js";
 import { GroupLinkers } from "./group-linkers.js";
 import { CampaignCodexLinkers } from "./linkers.js";
-import { promptForName } from "../helper.js";
-import { localize, format, renderTemplate } from "../helper.js";
+import { promptForName, localize, format, renderTemplate, getDefaultSheetTabs, gameSystemClass } from "../helper.js";
+import { widgetManager } from "../widgets/WidgetManager.js";
+
 
 export class GroupSheet extends CampaignCodexBaseSheet {
   // =========================================================================
   // Foundry VTT Overrides
   // =========================================================================
+  static DEFAULT_OPTIONS = {
+    classes: ["campaign-codex", "sheet", "journal-sheet", "group-sheet"],
+    window: {
+      title: 'Campaign Codex Group Sheet',
+      icon: 'fas fa-sitemap',
+    },
+    position: {
+      width: 1024,
+      height: 768,
+    },
+    actions: {
+      selectSheet:this.#_selectSheet,
+      filterButton:this.#_filterButton,
+      SelectedSheetTabChange:this.#_SelectedSheetTabChange,
+      dropSelectedActorToMap:this.#_onDropSingleNPCToMapClick,
+      openGroupScene:this.#_onOpenScene,
+      expantToggle: this.#_onToggleTreeNode,
+      removeMember: this.#_onRemoveMember,
+      toggleTreeNpcs: this.#_onToggleTreeNPC,
+      expandAll: this.#_onExpandAll,
+      collapseAll: this.#_onCollapseAll,
+      toggleTreeItems: this.#_onToggleTreeItems,
+      toggleTreeNpcTags: this.#_onToggleTreeNPCTags,
+      toggleTreeGroups:this.#_onToggleTreeGroups,
+      toggleTreeRegions:this.#_onToggleTreeRegions,
+      toggleTreeLocations:this.#_onToggleTreeLocations,
+      toggleTreeShops:this.#_onToggleTreeShops,
+      toggleTreeTags: this.#_onToggleTreeTags,
+      selectSheetDrop: this.#_onDropSelectedSheetNPCsToMapClick,
+  }
+};
+
+  static PARTS = {
+    main: {
+      template: "modules/campaign-codex/templates/group-sheet.html",
+      scrollable: [
+        "", ".scrollable", 
+        ".tree-content",
+        ".group-tab-panel-selected-sheet.info", 
+        ".group-tab-panel-selected-sheet.regions", 
+        ".group-tab-panel-selected-sheet.locations", 
+        ".group-tab-panel-selected-sheet.shops", 
+        ".group-tab-panel-selected-sheet.associates", 
+        ".group-tab-panel-selected-sheet.npcs", 
+        ".group-tab-panel-selected-sheet.tags", 
+        ".group-tab-panel-selected-sheet.quests", 
+        ".group-tab-panel-selected-sheet.journals", 
+        ".group-tab-panel-selected-sheet.notes", 
+        ".group-tab-panel-selected-sheet.widgets", 
+        ".group-tab-panel-selected-sheet.notes", 
+        ".group-tab-panel.info", 
+        ".group-tab-panel.regions", 
+        ".group-tab-panel.locations", 
+        ".group-tab-panel.inventory", 
+        ".group-tab-panel.npcs", 
+        ".group-tab-panel.quests", 
+        ".group-tab-panel.journals", 
+        ".group-tab-panel.widgets", 
+        ".group-tab-panel.notes"
+      ] 
+    }
+  }
 
   constructor(document, options = {}) {
     super(document, options);
@@ -18,27 +81,13 @@ export class GroupSheet extends CampaignCodexBaseSheet {
     this._showTreeItems = false;
     this._showTreeNPCTags = false;
     this._showTreeNPCs = true;
+    this._showTreeGroups = true;
+    this._showTreeRegions = true;
+    this._showTreeLocations = true;
+    this._showTreeShops = true;
     this._showTreeTags = false;
     this._processedData = null;
-  }
- 
-  async _render(force, options) {
-    if (force) {
-      this._processedData = null;
-    }
-    return super._render(force, options);
-  }
-
-  static get defaultOptions() {
-    return foundry.utils.mergeObject(super.defaultOptions, {
-      classes: [...super.defaultOptions.classes, "group-sheet"],
-      width: 1200,
-      height: 800,
-    });
-  }
-
-  get template() {
-    return "modules/campaign-codex/templates/group-sheet.html";
+    this._currentTab ="info";
   }
 
   async _processGroupData() {
@@ -50,175 +99,507 @@ export class GroupSheet extends CampaignCodexBaseSheet {
     return { groupMembers, nestedData, treeTagNodes, missingTaggedNpcs };
   }
 
-  async getData() {
-    const data = await super.getData();
-    data.isGM = game.user.isGM;
-    if (!this._processedData) {
-      this._processedData = await this._processGroupData();
-    }
-    const { groupMembers, nestedData, treeTagNodes, missingTaggedNpcs } = this._processedData;
-    data.groupMembers = groupMembers;
-    data.nestedData = nestedData;
-    data.treeTagNodes = treeTagNodes;
-    data.missingTaggedNpcs = missingTaggedNpcs;
-    data.sheetType = "group";
-      if (data.sheetTypeLabelOverride !== undefined && data.sheetTypeLabelOverride !== "") {
-            data.sheetTypeLabel = data.sheetTypeLabelOverride;
-        } else{
-            data.sheetTypeLabel = localize("names.group");
-          }
-    data.customImage = this.document.getFlag("campaign-codex", "image") || TemplateComponents.getAsset("image", "group");
-    data.leftPanel = await this._generateLeftPanel(data.groupMembers, data.nestedData, data.treeTagNodes);
-    
-    data.tabs = [
+  async _onRender(context, options) {
+    await super._onRender(context, options);
+      new foundry.applications.ux.DragDrop.implementation({
+        dragSelector: ".tree-label",
+        permissions: {
+          dragstart: game.user.isGM,
+        },
+        callbacks: {
+          dragstart: this._onDragStart.bind(this),
+        }
+      }).bind(this.element);
+}
+
+ async _onDragStart(event) {
+    const el = event.currentTarget;
+    if ('link' in event.target.dataset) return;
+    let journalID = event.target.dataset.entryId;
+    let journalData = game.journal.get(journalID);
+    if (!journalData) return;
+    let dragDataB = journalData.toDragData();
+    if (!dragDataB) return;
+    event.dataTransfer.setData('text/plain', JSON.stringify(dragDataB));
+  }
+
+  _getTabDefinitions() {
+    return [
       {
         key: "info",
-        label: localize("names.information"),
-        icon: "fas fa-info-circle",
-        active: !this._selectedSheet && this._currentTab === "info",
+        label: localize("names.info"),
       },
       {
-        key: "npcs",
-        label: localize("names.npcs"),
-        icon: TemplateComponents.getAsset("icon", "npc"),
-        active: !this._selectedSheet && this._currentTab === "npcs",
-        statistic: { value: data.nestedData.allNPCs.length },
-      },
-      {
-        key: "inventory",
-        label: localize("names.inventory"),
-        icon: "fas fa-boxes",
-        active: !this._selectedSheet && this._currentTab === "inventory",
-        statistic: { value: data.nestedData.allItems.length },
+        key: "regions",
+        label: localize("names.regions"),
       },
       {
         key: "locations",
         label: localize("names.locations"),
-        icon: TemplateComponents.getAsset("icon", "location"),
-        active: !this._selectedSheet && this._currentTab === "locations",
-        statistic: { value: data.nestedData.allLocations.length },
       },
       {
-        key: "quests",
-        label: localize("names.quests"),
-        icon: TemplateComponents.getAsset("icon", "quest"),
-        active: !this._selectedSheet && this._currentTab === "quests",
+        key: "inventory",
+        label: localize("names.inventory"),
       },
-      { key: "journals", label: localize("names.journals"), icon: "fas fa-book", active: !this._selectedSheet && this._currentTab === "journals"},
-      ...(game.user.isGM
-        ? [
-            {
-              key: "notes",
-              label: localize("names.note"),
-              icon: "fas fa-sticky-note",
-              active: !this._selectedSheet && this._currentTab === "notes",
-            },
-          ]
-        : []),
-    ];
+      {
+        key: "npcs",
+        label: localize("names.npcs"),
+      },
+      { 
+        key: "quests", 
+        label: localize("names.quests"), 
+      }, 
+      { 
+        key: "journals", 
+        label: localize("names.journals"), 
+      },
+      { 
+        key: "widgets", 
+        label: localize("names.widgets"), 
+      },
+      {
+        key: "notes",
+        label: localize("names.note"),
+       },
+     ];  
+  }
 
-    if (this._selectedSheet) {
-      data.isShowingSelectedView = true;
-      data.selectedSheetContent = await this._generateSelectedSheetTab();
-      data.tabPanels = [];
-    } else {
-      data.isShowingSelectedView = false;
-      data.tabPanels = [
-        {
-          key: "info",
-          active: this._currentTab === "info",
-          content: await this._generateInfoTab(data),
-        },
-        {
-          key: "npcs",
-          active: this._currentTab === "npcs",
-          content: await this._generateNPCsTab(data),
-        },
-        {
-          key: "inventory",
-          active: this._currentTab === "inventory",
-          content: await this._generateInventoryTab(data),
-        },
-        {
-          key: "locations",
-          active: this._currentTab === "locations",
-          content: await this._generateLocationsTab(data),
-        },
-        {
-          key: "quests",
-          active: this._currentTab === "quests",
-          content: await this._generateQuestsTab(data),
-        },
-        { key: "journals", active: this._currentTab === "journals", content:  TemplateComponents.standardJournalGrid(data.linkedStandardJournals) },
-        {
-          key: "notes",
-          active: this._currentTab === "notes",
-          content: TemplateComponents.richTextSection(this.document, data.sheetData.enrichedNotes, "notes", data.isOwnerOrHigher),
-        },
-      ];
+  async _prepareContext(options) {
+    const context = await super._prepareContext(options);
+    if (!this._processedData) {
+      this._processedData = await this._processGroupData();
+    }
+    context.isGM = game.user.isGM;
+
+    const { groupMembers, nestedData, treeTagNodes, missingTaggedNpcs } = this._processedData;
+    context.groupMembers = groupMembers;
+    context.nestedData = nestedData;
+    context.treeTagNodes = treeTagNodes;
+    context.missingTaggedNpcs = missingTaggedNpcs;
+    context.sheetType = "group";
+      if (context.sheetTypeLabelOverride !== undefined && data.sheetTypeLabelOverride !== "") {
+            context.sheetTypeLabel = context.sheetTypeLabelOverride;
+        } else{
+            context.sheetTypeLabel = localize("names.group");
+          }
+    context.customImage = this.document.getFlag("campaign-codex", "image") || TemplateComponents.getAsset("image", "group");
+    context.leftPanel = await this._generateLeftPanel(context.groupMembers, context.nestedData, context.treeTagNodes);
+    
+    // WIDGETS CONFIGURATION
+    const sheetWidgets = this.document.getFlag("campaign-codex", "sheet-widgets") || []; 
+    context.activewidget = sheetWidgets.filter(w => w.active);
+    context.inactivewidgets = sheetWidgets.filter(w => !w.active);
+    const allAvailable = Array.from(widgetManager.widgetRegistry.keys());
+    context.addedWidgetNames = sheetWidgets.map(w => w.widgetName);
+    context.availableWidgets = allAvailable.map(name => ({ name: name }));
+    context.widgetsToRender = await widgetManager.instantiateActiveWidgets(this.document);
+
+    // TABS
+    const tabOverrides = this.document.getFlag("campaign-codex", "tab-overrides") || [];
+    let defaultTabs = this._getTabDefinitions();
+    const gmOnlyTabs = ['notes'];
+    if (!game.user.isGM) {
+      defaultTabs = defaultTabs.filter(tab => !gmOnlyTabs.includes(tab.key));
     }
 
-    data.selectedSheet = this._selectedSheet;
-    data.selectedSheetTab = this._selectedSheetTab;
+     const tabContext = [
+      {
+        key: "info",
+        active: !this._selectedSheet && this._currentTab === "info",
+        content:  await this._generateInfoTab(context),
+        label: localize("names.info"),
+        icon: "fas fa-info-circle",
+      },
+      {
+        key: "regions",
+        active: !this._selectedSheet && this._currentTab === "regions",
+        content: await this._generateRegionsTab(context),
+        label: localize("names.regions"),
+        icon: TemplateComponents.getAsset("icon", "region"),
+      },
+      {
+        key: "locations",
+        active: !this._selectedSheet && this._currentTab === "locations",
+        content: await this._generateLocationsTab(context),
+        label: localize("names.locations"),
+        icon: TemplateComponents.getAsset("icon", "location"),
+      },
+      {
+        key: "inventory",
+        active: !this._selectedSheet && this._currentTab === "inventory",
+        content: await this._generateInventoryTab(context),
+        icon: "fas fa-boxes",
+        label: localize("names.inventory"),
+      },
+      {
+        key: "npcs",
+        active: !this._selectedSheet && this._currentTab === "npcs",
+        content: await this._generateNPCsTab(context),
+        label: localize("names.npcs"),
+        icon: TemplateComponents.getAsset("icon", "npc"),
+      },
+      { 
+        key: "quests", 
+        active: !this._selectedSheet && this._currentTab === "quests", 
+        content: await this._generateQuestsTab(context) ,  
+        label: localize("names.quests"), 
+        icon: "fas fa-scroll", 
+      }, 
+      { 
+        key: "journals", 
+        active: !this._selectedSheet && this._currentTab === "journals", 
+        content: await this._generateJournalsTab(context), 
+        label: localize("names.journals"), 
+        icon: "fas fa-book", 
+      },
+      { 
+        key: "widgets", 
+        active: !this._selectedSheet && this._currentTab === "widgets",
+        content: await this._generateGroupWidgetsTab(this.document, context),
+        label: localize("names.widgets"), 
+        icon: "fas fa-puzzle-piece", 
+      },
+      {
+        key: "notes",
+        active: !this._selectedSheet && this._currentTab === "notes",
+        content: await CampaignCodexBaseSheet.generateNotesTab(this.document, context),
+        label: localize("names.note") || "Notes",
+        icon: "fas fa-sticky-note", 
+      },
+    ];
 
-    return data;
+    const defaultTabVis = getDefaultSheetTabs(this.getSheetType());
+ 
+    if (this._selectedSheet) {
+      context.isShowingSelectedView = true;
+      context.selectedSheetContent = await this._generateSelectedSheetTab();
+      this._currentTab =null;
+      // context.tabPanels = [];
+    } else 
+    {
+      context.isShowingSelectedView = false;
+    }
+      context.tabPanels = defaultTabs
+      .map(tab => {
+        const override = tabOverrides.find(o => o.key === tab.key);
+        const isVisibleByDefault = defaultTabVis[tab.key] ?? true;
+        const isVisible = override?.visible ?? isVisibleByDefault;
+        if (!isVisible) return null;
+
+        const dynamicTab = tabContext.find(t => t.key === tab.key);
+        if (!dynamicTab) return null;
+
+        const finalLabel = override?.label || tab.label;
+        return {
+          ...tab,
+          ...dynamicTab, 
+          label: finalLabel, 
+        };
+      })
+      .filter(Boolean); 
+
+    // END OF TABS
+    context.selectedSheet = this._selectedSheet;
+    context.selectedSheetTab = this._selectedSheetTab;
+
+    return context;
   }
 
   activateListeners(html) {
-    const nativeHtml = html instanceof jQuery ? html[0] : html;
     super.activateListeners(html);
-
-
-
-    const singleActionMap = {
-      ".btn-expand-all": this._onExpandAll,
-      ".btn-collapse-all": this._onCollapseAll,
-      ".toggle-tree-items": this._onToggleTreeItems,
-      ".toggle-tree-npcs": this._onToggleTreeNPC,
-      ".toggle-tree-npctags": this._onToggleTreeNPCTags,
-      ".toggle-tree-tags": this._onToggleTreeTags,
-      ".btn-close-selected": this._onCloseSelectedSheet,
-      ".btn-open-scene": this._onOpenScene,
-    };
-
-    for (const [selector, handler] of Object.entries(singleActionMap)) {
-      nativeHtml.querySelector(selector)?.addEventListener("click", handler.bind(this));
-    }
-
-    const multiActionMap = {
-      ".expand-toggle": this._onToggleTreeNode,
-      ".tree-label.clickable": this._onSelectSheet,
-      ".selected-sheet-tab": this._onSelectedSheetTabChange,
-      ".btn-remove-member": this._onRemoveMember,
-      ".btn-focus-item": this._onFocusItem,
-      ".filter-btn": this._onFilterChange,
-      ".group-tab": this._onTabChange,
-      ".btn-send-to-player": this._onSendToPlayer,
-      ".btn-npc-to-scene": this._onDropSingleNPCToMapClick,
-    };
-
-    for (const [selector, handler] of Object.entries(multiActionMap)) {
-      nativeHtml.querySelectorAll(selector).forEach((el) => el.addEventListener("click", handler.bind(this)));
-    }
-
-    const documentOpenMap = {
-      ".open-item": { flag: "item", handler: this._onOpenDocument },
-      ".btn-open-sheet, .group-location-card": { flag: "sheet", handler: this._onOpenDocument },
-      ".open-location": { flag: "location", handler: this._onOpenDocument },
-      ".open-shop": { flag: "shop", handler: this._onOpenDocument },
-      ".open-associate": { flag: "associate", handler: this._onOpenDocument },
-      ".btn-open-actor": { flag: "actor", handler: this._onOpenDocument },
-    };
-
-    for (const [selector, { flag, handler }] of Object.entries(documentOpenMap)) {
-      nativeHtml.querySelectorAll(selector).forEach((el) => {
-        el.addEventListener("click", (e) => handler.call(this, e, flag));
-      });
-    }
-
-
-    nativeHtml.querySelector(".tag-mode-toggle")?.addEventListener("change", this._onTagToggle.bind(this));
   }
+
+
+  // =========================================================================
+  // Base Sheet Overrides
+  // =========================================================================
+
+  /** @override */
+  _showTab(tabName, html) {
+    html.querySelectorAll(".group-tabs .group-tab").forEach((tab) => tab.classList.remove("active"));
+    html.querySelectorAll(".group-tab-panel").forEach((panel) => panel.classList.remove("active"));
+    html.querySelector(`.group-tabs .group-tab[data-tab="${tabName}"]`)?.classList.add("active");
+    html.querySelector(`.group-tab-panel[data-tab="${tabName}"]`)?.classList.add("active");
+  }
+
+
+  // =========================================================================
+  // Actions
+  // =========================================================================
+  
+
+  static #_onExpandAll(event) {
+    event.preventDefault();
+    const nativeElement = this.element;
+    
+    nativeElement.querySelectorAll(".tree-node").forEach((treeNode) => {
+      const children = treeNode.querySelector(".tree-children");
+      const uuid = treeNode.dataset.sheetUuid;
+
+      if (children) {
+        const expandIcon = treeNode.querySelector(".expand-toggle"); 
+        
+        children.style.display = "block";
+        if (expandIcon) {
+          expandIcon.classList.remove("fa-chevron-right");
+          expandIcon.classList.add("fa-chevron-down");
+        }
+        if (uuid) {
+          this._expandedNodes.add(uuid);
+        }
+      }
+    });
+  }
+  static #_onCollapseAll(event) {
+    event.preventDefault();
+    const nativeElement = this.element;
+    
+    nativeElement.querySelectorAll(".tree-node").forEach((treeNode) => {
+      const children = treeNode.querySelector(".tree-children");
+
+      if (children) {
+        const expandIcon = treeNode.querySelector(".expand-toggle"); 
+
+        children.style.display = "none";
+        if (expandIcon) {
+          expandIcon.classList.remove("fa-chevron-down");
+          expandIcon.classList.add("fa-chevron-right");
+        }
+      }
+    });
+    
+    this._expandedNodes.clear(); // Clear the state after visually collapsing all
+  }
+
+  static #_onToggleTreeGroups(event) {
+    event.preventDefault();
+    this._showTreeGroups = !this._showTreeGroups;
+    this.render();
+  }
+
+  static #_onToggleTreeRegions(event) {
+    event.preventDefault();
+    this._showTreeRegions = !this._showTreeRegions;
+    this.render();
+  }
+  
+  static #_onToggleTreeLocations(event) {
+    event.preventDefault();
+    this._showTreeLocations = !this._showTreeLocations;
+    this.render();
+  }
+  
+  static #_onToggleTreeShops(event) {
+    event.preventDefault();
+    this._showTreeShops = !this._showTreeShops;
+    this.render();
+  }
+
+  static #_onToggleTreeNPC(event) {
+    event.preventDefault();
+    this._showTreeNPCs = !this._showTreeNPCs;
+    this.render();
+  }
+
+    static #_onToggleTreeNPCTags(event) {
+    event.preventDefault();
+    this._showTreeNPCTags = !this._showTreeNPCTags;
+    this.render();
+  }
+
+    static #_onToggleTreeTags(event) {
+    event.preventDefault();
+    this._showTreeTags = !this._showTreeTags;
+    this.render();
+  }
+
+    static #_onToggleTreeItems(event) {
+    event.preventDefault();
+    this._showTreeItems = !this._showTreeItems;
+    this.render();
+  }
+
+
+
+  static #_selectSheet(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    const target = event.target.closest('.tree-label');
+    const treeNode = target?.dataset;
+    if (treeNode){
+      const uuid = treeNode.sheetUuid;
+      const type = treeNode.type;
+      const name = treeNode.name;
+      this._selectedSheet = { uuid, type, name };
+      this._selectedSheetTab = "info";
+      this.render(false);
+    }
+  }
+
+  static #_filterButton(event) {
+    const clickedButton = event.target;
+    const filter = clickedButton?.dataset.filter;
+    const cards = this.element.querySelectorAll(".npc-grid-container .entity-card");
+    const siblingButtons = clickedButton.parentElement.children;
+    for (const btn of siblingButtons) {
+      btn.classList.remove("active");
+    }
+    clickedButton.classList.add("active");
+    cards.forEach((card) => {
+      const cardFilter = card.dataset.filter;
+      if (filter === "all" || (cardFilter && cardFilter.includes(filter))) {
+        card.style.display = "flex";
+      } else {
+        card.style.display = "none";
+      }
+    });
+  }
+
+  _showSelectedSheetTab(tabName, html) {
+    html.querySelectorAll(".selected-sheet-tab").forEach((tab) => tab.classList.remove("active"));
+    html.querySelectorAll(".group-tab-panel-selected-sheet").forEach((panel) => panel.classList.remove("active"));
+    html.querySelector(`.selected-sheet-tab[data-tab="${tabName}"]`)?.classList.add("active");
+    html.querySelector(`.group-tab-panel-selected-sheet[data-tab="${tabName}"]`)?.classList.add("active");
+  }
+
+  static #_SelectedSheetTabChange(event) {
+      event.preventDefault();
+      const tabName = event.target.dataset.tab;
+      this._selectedSheetTab = tabName;
+      const appElement = this.element.querySelector(".selected-sheet-container");
+      this._showSelectedSheetTab(tabName, appElement);
+  }
+
+
+  static async #_onDropSingleNPCToMapClick(event) {
+    event.preventDefault();
+    const sheetUuid = event.target.dataset.uuid;
+    try {
+      const selectedDoc = await fromUuid(sheetUuid);
+      if (!selectedDoc) {
+        ui.notifications.warn("Selected sheet not found");
+        return;
+      }
+      const npcData = selectedDoc.getFlag("campaign-codex", "data") || {};
+      if (!npcData.linkedActor) return ui.notifications.warn("This NPC has no linked actor to drop!");
+      const linkedActor = await fromUuid(npcData.linkedActor);
+      if (!linkedActor) return ui.notifications.warn(localize("warn.actornotfound"));
+      const npcForDrop = {
+        id: selectedDoc.id,
+        uuid: selectedDoc.uuid,
+        name: selectedDoc.name,
+        img: selectedDoc.getFlag("campaign-codex", "image") || linkedActor.img,
+        actor: linkedActor,
+      };
+      await this._onDropNPCsToMap([npcForDrop], {
+        title: `Drop ${this.document.name} to Map`,
+        showHiddenToggle: true,
+      });
+    } catch (error) {
+      console.error("Campaign Codex | Error dropping NPC to map:", error);
+      ui.notifications.error(localize("warn.failedtodrop"));
+    }
+  }
+
+
+  static async #_onDropSelectedSheetNPCsToMapClick(event) {
+    event.preventDefault();
+    const sheetUuid = event.target.dataset.uuid;
+    try {
+      const selectedDoc = await fromUuid(sheetUuid);
+        if (!selectedDoc) 
+        {
+          ui.notifications.warn("Selected sheet not found");
+          return;
+        }
+      const docData = selectedDoc.getFlag("campaign-codex", "data") || {};
+      const docType = selectedDoc.getFlag("campaign-codex", "type") || {};
+        if (docType === "location" || docType === "region")
+        {
+          const rawDirectNPCs = await CampaignCodexLinkers.getDirectNPCs(selectedDoc, docData.linkedNPCs || []);
+          const directNPCs = rawDirectNPCs.filter((npc) => npc.tag !== true);
+          if (directNPCs && directNPCs.length > 0) {
+             await this._onDropNPCsToMap(directNPCs, {title: `Drop ${selectedDoc.name} NPCs to Map`,});
+          }
+        } else if (docType === "shop") {
+          const rawLinkedNPCs = await CampaignCodexLinkers.getLinkedNPCs(this.document, docData.linkedNPCs || []);
+          const linkedNPCs = rawLinkedNPCs.filter((npc) => npc.tag !== true);
+          if (linkedNPCs && linkedNPCs.length > 0) {
+            await this._onDropNPCsToMap(linkedNPCs, {title: `Drop ${selectedDoc.name} NPCs to Map`,});
+          }
+        } else if (docType === "npc") {
+          
+          const associates = await CampaignCodexLinkers.getAssociates(docData, docData.associates || []);
+          const taggedNPCs = associates.filter((npc) => npc.tag === true);
+          const associatesWithoutTaggedNPCs = associates.filter((npc) => npc.tag !== true);
+
+          if (associatesWithoutTaggedNPCs.length > 0) {
+            await this._onDropNPCsToMap(associatesWithoutTaggedNPCs, {
+              title: format("message.droptomap", { type: this.document.name }),
+            });
+          }
+        } else {
+          console.log("No Sheet Selected");
+        }
+      }
+      catch (error)
+      {
+
+      }
+}
+
+
+  static async #_onOpenScene(event) {
+    event.preventDefault();
+    const button = event.target;
+    const docUuid = button.dataset.uuid;
+    if (!docUuid) return;
+    const doc = await fromUuid(docUuid);
+    if (!doc) {
+      ui.notifications.error("Could not find the source document.");
+      return;
+    }
+    await game.campaignCodex.openLinkedScene(doc);
+  }
+
+  static #_onToggleTreeNode(event) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    const expandIcon = event.target;
+    const treeNode = expandIcon.closest(".tree-node");
+    const children = treeNode.querySelector(".tree-children");
+    const uuid = treeNode.dataset.sheetUuid;
+
+    if (children) {
+      const isExpanding = children.style.display === "none" || children.style.display === "";
+      if (isExpanding) {
+        children.style.display = "block";
+        expandIcon.classList.remove("fa-chevron-right");
+        expandIcon.classList.add("fa-chevron-down");
+        this._expandedNodes.add(uuid);
+      } else {
+        children.style.display = "none";
+        expandIcon.classList.remove("fa-chevron-down");
+        expandIcon.classList.add("fa-chevron-right");
+        this._expandedNodes.delete(uuid);
+      }
+    }
+  }
+
+  static async #_onRemoveMember(event) {
+    const memberUuid = event.target.dataset.uuid;
+    // await this._saveFormData();
+    if(!memberUuid) return;
+    const groupData = this.document.getFlag("campaign-codex", "data") || {};
+    groupData.members = (groupData.members || []).filter((uuid) => uuid !== memberUuid);
+    await this.document.setFlag("campaign-codex", "data", groupData);
+    this._processedData = null;
+    this.render();
+    ui.notifications.info("Removed member from group");
+  }
+
+
 
   // =========================================================================
   // Selected Sheet Generation
@@ -245,66 +626,88 @@ export class GroupSheet extends CampaignCodexBaseSheet {
     `;
   }
 
-  async _generateSelectedSheetTab() {
-    if (!this._selectedSheet) return "";
-    const hideByPermission = game.settings.get("campaign-codex", "hideByPermission");
+async _generateAllSelectedSheetTabs(selectedDoc, selectedData, subTabs) {
+    const panelPromises = subTabs.map(async (tab) => {
+        const content = await this._generateSelectedSheetContent(selectedDoc, selectedData, tab.key);
+        return {
+            key: tab.key,
+            content: content,
+            active: tab.active
+        };
+    });
+    return Promise.all(panelPromises);
+}
 
-    const selectedDoc = await fromUuid(this._selectedSheet.uuid);
-    if (!selectedDoc) {
-      this._selectedSheet = null;
-      return "<p>Selected sheet not found. Please re-select from the tree.</p>";
-    }
-    const selectedData = selectedDoc.getFlag("campaign-codex", "data") || {};
-    const linkedActor = selectedData.linkedActor ? await CampaignCodexLinkers.getLinkedActor(selectedData.linkedActor) : null;
+async _generateSelectedSheetTab() {
+  if (!this._selectedSheet) return "";
+  const hideByPermission = game.settings.get("campaign-codex", "hideByPermission");
 
-    // --- Prepare the data for the template ---
-    const templateData = {
-      selectedSheet: this._selectedSheet,
-      selectedImage: selectedDoc.getFlag("campaign-codex", "image") || linkedActor?.img || "",
-      tagsContent: await this._generateTagsContent(selectedData),
-      dropButtonHtml: "",
-      sceneButtonHtml: "",
-      actorButtonHtml: "",
-      subTabs: [],
-      selectedSheetContent: await this._generateSelectedSheetContent(selectedDoc, selectedData, this._selectedSheetTab)
-    };
-    if (this._selectedSheet.type === "npc" && linkedActor && (await CampaignCodexBaseSheet.canUserView(linkedActor.uuid))) {
-      templateData.actorButtonHtml = `
-        <button type="button" class="btn-open-actor" data-actor-uuid="${linkedActor.uuid}" title="${localize("title.open.actor")}">
-          <i class="fas fa-user"></i>
-        </button>`;
-    }
-    if (this._selectedSheet.type === "npc" && linkedActor && canvas.scene && game.user.isGM) {
-      templateData.dropButtonHtml = `
-        <button type="button" class="refresh-btn btn-npc-to-scene" data-sheet-uuid="${this._selectedSheet.uuid}" title="${localize("message.drop")}">
-          <i class="fas fa-street-view"></i>
-        </button>`;
-    }
-    if (
-      (this._selectedSheet.type === "location" || this._selectedSheet.type === "region" || this._selectedSheet.type === "shop") &&
-      selectedData.linkedScene &&
-      (!hideByPermission || (await CampaignCodexBaseSheet.canUserView(selectedData.linkedScene)))
-    ) {
-      templateData.sceneButtonHtml = `
-        <button type="button" class="btn-open-scene" data-doc-uuid="${selectedDoc.uuid}" title="${format("message.open", { type: localize("names.scene") })}">
-          <i class="fas fa-map"></i>
-        </button>`;
-    }
-    const subTabsRaw = this._getSelectedSheetSubTabs(this._selectedSheet.type, selectedData, {});
-    templateData.subTabs = subTabsRaw.map(tab => ({
-        ...tab,
-        active: tab.key === this._selectedSheetTab
-    }));
-    return await renderTemplate("modules/campaign-codex/templates/partials/selected-sheet-view.hbs", templateData);
+  const selectedDoc = await fromUuid(this._selectedSheet.uuid);
+  if (!selectedDoc) {
+    this._selectedSheet = null;
+    return "<p>Selected sheet not found. Please re-select from the tree.</p>";
+  }
+  const selectedData = selectedDoc.getFlag("campaign-codex", "data") || {};
+  const tabOverrides = selectedDoc.getFlag("campaign-codex", "tab-overrides") || [];
+  const imageAreaOverride = tabOverrides.find(o => o.key === 'imageArea');
+  const linkedActor = selectedData.linkedActor
+    ? await CampaignCodexLinkers.getLinkedActor(selectedData.linkedActor)
+    : null;
+  const selectedImage = (imageAreaOverride && !imageAreaOverride.visible)
+        ? ""
+        : selectedDoc.getFlag("campaign-codex", "image") || linkedActor?.img || "";
+  const subTabsRaw = this._getSelectedSheetSubTabs(this._selectedSheet.type, selectedData, {}, tabOverrides);
+  const subTabs = subTabsRaw.map((tab) => ({
+    ...tab,
+    active: tab.key === this._selectedSheetTab,
+  }));
+
+  // --- Prepare the data for the template ---
+  const templateData = {
+    selectedSheet: this._selectedSheet,
+    selectedLabelOverride: selectedData?.sheetTypeLabelOverride || null,
+    selectedImage: selectedImage,
+    tagsContent: await this._generateTagsContent(selectedData),
+    dropButtonHtml: "",
+    sceneButtonHtml: "",
+    actorButtonHtml: "",
+    subTabs: subTabs,
+    selectedTabPanels: await this._generateAllSelectedSheetTabs(selectedDoc, selectedData, subTabs),
+  };
+
+  if (this._selectedSheet.type === "npc" && linkedActor && (await CampaignCodexBaseSheet.canUserView(linkedActor.uuid))) {
+    templateData.actorButtonHtml = `
+          <i class="fas fa-user btn-open-actor selected-sheet-tab sheet-action" data-action="openActor" data-uuid="${linkedActor.uuid}" title="${localize("title.open.actor")}"></i>`;
   }
 
+  if (this._selectedSheet.type === "npc" && linkedActor && canvas.scene && game.user.isGM) {
+    templateData.dropButtonHtml = `
+          <i class="fas fa-street-view refresh-btn btn-npc-to-scene selected-sheet-tab sheet-action" data-action="dropSelectedActorToMap" data-uuid="${this._selectedSheet.uuid}" title="${localize("message.drop")}"></i>`;
+  }
 
-  _getSelectedSheetSubTabs(type, data, calculatedCounts = {}) {
+ const sceneExists = await fromUuid(selectedData.linkedScene);
+  if (sceneExists && 
+    (this._selectedSheet.type === "location" ||
+      this._selectedSheet.type === "region" ||
+      this._selectedSheet.type === "shop") &&
+    selectedData.linkedScene &&
+    (!hideByPermission || (await CampaignCodexBaseSheet.canUserView(selectedData.linkedScene)))
+  ) {
+    templateData.sceneButtonHtml = `<i class="fas fa-map btn-open-scene selected-sheet-tab sheet-action" data-action="openGroupScene" data-uuid="${selectedDoc.uuid}" title="${format("message.open", { type: localize("names.scene") })}"></i>`;
+  }
+
+  return await renderTemplate("modules/campaign-codex/templates/partials/selected-sheet-view.hbs", templateData);
+}
+
+  _getSelectedSheetSubTabs(type, data, calculatedCounts = {}, tabOverrides = []) { // <-- Add tabOverrides argument
     const baseTabs = [
-      { key: "info", label:localize("names.information"), icon: "fas fa-info-circle" },
-      { key: "quests", label: localize("names.quests"), icon: "fas fa-scroll" },
-      { key: "journals", label: localize("names.journals"), icon: "fas fa-book" },
-      ...(game.user.isGM ? [{ key: "notes", label: localize("names.note"), icon: "fas fa-sticky-note" }] : []),
+      { key: "info", label:localize("names.information"), icon: "fas fa-info-circle", active: this._selectedSheetTab === "info" },
+      { key: "tags", label:localize("names.tags"), icon: "fas fa-tag", active: this._selectedSheetTab === "tags"  },
+      { key: "inventory", label:localize("names.inventory"), icon: "fas fa-boxes", active: this._selectedSheetTab === "inventory"  },
+      { key: "quests", label: localize("names.quests"), icon: "fas fa-scroll", active: this._selectedSheetTab === "quests"  },
+      { key: "journals", label: localize("names.journals"), icon: "fas fa-book", active: this._selectedSheetTab === "journals"  },
+      { key: "widgets", label: localize("names.widgets"), icon: "fas fa-puzzle-piece", active: this._selectedSheetTab === "widgets"  },
+      ...(game.user.isGM ? [{ key: "notes", label: localize("names.note"), icon: "fas fa-sticky-note", active: this._selectedSheetTab === "notes"  }] : []),
     ];
 
     switch (type) {
@@ -313,21 +716,28 @@ export class GroupSheet extends CampaignCodexBaseSheet {
           1,
           0,
           {
-            key: "associates",
-            label: localize("names.associates"),
-            icon: "fas fa-users",
-            count: (data.associates || []).length,
+            key: "regions",
+            label: localize("names.regions"),
+            icon: TemplateComponents.getAsset("icon", "region"),
+            active: this._selectedSheetTab === "regions",
           },
           {
-            key: "tags",
-            label: localize("names.tags"),
-            icon: "fas fa-tag",
+            key: "locations",
+            label: localize("names.locations"),
+            icon: TemplateComponents.getAsset("icon", "location"),
+            active: this._selectedSheetTab === "locations",
           },
           {
             key: "shops",
-            label: localize("names.shops"),
+            label:localize("names.shops"),
             icon: TemplateComponents.getAsset("icon", "shop"),
-            count: (data.linkedShops || []).length,
+            active: this._selectedSheetTab === "shops",
+          },
+          {
+            key: "associates",
+            label: localize("names.associates"),
+            icon: TemplateComponents.getAsset("icon", "npc"),
+            active: this._selectedSheetTab === "npcs",
           },
         );
         break;
@@ -340,18 +750,7 @@ export class GroupSheet extends CampaignCodexBaseSheet {
             key: "npcs",
             label: localize("names.npcs"),
             icon: TemplateComponents.getAsset("icon", "npc"),
-            count: (data.linkedNPCs || []).length,
-          },
-          {
-            key: "tags",
-            label: localize("names.tags"),
-            icon: "fas fa-tag",
-          },
-          {
-            key: "inventory",
-            label: localize("names.inventory"),
-            icon: "fas fa-boxes",
-            count: (data.inventory || []).length,
+            active: this._selectedSheetTab === "npcs",
           },
         );
         break;
@@ -361,21 +760,16 @@ export class GroupSheet extends CampaignCodexBaseSheet {
           1,
           0,
           {
+            key: "shops",
+            label:localize("names.shops"),
+            icon: TemplateComponents.getAsset("icon", "shop"),
+            active: this._selectedSheetTab === "shops",
+          },
+          {
             key: "npcs",
             label: localize("names.npcs"),
             icon: TemplateComponents.getAsset("icon", "npc"),
-            count: calculatedCounts.totalNPCs ?? (data.linkedNPCs || []).length,
-          },
-          {
-            key: "tags",
-            label: localize("names.tags"),
-            icon: "fas fa-tag",
-          },
-          {
-            key: "shops",
-            label: localize("names.shops"),
-            icon: TemplateComponents.getAsset("icon", "shop"),
-            count: (data.linkedShops || []).length,
+            active: this._selectedSheetTab === "npcs",
           },
         );
         break;
@@ -388,36 +782,49 @@ export class GroupSheet extends CampaignCodexBaseSheet {
             key: "regions",
             label: localize("names.regions"),
             icon: TemplateComponents.getAsset("icon", "region"),
-            count: (data.linkedRegions || []).length,
+            active: this._selectedSheetTab === "regions",
           },
           {
             key: "locations",
             label: localize("names.locations"),
             icon: TemplateComponents.getAsset("icon", "location"),
-            count: (data.linkedLocations || []).length,
-          },
-          {
-            key: "npcs",
-            label: localize("names.npcs"),
-            icon: TemplateComponents.getAsset("icon", "npc"),
-            count: calculatedCounts.totalNPCs ?? (data.linkedNPCs || []).length,
-          },
-          {
-            key: "tags",
-            label: localize("names.tags"),
-            icon: "fas fa-tag",
+            active: this._selectedSheetTab === "locations",
           },
           {
             key: "shops",
             label:localize("names.shops"),
             icon: TemplateComponents.getAsset("icon", "shop"),
-            count: (data.linkedShops || []).length,
+            active: this._selectedSheetTab === "shops",
+          },
+          {
+            key: "npcs",
+            label: localize("names.npcs"),
+            icon: TemplateComponents.getAsset("icon", "npc"),
+            active: this._selectedSheetTab === "npcs",
           },
         );
         break;
     }
 
-    return baseTabs;
+    const defaultTabVis = getDefaultSheetTabs(type); 
+
+    const processedTabs = baseTabs
+      .map(tab => {
+        const override = tabOverrides.find(o => o.key === tab.key);
+        const isVisibleByDefault = defaultTabVis[tab.key] ?? true; 
+        const isVisible = override?.visible ?? isVisibleByDefault;
+
+        if (!isVisible) return null;
+
+        const finalLabel = override?.label || tab.label;
+        return {
+          ...tab,
+          label: finalLabel,
+        };
+      })
+      .filter(Boolean); 
+
+    return processedTabs; 
   }
 
   async _generateSelectedSheetContent(selectedDoc, selectedData, activeTab) {
@@ -425,7 +832,7 @@ export class GroupSheet extends CampaignCodexBaseSheet {
       async: true,
       secrets: selectedDoc.isOwner,
     });
-    const systemClass = game.system.id === "dnd5e" ? " dnd5e2-journal themed theme-light" : "";
+    const systemClass = gameSystemClass(game.system.id);
     const enrichedNotes = await foundry.applications.ux.TextEditor.implementation.enrichHTML(selectedData.notes || "", {
       async: true,
       secrets: selectedDoc.isOwner,
@@ -456,12 +863,24 @@ export class GroupSheet extends CampaignCodexBaseSheet {
       case "regions":
         return await this._generateSelectedRegionsContent(selectedDoc, selectedData);
 
+      case "widgets":
+        const widgetLabelOverride = this._labelOverride(selectedDoc, "widgets");
+        selectedData.widgetsToRender = await widgetManager.instantiateActiveWidgets(selectedDoc);
+        return await CampaignCodexBaseSheet.generateWidgetsTab(selectedDoc, selectedData, widgetLabelOverride);
+
       case "quests":
-        return await TemplateComponents.questList(selectedDoc, selectedData.quests, game.user.isGM, true);
+        const questLabelOverride = this._labelOverride(selectedDoc, "quests")|| localize("names.quests");
+         const processedQuests = await TemplateComponents.questList(selectedDoc, selectedData.quests, game.user.isGM, true);
+         return `
+          ${TemplateComponents.contentHeader("fas fa-scroll", questLabelOverride)}
+          ${processedQuests ? processedQuests : ''}
+         `
 
       case "notes":
+        const notesLabelOverride = this._labelOverride(selectedDoc, "notes") || localize("names.note") ;
         return `
-          <article class="selected-content-section cc-enriched cc-hidden-secrets${systemClass}">
+          ${TemplateComponents.contentHeader("fas fa-sticky-note", notesLabelOverride)}
+          <article class="cc-enriched cc-hidden-secrets${systemClass}">
            <section class="rich-text-content journal-entry-content" name="cc.secret.content.notes">
               ${enrichedNotes || ""}
             </section>
@@ -469,13 +888,20 @@ export class GroupSheet extends CampaignCodexBaseSheet {
         `;
 
     case "journals": {
-        const processedJournals = await GroupLinkers.processJournalLinks(selectedData.linkedStandardJournals);
-        return `<div class="selected-sheet-journals">${TemplateComponents.standardJournalGrid(processedJournals, true)}</div>`;
+        const journalsLabelOverride = this._labelOverride(selectedDoc, "journals") || localize("names.journals") ;
+        let processedJournals = [];
+        processedJournals = await GroupLinkers.processJournalLinks(selectedData.linkedStandardJournals);
+        const journals = TemplateComponents.standardJournalGrid(processedJournals, true, true);
+        return `
+          ${TemplateComponents.contentHeader("fas fa-book", journalsLabelOverride)}
+          ${journals}`;
     }
       default:
         return "<p></p>";
     }
   }
+
+
 async _generateSelectedTagsContent(selectedDoc, selectedData) {
     let allPossibleNpcs = [];
     if (this._selectedSheet.type === "location" || this._selectedSheet.type === "region") {
@@ -508,6 +934,7 @@ async _generateSelectedTagsContent(selectedDoc, selectedData) {
 }
 
 async _generateSelectedNPCsContent(selectedDoc, selectedData) {
+    const labelOverride = this._labelOverride(selectedDoc, "npcs");
     const isLocationOrRegion = this._selectedSheet.type === "location" || this._selectedSheet.type === "region";
     const [directNPCs, shopNPCs, linkedNPCs] = await Promise.all([
         CampaignCodexLinkers.getDirectNPCs(selectedDoc, selectedData.linkedNPCs || []),
@@ -517,9 +944,10 @@ async _generateSelectedNPCsContent(selectedDoc, selectedData) {
     const allNPCs = isLocationOrRegion ? [...directNPCs, ...shopNPCs] : linkedNPCs;
     const untaggedNPCs = allNPCs.filter(npc => !npc.tag);
     const templateData = {
+        labelOverride:labelOverride,
         isGM: game.user.isGM,
         hasContent: untaggedNPCs.length > 0,
-        dropToMapBtn: (canvas.scene && game.user.isGM) ? `<button type="button" class="refresh-btn npcs-to-map-button" title="${format("button.droptoscene", { type: localize("names.npc") })}" data-sheet-uuid="${this._selectedSheet.uuid}"><i class="fas fa-street-view"></i></button>` : "",
+        dropToMapBtn: (canvas.scene && game.user.isGM) ? `<i class="fas fa-street-view refresh-btn npcs-to-map-button" data-action="selectSheetDrop" title="${format("button.droptoscene", { type: localize("names.npc") })}" data-uuid="${this._selectedSheet.uuid}"></i>` : "",
         untaggedDirectNPCs: [],
         untaggedShopNPCs: [],
         directNpcGrid: "",
@@ -533,7 +961,7 @@ async _generateSelectedNPCsContent(selectedDoc, selectedData) {
         templateData.directNpcGrid = TemplateComponents.entityGrid(templateData.untaggedDirectNPCs, "associate", true, true);
         templateData.shopNpcGrid = TemplateComponents.entityGrid(templateData.untaggedShopNPCs, "associate", true, true);
     } else {
-        templateData.untaggedDirectNPCs = untaggedNPCs; // For other types, all untagged NPCs are "direct"
+        templateData.untaggedDirectNPCs = untaggedNPCs; 
         templateData.directNpcGrid = TemplateComponents.entityGrid(templateData.untaggedDirectNPCs, "associate", true, true);
     }
     
@@ -541,56 +969,69 @@ async _generateSelectedNPCsContent(selectedDoc, selectedData) {
 }
 
   async _generateSelectedShopsContent(selectedDoc, selectedData) {
+    const labelOverride = this._labelOverride(selectedDoc, "shops") ||localize("names.shops");
     const shops = await CampaignCodexLinkers.getLinkedShops(selectedDoc, selectedData.linkedShops || []);
     const preparedShops = shops;
     if (preparedShops.length === 0) {
-      return "";
+      return `${TemplateComponents.contentHeader("fas fa-house", labelOverride)}`;
     }
 
     return `
-      <div class="selected-content-section">
+      ${TemplateComponents.contentHeader("fas fa-house", labelOverride)}
         <div class="shops-list">
          ${TemplateComponents.entityGrid(preparedShops, "shop", false, true)}
         </div>
-      </div>
     `;
   }
 
+ 
+
   async _generateSelectedRegionsContent(selectedDoc, selectedData) {
-    const regions = await CampaignCodexLinkers.getLinkedRegions(selectedDoc, selectedData.linkedRegions || []);
+    const labelOverride = this._labelOverride(selectedDoc, "regions") ||localize("names.regions");
+    let regions = await CampaignCodexLinkers.getLinkedRegions(selectedDoc, selectedData.linkedRegions || []);
+    if (selectedDoc && selectedDoc.getFlag("campaign-codex", "type") === "npc"){
+      const locations = await CampaignCodexLinkers.getLinkedLocations(selectedDoc, selectedData.linkedLocations || []);
+      regions = locations.filter(item => item.type === "region");
+    }
+
     if (regions.length === 0) {
-      return "";
+      return `${TemplateComponents.contentHeader("fas fa-globe", labelOverride)}`;
     }
 
     return `
-      <div class="selected-content-section">
+      ${TemplateComponents.contentHeader("fas fa-globe", labelOverride)}
         <div class="locations-list">
           ${TemplateComponents.entityGrid(regions, "location", false, true)}
         </div>
-      </div>
     `;
   }
 
   async _generateSelectedLocationsContent(selectedDoc, selectedData) {
+    const labelOverride = this._labelOverride(selectedDoc, "locations") ||localize("names.locations");
     const locations = await CampaignCodexLinkers.getLinkedLocations(selectedDoc, selectedData.linkedLocations || []);
-    const preparedLocations = locations;
+    let preparedLocations = locations;
+    if (selectedDoc && selectedDoc.getFlag("campaign-codex", "type") === "npc"){
+      const locations = await CampaignCodexLinkers.getLinkedLocations(selectedDoc, selectedData.linkedLocations || []);
+      preparedLocations = locations.filter(item => item.type === "location");
+    }
     if (preparedLocations.length === 0) {
-      return "";
+      return `${TemplateComponents.contentHeader("fas fa-map-marker-alt", labelOverride)}`;
     }
 
     return `
-      <div class="selected-content-section">
+      ${TemplateComponents.contentHeader("fas fa-map-marker-alt", labelOverride)}
         <div class="locations-list">
           ${TemplateComponents.entityGrid(preparedLocations, "location", false, true)}
         </div>
-      </div>
     `;
   }
 
   async _generateSelectedInfoContent(selectedDoc, selectedData, enrichedDescription) {
-    const systemClass = game.system.id === "dnd5e" ? " dnd5e2-journal themed theme-light" : "";
+    const labelOverride = this._labelOverride(selectedDoc, "info") ||localize("names.information");
+    const systemClass = gameSystemClass(game.system.id);
     return `
-    <article class="selected-content-section cc-enriched cc-hidden-secrets${systemClass}">
+    ${TemplateComponents.contentHeader("fas fa-info-circle", labelOverride)}
+    <article class="cc-enriched cc-hidden-secrets ${systemClass}">
         <section class="rich-text-content journal-entry-content" name="cc.secret.content.notes">
         ${enrichedDescription || ""}
         </section>
@@ -598,15 +1039,15 @@ async _generateSelectedNPCsContent(selectedDoc, selectedData) {
   `;
   }
 async _generateSelectedAssociatesContent(selectedDoc, selectedData) {
+    const labelOverride = this._labelOverride(selectedDoc, "associates");
     const allAssociates = await CampaignCodexLinkers.getAssociates(selectedDoc, selectedData.associates || []);
     const untaggedNPCs = allAssociates.filter(npc => !npc.tag);
     const templateData = {
+        labelOverride: labelOverride,
         hasContent: untaggedNPCs.length > 0,
         dropToMapBtn: (canvas.scene && game.user.isGM) 
             ? `<div class="selected-actions">
-                 <button type="button" class="refresh-btn npcs-to-map-button" title="${format("button.droptoscene", { type: localize("names.npc") })}" data-sheet-uuid="${this._selectedSheet.uuid}">
-                   <i class="fas fa-street-view"></i>
-                 </button>
+                 <i class="fas fa-street-view refresh-btn npcs-to-map-button" data-action="selectSheetDrop" title="${format("button.droptoscene", { type: localize("names.npc") })}" data-uuid="${this._selectedSheet.uuid}"></i>
                </div>` 
             : "",
         npcGridHtml: TemplateComponents.entityGrid(untaggedNPCs, "associate", true, true)
@@ -615,18 +1056,29 @@ async _generateSelectedAssociatesContent(selectedDoc, selectedData) {
 }
 
 async _generateSelectedInventoryContent(selectedDoc, selectedData) {
+      const labelOverride = this._labelOverride(selectedDoc, "inventory");
     const templateData = {
         inventory: await CampaignCodexLinkers.getInventory(selectedDoc, selectedData.inventory || []),
         isGM: game.user.isGM,
+        labelOverride:labelOverride,
         selectedSheetUuid: this._selectedSheet.uuid
     };
     return await renderTemplate("modules/campaign-codex/templates/partials/selected-tab-inventory.hbs", templateData);
 }
 
+  // =========================================================================
+  // LEFT PANEL
+  // =========================================================================
+
+
 async _generateLeftPanel(groupMembers, nestedData, tagNodes) {
   const templateData = {
     toggleClass: this._showTreeItems ? "active" : "",
     toggleClassNPCTags: this._showTreeNPCTags ? "active" : "",
+    toggleClassGroups: this._showTreeGroups ? "active" : "",
+    toggleClassRegions: this._showTreeRegions ? "active" : "",
+    toggleClassLocations: this._showTreeLocations ? "active" : "",
+    toggleClassShops: this._showTreeShops ? "active" : "",
     toggleClassNPC: this._showTreeNPCs ? "active" : "",
     toggleClassTag: this._showTreeTags ? "active" : "",
     _showTreeTags: this._showTreeTags,
@@ -636,6 +1088,13 @@ async _generateLeftPanel(groupMembers, nestedData, tagNodes) {
   };
   return await renderTemplate("modules/campaign-codex/templates/partials/group-sheet-sidebar.hbs", templateData);
 }
+
+
+  // =========================================================================
+  // TREE TAG VIEW
+  // =========================================================================
+
+
 
 /**
  * Recursively prepares a clean data structure for the tag tree template.
@@ -662,8 +1121,9 @@ _prepareTreeTagNodes(nodes) {
                 isSelected: this._selectedSheet && this._selectedSheet.uuid === node.uuid,
                 isExpanded: this._expandedNodes.has(node.uuid),
                 hasChildren: processedChildren.length > 0,
-                displayIcon: TemplateComponents.getAsset("icon", node.tag ? "tag" : node.type),
-                children: processedChildren // Attach the prepared children
+                displayIcon: node.iconOverride || TemplateComponents.getAsset("icon", node.tag ? "tag" : node.type),
+                children: processedChildren,
+                id: node.id,
             };
         });
 }
@@ -678,6 +1138,10 @@ async _generateTreeTagNodes(nodes) {
 }
 
 
+  // =========================================================================
+  // MAIN TREE
+  // =========================================================================
+
 /**
  * Recursively prepares a clean data structure for the standard tree view template.
  * @param {Array} nodes - The raw nodes to process.
@@ -686,35 +1150,102 @@ async _generateTreeTagNodes(nodes) {
  */
 _prepareTreeNodes(nodes, nestedData) {
     if (!nodes) return [];
-    const typeOrder = { group: 1, region: 2, location: 3, shop: 4, npc: 5 };
+    const typeOrder = { group: 1, region: 2, location: 3, shop: 4, npc: 5, item: 6 };
     const hideByPermission = game.settings.get("campaign-codex", "hideByPermission");
+    
     const sortedNodes = [...nodes].sort((a, b) => {
         const typeA = typeOrder[a.type] || 99;
         const typeB = typeOrder[b.type] || 99;
         if (typeA !== typeB) return typeA - typeB;
         return a.name.localeCompare(b.name);
     });
-      return sortedNodes.map(node => {
-        const passesDisplayFilter = (node.type !== "npc") || (node.tag && this._showTreeNPCTags) || (!node.tag && this._showTreeNPCs);
-        const shouldRender = passesDisplayFilter && (!hideByPermission || node.canView);
-        if (!shouldRender) return null; 
+
+    return sortedNodes.map(node => {
+        const isViewable = !hideByPermission || node.canView;
+        if (!isViewable) return null;
+
+        let passesDisplayFilter = false;
+        switch (node.type) {
+            case "group":
+                passesDisplayFilter = this._showTreeGroups;
+                break;
+            case "region":
+                passesDisplayFilter = this._showTreeRegions;
+                break;
+            case "location":
+                passesDisplayFilter = this._showTreeLocations; 
+                break;
+            case "shop":
+                passesDisplayFilter = this._showTreeShops;
+                break;
+            case "npc":
+                passesDisplayFilter = (node.tag && this._showTreeNPCTags) || (!node.tag && this._showTreeNPCs);
+                break;
+            case "item":
+                passesDisplayFilter = this._showTreeItems;
+                break;
+            default:
+                passesDisplayFilter = false; // Unknown types are hidden
+        }
+        
+        if (!passesDisplayFilter) return null;
+
         const children = this._getChildrenForMember(node, nestedData);
         const processedChildren = this._prepareTreeNodes(children, nestedData); 
+
         return {
             ...node,
             isSelected: this._selectedSheet?.uuid === node.uuid,
             isExpanded: this._expandedNodes.has(node.uuid),
             hasChildren: processedChildren.length > 0,
             isClickable: node.type !== "item",
-            displayIcon: TemplateComponents.getAsset("icon", node.tag ? "tag" : node.type),
+            displayIcon: node.iconOverride || TemplateComponents.getAsset("icon", node.tag ? "tag" : node.type),
             children: processedChildren,
+            id: node.id,
         };
-    }).filter(Boolean);
+    }).filter(Boolean); // Filter out the nulls
 }
+// /**
+//  * Recursively prepares a clean data structure for the standard tree view template.
+//  * @param {Array} nodes - The raw nodes to process.
+//  * @param {object} nestedData - The full nested data object.
+//  * @returns {Array} - The processed nodes with all display properties.
+//  */
+// _prepareTreeNodes(nodes, nestedData) {
+//     if (!nodes) return [];
+//     const typeOrder = { group: 1, region: 2, location: 3, shop: 4, npc: 5 };
+//     const hideByPermission = game.settings.get("campaign-codex", "hideByPermission");
+//     const sortedNodes = [...nodes].sort((a, b) => {
+//         const typeA = typeOrder[a.type] || 99;
+//         const typeB = typeOrder[b.type] || 99;
+//         if (typeA !== typeB) return typeA - typeB;
+//         return a.name.localeCompare(b.name);
+//     });
+//       return sortedNodes.map(node => {
+//         const passesDisplayFilter = (node.type !== "npc") || (node.tag && this._showTreeNPCTags) || (!node.tag && this._showTreeNPCs) || (!node.tag && this._showTreeRegions) || (!node.tag && this._showTreeLocations) || (!node.tag && this._showTreeShops);
+//         const shouldRender = passesDisplayFilter && (!hideByPermission || node.canView);
+//         if (!shouldRender) return null; 
+//         const children = this._getChildrenForMember(node, nestedData);
+//         const processedChildren = this._prepareTreeNodes(children, nestedData); 
+//         return {
+//             ...node,
+//             isSelected: this._selectedSheet?.uuid === node.uuid,
+//             isExpanded: this._expandedNodes.has(node.uuid),
+//             hasChildren: processedChildren.length > 0,
+//             isClickable: node.type !== "item",
+//             displayIcon: node.iconOverride || TemplateComponents.getAsset("icon", node.tag ? "tag" : node.type),
+//             children: processedChildren,
+//             id: node.id,
+//         };
+//     }).filter(Boolean);
+// }
 
 async _generateTreeNodes(nodes, nestedData) {
     const preparedNodes = this._prepareTreeNodes(nodes, nestedData);
     let html = "";
+
+
+
     for (const node of preparedNodes) {
         html += await renderTemplate("modules/campaign-codex/templates/partials/group-tree-node.hbs", { 
             node: node,
@@ -724,8 +1255,7 @@ async _generateTreeNodes(nodes, nestedData) {
     return html;
 }
 
-
-  _getChildrenForMember(member, nestedData) {
+_getChildrenForMember(member, nestedData) {
     const hideByPermission = game.settings.get("campaign-codex", "hideByPermission");
     let children = [];
     switch (member.type) {
@@ -739,11 +1269,17 @@ async _generateTreeNodes(nodes, nestedData) {
         if (this._showTreeNPCs || this._showTreeNPCTags) {
           children.push(...(nestedData.npcsByRegion[member.uuid] || []));
         }
+        if (this._showTreeItems) {
+          children.push(...(nestedData.itemsByShop[member.uuid] || []));
+        }
         break;
       case "location":
         children.push(...(nestedData.shopsByLocation[member.uuid] || []));
         if (this._showTreeNPCs || this._showTreeNPCTags) {
           children.push(...(nestedData.npcsByLocation[member.uuid] || []));
+        }
+        if (this._showTreeItems) {
+          children.push(...(nestedData.itemsByShop[member.uuid] || []));
         }
         break;
       case "shop":
@@ -755,6 +1291,9 @@ async _generateTreeNodes(nodes, nestedData) {
         }
         break;
       case "npc":
+        if (this._showTreeItems) {
+          children.push(...(nestedData.itemsByShop[member.uuid] || []));
+        }
         break;
     }
 
@@ -763,21 +1302,88 @@ async _generateTreeNodes(nodes, nestedData) {
       if (!isViewable) {
         return false; 
       }
-      if (child.type !== "npc") {
-        return true;
+      if (child.type === "item") {
+        return this._showTreeItems;
       }
-      const isStandardNpc = child.type === "npc" && !child.tag;
-      const isTaggedNpc = child.type === "npc" && child.tag === true;
-      if (this._showTreeNPCs && isStandardNpc) {
-        return true;
+      if (child.type === "npc") {
+        const isStandardNpc = !child.tag;
+        const isTaggedNpc = child.tag === true;
+        return (this._showTreeNPCs && isStandardNpc) || (this._showTreeNPCTags && isTaggedNpc);
       }
-      if (this._showTreeNPCTags && isTaggedNpc) {
-        return true;
-      }
-      return false;
+      // All other types (group, region, location, shop) are allowed
+      return true;
     });
+}
+  // _getChildrenForMember(member, nestedData) {
+  //   const hideByPermission = game.settings.get("campaign-codex", "hideByPermission");
+  //   let children = [];
+  //   switch (member.type) {
+  //     case "group":
+  //       children.push(...(nestedData.membersByGroup[member.uuid] || []));
+  //       break;
+  //     case "region":
+  //       if (this._showTreeRegions) {
+  //         children.push(...(nestedData.regionsByRegion[member.uuid] || []));
+  //       }
+  //       if (this._showTreeLocations) {
+  //         children.push(...(nestedData.locationsByRegion[member.uuid] || []));
+  //       }
+  //       if (this._showTreeShops) {
+  //         children.push(...(nestedData.shopsByRegion[member.uuid] || []));
+  //       }
+  //       if (this._showTreeNPCs || this._showTreeNPCTags) {
+  //         children.push(...(nestedData.npcsByRegion[member.uuid] || []));
+  //       }
+  //       if (this._showTreeItems) {
+  //         children.push(...(nestedData.itemsByShop[member.uuid] || []));
+  //       }
+  //       break;
+  //     case "location":
+  //       if (this._showTreeShops) {
+  //         children.push(...(nestedData.shopsByLocation[member.uuid] || []));
+  //       }
+  //       if (this._showTreeNPCs || this._showTreeNPCTags) {
+  //         children.push(...(nestedData.npcsByLocation[member.uuid] || []));
+  //       }
+  //       if (this._showTreeItems) {
+  //         children.push(...(nestedData.itemsByShop[member.uuid] || []));
+  //       }
+  //       break;
+  //     case "shop":
+  //       if (this._showTreeNPCs || this._showTreeNPCTags) {
+  //         children.push(...(nestedData.npcsByShop[member.uuid] || []));
+  //       }
+  //       if (this._showTreeItems) {
+  //         children.push(...(nestedData.itemsByShop[member.uuid] || []));
+  //       }
+  //       break;
+  //     case "npc":
+  //       if (this._showTreeItems) {
+  //         children.push(...(nestedData.itemsByShop[member.uuid] || []));
+  //       }
+  //       break;
+  //   }
 
-  }
+  //   return children.filter((child) => {
+  //     const isViewable = !hideByPermission || child.canView;
+  //     if (!isViewable) {
+  //       return false; 
+  //     }
+  //     if (child.type !== "npc") {
+  //       return true;
+  //     }
+  //     const isStandardNpc = child.type === "npc" && !child.tag;
+  //     const isTaggedNpc = child.type === "npc" && child.tag === true;
+  //     if (this._showTreeNPCs && isStandardNpc) {
+  //       return true;
+  //     }
+  //     if (this._showTreeNPCTags && isTaggedNpc) {
+  //       return true;
+  //     }
+  //     return false;
+  //   });
+
+  // }
 
   // =========================================================================
   // Main Sheet Tab Generation
@@ -795,16 +1401,32 @@ async _generateTreeNodes(nodes, nestedData) {
   }
 
 async _generateInventoryTab(data) {
+    const defaultTabvisibility = game.settings.get("campaign-codex", "defaultTabVisibility");
     const nestedData = data.nestedData;
     const hideByPermission = game.settings.get("campaign-codex", "hideByPermission");
     const hideInventoryByPermission = game.settings.get("campaign-codex", "hideInventoryByPermission");
     const sortAlpha = game.settings.get("campaign-codex", "sortCardsAlpha");
     const shopsForTemplate = [];
+    const inventoryHolders =[...nestedData.allShops,...nestedData.allLocations,...nestedData.allRegions,...nestedData.allNPCs];
+
     for (const [shopUuid, items] of Object.entries(nestedData.itemsByShop)) {
-        const shop = nestedData.allShops.find((s) => s.uuid === shopUuid);
-        if (!shop || items.length === 0 || (hideByPermission && !shop.canView)) {
-            continue;
+        const shop = inventoryHolders.find((s) => s.uuid === shopUuid);
+
+        const inventoryKey = `${shop.type}.inventory`;
+        const isDefaultVisible = defaultTabvisibility[inventoryKey] ?? true;
+        const inventoryOverride = shop.tabOverrides?.find(o => o.key === 'inventory');
+        let isInventoryVisible = isDefaultVisible; 
+
+        if (inventoryOverride !== undefined) {
+            isInventoryVisible = inventoryOverride.visible ?? isDefaultVisible;
         }
+
+        if (!shop || items.length === 0 || (hideByPermission && !shop.canView) || !isInventoryVisible) {
+        continue;
+        }
+
+        const imageAreaOverride = shop.tabOverrides?.find(override => override.key === "imageArea");
+
         let processedItems = hideInventoryByPermission
             ? items.filter(item => item.canView)
             : items;
@@ -813,13 +1435,27 @@ async _generateInventoryTab(data) {
         }
         shopsForTemplate.push({
             ...shop,
-            items: processedItems
+            showImage:imageAreaOverride?.visible ?? true,
+            items: processedItems,
+            isGM:data.isGM
         });
+    }
+    if (sortAlpha) {
+        shopsForTemplate.sort((a, b) => a.name.localeCompare(b.name));
     }
     return await renderTemplate("modules/campaign-codex/templates/partials/group-tab-inventory.hbs", {
         shops: shopsForTemplate
     });
 }
+
+
+async _generateJournalsTab(context) {
+    const journals = await TemplateComponents.standardJournalGrid(context.linkedStandardJournals) 
+    return await renderTemplate("modules/campaign-codex/templates/partials/group-tab-journals.hbs", {
+        journals: journals
+    });
+}
+
 
 async _generateQuestsTab(data) {
   const entitiesWithQuests = [
@@ -838,8 +1474,11 @@ async _generateQuestsTab(data) {
     const hideSection = !visibleQuests || visibleQuests.length === 0;
   return {
       name: doc.name,
+      uuid: doc.uuid,
+      type: docType,
       hide: hideSection,
       icon: TemplateComponents.getAsset("icon", docType),
+      iconOverride: doc.getFlag("campaign-codex", "icon-override") || null,
       questListHtml: await TemplateComponents.questList(doc, docData.quests, game.user.isGM, true)
     };
   });
@@ -857,15 +1496,16 @@ async _generateQuestsTab(data) {
 
 
 async _generateNPCsTab(data) {
-  // 1. Prepare the list of unique NPCs
   const allAvailableNPCs = [
     ...data.nestedData.allNPCs, 
     ...(data.missingTaggedNpcs || [])
   ];
   const uniqueNpcs = [...new Map(allAvailableNPCs.map(npc => [npc.uuid, npc])).values()];
+
   const templateData = {
     filters: [
       { dataFilter: 'all',       title: localize("title.all"),        iconClass: 'fas fa-users',                  class: 'npcs-all active' },
+      { dataFilter: 'region',  title: localize("names.region"),   iconClass: TemplateComponents.getAsset("icon", "region"), class: 'npcs-region' },
       { dataFilter: 'location',  title: localize("names.location"),   iconClass: TemplateComponents.getAsset("icon", "location"), class: 'npcs-location' },
       { dataFilter: 'shop',      title: localize("names.shop"),       iconClass: TemplateComponents.getAsset("icon", "shop"),     class: 'npcs-shop' },
       { dataFilter: 'tag',       title: localize("names.tag"),        iconClass: 'fas fa-tag',                    class: 'npcs-tag' },
@@ -880,9 +1520,11 @@ async _generateNPCsTab(data) {
   async _generateNPCCards(npcs) {
     const npcCards = game.settings.get("campaign-codex", "sortCardsAlpha");
     const npcstoRender = npcCards ? [...npcs].sort((a, b) => a.name.localeCompare(b.name)) : npcs;
-
     const cardPromises = npcstoRender.map(async (npc) => {
       const sourcesArray = [];
+      if (npc.regions.length > 0) {
+        sourcesArray.push("region");
+      }
       if (npc.locations.length > 0) {
         sourcesArray.push("location");
       }
@@ -896,7 +1538,6 @@ async _generateNPCsTab(data) {
       const actorType = npc.actor?.type ?? "";
 
       const customData = { "data-filter": `${sources} ${actorType}` };
-
       return TemplateComponents.entityCard(npc, "associate", true, true, customData);
     });
 
@@ -904,27 +1545,34 @@ async _generateNPCsTab(data) {
     return htmlCards.join("");
   }
 
-  _onFilterChange(event) {
-    const nativeElement = this.element instanceof jQuery ? this.element[0] : this.element;
-    const filter = event.currentTarget.dataset.filter;
-    const cards = nativeElement.querySelectorAll(".entity-card");
-
-    nativeElement.querySelectorAll(".filter-btn").forEach((btn) => btn.classList.remove("active"));
-    event.currentTarget.classList.add("active");
-
-    cards.forEach((card) => {
-      const cardFilter = card.dataset.filter;
-    if (filter === "all" || (cardFilter && cardFilter.includes(filter))) {
-        card.style.display = "flex";
-      } else {
-        card.style.display = "none";
-      }
-    });
-  }
 
   // =========================================================================
+  // Location & REGION Tab Generation
+  // =========================================================================
+
+async _generateRegionsTab(data) {
+    const rawRegions = [...data.nestedData.allRegions];
+    const sortAlpha = game.settings.get("campaign-codex", "sortCardsAlpha");
+    const hideByPermission = game.settings.get("campaign-codex", "hideByPermission");
+    let processedRegions = hideByPermission 
+        ? rawRegions.filter(loc => loc.canView) 
+        : rawRegions;
+    if (sortAlpha) {
+        processedRegions.sort((a, b) => a.name.localeCompare(b.name));
+    }
+    processedRegions.forEach(location => {
+        const imageAreaOverride = location.tabOverrides?.find(override => override.key === "imageArea");
+        location.showImage = imageAreaOverride?.visible ?? true,
+        location.displayIcon = TemplateComponents.getAsset("icon", location.type === "region" ? "region" : "location");
+    });
+    return await renderTemplate("modules/campaign-codex/templates/partials/group-tab-regions.hbs", {
+        regions: processedRegions
+    });
+}
+
+
 async _generateLocationsTab(data) {
-    const rawLocations = [...data.nestedData.allLocations, ...data.nestedData.allRegions];
+    const rawLocations = [...data.nestedData.allLocations];
     const sortAlpha = game.settings.get("campaign-codex", "sortCardsAlpha");
     const hideByPermission = game.settings.get("campaign-codex", "hideByPermission");
     let processedLocations = hideByPermission 
@@ -934,6 +1582,8 @@ async _generateLocationsTab(data) {
         processedLocations.sort((a, b) => a.name.localeCompare(b.name));
     }
     processedLocations.forEach(location => {
+        const imageAreaOverride = location.tabOverrides?.find(override => override.key === "imageArea");
+        location.showImage = imageAreaOverride?.visible ?? true,
         location.displayIcon = TemplateComponents.getAsset("icon", location.type === "region" ? "region" : "location");
     });
     return await renderTemplate("modules/campaign-codex/templates/partials/group-tab-locations.hbs", {
@@ -941,28 +1591,25 @@ async _generateLocationsTab(data) {
     });
 }
 
+  // =========================================================================
+  // Group Widgets Tab
+  // =========================================================================
+
+  async _generateGroupWidgetsTab(doc, context) {
+    const templateData = {
+      widgetsToRender: context.widgetsToRender,
+      activewidget: context.activewidget,
+      inactivewidgets: context.inactivewidgets,
+      addedWidgetNames: context.addedWidgetNames,
+      availableWidgets: context.availableWidgets,
+      isGM: context.isGM
+    };
+    return await renderTemplate("modules/campaign-codex/templates/partials/group-widgets.hbs", templateData);
+  }
 
   // =========================================================================
   // Event Handlers
   // =========================================================================
-
-  async _onTagToggle(event) {
-    const tagToggle = event.target.checked;
-    const currentData = this.document.getFlag("campaign-codex", "data") || {};
-    currentData.tagToggle = tagToggle;
-    await this.document.setFlag("campaign-codex", "data", currentData);
-    
-  }
-
-  _calculateGroupStats(nestedData) {
-    return {
-      regions: nestedData.allRegions.length,
-      locations: nestedData.allLocations.length,
-      shops: nestedData.allShops.length,
-      npcs: nestedData.allNPCs.length,
-      items: nestedData.allItems.length,
-    };
-  }
 
   async _addMemberToGroup(newMemberUuid) {
     if (newMemberUuid === this.document.uuid) {
@@ -978,6 +1625,7 @@ async _generateLocationsTab(data) {
 
     if (newMemberDoc.getFlag("campaign-codex", "type") === "group") {
       const membersOfNewGroup = await GroupLinkers.getGroupMembers(newMemberDoc.getFlag("campaign-codex", "data")?.members || []);
+      
       const nestedDataOfNewGroup = await GroupLinkers.getNestedData(membersOfNewGroup);
 
       if (nestedDataOfNewGroup.allGroups.some((g) => g.uuid === this.document.uuid)) {
@@ -989,8 +1637,9 @@ async _generateLocationsTab(data) {
     const groupData = this.document.getFlag("campaign-codex", "data") || {};
     let currentMembers = groupData.members || [];
 
-    const existingMembers = await GroupLinkers.getGroupMembers(currentMembers);
-    const nestedData = await GroupLinkers.getNestedData(existingMembers);
+    // const existingMembers = await GroupLinkers.getGroupMembers(currentMembers);
+    // const nestedData = await GroupLinkers.getNestedData(existingMembers);
+    const nestedData = this._processedData.nestedData;
     const allExistingNestedUuids = new Set([
       ...nestedData.allGroups.map((i) => i.uuid),
       ...nestedData.allRegions.map((i) => i.uuid),
@@ -1010,6 +1659,7 @@ async _generateLocationsTab(data) {
         type: newMemberDoc.getFlag("campaign-codex", "type"),
       },
     ];
+
     const nestedDataOfNewMember = await GroupLinkers.getNestedData(newMemberAsGroupMember);
     const allNestedUuidsOfNewMember = new Set([
       ...nestedDataOfNewMember.allGroups.map((i) => i.uuid),
@@ -1036,74 +1686,6 @@ async _generateLocationsTab(data) {
     ui.notifications.info(notification);
   }
 
-  async _onRemoveMember(event) {
-    const memberUuid = event.currentTarget.dataset.sheetUuid;
-    await this._saveFormData();
-
-    const groupData = this.document.getFlag("campaign-codex", "data") || {};
-    groupData.members = (groupData.members || []).filter((uuid) => uuid !== memberUuid);
-    await this.document.setFlag("campaign-codex", "data", groupData);
-    this._processedData = null;
-    this.render(true);
-    ui.notifications.info("Removed member from group");
-  }
-
-  _onToggleTreeNode(event) {
-    event.preventDefault();
-    event.stopPropagation();
-
-    const expandIcon = event.currentTarget;
-    const treeNode = expandIcon.closest(".tree-node");
-    const children = treeNode.querySelector(".tree-children");
-    const uuid = treeNode.dataset.sheetUuid;
-
-    if (children) {
-      const isExpanding = children.style.display === "none" || children.style.display === "";
-      if (isExpanding) {
-        children.style.display = "block";
-        expandIcon.classList.remove("fa-chevron-right");
-        expandIcon.classList.add("fa-chevron-down");
-        this._expandedNodes.add(uuid);
-      } else {
-        children.style.display = "none";
-        expandIcon.classList.remove("fa-chevron-down");
-        expandIcon.classList.add("fa-chevron-right");
-        this._expandedNodes.delete(uuid);
-      }
-    }
-  }
-
-  _onExpandAll(event) {
-    const nativeElement = this.element instanceof jQuery ? this.element[0] : this.element;
-    nativeElement.querySelectorAll(".tree-node").forEach((el) => {
-      const uuid = el.dataset.sheetUuid;
-      if (uuid && el.querySelector(".tree-children")) {
-        this._expandedNodes.add(uuid);
-      }
-    });
-    this.render(false);
-  }
-
-  _onCollapseAll(event) {
-    this._expandedNodes.clear();
-    this.render(false);
-  }
-
-  _onFocusItem(event) {
-    const uuid = event.currentTarget.dataset.sheetUuid;
-  }
-
-  _onTabChange(event) {
-    event.preventDefault();
-    const tab = event.currentTarget.dataset.tab;
-
-    if (this._selectedSheet) {
-      this._selectedSheet = null;
-    }
-
-    this._currentTab = tab;
-    this.render(false);
-  }
 
   getSheetType() {
     return "group";
@@ -1140,169 +1722,6 @@ async _generateLocationsTab(data) {
     return await super._isRelatedDocument(changedDocUuid);
   }
 
-  _onToggleTreeNPC(event) {
-    event.preventDefault();
-    this._showTreeNPCs = !this._showTreeNPCs;
-    this.render(false);
-  }
-
-  _onToggleTreeNPCTags(event) {
-    event.preventDefault();
-    this._showTreeNPCTags = !this._showTreeNPCTags;
-    this.render(false);
-  }
-
-  _onToggleTreeTags(event) {
-    event.preventDefault();
-    this._showTreeTags = !this._showTreeTags;
-    this.render(false);
-  }
-
-  _onToggleTreeItems(event) {
-    event.preventDefault();
-    this._showTreeItems = !this._showTreeItems;
-    this.render(false);
-  }
-
-  _onSelectSheet(event) {
-    event.preventDefault();
-    event.stopPropagation();
-    if (
-      event.target.classList.contains("expand-toggle") ||
-      event.target.closest(".tree-actions") ||
-      event.target.classList.contains("fa-chevron-right") ||
-      event.target.classList.contains("fa-chevron-down")
-    ) {
-      return;
-    }
-    
-
-
-    const treeNode = event.currentTarget.closest(".tree-node");
-    const uuid = treeNode.dataset.sheetUuid;
-    const type = treeNode.dataset.type;
-    const name = event.currentTarget.textContent.trim();
-
-    this._selectedSheet = { uuid, type, name };
-    this._selectedSheetTab = "info";
-    this.render(false);
-  }
-
-  _onCloseSelectedSheet(event) {
-    event.preventDefault();
-    this._selectedSheet = null;
-    this._selectedSheetTab = "info";
-    this._currentTab = "info";
-    this.render(false);
-  }
-
-  _onSelectedSheetTabChange(event) {
-    event.preventDefault();
-    const tab = event.currentTarget.dataset.tab;
-    this._selectedSheetTab = tab;
-    this.render(false);
-  }
-
-  async _onOpenScene(event) {
-    event.preventDefault();
-    const button = event.currentTarget;
-    const docUuid = button.dataset.docUuid;
-    if (!docUuid) return;
-    const doc = await fromUuid(docUuid);
-    if (!doc) {
-      ui.notifications.error("Could not find the source document.");
-      return;
-    }
-    await game.campaignCodex.openLinkedScene(doc);
-  }
-
-  async _onSendToPlayer(event) {
-    event.stopPropagation();
-    const button = event.currentTarget;
-    const shopUuid = button.dataset.sheetUuid;
-    const itemUuid = button.dataset.itemUuid;
-
-    const shopDoc = await fromUuid(shopUuid);
-    const itemDoc = await fromUuid(itemUuid);
-
-    if (!shopDoc || !itemDoc) {
-      ui.notifications.warn("Could not find the shop or item to send.");
-      return;
-    }
-
-    TemplateComponents.createPlayerSelectionDialog(itemDoc.name, async (targetActor) => {
-      await this._transferItemToActor(itemDoc, targetActor, shopDoc);
-    });
-  }
-
-  // async _transferItemToActor(item, targetActor, shopDoc) {
-  //   try {
-  //     const itemData = item.toObject();
-  //     delete itemData._id;
-
-  //     const currentData = shopDoc.getFlag("campaign-codex", "data") || {};
-  //     const inventory = currentData.inventory || [];
-  //     const shopItem = inventory.find((i) => i.itemUuid === item.uuid);
-  //     const quantity = shopItem ? shopItem.quantity : 1;
-
-  //     itemData.system.quantity = Math.min(quantity, 1);
-
-  //     await targetActor.createEmbeddedDocuments("Item", [itemData]);
-
-  //     if (shopItem && shopItem.quantity > 1) {
-  //       shopItem.quantity -= 1;
-  //       await shopDoc.setFlag("campaign-codex", "data", currentData);
-  //     } else {
-  //       currentData.inventory = inventory.filter((i) => i.itemUuid !== item.uuid);
-  //       await shopDoc.setFlag("campaign-codex", "data", currentData);
-  //     }
-
-  //     ui.notifications.info(`Sent "${item.name}" to ${targetActor.name}`);
-
-  //     const targetUser = game.users.find((u) => u.character?.id === targetActor.id);
-  //     if (targetUser && targetUser.active) {
-  //       ChatMessage.create({
-  //         content: `<p><strong>${game.user.name}</strong> sent you <strong>${item.name}</strong> from ${shopDoc.name}!</p>`,
-  //         whisper: [targetUser.id],
-  //       });
-  //     }
-
-  //     this.render(false);
-  //   } catch (error) {
-  //     console.error("Error transferring item:", error);
-  //     ui.notifications.error("Failed to transfer item");
-  //   }
-  // }
-
-  async _onDropSingleNPCToMapClick(event) {
-    event.preventDefault();
-    const sheetUuid = event.currentTarget.dataset.sheetUuid;
-    try {
-      const selectedDoc = await fromUuid(sheetUuid);
-      if (!selectedDoc) {
-        ui.notifications.warn("Selected sheet not found");
-        return;
-      }
-      const npcData = selectedDoc.getFlag("campaign-codex", "data") || {};
-      if (!npcData.linkedActor) return ui.notifications.warn("This NPC has no linked actor to drop!");
-      const linkedActor = await fromUuid(npcData.linkedActor);
-      if (!linkedActor) return ui.notifications.warn(localize("warn.actornotfound"));
-      const npcForDrop = {
-        id: selectedDoc.id,
-        uuid: selectedDoc.uuid,
-        name: selectedDoc.name,
-        img: selectedDoc.getFlag("campaign-codex", "image") || linkedActor.img,
-        actor: linkedActor,
-      };
-      await this._onDropNPCsToMap([npcForDrop], {
-        title: `Drop ${this.document.name} to Map`,
-        showHiddenToggle: true,
-      });
-    } catch (error) {
-      console.error("Campaign Codex | Error dropping NPC to map:", error);
-      ui.notifications.error(localize("warn.failedtodrop"));
-    }
-  }
 
   async _onDropNPCsToMapClick(event) {
     event.preventDefault();
@@ -1341,34 +1760,35 @@ async _generateLocationsTab(data) {
   // =========================================================================
   // Drop Logic
   // =========================================================================
-  async _handleDrop(data, event) {
-    if (data.type === "JournalEntry" || data.type === "JournalEntryPage") {
-      const doc = await fromUuid(data.uuid);
-      if (!doc) return;
 
-      const journal = doc instanceof JournalEntryPage ? doc.parent : doc;
+
+  async _handleDrop(data, event) {
+    event.preventDefault();
+    event.stopPropagation();
+    if (data.type === "JournalEntry" || data.type === "JournalEntryPage") {
+      const journal = await fromUuid(data.uuid);
+      if (!journal) return;
+
       const journalType = journal ? journal.getFlag("campaign-codex", "type") : undefined;
 
-      const dropOnInfoTab = event.target.closest('.group-tab-panel[data-tab="info"]');
-
-    if (((!journalType && data.type === "JournalEntry") || data.type === "JournalEntryPage")) {
-        const locationData = this.document.getFlag("campaign-codex", "data") || {};
-        // Ensure linkedStandardJournals is an array
-        locationData.linkedStandardJournals = locationData.linkedStandardJournals || [];
-
-        // Avoid adding duplicates
-        if (!locationData.linkedStandardJournals.includes(journal.uuid)) {
-            locationData.linkedStandardJournals.push(journal.uuid);
-            await this.document.setFlag("campaign-codex", "data", locationData);
+      // STANDARD JOURNAL
+      if (((!journalType && data.type === "JournalEntry") || data.type === "JournalEntryPage")) {
+        const docData = this.document.getFlag("campaign-codex", "data") || {};
+        docData.linkedStandardJournals = docData.linkedStandardJournals || [];
+        if (!docData.linkedStandardJournals.includes(journal.uuid)) {
+            docData.linkedStandardJournals.push(journal.uuid);
+            await this.document.setFlag("campaign-codex", "data", docData);
             ui.notifications.info(`Linked journal "${journal.name}".`);
         } else {
             ui.notifications.warn(`Journal "${journal.name}" is already linked.`);
         }
       }
 
+      // CC JOURNAL
       if (journal && journalType) {
         await this._addMemberToGroup(journal.uuid);
       }
+
     } else if (data.type === "Actor") {
       const actor = await fromUuid(data.uuid);
       const npcJournal = await game.campaignCodex.findOrCreateNPCJournalForActor(actor);
@@ -1378,32 +1798,5 @@ async _generateLocationsTab(data) {
     }
   }
 
-  async _onDrop(event) {
-    event.preventDefault();
-    if (this._dropping) return;
-    this._dropping = true;
 
-    let data;
-    try {
-      data = JSON.parse(event.dataTransfer.getData("text/plain"));
-    } catch (err) {
-      this._dropping = false;
-      return;
-    }
-
-    try {
-      this._processedData = null;
-      await this._handleDrop(data, event);
-      this.render(true);
-    } catch (error) {
-      console.error("Campaign Codex | Error handling group drop:", error);
-    } finally {
-      this._dropping = false;
-    }
-  }
-
-  _onDragOver(event) {
-    event.preventDefault();
-    event.dataTransfer.dropEffect = "link";
-  }
 }

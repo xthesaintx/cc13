@@ -1,29 +1,29 @@
 <div class="campaign-codex hide-existing-tags  {{sheetType}}-sheet cc-scroll-fix">
-  <div class="sheet-container">
+  <div class="sheet-container ">
     {{!-- Sidebar --}}
-    <aside class="sheet-sidebar">
+    <aside class="sheet-container sheet-sidebar">
       {{!-- Header with Image and Title --}}
       <div class="sidebar-header">
-        <div class="sheet-image">
-          <img src="{{#if customImage}}{{customImage}}{{/if}}" alt="{{document.name}}" onerror="this.src='{{defaultImage}}'" />
+        <div class="sheet-image" {{#if (not showImage)}}style="display:none"{{/if}}>
+          <img src="{{#if customImage}}{{customImage}}{{/if}}" data-action="showPortraitArtwork" alt="{{document.name}}" onerror="this.src='{{defaultImage}}'"  />
             {{#if (and isGM userImage)}}
-                     <i class="fas fa-times-circle cc-remove-image" data-sound-id="{{id}}" title="Remove Image" data-action="cc-remove-image"></i>
+               <i class="fas fa-times-circle cc-remove-image" data-action="removeImage" title="Remove Image"></i>
             {{/if}}
         </div>
 
         <h1 class="sheet-title">{{document.name}}</h1>
-        <div class="sheet-type"><i class="{{#if tagMode}}{{getAsset 'icon' 'tag'}}{{else}}{{getAsset 'icon' sheetType}}{{/if}}
-"></i> {{sheetTypeLabel}}</div>
-        {{#if isGM}}<button class="image-change-btn" type="button">
-          <i class="fas fa-camera"></i></button
-        >{{/if}} {{!-- Custom header content --}} {{{customHeaderContent}}}
+        <div class="sub-title"><i class="{{#if customIcon}}{{customIcon}}{{else}}{{#if tagMode}}{{getAsset 'icon' 'tag'}}{{else}}{{getAsset 'icon' sheetType}}{{/if}}{{/if}}" data-action="editIcon"></i> <div class="sheet-type">{{sheetTypeLabel}}</div></div>
+        {{#if (and isGM showImage)}}
+          <i class="fas fa-camera image-change-btn" data-action="imageChange"></i>{{/if}} {{!-- Custom header content --}} {{{customHeaderContent}}}
       </div>
 
       {{!-- Navigation Tabs with Integrated Statistics --}}
+      <!-- <div class="cc-scroll-group scrollable"> -->
       <div class="cc-scroll-group scrollable">
+
         <nav class="sidebar-tabs">
           {{#each tabs}}
-          <div class="tab-item {{#if active}}active{{/if}}" data-tab="{{key}}">
+          <div class="tab-item {{#if active}}active{{/if}}" data-tab="{{key}}" data-action="ccChangeTab">
             <i class="{{icon}}"></i>
             <span class="tab-label">{{label}}</span>
             {{#if (and ../isGM ../showStats statistic.view)}}
@@ -36,49 +36,102 @@
         {{!-- Tags --}}
         <div class="sidebar-links cc-tags">
             <h3 class="cc-tags">Tags
-              <i class="fas fa-circle-plus create-tag-btn" title="Create new Tag"></i><i class="fas fa-eye toggletags " title="Toggle Existing Tags"></i>
+              <i class="fas fa-circle-plus" title="Create new Tag" data-action="createTag"></i><i class="fas fa-eye toggletags" data-action="toggleTags" title="Toggle Existing Tags"></i>
 
          </h3>
-          <div class="link-tags">
+        <div class="link-tags">
             {{#each quickTags}}
-            <div class="link-card npc-link tag-card" data-npc-uuid="{{uuid}}" title="{{name}}">
-              <span class="link-name">{{name}}</span> {{#if ../isGM}}<i class="fas fa-trash remove-npc" data-npc-uuid="{{uuid}}"></i>
+            <div class="link-card npc-link tag-card" data-action="openNPC" data-uuid="{{uuid}}" title="{{name}}">
+              <span class="link-name">{{name}}</span> {{#if ../isGM}}<i class="fas fa-trash remove-npc" data-action="removeNPC" data-uuid="{{uuid}}"></i>
               {{/if}}
             </div>
-            {{/each}}
+            {{/each}}{{#if (and isGM showTags)}}
             {{#each existingTags}}
-            <div class="link-card existing-tag " data-npc-uuid="{{this.uuid}}" title="{{this.name}}">
-              <span class="link-name">{{this.name}}</span>
+            <div class="link-card existing-tag " data-action="linkTag" data-uuid="{{uuid}}" title="{{name}}">
+              <span class="link-name">{{name}}</span>
             </div>
-            {{/each}}
+            {{/each}}{{/if}}
           </div>
 
 
         </div>
 
+        {{!-- Widgets --}}
+        <div class="sidebar-links cc-widgets" {{#if (not isGM)}}style="display:none"{{/if}}>
+          <h3 class="cc-widgets">Widgets
+            <i class="fas fa-eye" data-action="toggleWidgets" title="Toggle Available Widgets"></i>
+          </h3>
+          <div class="link-widgets">
+            
+            {{!-- Active Widgets --}}
+            {{#each activewidget}}
+            <div class="link-card widget-card" data-id="{{this.id}}">
+              <span class="link-name">{{widgetName}} {{counter}}</span>
+              {{#if ../isGM}}
+              <i class="fas fa-circle-x" data-action="deactivateWidget" data-id="{{this.id}}"></i>
+              {{/if}}
+            </div>
+            {{/each}}
+
+            {{!-- Hidden Section --}}
+            {{#if showWidgets}}
+
+              {{!-- Inactive Widgets --}}
+              {{#each inactivewidgets}}
+              <div class="link-card widget-card inactive" >
+                <span class="link-name" data-action="activateWidget" data-id="{{this.id}}">{{widgetName}} {{counter}}</span>
+                {{#if ../isGM}}
+                  <i class="fas fa-trash" data-action="deleteWidget" data-id="{{this.id}}" data-type="{{this.widgetName}}"></i>
+                {{/if}}
+              </div>
+              {{/each}}
+
+              {{!-- Available Widgets to Add --}}
+              {{#if isGM}}
+              {{#each availableWidgets}}
+              <div class="link-card widget-card available" >
+                <i class="fas fa-circle-plus"></i><span class="link-name" data-action="addWidget" data-name="{{this.name}}" title="Add {{this.name}}">{{this.name}}</span>
+              </div>
+              {{/each}}
+              {{/if}}
+            {{/if}}
+          </div>
+        </div>
+
+
+
         {{!-- Quick Links --}} {{#if quickLinks}}
-        <div class="sidebar-links">
-          <h3 class="collapsible-quicklinks">Quicklinks<i class="fas fa-caret-up"></i></h3>
-          <div class="link-tags collapsible-content">
+        <div class="sidebar-links cc-quicklinks">
+          <h3 class="cc-quicklinks">Quicklinks
+            <i class="fas fa-eye" data-action="toggleQuicklinks" title="Toggle Quicklinks"></i>
+          </h3>
+          {{#if showQuicklinks}}
+          <div class="link-tags">
             {{#each quickLinks}}
-            <div class="link-card {{type}}-link" data-{{type}}-uuid="{{uuid}}" title="{{name}}">
-              <i class="{{getIcon type}} link-icon"></i>
+            <div class="link-card {{type}}-link" data-action="open{{capitalize type}}" data-uuid="{{uuid}}" title="{{name}}">
+              <i class="{{#if iconOverride}}{{iconOverride}}{{else}}{{getIcon type}}{{/if}} link-icon"></i>
               <span class="link-name">{{name}}</span>
             </div>
             {{/each}}
           </div>
+          {{/if}}
         </div>
         {{/if}}
       </div>
+      {{#if isGM}}
+         <i class="fas fa-cog cc-customise-tabs" title="Customise Tabs" data-action="editTabs"></i>
+      {{/if}}
     </aside>
 
     {{!-- Main Content --}}
     <main class="sheet-main">
       <form class="sheet-form">
-        {{!-- Tab Panels --}} {{#each tabPanels}}
-        <section class="tab-panel {{#if active}}active{{/if}} scrollable" data-tab="{{key}}">{{{content}}}</section>
+        {{!-- Tab Panels --}} {{#each tabs}}
+        <section class="tab-panel {{key}} {{#if active}}active{{/if}}" data-tab="{{key}}" {{#if (eq key 'widgets')}}data-preserve-scroll{{/if}}>{{{content}}}</section>
         {{/each}}
       </form>
     </main>
   </div>
 </div>
+
+

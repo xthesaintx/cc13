@@ -1,24 +1,20 @@
-<form class="{{cssClass}} campaign-codex group-sheet" autocomplete="off">
-  <div class="sheet-container">
-    <div class="group-sheet-container">
-    
+<div class="{{cssClass}} campaign-codex group-sheet">
+    <div class="sheet-container">
       <aside class="group-sidebar">
         <div class="sidebar-header">
           <div class="sheet-image">
             <img src="{{#if customImage}}{{customImage}}{{/if}}" 
                  alt="{{document.name}}" 
                  onerror="this.src='{{defaultImage}}'">
-                             {{#if (and isGM userImage)}}
-                     <i class="fas fa-times-circle cc-remove-image" data-sound-id="{{id}}" title="Remove Image" data-action="cc-remove-image"></i>
+           {{#if (and isGM userImage)}}
+                     <i class="fas fa-times-circle cc-remove-image" title="Remove Image" data-action="removeImage"></i>
             {{/if}}
           </div>
           
           <h1 class="sheet-title">{{document.name}}</h1>
-          <!-- <div class="sheet-type">{{sheetTypeLabel}}</div> -->
-          
-          {{#if isGM}}<button class="image-change-btn" type="button">
-            <i class="fas fa-camera"></i>
-          </button>{{/if}}
+        
+            {{#if isGM}}
+          <i class="fas fa-camera image-change-btn" data-action="imageChange"></i>{{/if}}
                   {{!-- Custom header content --}}
         {{{customHeaderContent}}}
         </div>
@@ -29,29 +25,20 @@
       </aside>
       
       <main class="group-main">
-        <nav class="group-tabs">
-          {{#each tabs}}
-            <div class="group-tab {{#if active}}active{{/if}}" data-tab="{{key}}" title="{{label}}">
-              <i class="{{icon}}"></i>
-              <!-- <span class="tab-label">{{label}}</span> -->
-
-            </div>
-          {{/each}}
-        </nav>
-
-        <div class="group-content-area">
           {{#if isShowingSelectedView}}
             {{{selectedSheetContent}}}
           {{else}}
             {{#each tabPanels}}
-              <section class="group-tab-panel {{#if active}}active{{/if}} scrollable" data-tab="{{key}}">
+              <section class="group-tab-panel {{key}} {{#if active}}active{{/if}}" data-tab="{{key}}" {{#if (eq key 'widgets')}}data-preserve-scroll{{/if}}>
                 {{{this.content}}}
               </section>
             {{/each}}
           {{/if}}
         </div>
       </main>
-      
-    </div>
-  </div>
-</form>
+            <nav class="group-tabs">
+          {{#each tabPanels}}
+              <i class="{{icon}} group-tab vertical {{#if active}}active{{/if}}" data-tab="{{key}}" data-action="ccChangeTab" title="{{label}}"></i>
+          {{/each}}
+        </nav>
+</div>

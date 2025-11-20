@@ -1,7 +1,7 @@
 import { ColorThemeConfig } from "./color-theme-config.js";
 import { SimpleCampaignCodexExporter } from "./campaign-codex-exporter.js";
 import { templateManager } from "./journal-template-manager.js";
-
+import { tabPicker } from "./tab-picker.js";
 import { TemplatePicker } from "./template-picker.js";
 import {
     applyTocButtonStyle,
@@ -142,6 +142,15 @@ export default async function campaigncodexSettings() {
 });
 
 
+    game.settings.register("campaign-codex", "hideCCbutton", {
+        name: localize("hideCCbutton.name"),
+        hint: localize("hideCCbutton.hint"),
+        scope: "world",
+        config: true,
+        type: Boolean,
+        default: true,
+    });
+
     game.settings.register("campaign-codex", "useStyledTocButton", {
         name: localize("useStyledTocButton.name"),
         hint: localize("useStyledTocButton.hint"),
@@ -226,6 +235,45 @@ game.settings.registerMenu("campaign-codex", "themeColorPicker", {
 });
 
 
+    game.settings.register("campaign-codex", "journalTemplateFolder", {
+        name: "Journal Template Folder",
+        hint: "The folder to scan for ProseMirror journal templates.",
+        scope: "world",
+        config: true, 
+        type: String,
+        filePicker: "folder",
+        default: "",
+        onChange: () => templateManager.scanAllTemplates()
+    });
+
+
+    game.settings.register("campaign-codex", "defaultTabVisibility", {
+        name: "Default Tab Visibility",
+        scope: "world",
+        config: false, 
+        type: Object,
+        default: getDefaultVisibilities(), 
+    });
+
+    game.settings.registerMenu("campaign-codex", "defaultTabsPicker", {
+        name: "Default Tabs for Sheets",
+        label: "Default Sheet Tabs",
+        hint: "Select the default Tabs for Campaign Codex Sheets",
+        icon: "fas fa-bars",
+        type: tabPicker, 
+        restricted: true
+    });
+
+    game.settings.register("campaign-codex", "collapsedFolderStates", {
+        name: "Collapsed Folder States (TOC)", // Display name (can be localized)
+        hint: "Remembers which folder groups are collapsed by the user in the Table of Contents.", // Help text
+        scope: "client", // client scope means the setting is stored per user/browser
+        config: false, // Don't show this setting in the configuration UI
+        default: [], // Default value is an empty array
+        type: Array // The data type we are storing (an array of folder name strings)
+    });
+
+
     game.settings.register("campaign-codex", "resetItemPathsButton", {
         name: localize("resetItemPathsButton.name"),
         hint: localize("resetItemPathsButton.hint"),
@@ -250,25 +298,31 @@ game.settings.registerMenu("campaign-codex", "themeColorPicker", {
         },
     });
 
-    game.settings.register("campaign-codex", "journalTemplateFolder", {
-        name: "Journal Template Folder",
-        hint: "The folder to scan for ProseMirror journal templates.",
-        scope: "world",
-        config: false, 
-        type: String,
-        default: "",
-        onChange: () => templateManager.scanAllTemplates()
-    });
-
-    game.settings.registerMenu("campaign-codex", "journalTemplatePicker", {
-        name: "Journal Template Path",
-        label: "Select Journal Template Path",
-        hint: "Select a folder with hbs or html files for journal templates",
-        icon: "fas fa-folder-open",
-        type: TemplatePicker, 
-        restricted: true 
+    game.keybindings.register("campaign-codex", "tocOpen", {
+      name: "Open the Camapign Codex Table of Contents",
+      editable: [
+        {key: "KeyT", modifiers: [foundry.helpers.interaction.KeyboardManager.MODIFIER_KEYS.CONTROL]}
+      ],
+      onDown: () => {game.campaignCodex.openTOCSheet();}
     });
 
 
 }
-
+function getDefaultVisibilities() {
+  const TABS_BY_SHEET = {
+    npc: ["info", "locations", "shops", "inventory", "npcs", "quests", "journals", "widgets", "notes"],
+    location: ["info", "shops", "inventory", "npcs", "quests", "journals", "widgets", "notes"],
+    shop: ["info", "inventory", "npcs", "quests", "journals", "widgets", "notes"],
+    region: ["info", "shops", "regions", "inventory", "npcs", "quests", "journals", "widgets", "notes"],
+    tag: ["info", "locations", "shops", "inventory", "npcs", "quests", "journals", "widgets", "notes"]
+  };
+  
+  const defaults = {};
+  for (const [sheetType, tabs] of Object.entries(TABS_BY_SHEET)) {
+    defaults[sheetType] = {};
+    for (const tabKey of tabs) {
+      defaults[sheetType][tabKey] = true; 
+    }
+  }
+  return defaults;
+}

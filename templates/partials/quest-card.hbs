@@ -1,6 +1,6 @@
-<div class="quest-item" data-quest-id="{{quest.id}}">
+<div class="quest-item" data-quest-id="{{quest.id}}" >
   <div class="quest-title-wrap">
-    <h4 class="quest-title quest-input-title" data-quest-id="{{quest.id}}" {{#if (and isGM (not isGroupSheet))}}data-editable="true"{{/if}}>
+    <h4 class="quest-title quest-input-title" data-quest-id="{{quest.id}}" {{#if (and isGM (not isGroupSheet))}}data-editable="true"{{/if}} {{#if isGroupSheet}}style="cursor:default"{{/if}}>
       {{quest.title}}
     </h4>
   </div>
@@ -19,21 +19,16 @@
 
 
   {{!-- The completion toggle icon --}}
-  <div class="quest-toggle-icon {{#if quest.completed}}quest-completed-icon{{else}}quest-uncompleted-icon{{/if}}" data-quest-id="{{quest.id}}" data-field="completed" title="{{#if quest.completed}}Mark as Incomplete{{else}}Mark as Complete{{/if}}">
-    <i class="fas {{#if quest.completed}}fa-circle-check{{else}}fa-circle-xmark{{/if}}"></i>
-  </div>
+  <div class="quest-controls">
+    <i class="fas {{#if quest.completed}}fa-circle-check{{else}}fa-circle-xmark{{/if}} quest-toggle-icon {{#if quest.completed}}quest-completed-icon{{else}}quest-uncompleted-icon{{/if}}" data-action="questToggle" data-uuid="{{doc.uuid}}" data-quest-id="{{quest.id}}" data-field="completed" title="{{#if quest.completed}}Mark as Incomplete{{else}}Mark as Complete{{/if}}"></i>
 
   {{!-- GM Controls --}}
-  <div class="quest-controls">
+
     {{#if isGM}}
-      <div class="quest-toggle-icon pinned-toggle" data-quest-id="{{quest.id}}" data-field="pinned" title="{{#if quest.pinned}}Remove from Quest Board{{else}}Pin to Quest Board{{/if}}">
-        <i class="fas {{#if quest.pinned}}fa-thumbtack{{else}}fa-thumbtack-slash{{/if}}"></i>
-      </div>
-      <div class="quest-toggle-icon visible-toggle" data-quest-id="{{quest.id}}" data-field="visible" title="{{#if quest.visible}}Hide from Players{{else}}Show to Players{{/if}}">
-        <i class="fas {{#if quest.visible}}fa-eye{{else}}fa-eye-slash{{/if}}"></i>
-      </div>
+        <i class="fas {{#if quest.pinned}}fa-thumbtack{{else}}fa-thumbtack-slash{{/if}} quest-toggle-icon pinned-toggle" data-quest-id="{{quest.id}}" data-field="pinned" data-action="questToggle" data-uuid="{{doc.uuid}}"title="{{#if quest.pinned}}Remove from Quest Board{{else}}Pin to Quest Board{{/if}}" ></i>
+        <i class="fas {{#if quest.visible}}fa-eye{{else}}fa-eye-slash{{/if}} quest-toggle-icon visible-toggle" data-quest-id="{{quest.id}}" data-field="visible" data-action="questToggle" data-uuid="{{doc.uuid}}" title="{{#if quest.visible}}Hide from Players{{else}}Show to Players{{/if}}"></i>
       {{#if (not isGroupSheet)}}
-        <button type="button" class="remove-quest action-btn" data-quest-id="{{quest.id}}" title="Remove Quest"><i class="fas fa-trash"></i></button>
+        <i class="fas fa-trash remove-quest quest-toggle-icon" data-quest-id="{{quest.id}}" title="Remove Quest"></i>
       {{/if}}
     {{/if}}
   </div>
@@ -46,7 +41,7 @@
     </div>
     <div class="shop-items">
       {{#each inventory as |item|}}
-        <div class="group-item-card open-item" data-item-uuid="{{item.uuid}}">
+        <div class="group-item-card open-item" data-uuid="{{item.uuid}}" data-action="openItem">
           <img src="{{getAsset "image" "item" item.img}}" alt="{{item.name}}" class="item-icon">
           <div class="item-info">
             <span class="item-name">{{item.name}}</span>
@@ -54,15 +49,12 @@
           </div>
           <div class="item-actions">
             {{#if (and ../isGM (not ../isGroupSheet))}}
-              <button type="button" class="action-btn remove-quest-item" data-quest-id="{{../quest.id}}" data-item-uuid="{{item.itemUuid}}" title="Remove Item">
-                <i class="fas fa-trash"></i>
-              </button>
+                        <i class="fas fa-trash action-btn remove-quest-item" data-type="quest" data-action="removeQuestItem" data-quest-id="{{../quest.id}}" data-uuid="{{item.itemUuid}}" title="Remove Item"></i>
             {{/if}}
             {{#if ../isGM}}
-              <button type="button" class="action-btn send-to-player" data-quest-id="{{../quest.id}}" data-item-uuid="{{item.itemUuid}}" title="Send to Player">
-                <i class="fas fa-paper-plane"></i>
-              </button>
 
+                <i class="fas fa-paper-plane action-btn send-to-player" data-type="quest" data-action="sendToPlayer" {{#if ../isGroupSheet}}data-doc-uuid={{../doc.uuid}}{{/if}} data-quest-id="{{../quest.id}}" data-uuid="{{item.itemUuid}}" title="Send to Player"></i>
+            
             {{/if}}
           </div>
         </div>
@@ -82,7 +74,7 @@
     </div>
 
     <ul class="objective-list">
-      {{> "modules/campaign-codex/templates/partials/quest-objective.hbs" objectives=quest.objectives quest=quest isGM=isGM isGroupSheet=isGroupSheet}}
+      {{> "modules/campaign-codex/templates/partials/quest-objective.hbs" objectives=quest.objectives uuid=doc.uuid quest=quest isGM=isGM isGroupSheet=isGroupSheet}}
     </ul>
   </div>
 

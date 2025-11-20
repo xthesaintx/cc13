@@ -136,7 +136,7 @@ export class NPCDropper {
   if (!dialogData) return null;
 
     const { selectedNPCs: selectedNPCIds, startHidden } = dialogData;
-
+    if (!selectedNPCIds) return;
     if (selectedNPCIds.length > 0) {
       const selectedNPCs = npcs.filter((npc) =>
         selectedNPCIds.includes(npc.uuid || npc.id),

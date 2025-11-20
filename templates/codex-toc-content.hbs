@@ -1,25 +1,41 @@
 <section class="campaign-codex-toc-app scrollable tab{{#if tab.active}} active{{/if}}" {{#if tab.active}} active{{/if}} data-group="{{tab.group}}" data-tab="{{tab.id}}">
 
-
   {{#if tab.create}}<i class="fas fa-circle-plus cc-create" data-action="createSheet" data-group="{{tab.group}}" data-type="{{tab.type}}"  title="Create {{tab.title}} sheet"></i>{{/if}}
 
-    {{#if hasContent}}
-        <ul class="cc-toc-journal-list">
-            {{#each items}}
-            {{#if this.canView}}
-                <li class="document entry journalentry directory-item" draggable="true" data-drag="true" data-entry-id="{{this.id}}" data-name="{{this.name}}">
-                    
-                        <i class="{{getAsset 'icon' ../tab.type}}"></i> <a data-action="openDocument" data-uuid="{{this.uuid}}" >{{this.name}}</a>
+    {{#if sections.length}}
+        {{#each sections}}
+            {{#if this.title}}
+                <ul class="cc-toc-header-list">
+                    <li class="document entry journalentry directory-header" data-action="toggleCollapse" data-folder="{{this.title}}" data-section-id="{{this.sectionId}}"> 
+                        <i class="fas {{#if this.isCollapsed}}fa-folder{{else}}fa-folder-open{{/if}} collapse-icon"></i> <span class="cc-header-title">{{this.title}}</span>
+                    </li>
+                </ul>
+            {{/if}}
 
-                 {{#if (and this.quests this.questsvisible)}}<i class ="fas fa-scroll"></i>{{else}}<span></span>{{/if}}                 
-                 {{#if ../isGM}}<i class ="fa {{this.ownershipIcon}}" data-action="changeDefaultOwnership" data-uuid="{{this.uuid}}" data-ownership="{{this.ownershipLevel}}"></i>{{/if}} 
-                </li>
-                {{/if}}
-            {{/each}}
-        </ul>
+            {{!-- The list of items for this section --}}
+            <ul class="cc-toc-journal-list {{#if this.title}}toc-collapsable {{/if}}{{#if this.isCollapsed}}is-collapsed{{/if}}" data-folder="{{this.title}}" data-section-id="{{this.sectionId}}">
+                {{#each this.items}}
+                    {{#if this.canView}}
+                        <li class="document entry journalentry directory-item" draggable="true" data-drag="true" data-entry-id="{{this.id}}" data-name="{{this.name}}" >
+                            <i class="{{#if iconOverride}}{{iconOverride}}{{else}}{{getAsset 'icon' ../../tab.type}}{{/if}}"></i> 
+                            <a data-action="openDocument" data-uuid="{{this.uuid}}">{{this.name}}</a>
+
+                            {{#if (and this.quests this.questsvisible)}}
+                                <i class="fas fa-scroll"></i>
+                            {{else}}
+                                <span></span>
+                            {{/if}}
+                            
+                            {{#if ../../isGM}}
+                                <i class="fa {{this.ownershipIcon}}" data-action="changeDefaultOwnership" data-uuid="{{this.uuid}}" data-ownership="{{this.ownershipLevel}}"></i>
+                            {{/if}} 
+                        </li>
+                    {{/if}}
+                {{/each}}
+            </ul>
+        {{/each}}
     {{else}}
-        <p class="notes">No Campaign Codex documents were found in this world.</p>
+         {{!-- Empty State --}}
     {{/if}}
 
 </section>
-

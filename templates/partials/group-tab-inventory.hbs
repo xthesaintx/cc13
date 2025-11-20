@@ -1,27 +1,38 @@
+<div class="content-header">
+    <h2><i class="fas fa-boxes"></i> {{ccLocalize "names.inventory" }}</h2>
+</div>
 <div class="inventory-by-shop">
   {{#each shops as |shop|}}
     <div class="shop-inventory-section">
-      <div class="shop-header btn-open-sheet" data-sheet-uuid="{{shop.uuid}}">
+      <div class="shop-header btn-open-sheet {{#if (not showImage)}}hide-shop-image{{/if}}" data-action="openShop" data-uuid="{{shop.uuid}}" >
+      {{#if iconOverride}}<i class="{{iconOverride}} shop-custom-tag"></i>{{/if}}
         <img src="{{getAsset "image" shop.type shop.img}}" alt="{{shop.name}}" class="shop-icon">
         <div class="shop-info">
           <h4 class="shop-name">{{shop.name}}</h4>
           {{#if shop.tags.length}}
+          <div class="group-shop-tags">
             <i class="fas fa-tag"></i>
             {{#each shop.tags}}
               <span class="location-tag tag-mode">{{this}}</span>
             {{/each}}
+            </div>
           {{/if}}
         </div>
       </div>
       
       <div class="shop-items">
         {{#each shop.items as |item|}}
-          <div class="group-item-card btn-open-sheet" data-sheet-uuid="{{item.uuid}}">
+          <div class="group-item-card btn-open-sheet" data-uuid="{{item.uuid}}" data-action="openItem">
             <img src="{{getAsset "image" "item" item.img}}" alt="{{item.name}}" class="item-icon">
             <div class="item-info">
               <span class="item-name">{{item.name}}</span>
               <span class="item-price">{{item.quantity}}x {{item.finalPrice}}{{item.currency}}</span>
             </div>
+            <div class="item-actions">
+            {{#if ../isGM}}
+                <i class="fas fa-paper-plane action-btn send-to-player" data-action="sendToPlayer" data-uuid="{{item.itemUuid}}" data-doc-uuid="{{shop.uuid}}" title="Send to Player"></i>
+            {{/if}}
+          </div>
           </div>
         {{/each}}
       </div>
