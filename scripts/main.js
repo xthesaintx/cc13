@@ -68,8 +68,30 @@ Hooks.once("init", async function () {
     "modules/campaign-codex/templates/partials/group-widgets.hbs",
     ];
     foundry.applications.handlebars.loadTemplates(templatePaths);
+    // if (game.settings.get("campaign-codex", "mapMarkers")) {
+    // }
 
 
+
+    game.campaignCodexImporting = true;
+    await campaigncodexSettings();
+    Handlebars.registerHelper("ccLocalize", localize);
+    Handlebars.registerHelper("getAsset", TemplateComponents.getAsset);
+    Handlebars.registerHelper("ccFormat", format);
+    Handlebars.registerHelper("getIcon", function (entityType) { return TemplateComponents.getAsset("icon", entityType); });
+    Handlebars.registerHelper("if_system", function (systemId, options) {
+        if (game.system.id === systemId) {
+            return options.fn(this);
+        }
+        return options.inverse(this);
+    });
+    Handlebars.registerHelper('capitalize', function(string) {
+      if (typeof string !== 'string' || !string) return '';
+      return string.charAt(0).toUpperCase() + string.slice(1);
+    });
+});
+Hooks.once("setup", async function () {
+    if (game.settings.get("campaign-codex", "mapMarkers")){
     // === [MAP MARKERS] ===
     console.log("Campaign Codex | Initializing custom map markers");
     CONFIG.CampaignCodex = CONFIG.CampaignCodex || {};
@@ -98,24 +120,7 @@ Hooks.once("init", async function () {
       return originalDrawControlIcon.apply(this, args);
     };
     // === [END MAP MARKERS] ===
-
-
-    game.campaignCodexImporting = true;
-    await campaigncodexSettings();
-    Handlebars.registerHelper("ccLocalize", localize);
-    Handlebars.registerHelper("getAsset", TemplateComponents.getAsset);
-    Handlebars.registerHelper("ccFormat", format);
-    Handlebars.registerHelper("getIcon", function (entityType) { return TemplateComponents.getAsset("icon", entityType); });
-    Handlebars.registerHelper("if_system", function (systemId, options) {
-        if (game.system.id === systemId) {
-            return options.fn(this);
-        }
-        return options.inverse(this);
-    });
-    Handlebars.registerHelper('capitalize', function(string) {
-      if (typeof string !== 'string' || !string) return '';
-      return string.charAt(0).toUpperCase() + string.slice(1);
-    });
+}
 });
 
 Hooks.once("i18nInit", async function () {

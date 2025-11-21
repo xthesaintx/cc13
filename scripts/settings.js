@@ -151,6 +151,16 @@ export default async function campaigncodexSettings() {
         default: true,
     });
 
+    game.settings.register("campaign-codex", "mapMarkers", {
+        name: localize("mapMarkers.name"),
+        hint: localize("mapMarkers.hint"),
+        scope: "world",
+        config: true,
+        requiresReload: true,
+        type: Boolean,
+        default: true,
+    });
+
     game.settings.register("campaign-codex", "useStyledTocButton", {
         name: localize("useStyledTocButton.name"),
         hint: localize("useStyledTocButton.hint"),

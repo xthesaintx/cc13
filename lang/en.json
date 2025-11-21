@@ -88,6 +88,10 @@
       "widgets": "Widgets"
     },
     "settings": {
+      "mapMarkers":{
+        "name": "Enable Campaign Codex Map Markers",
+        "hint": "If enabled CC sheets with a name that starts with an optional letter followed by up to three digits followd by an optional letter will create a custom map marker, ie A13"
+      },
       "hideCCbutton": {
         "name": "Hide CC Scene Button",
         "hint": "Hide the CC scene button from NON GM users."
