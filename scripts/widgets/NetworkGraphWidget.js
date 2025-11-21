@@ -205,7 +205,8 @@ try {
         const visited = new Set();
         const nodes = [];
         const edges = [];
-        
+        const hideByPermission = game.settings.get("campaign-codex", "hideByPermission");
+
         // Use the dynamic rootDoc instead of the static this.document
         const queue = [{ doc: this.rootDoc, depth: 0 }];
 
@@ -224,13 +225,16 @@ try {
 
                 const isVisited = visited.has(targetUuid);
 
+
                 if (isVisited) {
                     this._addEdge(edges, doc.uuid, targetUuid);
                 } else {
                     if (depth < maxHops) {
                         try {
                             const targetDoc = await fromUuid(targetUuid);
-                            if (targetDoc) {
+                            const canView = targetDoc.testUserPermission(game.user, CONST.DOCUMENT_OWNERSHIP_LEVELS.OBSERVER);
+
+                            if (targetDoc && (!hideByPermission || canView)) {
                                 visited.add(targetUuid);
                                 nodes.push(this._createNode(targetDoc, false));
                                 this._addEdge(edges, doc.uuid, targetUuid);

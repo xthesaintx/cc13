@@ -66,7 +66,6 @@ export class OrgChartWidget extends CampaignCodexWidget {
             ...(npcData.linkedNPCs || [])
         ])];
 
-        // 3. Sync Child Nodes
         for (const uuid of allLinkedUuids) {
             try {
                 const doc = await fromUuid(uuid);
@@ -146,12 +145,12 @@ export class OrgChartWidget extends CampaignCodexWidget {
         return `
             <div class="cc-widget org-chart-widget" style="aspect-ratio:1">
                 <div id="org-chart-container-${this.widgetId}" class="org-chart-container" style="height:100%; display: grid; background-image: linear-gradient(90deg, rgba(200, 200, 200, 0.15) 10%, rgba(0, 0, 0, 0) 10%), linear-gradient(rgba(200, 200, 200, 0.15) 10%, rgba(0, 0, 0, 0) 10%); background-size: 10px 10px;"></div>
-                
-                ${removedNodes.length > 0 ? `
+                ${this.isGM ? `
+                ${removedNodes.length> 0 ? `
                 <div class="removed-container">
                     <div class="removed-header">Removed Nodes</div>
                     <div class="removed-list">${removedHtml}</div>
-                </div>` : '<div class="removed-container"><div class="removed-header">Right Click to remove nodes</div></div>'}
+                </div>` : '<div class="removed-container"><div class="removed-header">Right Click to remove nodes</div></div>'}`:''}
             </div>
         `;
     }
@@ -291,6 +290,7 @@ export class OrgChartWidget extends CampaignCodexWidget {
 
 
     async _saveViewState(chartDiv) {
+        if (!this.isGM) return;
         if (this._saveTimer) clearTimeout(this._saveTimer);
         this._saveTimer = setTimeout(async () => {
             const currentTransform = chartDiv.style.transform;
