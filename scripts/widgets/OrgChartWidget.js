@@ -201,11 +201,13 @@ export class OrgChartWidget extends CampaignCodexWidget {
             });
 
             const savedData = await this.getData();
-            if (savedData?.viewState) {
-                const chartDiv = containerEl.querySelector('.orgchart');
-                if (chartDiv) {
-                    chartDiv.style.transform = savedData.viewState;
-                    chartDiv.style.cursor = 'grab';
+            if (this.isGM) {
+                if (savedData?.viewState) {
+                    const chartDiv = containerEl.querySelector('.orgchart');
+                    if (chartDiv) {
+                        chartDiv.style.transform = savedData.viewState;
+                        chartDiv.style.cursor = 'grab';
+                    }
                 }
             }
 
