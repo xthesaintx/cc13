@@ -138,10 +138,10 @@ export class GroupSheet extends CampaignCodexBaseSheet {
         key: "locations",
         label: localize("names.locations"),
       },
-      {
-        key: "inventory",
-        label: localize("names.inventory"),
-      },
+      // {
+      //   key: "inventory",
+      //   label: localize("names.inventory"),
+      // },
       {
         key: "npcs",
         label: localize("names.npcs"),
