@@ -66,6 +66,7 @@ export class GroupSheet extends CampaignCodexBaseSheet {
         ".group-tab-panel.inventory", 
         ".group-tab-panel.npcs", 
         ".group-tab-panel.quests", 
+        ".group-tab-panel.completed-quests", 
         ".group-tab-panel.journals", 
         ".group-tab-panel.widgets", 
         ".group-tab-panel.notes"
@@ -148,6 +149,10 @@ export class GroupSheet extends CampaignCodexBaseSheet {
       { 
         key: "quests", 
         label: localize("names.quests"), 
+      }, 
+      { 
+        key: "completed-quests", 
+        label: localize("names.completedquests"), 
       }, 
       { 
         key: "journals", 
@@ -244,6 +249,13 @@ export class GroupSheet extends CampaignCodexBaseSheet {
         content: await this._generateQuestsTab(context) ,  
         label: localize("names.quests"), 
         icon: "fas fa-scroll", 
+      }, 
+      { 
+        key: "completed-quests", 
+        active: !this._selectedSheet && this._currentTab === "completed-quests", 
+        content: await this._generateCompletedQuestsTab(context) ,  
+        label: localize("names.completedquests"), 
+        icon: "fas fa-check-circle", 
       }, 
       { 
         key: "journals", 
@@ -1374,8 +1386,16 @@ async _generateQuestsTab(data) {
     const docData = doc.getFlag("campaign-codex", "data") || {};
     if (!docData.quests || docData.quests.length === 0) return null;
     const docType = doc.getFlag("campaign-codex", "type") || "quest";
-    const visibleQuests = game.user.isGM ? docData.quests : docData.quests.filter(q => q.visible);
+    // Filter out completed quests
+    const incompleteQuests = docData.quests.filter(q => !q.completed);
+    const visibleQuests = game.user.isGM ? incompleteQuests : incompleteQuests.filter(q => q.visible);
     const hideSection = !visibleQuests || visibleQuests.length === 0;
+    // Sort quests: pinned first, then by name
+    const sortedQuests = visibleQuests.sort((a, b) => {
+      if (a.pinned && !b.pinned) return -1;
+      if (!a.pinned && b.pinned) return 1;
+      return (a.title || "").localeCompare(b.title || "");
+    });
   return {
       name: doc.name,
       uuid: doc.uuid,
@@ -1383,12 +1403,56 @@ async _generateQuestsTab(data) {
       hide: hideSection,
       icon: TemplateComponents.getAsset("icon", docType),
       iconOverride: doc.getFlag("campaign-codex", "icon-override") || null,
-      questListHtml: await TemplateComponents.questList(doc, docData.quests, game.user.isGM, true)
+      questListHtml: await TemplateComponents.questList(doc, sortedQuests, game.user.isGM, true)
     };
   });
 
   const processedEntities = (await Promise.all(templateDataPromises)).filter(Boolean);
+  // Sort entities by name
+  processedEntities.sort((a, b) => a.name.localeCompare(b.name));
   return renderTemplate("modules/campaign-codex/templates/partials/group-tab-quests.hbs", {
+    entities: processedEntities
+  });
+}
+
+async _generateCompletedQuestsTab(data) {
+  const entitiesWithQuests = [
+    ...data.nestedData.allLocations, 
+    ...data.nestedData.allRegions, 
+    ...data.nestedData.allShops, 
+    ...data.nestedData.allNPCs
+  ].filter(item => item.quests && item.canView);
+  const templateDataPromises = entitiesWithQuests.map(async (entity) => {
+    const doc = await fromUuid(entity.uuid);
+    if (!doc) return null; 
+    const docData = doc.getFlag("campaign-codex", "data") || {};
+    if (!docData.quests || docData.quests.length === 0) return null;
+    const docType = doc.getFlag("campaign-codex", "type") || "quest";
+    // Filter only completed quests
+    const completedQuests = docData.quests.filter(q => q.completed);
+    const visibleQuests = game.user.isGM ? completedQuests : completedQuests.filter(q => q.visible);
+    const hideSection = !visibleQuests || visibleQuests.length === 0;
+    // Sort quests: pinned first, then by name
+    const sortedQuests = visibleQuests.sort((a, b) => {
+      if (a.pinned && !b.pinned) return -1;
+      if (!a.pinned && b.pinned) return 1;
+      return (a.title || "").localeCompare(b.title || "");
+    });
+  return {
+      name: doc.name,
+      uuid: doc.uuid,
+      type: docType,
+      hide: hideSection,
+      icon: TemplateComponents.getAsset("icon", docType),
+      iconOverride: doc.getFlag("campaign-codex", "icon-override") || null,
+      questListHtml: await TemplateComponents.questList(doc, sortedQuests, game.user.isGM, true)
+    };
+  });
+
+  const processedEntities = (await Promise.all(templateDataPromises)).filter(Boolean);
+  // Sort entities by name
+  processedEntities.sort((a, b) => a.name.localeCompare(b.name));
+  return renderTemplate("modules/campaign-codex/templates/partials/group-tab-completed-quests.hbs", {
     entities: processedEntities
   });
 }

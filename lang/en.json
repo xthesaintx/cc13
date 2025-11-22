@@ -84,6 +84,7 @@
       "standard": "Standard",
       "quest":"Quest",
       "quests":"Quests",
+      "completedquests":"Completed Quests",
       "toc":"Table of Contents",
       "widgets": "Widgets"
     },
