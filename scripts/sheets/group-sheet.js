@@ -1473,6 +1473,7 @@ async _generateNPCsTab(data) {
   const templateData = {
     filters: [
       { dataFilter: 'all',       title: localize("title.all"),        iconClass: 'fas fa-users',                  class: 'npcs-all active' },
+      { dataFilter: 'npc',       title: localize("names.npc"),        iconClass: TemplateComponents.getAsset("icon", "npc"),      class: 'npcs-npc' },
       { dataFilter: 'region',  title: localize("names.region"),   iconClass: TemplateComponents.getAsset("icon", "region"), class: 'npcs-region' },
       { dataFilter: 'location',  title: localize("names.location"),   iconClass: TemplateComponents.getAsset("icon", "location"), class: 'npcs-location' },
       { dataFilter: 'shop',      title: localize("names.shop"),       iconClass: TemplateComponents.getAsset("icon", "shop"),     class: 'npcs-shop' },

@@ -347,6 +347,7 @@ export class TemplateComponents {
         : "";
 
     const isShopSource = entity.source === "shop";
+    const isTagSource = entity.source === "tag";
     const sourceAttr = entity.source ? `data-source="${entity.source}"` : "";
 
     let removeButton = "";
@@ -372,41 +373,41 @@ export class TemplateComponents {
             ${entity.meta || `<span class="entity-type">${type}</span>`}
           </div>` :``}
           ${
-            entity.locations && entity.locations.length > 0
+            entity.locations && entity.locations.length > 0 && type !== "tag"
               ? `
             <div class="entity-locations">
               <i class="fas fa-map-marker-alt"></i>
-              ${entity.locations.map((loc) => `<span class="location-tag">${loc}</span>`).join("")}
+              ${entity.locations.slice(0, 3).map((loc) => `<span class="location-tag">${loc}</span>`).join("")}${entity.locations.length > 3 ? `<span class="location-tag">+${entity.locations.length - 3}</span>` : ""}
             </div>
           `
               : ""
           }
           ${
-            entity.regions && entity.regions.length > 0
+            entity.regions && entity.regions.length > 0 && type !== "tag"
               ? `
             <div class="entity-locations">
               <i class="fas fa-globe"></i>
-              ${entity.regions.map((reg) => `<span class="location-tag">${reg}</span>`).join("")}
+              ${entity.regions.slice(0, 3).map((reg) => `<span class="location-tag">${reg}</span>`).join("")}${entity.regions.length > 3 ? `<span class="location-tag">+${entity.regions.length - 3}</span>` : ""}
             </div>
           `
               : ""
           }
           ${
-            entity.shops && entity.shops.length > 0
+            entity.shops && entity.shops.length > 0 && type !== "tag"
               ? `
             <div class="entity-locations shop-tags">
               <i class="fas fa-book-open"></i>
-              ${entity.shops.map((shop) => `<span class="location-tag shop-tag">${shop}</span>`).join("")}
+              ${entity.shops.slice(0, 3).map((shop) => `<span class="location-tag shop-tag">${shop}</span>`).join("")}${entity.shops.length > 3 ? `<span class="location-tag shop-tag">+${entity.shops.length - 3}</span>` : ""}
             </div>
           `
               : ""
           }
           ${
-            entity.tags && entity.tags.length > 0
+            entity.tags && entity.tags.length > 0 && type !== "tag"
               ? `
             <div class="entity-locations tag-mode-tags">
               <i class="fas fa-tag"></i>
-              ${entity.tags.map((tag) => `<span class="location-tag tag-mode">${tag}</span>`).join("")}
+              ${entity.tags.slice(0, 3).map((tag) => `<span class="location-tag tag-mode">${tag}</span>`).join("")}${entity.tags.length > 3 ? `<span class="location-tag tag-mode">+${entity.tags.length - 3}</span>` : ""}
             </div>
           `
               : ""
