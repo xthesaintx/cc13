@@ -62,6 +62,19 @@ export class NetworkGraphWidget extends CampaignCodexWidget {
             if (container) container.innerHTML = `<p style="color:red; padding: 1em;">Error: vis.js library is not loaded.</p>`;
             return;
         }
+        
+        try {
+            const savedData = await this.getData();
+            if (savedData && typeof savedData.depth !== 'undefined') {
+                this.currentDepth = parseInt(savedData.depth);
+                
+                // Update UI controls to match saved data
+                if (slider) slider.value = this.currentDepth;
+                if (valDisplay) valDisplay.textContent = this.currentDepth;
+            }
+        } catch (err) {
+            console.warn("Campaign Codex | Error loading widget data:", err);
+        }
 
         const data = { nodes: [], edges: [] };
         
@@ -169,6 +182,7 @@ try {
                     this.currentDepth = newDepth;
                     if (valDisplay) valDisplay.textContent = newDepth;
                     await this._updateGraph(newDepth, loading);
+                    if (this.isGM) this.saveData({ depth: newDepth });
                 });
 
                 slider.addEventListener("input", (ev) => {

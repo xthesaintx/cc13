@@ -151,16 +151,6 @@ export default async function campaigncodexSettings() {
         default: true,
     });
 
-    game.settings.register("campaign-codex", "mapMarkers", {
-        name: localize("mapMarkers.name"),
-        hint: localize("mapMarkers.hint"),
-        scope: "world",
-        config: true,
-        requiresReload: true,
-        type: Boolean,
-        default: true,
-    });
-
     game.settings.register("campaign-codex", "useStyledTocButton", {
         name: localize("useStyledTocButton.name"),
         hint: localize("useStyledTocButton.hint"),
@@ -171,6 +161,25 @@ export default async function campaigncodexSettings() {
         onChange: (value) => applyTocButtonStyle(value),
     });
 
+    game.settings.register("campaign-codex", "mapMarkers", {
+        name: localize("mapMarkers.name"),
+        hint: localize("mapMarkers.hint"),
+        scope: "world",
+        config: true,
+        requiresReload: true,
+        type: Boolean,
+        default: true,
+    });
+
+    game.settings.register("campaign-codex", "mapMarkerColor", {
+        name: localize("mapMarkerColor.name"),
+        hint: localize("mapMarkerColor.hint"),
+        scope: "world",
+        config: true,
+        requiresReload: true,
+        type: Boolean,
+        default: true,
+    });
 
 const accentDefault = "#d4af37";
 
@@ -277,10 +286,10 @@ game.settings.registerMenu("campaign-codex", "themeColorPicker", {
     game.settings.register("campaign-codex", "collapsedFolderStates", {
         name: "Collapsed Folder States (TOC)", // Display name (can be localized)
         hint: "Remembers which folder groups are collapsed by the user in the Table of Contents.", // Help text
-        scope: "client", // client scope means the setting is stored per user/browser
-        config: false, // Don't show this setting in the configuration UI
-        default: [], // Default value is an empty array
-        type: Array // The data type we are storing (an array of folder name strings)
+        scope: "client", 
+        config: false, 
+        default: [], 
+        type: Array 
     });
 
 
@@ -294,7 +303,6 @@ game.settings.registerMenu("campaign-codex", "themeColorPicker", {
         default: false,
         onChange: async (value) => {
             if (value) {
-                // await game.settings.set("campaign-codex", "accentColor", "#d4af37");
                 await game.settings.set("campaign-codex", "itemPricePath", "");
                 await game.settings.set("campaign-codex", "itemDenominationPath", "");
                 await game.settings.set("campaign-codex", "itemDenominationOverride", "",);

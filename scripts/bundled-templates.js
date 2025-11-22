@@ -24,7 +24,7 @@ const eventTemplate =`<div class="cc-enriched">
 
     <div style="display: flex; flex-wrap: wrap; gap: 2rem;">
 
-        <div style="flex: 2; min-width: 300px;">
+        <div style="flex: 2; min-width: 250px;">
             <h1 style="font-size: 1.5em; display: block; margin-bottom: 1rem;">Lorem Ipsum</h1>
             <p>This is the main content area that appears on the left side, next to the info boxes.</p>
             <h3>Ipsum Lorem</h3>
@@ -102,7 +102,7 @@ const locationTemplate = `<div>
 const locationColumnsTemplate = `<div style="display: flex; flex-wrap: wrap; gap: 2rem;">
 
     <!-- Main Content: Description, Points of Interest -->
-    <div style="flex: 2; min-width: 300px;">
+    <div style="flex: 2; min-width: 250px;">
         <h1 style="font-size: 1.5em; display: block; margin-bottom: 1rem; ">Silvermist Port</h1>
         <p style="font-style: italic;">A bustling port city known for its hardy sailors and the thick, silver mist that rolls in from the sea each morning.</p>
         <hr style="border-color: #0000003b;">
@@ -147,7 +147,7 @@ const locationColumnsTemplate = `<div style="display: flex; flex-wrap: wrap; gap
 const npcTemplate = `
 <div style="display: flex; flex-wrap: wrap; gap: 2rem;">
 
-    <div style="flex: 2; min-width: 300px;">
+    <div style="flex: 2; min-width: 250px;">
         <h1>NPC Name</h1>
         <p><i>A brief, italicized summary or quote about the character.</i></p>
         <hr style="border: 0; border-top: 1px solid #0000001a;">
@@ -209,7 +209,7 @@ const statBlockTemplate = `
 <div style="display: flex; flex-wrap: wrap; gap: 2rem;">
 
     <!-- Main Content: Actions, Descriptions -->
-    <div style="flex: 2; min-width: 300px;">
+    <div style="flex: 2; min-width: 250px;">
         <h1 style="font-size: 1.5em; display: block; margin-bottom: 1rem;  ">Gravemaw Hydra</h1>
         <p style="font-style: italic;">Huge monstrosity, chaotic evil</p>
         <hr style="border-color: #0000003b">
@@ -273,7 +273,7 @@ const statBlockTemplate = `
 
 const wikiTemplate = `<div style="display: flex; flex-wrap: wrap; gap: 2rem;">
 
-        <div style="flex: 2; min-width: 300px;">
+        <div style="flex: 2; min-width: 250px;">
             <h1 style="font-size: 1.5em; display: block; margin-bottom: 1rem;">Lorem Ipsum</h1>
             <p>Lorem ipsum dolor sit amet consectetur, adipisicing elit. Adipisci obcaecati, nihil alias ab commodi quasi aliquid. Assumenda maiores, esse laudantium, atque amet alias eum qui, optio voluptate dolores sequi mollitia!</p>
             <h3 style="margin-top: 0; border-bottom: 1px solid #0000003b; padding-bottom: 0.5rem;">Ipsum Lorem</h3>

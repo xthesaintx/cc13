@@ -219,7 +219,13 @@ export class LocationSheet extends CampaignCodexBaseSheet {
         };
       })
       .filter(Boolean); 
-
+    // Validate and set the active tab
+    if (context.tabs.length > 0) {
+      const availableKeys = context.tabs.map(t => t.key);
+      if (!this._currentTab || !availableKeys.includes(this._currentTab)) {
+        this._currentTab = context.tabs[0].key;
+      }
+    }
     // END OF TABS
 
     // QUICK LINKS

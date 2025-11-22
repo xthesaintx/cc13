@@ -91,6 +91,8 @@ Hooks.once("init", async function () {
     });
 });
 Hooks.once("setup", async function () {
+    const uiColor = game.settings.get("campaign-codex", "color-ui");
+
     if (game.settings.get("campaign-codex", "mapMarkers")){
     // === [MAP MARKERS] ===
     console.log("Campaign Codex | Initializing custom map markers");
@@ -98,7 +100,7 @@ Hooks.once("setup", async function () {
     CONFIG.CampaignCodex.mapLocationMarker = {
       default: {
         icon: CampaignCodexMapMarker, 
-        backgroundColor: 0xd4af37,
+        backgroundColor: uiColor,
         borderColor: 0x2a2a2a,
         borderHoverColor: 0xFF5500,
         fontFamily: "Roboto Slab",

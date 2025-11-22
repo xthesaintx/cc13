@@ -17,6 +17,12 @@ pagesToSeparateSheets: Bool, will create a Campaign Codex sheet of type for each
 ### Open the ToC Sheet
 - campaignCodexAPI.openTOCSheet(type);
 
+## 1.5.3
+- added option to disable custom map markers
+- added option to default to cc-ui colour for map markers
+- added calculation for dark or light text on map marker
+= bug fixes (tag tab defaults, objective visibilit, tab visibility, depth save state)
+
 ## 1.5
 - Change ToC helper function to open to a tab (ie quests)
 - Customise tab names and sheet icons

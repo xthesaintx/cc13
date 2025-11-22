@@ -2234,9 +2234,9 @@ border-bottom: 1px solid var(--cc-border);
 
 .campaign-codex .selected-sheet-info .entity-locations {
     align-items: baseline;
-    overflow: scroll;
-    gap: 4px;
+    gap: 2px;
     flex-wrap: wrap;
+    padding-bottom: 4px;
 }
 
 .campaign-codex .info-grid {
@@ -3559,7 +3559,6 @@ font-size: 12px;
 
 .campaign-codex .selected-sheet-tags-content
 {
-/*  overflow-y: auto;*/
 }
 
 .campaign-codex .selected-sheet-tags-content .location-tag{

@@ -214,8 +214,8 @@ export class NPCSheet extends CampaignCodexBaseSheet {
         icon: "fas fa-sticky-note", 
       },
     ];
-
-    const defaultTabVis = getDefaultSheetTabs(this.getSheetType());
+    const defaultSheetType = context.tagMode ? 'tag' : 'npc';
+    const defaultTabVis = getDefaultSheetTabs(defaultSheetType);
     if (defaultTabVis.hasOwnProperty('npcs') && !defaultTabVis.hasOwnProperty('associates')) {
     defaultTabVis.associates = defaultTabVis.npcs;
     delete defaultTabVis.npcs;
@@ -238,7 +238,14 @@ export class NPCSheet extends CampaignCodexBaseSheet {
         };
       })
       .filter(Boolean); 
-
+    
+    // Validate and set the active tab
+    if (context.tabs.length > 0) {
+      const availableKeys = context.tabs.map(t => t.key);
+      if (!this._currentTab || !availableKeys.includes(this._currentTab)) {
+        this._currentTab = context.tabs[0].key;
+      }
+    }
 
     // --- Tags and Links ---
 

@@ -1,7 +1,8 @@
 {{#each objectives}}
+{{#if (or ../isGM this.visible)}}
 <li class="objective-item" data-quest-id="{{../quest.id}}" data-objective-id="{{this.id}}" draggable="true">
   <div class="objective-content">
-      <i class="far {{#if this.completed}}fa-circle-check{{else}}fa-circle{{/if}} objective-toggle-icon" data-quest-id="{{../quest.id}}" data-objective-id="{{this.id}}" data-field="completed" title="Toggle Completion" data-action="objectiveToggle" data-uuid="{{../uuid}}">
+      <i class="far {{#if this.completed}}fa-circle-check{{else}}fa-circle{{/if}} objective-toggle-icon" data-quest-id="{{../quest.id}}" data-objective-id="{{this.id}}" data-field="completed" title="Toggle Completion" {{#if ../isGM}} data-action="objectiveToggle" {{/if}} data-uuid="{{../uuid}}">
       </i>
       <span class="objective-text {{#if (not ../isGroupSheet)}}editable{{/if}}" data-quest-id="{{../quest.id}}" data-objective-id="{{this.id}}">{{this.text}}</span>
       <div class="objective-controls">
@@ -24,4 +25,5 @@
   </ul>
   {{/if}}
 </li>
+{{/if}}
 {{/each}}

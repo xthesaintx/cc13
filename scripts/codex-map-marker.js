@@ -8,17 +8,24 @@ export class CampaignCodexMapMarker extends PIXI.Container {
 
     this.code = code;
     this.size = size;
+
+    this.tooltip = tooltip;
     this.style = style;
+    this.uiColor = game.settings.get("campaign-codex", "color-ui");
+    this.customColour = game.settings.get("campaign-codex", "mapMarkerColor");
+
+
 
     this.renderMarker();
     this.refresh();
   }
   
   renderMarker() {
-    this.radius = this.size * .75;
-    const centerX = this.radius;
-    const centerY = this.radius;
-
+    const bgColor = this.customColour ? this.uiColor: Color.from(this.style.tint);
+    this.style.textColor = this._getContrastColor(Number(bgColor));
+    this.radius = this.size;
+    const centerX = this.radius /2;
+    const centerY = this.radius/2;
     // Define hit area
     this.eventMode = "static";
     this.interactiveChildren = false;
@@ -36,7 +43,7 @@ export class CampaignCodexMapMarker extends PIXI.Container {
     // Background
     this.bg = this.addChild(new PIXI.Graphics());
     this.bg.clear()
-      .beginFill(this.style.backgroundColor, 1.0)
+      .beginFill(bgColor, 1.0)
       .lineStyle(2, this.style.borderColor, 1.0)
       .drawCircle(centerX, centerY, this.radius) // Centered
       .endFill();
@@ -53,6 +60,18 @@ export class CampaignCodexMapMarker extends PIXI.Container {
     this.border.visible = false;
     // Store circle path for refresh
     this.circle = [centerX, centerY, this.radius];
+  }
+
+  _getContrastColor(bgColorInt) {
+    const r = (bgColorInt >> 16) & 255;
+    const g = (bgColorInt >> 8) & 255;
+    const b = bgColorInt & 255;
+    const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+    if (brightness > 128) {
+        return 0x2a2a2a;
+    } else {
+        return 0xFFFFFF;
+    }
   }
 
   /* -------------------------------------------- */

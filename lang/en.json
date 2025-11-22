@@ -88,6 +88,10 @@
       "widgets": "Widgets"
     },
     "settings": {
+      "mapMarkerColor":{
+        "name": "Use CC UI colour for the map markers",
+        "hint": "If enabled CC map markers will use the CC UI colour for the background"
+      },
       "mapMarkers":{
         "name": "Enable Campaign Codex Map Markers",
         "hint": "If enabled CC sheets with a name that starts with an optional letter followed by up to three digits followd by an optional letter will create a custom map marker, ie A13"

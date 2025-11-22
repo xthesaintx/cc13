@@ -181,13 +181,7 @@ export class CampaignCodexBaseSheet extends baseSheetApp {
     super(document, options);
     this._currentTab = "info";
     this._processedData = null;
-    // this.secrets = new foundry.applications.ux.HTMLSecret({
-    //   parentSelector: ".cc-enriched",
-    //   callbacks: {
-    //     content: this._getSecretContent.bind(this),
-    //     update: this._updateSecret.bind(this),
-    //   },
-    // });
+
   }
 
   async _prepareContext(options) {
@@ -768,6 +762,7 @@ _labelOverride(selectedDoc, sheetKey) {
       { key: "quest", label: "Quest", icon: "fas fa-scroll" },
       { key: "shield", label: "Shield", icon: "fas fa-shield" },
       { key: "treasure", label: "Treasure", icon: "fas fa-gem" },
+      { key: "bed", label: "Bed", icon: "fas fa-bed" },
       // --- Concepts & Symbols ---
       { key: "danger", label: "Danger", icon: "fas fa-skull-crossbones" },
       { key: "magic", label: "Magic", icon: "fas fa-magic" },
@@ -2747,24 +2742,6 @@ async _updateInventoryItem(itemUuid, updates, doc = null) {
     }
   }
 
-  // _getSecretContent(secret) {
-  //   const editor = secret.closest(".cc-enriched");
-  //   const fieldElement = editor?.querySelector('prose-mirror[name*="flags.campaign-codex.data."]');
-  //   if (!fieldElement) return null;
-  //   const fieldName = fieldElement.getAttribute("name").split(".").pop();
-  //   const data = this.document.getFlag("campaign-codex", "data") || {};
-  //   return data[fieldName];
-  // }
-
-  // async _updateSecret(secret, modifiedContent) {
-  //   const editor = secret.closest(".cc-enriched");
-  //   const fieldElement = editor?.querySelector('prose-mirror[name*="flags.campaign-codex.data."]');
-  //   if (!fieldElement) return;
-  //   const fieldName = fieldElement.getAttribute("name").split(".").pop();
-  //   const data = foundry.utils.deepClone(this.document.getFlag("campaign-codex", "data") || {});
-  //   data[fieldName] = modifiedContent;
-  //   return this.document.setFlag("campaign-codex", "data", data);
-  // }
 
   async _isRelatedDocument(changedDocUuid) {
     if (!this.document.getFlag) return false;

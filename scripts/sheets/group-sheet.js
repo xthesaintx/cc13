@@ -657,6 +657,13 @@ async _generateSelectedSheetTab() {
         ? ""
         : selectedDoc.getFlag("campaign-codex", "image") || linkedActor?.img || "";
   const subTabsRaw = this._getSelectedSheetSubTabs(this._selectedSheet.type, selectedData, {}, tabOverrides);
+  
+  if ( subTabsRaw.length > 0 ) {
+    const availableTabs = subTabsRaw.map(t => t.key);
+    if ( !availableTabs.includes(this._selectedSheetTab) ) {
+      this._selectedSheetTab = subTabsRaw[0].key;
+    }
+  }
   const subTabs = subTabsRaw.map((tab) => ({
     ...tab,
     active: tab.key === this._selectedSheetTab,
@@ -702,12 +709,12 @@ async _generateSelectedSheetTab() {
   _getSelectedSheetSubTabs(type, data, calculatedCounts = {}, tabOverrides = []) { // <-- Add tabOverrides argument
     const baseTabs = [
       { key: "info", label:localize("names.information"), icon: "fas fa-info-circle", active: this._selectedSheetTab === "info" },
-      { key: "tags", label:localize("names.tags"), icon: "fas fa-tag", active: this._selectedSheetTab === "tags"  },
       { key: "inventory", label:localize("names.inventory"), icon: "fas fa-boxes", active: this._selectedSheetTab === "inventory"  },
       { key: "quests", label: localize("names.quests"), icon: "fas fa-scroll", active: this._selectedSheetTab === "quests"  },
       { key: "journals", label: localize("names.journals"), icon: "fas fa-book", active: this._selectedSheetTab === "journals"  },
       { key: "widgets", label: localize("names.widgets"), icon: "fas fa-puzzle-piece", active: this._selectedSheetTab === "widgets"  },
       ...(game.user.isGM ? [{ key: "notes", label: localize("names.note"), icon: "fas fa-sticky-note", active: this._selectedSheetTab === "notes"  }] : []),
+      { key: "tags", label:localize("names.tags"), icon: "fas fa-tag", active: this._selectedSheetTab === "tags"  },
     ];
 
     switch (type) {
@@ -1205,40 +1212,6 @@ _prepareTreeNodes(nodes, nestedData) {
         };
     }).filter(Boolean); // Filter out the nulls
 }
-// /**
-//  * Recursively prepares a clean data structure for the standard tree view template.
-//  * @param {Array} nodes - The raw nodes to process.
-//  * @param {object} nestedData - The full nested data object.
-//  * @returns {Array} - The processed nodes with all display properties.
-//  */
-// _prepareTreeNodes(nodes, nestedData) {
-//     if (!nodes) return [];
-//     const typeOrder = { group: 1, region: 2, location: 3, shop: 4, npc: 5 };
-//     const hideByPermission = game.settings.get("campaign-codex", "hideByPermission");
-//     const sortedNodes = [...nodes].sort((a, b) => {
-//         const typeA = typeOrder[a.type] || 99;
-//         const typeB = typeOrder[b.type] || 99;
-//         if (typeA !== typeB) return typeA - typeB;
-//         return a.name.localeCompare(b.name);
-//     });
-//       return sortedNodes.map(node => {
-//         const passesDisplayFilter = (node.type !== "npc") || (node.tag && this._showTreeNPCTags) || (!node.tag && this._showTreeNPCs) || (!node.tag && this._showTreeRegions) || (!node.tag && this._showTreeLocations) || (!node.tag && this._showTreeShops);
-//         const shouldRender = passesDisplayFilter && (!hideByPermission || node.canView);
-//         if (!shouldRender) return null; 
-//         const children = this._getChildrenForMember(node, nestedData);
-//         const processedChildren = this._prepareTreeNodes(children, nestedData); 
-//         return {
-//             ...node,
-//             isSelected: this._selectedSheet?.uuid === node.uuid,
-//             isExpanded: this._expandedNodes.has(node.uuid),
-//             hasChildren: processedChildren.length > 0,
-//             isClickable: node.type !== "item",
-//             displayIcon: node.iconOverride || TemplateComponents.getAsset("icon", node.tag ? "tag" : node.type),
-//             children: processedChildren,
-//             id: node.id,
-//         };
-//     }).filter(Boolean);
-// }
 
 async _generateTreeNodes(nodes, nestedData) {
     const preparedNodes = this._prepareTreeNodes(nodes, nestedData);
@@ -1314,76 +1287,7 @@ _getChildrenForMember(member, nestedData) {
       return true;
     });
 }
-  // _getChildrenForMember(member, nestedData) {
-  //   const hideByPermission = game.settings.get("campaign-codex", "hideByPermission");
-  //   let children = [];
-  //   switch (member.type) {
-  //     case "group":
-  //       children.push(...(nestedData.membersByGroup[member.uuid] || []));
-  //       break;
-  //     case "region":
-  //       if (this._showTreeRegions) {
-  //         children.push(...(nestedData.regionsByRegion[member.uuid] || []));
-  //       }
-  //       if (this._showTreeLocations) {
-  //         children.push(...(nestedData.locationsByRegion[member.uuid] || []));
-  //       }
-  //       if (this._showTreeShops) {
-  //         children.push(...(nestedData.shopsByRegion[member.uuid] || []));
-  //       }
-  //       if (this._showTreeNPCs || this._showTreeNPCTags) {
-  //         children.push(...(nestedData.npcsByRegion[member.uuid] || []));
-  //       }
-  //       if (this._showTreeItems) {
-  //         children.push(...(nestedData.itemsByShop[member.uuid] || []));
-  //       }
-  //       break;
-  //     case "location":
-  //       if (this._showTreeShops) {
-  //         children.push(...(nestedData.shopsByLocation[member.uuid] || []));
-  //       }
-  //       if (this._showTreeNPCs || this._showTreeNPCTags) {
-  //         children.push(...(nestedData.npcsByLocation[member.uuid] || []));
-  //       }
-  //       if (this._showTreeItems) {
-  //         children.push(...(nestedData.itemsByShop[member.uuid] || []));
-  //       }
-  //       break;
-  //     case "shop":
-  //       if (this._showTreeNPCs || this._showTreeNPCTags) {
-  //         children.push(...(nestedData.npcsByShop[member.uuid] || []));
-  //       }
-  //       if (this._showTreeItems) {
-  //         children.push(...(nestedData.itemsByShop[member.uuid] || []));
-  //       }
-  //       break;
-  //     case "npc":
-  //       if (this._showTreeItems) {
-  //         children.push(...(nestedData.itemsByShop[member.uuid] || []));
-  //       }
-  //       break;
-  //   }
 
-  //   return children.filter((child) => {
-  //     const isViewable = !hideByPermission || child.canView;
-  //     if (!isViewable) {
-  //       return false; 
-  //     }
-  //     if (child.type !== "npc") {
-  //       return true;
-  //     }
-  //     const isStandardNpc = child.type === "npc" && !child.tag;
-  //     const isTaggedNpc = child.type === "npc" && child.tag === true;
-  //     if (this._showTreeNPCs && isStandardNpc) {
-  //       return true;
-  //     }
-  //     if (this._showTreeNPCTags && isTaggedNpc) {
-  //       return true;
-  //     }
-  //     return false;
-  //   });
-
-  // }
 
   // =========================================================================
   // Main Sheet Tab Generation
