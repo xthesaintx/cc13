@@ -678,7 +678,8 @@ export class CampaignCodexBaseSheet extends baseSheetApp {
       src: target.getAttribute("src"),
       window: { title }
     });
-    if ( page ) ip.shareImage = () => Journal.showDialog(page);
+    // if ( page ) ip.shareImage = () => console.log(this.document);
+    // if ( page ) ip.shareImage = () => foundry.documents.collections.Journal.showDialog(page);
     ip.render({ force: true });
   }
 
