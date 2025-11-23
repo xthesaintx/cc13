@@ -296,13 +296,13 @@ export class NPCSheet extends CampaignCodexBaseSheet {
       await this._handleSceneDrop(data, event);
     } else if (data.type === "Item") {
       await this._handleItemDrop(data, event);
-    } else if (data.type === "Actor") {
-      await this._handleActorDrop(data, event);
     } else if (data.type === "JournalEntry" || data.type === "JournalEntryPage") {
       await this._handleJournalDrop(data, event);
+    } else if (data.type === "Actor") {
+      await this._handleActorDrop(data, event);
     }
   }
-
+  
   getSheetType() {
     return "npc";
   }

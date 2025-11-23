@@ -287,8 +287,8 @@ export class LocationSheet extends CampaignCodexBaseSheet {
   }
 
   async _handleDrop(data, event) {
-        event.preventDefault();
-        event.stopPropagation();    
+    event.preventDefault();
+    event.stopPropagation();
     if (data.type === "Scene") {
       await this._handleSceneDrop(data, event);
     } else if (data.type === "Item") {

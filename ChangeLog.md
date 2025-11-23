@@ -17,11 +17,17 @@ pagesToSeparateSheets: Bool, will create a Campaign Codex sheet of type for each
 ### Open the ToC Sheet
 - campaignCodexAPI.openTOCSheet(type);
 
+## 1.5.4
+- Added Show to Players in the config menu
+- Selected sheet on a group sheet: Tags tab removed, tags in header clickable
+- Adding an existing item will add +1 to item in inventory
+- fixed tag tab default visibility
+
 ## 1.5.3
 - added option to disable custom map markers
 - added option to default to cc-ui colour for map markers
 - added calculation for dark or light text on map marker
-= bug fixes (tag tab defaults, objective visibilit, tab visibility, depth save state)
+= bug fixes (tag tab defaults, objective visibiliy, tab visibility, depth save state)
 
 ## 1.5
 - Change ToC helper function to open to a tab (ie quests)

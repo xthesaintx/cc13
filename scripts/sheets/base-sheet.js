@@ -36,6 +36,7 @@ export class CampaignCodexBaseSheet extends baseSheetApp {
       height: 800
     },
     actions: {
+      showPlayers:this.#_onShowPlayers,
       toggleQuicklinks: this.#_onToggleQuicklinks,
       toggleTags: this.#_onToggleTags,
       toggleWidgets: this.#_onToggleWidgets,
@@ -182,6 +183,22 @@ export class CampaignCodexBaseSheet extends baseSheetApp {
     this._currentTab = "info";
     this._processedData = null;
 
+  }
+  static #_onShowPlayers() {
+    foundry.documents.collections.Journal.showDialog(this.document);
+  }
+
+
+  /** @inheritDoc */
+  _getHeaderControls() {
+    const controls = super._getHeaderControls();
+    controls.push({
+      icon: "fas fa-eye",
+      label: "JOURNAL.ActionShow",
+      visible: game.user.isGM,
+      action: "showPlayers"
+    });
+    return controls;
   }
 
   async _prepareContext(options) {
@@ -2344,6 +2361,8 @@ static async #_objectiveToggle (event, target) {
       ui.notifications.warn("Could not find item to add to entry");
       return;
     }
+    event.stopPropagation();
+
     const item = await fromUuid(data.uuid);
     if (!item) {
       ui.notifications.warn("Could not find item to add to entry");
@@ -2372,10 +2391,10 @@ static async #_objectiveToggle (event, target) {
     } else {
       // INVENTORY DROP
       const inventory = currentData.inventory || [];
-      if (inventory.find((i) => i.itemUuid === item.uuid)) {
-        ui.notifications.warn("Item already exists in inventory!");
-        return;
-      }
+      // if (inventory.find((i) => i.itemUuid === item.uuid)) {
+      //   ui.notifications.warn("Item already exists in inventory!");
+      //   return;
+      // }
       await game.campaignCodex.addItemToShop(this.document, item, 1);
       this.render();
       ui.notifications.info(format("inventory.added", { type: item.name }));

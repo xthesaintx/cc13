@@ -621,7 +621,7 @@ export class GroupSheet extends CampaignCodexBaseSheet {
     return `
       <div class="entity-locations tag-mode-tags">
         <i class="fas fa-tag"></i>
-        ${visibleTags.map((tag) => `<span class="location-tag tag-mode">${tag.name}</span>`).join("")}
+        ${visibleTags.map((tag) => `<span class="location-tag tag-mode" data-action="openAssociate" data-uuid="${tag.uuid}" style="cursor:pointer">${tag.name}</span>`).join("")}
       </div>
     `;
   }
@@ -714,7 +714,7 @@ async _generateSelectedSheetTab() {
       { key: "journals", label: localize("names.journals"), icon: "fas fa-book", active: this._selectedSheetTab === "journals"  },
       { key: "widgets", label: localize("names.widgets"), icon: "fas fa-puzzle-piece", active: this._selectedSheetTab === "widgets"  },
       ...(game.user.isGM ? [{ key: "notes", label: localize("names.note"), icon: "fas fa-sticky-note", active: this._selectedSheetTab === "notes"  }] : []),
-      { key: "tags", label:localize("names.tags"), icon: "fas fa-tag", active: this._selectedSheetTab === "tags"  },
+      // { key: "tags", label:localize("names.tags"), icon: "fas fa-tag", active: this._selectedSheetTab === "tags"  },
     ];
 
     switch (type) {
