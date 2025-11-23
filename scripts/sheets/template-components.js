@@ -354,7 +354,6 @@ export class TemplateComponents {
         : "";
 
     const isShopSource = entity.source === "shop";
-    const isTagSource = entity.source === "tag";
     const sourceAttr = entity.source ? `data-source="${entity.source}"` : "";
 
     let removeButton = "";
@@ -380,7 +379,7 @@ export class TemplateComponents {
             ${entity.meta || `<span class="entity-type">${type}</span>`}
           </div>` :``}
           ${
-            entity.locations && entity.locations.length > 0 && type !== "tag"
+            entity.locations && entity.locations.length > 0 && !entity.tag
               ? `
             <div class="entity-locations">
               <i class="fas fa-map-marker-alt"></i>
@@ -390,7 +389,7 @@ export class TemplateComponents {
               : ""
           }
           ${
-            entity.regions && entity.regions.length > 0 && type !== "tag"
+            entity.regions && entity.regions.length > 0 && !entity.tag
               ? `
             <div class="entity-locations">
               <i class="fas fa-globe"></i>
@@ -400,7 +399,7 @@ export class TemplateComponents {
               : ""
           }
           ${
-            entity.shops && entity.shops.length > 0 && type !== "tag"
+            entity.shops && entity.shops.length > 0 && !entity.tag
               ? `
             <div class="entity-locations shop-tags">
               <i class="fas fa-book-open"></i>
@@ -410,7 +409,7 @@ export class TemplateComponents {
               : ""
           }
           ${
-            entity.tags && entity.tags.length > 0 && type !== "tag"
+            entity.tags && entity.tags.length > 0 && !entity.tag
               ? `
             <div class="entity-locations tag-mode-tags">
               <i class="fas fa-tag"></i>
