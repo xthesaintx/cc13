@@ -354,7 +354,6 @@ export class TemplateComponents {
         : "";
 
     const isShopSource = entity.source === "shop";
-    const isTagSource = entity.source === "tag";
     const sourceAttr = entity.source ? `data-source="${entity.source}"` : "";
 
     let removeButton = "";
