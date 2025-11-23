@@ -2646,21 +2646,36 @@ border-bottom: 1px solid var(--cc-border);
  * ---------------------------------------------
  */
 
+/*.campaign-codex :is(.dnd5e, .dnd5e2, .dnd5e2-journal) :is(.editor-content, .card-content, .item-summary) h1{
+  font-size: unset;
+}
+.campaign-codex :is(.dnd5e, .dnd5e2, .dnd5e2-journal) :is(.editor-content, .card-content, .item-summary) h1, 
+.campaign-codex :is(.dnd5e, .dnd5e2, .dnd5e2-journal) :is(.editor-content, .card-content, .item-summary) h2, 
+.campaign-codex :is(.dnd5e, .dnd5e2, .dnd5e2-journal) :is(.editor-content, .card-content, .item-summary) h3 {
+  font-family:unset;
+}*/
+.campaign-codex .dnd5e2-journal h1,
+.campaign-codex .dnd5e2-journal h2,
+.campaign-codex .dnd5e2-journal h3 {
+  font-family: var(--cc-font-heading);
+  font-weight: bold;
+  border-bottom: none;
+}
 .campaign-codex .dnd5e2-journal .editor-content h1,
 .campaign-codex .dnd5e2-journal .editor-content h2,
 .campaign-codex .dnd5e2-journal .editor-content h3 {
-  font-family: var(--dnd5e-font-modesto);
+  font-family: var(--cc-font-heading);
   font-weight: bold;
   border-bottom: none;
 }
 .campaign-codex .dnd5e2-journal .editor-content h1 {
-  font-size: 2em;
+  font-size: var(--font-h1-size);
 }
 .campaign-codex .dnd5e2-journal .editor-content h2 {
-  font-size: 1.4em;
+  font-size: var(--font-h2-size);
 }
 .campaign-codex .dnd5e2-journal .editor-content h3 {
-  font-size: 1.25em;
+  font-size: var(--font-h3-size);
 }
 
 /*

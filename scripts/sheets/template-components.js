@@ -83,12 +83,19 @@ export class TemplateComponents {
 
     if (!isOwner) {
       return `
-        <article class="journal-entry-page cc-enriched${systemClass}">
-          <section class="journal-page-content cc-non-owner-view">
+        <article class="cc-enriched themed theme-light ${systemClass}">
+          <section class="journal-entry-content cc-non-owner-view">
             ${enrichedValue}
           </section>
         </article>
       `;
+      // return `
+      //   <article class="journal-entry-page cc-enriched themed theme-light ${systemClass}">
+      //     <section class="journal-page-content cc-non-owner-view">
+      //       ${enrichedValue}
+      //     </section>
+      //   </article>
+      // `;
     }
 
     const sheetData = docIn.getFlag("campaign-codex", "data") || {};
@@ -100,8 +107,8 @@ export class TemplateComponents {
     const escapedRawValue = foundry.utils.escapeHTML(rawValue);
 
     return `
-      <article class="journal-entry-page cc-enriched${systemClass}">
-        <section class="journal-page-content">
+      <article class="cc-enriched themed theme-light ${systemClass}">
+        <section class="journal-entry-content">
           <prose-mirror name="flags.campaign-codex.data.${editlocation}" value="${escapedRawValue}" document-uuid="${docIn.uuid}" toggled class="journal-page-content cc-prosemirror">
             ${enrichedValue}
           </prose-mirror>

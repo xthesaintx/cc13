@@ -18,7 +18,7 @@ export const format = (key, data) => game.i18n.format(`CAMPAIGN_CODEX.${key}`, d
 export const renderTemplate = foundry.applications.handlebars.renderTemplate;
 
 // export const gameSystemClass = (id) => (id === "dnd5e" ? " dnd5e2-journal" : "");
-export const gameSystemClass = (id) => (id === "dnd5e" ? " dnd5e2-journal themed theme-light" : "");
+export const gameSystemClass = (id) => (id === "dnd5e" ? " dnd5e2-journal" : "");
 
 
 /**

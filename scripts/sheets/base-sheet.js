@@ -369,7 +369,6 @@ export class CampaignCodexBaseSheet extends baseSheetApp {
   /** @inheritDoc */
   async _onFirstRender(context, options) {
     await super._onFirstRender(context, options);
-    await super._onFirstRender(context, options);
   
     this.element.addEventListener("click", (event) => {
       const clickedImage = event.target.closest("img:not(.nopopout)");

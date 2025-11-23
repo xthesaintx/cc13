@@ -887,7 +887,7 @@ async _generateSelectedSheetTab() {
         const notesLabelOverride = this._labelOverride(selectedDoc, "notes") || localize("names.note") ;
         return `
           ${TemplateComponents.contentHeader("fas fa-sticky-note", notesLabelOverride)}
-          <article class="cc-enriched cc-hidden-secrets${systemClass}">
+          <article class="cc-enriched cc-hidden-secrets themed theme-light ${systemClass}">
            <section class="rich-text-content journal-entry-content" name="cc.secret.content.notes">
               ${enrichedNotes || ""}
             </section>
@@ -1038,7 +1038,7 @@ async _generateSelectedNPCsContent(selectedDoc, selectedData) {
     const systemClass = gameSystemClass(game.system.id);
     return `
     ${TemplateComponents.contentHeader("fas fa-info-circle", labelOverride)}
-    <article class="cc-enriched cc-hidden-secrets ${systemClass}">
+    <article class="cc-enriched cc-hidden-secrets themed theme-light ${systemClass}">
         <section class="rich-text-content journal-entry-content" name="cc.secret.content.notes">
         ${enrichedDescription || ""}
         </section>
