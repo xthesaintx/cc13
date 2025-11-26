@@ -3,7 +3,6 @@ import { TemplateComponents } from "./template-components.js";
 import { CampaignCodexLinkers } from "./linkers.js";
 import { promptForName, localize, format, renderTemplate, getDefaultSheetTabs } from "../helper.js";
 
-
 export class RegionSheet extends CampaignCodexBaseSheet {
   // =========================================================================
   // Foundry VTT Overrides
@@ -11,15 +10,15 @@ export class RegionSheet extends CampaignCodexBaseSheet {
   static DEFAULT_OPTIONS = {
     classes: ["campaign-codex", "sheet", "journal-sheet", "region-sheet"],
     window: {
-      title: 'Campaign Codex Region Sheet',
-      icon: 'fas fa-globe',
+      title: "Campaign Codex Region Sheet",
+      icon: "fas fa-globe",
     },
-    actions: {}
+    actions: {},
   };
 
   async _processRegionData() {
     const regionData = this.document.getFlag("campaign-codex", "data") || {};
-    
+
     let linkedScene = null;
     if (regionData.linkedScene) {
       try {
@@ -48,7 +47,6 @@ export class RegionSheet extends CampaignCodexBaseSheet {
       rawShopNPCs,
       canViewScene,
       canViewRegion,
-      inventory
     ] = await Promise.all([
       CampaignCodexLinkers.getLinkedRegion(this.document),
       CampaignCodexLinkers.getLinkedNPCs(this.document, regionData.linkedNPCs || []),
@@ -61,10 +59,23 @@ export class RegionSheet extends CampaignCodexBaseSheet {
       CampaignCodexLinkers.getShopNPCs(this.document, regionData.linkedShops),
       this.constructor.canUserView(regionData.linkedScene),
       this.constructor.canUserView(regionData.parentRegion),
-      CampaignCodexLinkers.getInventory(this.document, regionData.inventory || []),
     ]);
-    
-    return { regionData, parentRegion, rawLinkedNPCs, rawRegions, rawLocations, rawNPCs, regionNPCs, rawShops, rawdirectShops, rawShopNPCs, linkedScene, canViewScene, canViewRegion, inventory };
+
+    return {
+      regionData,
+      parentRegion,
+      rawLinkedNPCs,
+      rawRegions,
+      rawLocations,
+      rawNPCs,
+      regionNPCs,
+      rawShops,
+      rawdirectShops,
+      rawShopNPCs,
+      linkedScene,
+      canViewScene,
+      canViewRegion,
+    };
   }
 
   _getTabDefinitions() {
@@ -94,35 +105,63 @@ export class RegionSheet extends CampaignCodexBaseSheet {
         key: "npcs",
         label: localize("names.npcs"),
       },
-      { 
-        key: "quests", 
-        label: localize("names.quests"), 
-      }, 
-      { 
-        key: "journals", 
-        label: localize("names.journals"), 
+      {
+        key: "quests",
+        label: localize("names.quests"),
       },
-      { 
-        key: "widgets", 
-        label: localize("names.widgets"), 
+      {
+        key: "journals",
+        label: localize("names.journals"),
+      },
+      {
+        key: "widgets",
+        label: localize("names.widgets"),
       },
       {
         key: "notes",
         label: localize("names.note"),
-       },
-     ];  
+      },
+    ];
   }
 
-
   async _prepareContext(options) {
+    if (options.force) {
+      // this._processedData = null;
+      this._inventoryCache = null;
+      this._fetchingInventory = false;
+    }
     const context = await super._prepareContext(options);
     if (!this._processedData) {
       this._processedData = await this._processRegionData();
     }
-    const { regionData, parentRegion, rawLinkedNPCs, rawRegions, rawLocations, rawNPCs, regionNPCs, rawShops, rawdirectShops, rawShopNPCs, linkedScene, canViewScene, canViewRegion, inventory } = this._processedData;
-    
+    const {
+      regionData,
+      parentRegion,
+      rawLinkedNPCs,
+      rawRegions,
+      rawLocations,
+      rawNPCs,
+      regionNPCs,
+      rawShops,
+      rawdirectShops,
+      rawShopNPCs,
+      linkedScene,
+      canViewScene,
+      canViewRegion,
+      inventory,
+    } = this._processedData;
+
     // --- Assign fetched context ---
-    context.inventory = inventory;
+    const rawInventoryCount = (regionData.inventory || []).length;
+    if (this._inventoryCache) {
+      context.inventory = this._inventoryCache;
+      context.loadingInventory = false;
+    } else {
+      context.inventory = [];
+      context.loadingInventory = true;
+      this._fetchInventoryBackground(regionData.inventory || []);
+    }
+
     context.isLoot = regionData.isLoot || false;
     context.markup = regionData.markup || 1.0;
     context.inventoryCash = regionData.inventoryCash || 0;
@@ -137,21 +176,20 @@ export class RegionSheet extends CampaignCodexBaseSheet {
     context.canViewScene = canViewScene;
     context.linkedRegions = rawRegions;
     context.canViewRegion = canViewRegion;
-    context.regionNPCs = regionNPCs,
-    // --- Basic Sheet Info ---
-    context.sheetType = "region";
+    ((context.regionNPCs = regionNPCs),
+      // --- Basic Sheet Info ---
+      (context.sheetType = "region"));
     if (context.sheetTypeLabelOverride !== undefined && context.sheetTypeLabelOverride !== "") {
-            context.sheetTypeLabel = context.sheetTypeLabelOverride;
-        } else {
-          context.sheetTypeLabel = localize("names.region");
-        }
-    context.customImage = this.document.getFlag("campaign-codex", "image") || TemplateComponents.getAsset("image", "region");
+      context.sheetTypeLabel = context.sheetTypeLabelOverride;
+    } else {
+      context.sheetTypeLabel = localize("names.region");
+    }
+    context.customImage =
+      this.document.getFlag("campaign-codex", "image") || TemplateComponents.getAsset("image", "region");
 
     // --- Linked Data Fetching ---
     const locationUuids = regionData.linkedLocations || [];
     const shopUuids = regionData.linkedShops || [];
-
-
 
     //tags
     context.taggedNPCs = context.linkedNPCs.filter((npc) => npc.tag === true);
@@ -161,10 +199,16 @@ export class RegionSheet extends CampaignCodexBaseSheet {
 
     // De DUPE
     const directUuids = new Set(context.linkedNPCsWithoutTaggedNPCs.map((npc) => npc.uuid));
-    context.shopNPCsWithoutTaggedNPCsnoDirect = context.shopNPCsWithoutTaggedNPCs.filter((associate) => !directUuids.has(associate.uuid));
-    context.allNPCsWithoutTaggedNPCsnoDirect = context.allNPCsWithoutTaggedNPCs.filter((associate) => !directUuids.has(associate.uuid));
+    context.shopNPCsWithoutTaggedNPCsnoDirect = context.shopNPCsWithoutTaggedNPCs.filter(
+      (associate) => !directUuids.has(associate.uuid),
+    );
+    context.allNPCsWithoutTaggedNPCsnoDirect = context.allNPCsWithoutTaggedNPCs.filter(
+      (associate) => !directUuids.has(associate.uuid),
+    );
     const directEntryUuids = new Set(context.shopNPCsWithoutTaggedNPCsnoDirect.map((npc) => npc.uuid));
-    context.shopNPCsWithoutTaggedNPCsnoDirectnoShop = context.allNPCsWithoutTaggedNPCsnoDirect.filter((associate) => !directEntryUuids.has(associate.uuid));
+    context.shopNPCsWithoutTaggedNPCsnoDirectnoShop = context.allNPCsWithoutTaggedNPCsnoDirect.filter(
+      (associate) => !directEntryUuids.has(associate.uuid),
+    );
 
     // region npcs
     const filteredRegioiNPCs = context.regionNPCs.filter((associate) => !directUuids.has(associate.uuid));
@@ -173,115 +217,151 @@ export class RegionSheet extends CampaignCodexBaseSheet {
     // TABS
     const tabOverrides = this.document.getFlag("campaign-codex", "tab-overrides") || [];
     let defaultTabs = this._getTabDefinitions();
-    const gmOnlyTabs = ['notes'];
+    const gmOnlyTabs = ["notes"];
     if (!game.user.isGM) {
-      defaultTabs = defaultTabs.filter(tab => !gmOnlyTabs.includes(tab.key));
+      defaultTabs = defaultTabs.filter((tab) => !gmOnlyTabs.includes(tab.key));
     }
 
-
-     const tabContext = [
+    const renderIfActive = async (key, generatorPromise) => {
+      if (this._currentTab === key) {
+        return await generatorPromise;
+      }
+      return "";
+    };
+    const tabContext = [
       {
         key: "info",
         active: this._currentTab === "info",
-        content:  await this._generateInfoTab(context),
+        content: await renderIfActive("info", this._generateInfoTab(context)),
         label: localize("names.info"),
         icon: "fas fa-info-circle",
       },
       {
         key: "locations",
-        statistic: { value: context.linkedLocations.length, view: context.linkedLocations.length >0},
-        active: this._currentTab === "location",
-        content: await this._generateLocationsTab(context),
+        statistic: { value: context.linkedLocations.length, view: context.linkedLocations.length > 0 },
+        active: this._currentTab === "locations",
+        content: await renderIfActive("locations", this._generateLocationsTab(context)),
         label: localize("names.locations"),
         icon: TemplateComponents.getAsset("icon", "location"),
       },
       {
         key: "regions",
-        statistic: { value: context.linkedRegions.length, view:context.linkedRegions.length>0 },
+        statistic: { value: context.linkedRegions.length, view: context.linkedRegions.length > 0 },
         active: this._currentTab === "regions",
-        content: await this._generateRegionsTab(context),
+        content: await renderIfActive("regions", this._generateRegionsTab(context)),
         label: localize("names.regions"),
         icon: TemplateComponents.getAsset("icon", "region"),
       },
       {
         key: "shops",
-        statistic: { value: context.allShops.length + context.linkedShops.length, view: context.allShops.length + context.linkedShops.length>0 },
+        statistic: {
+          value: context.allShops.length + context.linkedShops.length,
+          view: context.allShops.length + context.linkedShops.length > 0,
+        },
         active: this._currentTab === "shops",
-        content: await this._generateShopsTab(context),
+        content: await renderIfActive("shops", this._generateShopsTab(context)),
         label: localize("names.shops"),
         icon: TemplateComponents.getAsset("icon", "shop"),
       },
       {
         key: "inventory",
         active: this._currentTab === "inventory",
-        content: this._generateInventoryTab(context),
+        content: await renderIfActive("inventory", this._generateInventoryTab(context)),
         icon: "fas fa-boxes",
         label: localize("names.inventory"),
-        statistic: { value: context.inventory.length, view: context.inventory.length >0, },
+        statistic: { value: rawInventoryCount, view: rawInventoryCount > 0 },
       },
       {
         key: "npcs",
-        statistic: { value: context.linkedNPCsWithoutTaggedNPCs.length  + context.regionNPCsProcessed.length  + context.shopNPCsWithoutTaggedNPCsnoDirect.length + context.shopNPCsWithoutTaggedNPCsnoDirectnoShop.length, view:context.linkedNPCsWithoutTaggedNPCs.length + context.shopNPCsWithoutTaggedNPCsnoDirect.length + context.shopNPCsWithoutTaggedNPCsnoDirectnoShop.length + context.regionNPCsProcessed.length >0 },
+        statistic: {
+          value:
+            context.linkedNPCsWithoutTaggedNPCs.length +
+            context.regionNPCsProcessed.length +
+            context.shopNPCsWithoutTaggedNPCsnoDirect.length +
+            context.shopNPCsWithoutTaggedNPCsnoDirectnoShop.length,
+          view:
+            context.linkedNPCsWithoutTaggedNPCs.length +
+              context.shopNPCsWithoutTaggedNPCsnoDirect.length +
+              context.shopNPCsWithoutTaggedNPCsnoDirectnoShop.length +
+              context.regionNPCsProcessed.length >
+            0,
+        },
         active: this._currentTab === "npcs",
-        content: await this._generateNPCsTab(context),
-        label: context.tagMode ? localize("names.members") : localize("names.associates"),
+        content: await renderIfActive("npcs", this._generateNPCsTab(context)),
+        label: localize("names.npcs"),
         icon: TemplateComponents.getAsset("icon", "npc"),
       },
-      { 
-        key: "quests", 
-        statistic: {value: context.sheetData.quests.length, view:context.sheetData.quests.length>0},
-        active: this._currentTab === "quests", 
-        content: await TemplateComponents.questList(this.document, context.sheetData.quests, context.isGM) ,  
-        label: localize("names.quests"), 
-        icon: "fas fa-scroll", 
-      }, 
-      { 
-        key: "journals", 
-        statistic: {value: context.linkedStandardJournals.length, view:context.linkedStandardJournals.length>0},
-        active: this._currentTab === "journals", 
-        content:  `${TemplateComponents.contentHeader("fas fa-book", this._labelOverride(this.document, "journals") || localize("names.journals"))}${TemplateComponents.standardJournalGrid(context.linkedStandardJournals)}`, 
-        label: localize("names.journals"), 
-        icon: "fas fa-book", 
+      {
+        key: "quests",
+        statistic: { value: context.sheetData.quests.length, view: context.sheetData.quests.length > 0 },
+        active: this._currentTab === "quests",
+        content: await renderIfActive(
+          "quests",
+          TemplateComponents.questList(this.document, context.sheetData.quests, context.isGM),
+        ),
+        label: localize("names.quests"),
+        icon: "fas fa-scroll",
       },
-      { 
-        key: "widgets", 
-        statistic: {value: context.activewidget.length, view:context.activewidget.length>0},
+      {
+        key: "journals",
+        statistic: { value: context.linkedStandardJournals.length, view: context.linkedStandardJournals.length > 0 },
+        active: this._currentTab === "journals",
+        content:
+          this._currentTab === "journals"
+            ? `${TemplateComponents.contentHeader("fas fa-book", this._labelOverride(this.document, "journals") || localize("names.journals"))}${TemplateComponents.standardJournalGrid(context.linkedStandardJournals)}`
+            : "",
+        label: localize("names.journals"),
+        icon: "fas fa-book",
+      },
+      {
+        key: "widgets",
+        statistic: { value: context.activewidget.length, view: context.activewidget.length > 0 },
         active: this._currentTab === "widgets",
-        content: await CampaignCodexBaseSheet.generateWidgetsTab(this.document, context, this._labelOverride(this.document, "widgets")),
-        label: localize("names.widgets"), 
-        icon: "fas fa-puzzle-piece", 
+        content: await renderIfActive(
+          "widgets",
+          CampaignCodexBaseSheet.generateWidgetsTab(
+            this.document,
+            context,
+            this._labelOverride(this.document, "widgets"),
+          ),
+        ),
+        label: localize("names.widgets"),
+        icon: "fas fa-puzzle-piece",
       },
       {
         key: "notes",
         active: this._currentTab === "notes",
-        content: await CampaignCodexBaseSheet.generateNotesTab(this.document, context, this._labelOverride(this.document, "notes")),
+        content: await renderIfActive(
+          "notes",
+          CampaignCodexBaseSheet.generateNotesTab(this.document, context, this._labelOverride(this.document, "notes")),
+        ),
         label: localize("names.note") || "Notes",
-        icon: "fas fa-sticky-note", 
+        icon: "fas fa-sticky-note",
       },
     ];
 
     const defaultTabVis = getDefaultSheetTabs(this.getSheetType());
     context.tabs = defaultTabs
-      .map(tab => {
-        const override = tabOverrides.find(o => o.key === tab.key);
+      .map((tab) => {
+        const override = tabOverrides.find((o) => o.key === tab.key);
         const isVisibleByDefault = defaultTabVis[tab.key] ?? true;
         const isVisible = override?.visible ?? isVisibleByDefault;
         if (!isVisible) return null;
 
-        const dynamicTab = tabContext.find(t => t.key === tab.key);
+        const dynamicTab = tabContext.find((t) => t.key === tab.key);
         if (!dynamicTab) return null;
 
         const finalLabel = override?.label || tab.label;
         return {
           ...tab,
-          ...dynamicTab, 
-          label: finalLabel, 
+          ...dynamicTab,
+          label: finalLabel,
         };
       })
-      .filter(Boolean); 
+      .filter(Boolean);
     // Validate and set the active tab
     if (context.tabs.length > 0) {
-      const availableKeys = context.tabs.map(t => t.key);
+      const availableKeys = context.tabs.map((t) => t.key);
       if (!this._currentTab || !availableKeys.includes(this._currentTab)) {
         this._currentTab = context.tabs[0].key;
       }
@@ -299,7 +379,7 @@ export class RegionSheet extends CampaignCodexBaseSheet {
 
     // --- Custom Header ---
     let headerContent = "";
-     if (context.parentRegion) {
+    if (context.parentRegion) {
       headerContent += `
       <div class="region-info">
         <span class="region-name ${context.canViewRegion ? `region-link" data-action="openRegion" data-uuid="${context.parentRegion.uuid}"` : '"'}">
@@ -307,10 +387,11 @@ export class RegionSheet extends CampaignCodexBaseSheet {
           ${context.parentRegion.name} - 
           ${context.parentRegion.sheetTypeLabelOverride ? context.parentRegion.sheetTypeLabelOverride : localize("names.region")}
         </span>         
-      ${game.user.isGM
-            ? `<i class="fas fa-unlink scene-btn remove-location" data-action="removeParentRegion" title="${format("message.unlink", { type: localize("names.region") })}"></i>`
-            : ""
-        }</div>`;
+      ${
+        game.user.isGM
+          ? `<i class="fas fa-unlink scene-btn remove-location" data-action="removeParentRegion" title="${format("message.unlink", { type: localize("names.region") })}"></i>`
+          : ""
+      }</div>`;
     }
     if (context.linkedScene) {
       headerContent += `<div class="scene-info"><span class="scene-name ${context.canViewScene ? `open-scene" data-action="openScene" data-scene-uuid="${context.linkedScene.uuid}"` : '"'} title="${format("message.open", { type: localize("names.scene") })}"><i class="fas fa-map"></i> ${context.linkedScene.name}</span>${context.isGM ? `<i class="fas fa-unlink scene-btn remove-scene" data-action="removeScene" title="${format("message.unlink", { type: localize("names.scene") })}"></i>` : ""}</div>`;
@@ -319,15 +400,12 @@ export class RegionSheet extends CampaignCodexBaseSheet {
     }
     if (headerContent) context.customHeaderContent = headerContent;
 
-
-
     return context;
   }
 
   async _onRender(context, options) {
     await super._onRender(context, options);
     const nativeHtml = this.element;
-
   }
 
   async _handleDrop(data, event) {
@@ -424,23 +502,21 @@ export class RegionSheet extends CampaignCodexBaseSheet {
   }
 
   async _generateNPCsBySource(data) {
-
     // Region SHOPS
     const directShopNPCs = data.shopNPCsWithoutTaggedNPCsnoDirect.filter((npc) => npc.source === "shop");
 
     let content = "";
 
-    const [locationShopNPCs, locationNPCs] = 
-      data.shopNPCsWithoutTaggedNPCsnoDirectnoShop.reduce(
-        ([shops, locations], npc) => {
-          if (npc.shops.length > 0) {
-            shops.push(npc);
-          } else {
-            locations.push(npc);
-          }
-          return [shops, locations];
-        },
-        [[], []]
+    const [locationShopNPCs, locationNPCs] = data.shopNPCsWithoutTaggedNPCsnoDirectnoShop.reduce(
+      ([shops, locations], npc) => {
+        if (npc.shops.length > 0) {
+          shops.push(npc);
+        } else {
+          locations.push(npc);
+        }
+        return [shops, locations];
+      },
+      [[], []],
     );
 
     if (data.linkedNPCsWithoutTaggedNPCs.length > 0) {
@@ -462,7 +538,14 @@ export class RegionSheet extends CampaignCodexBaseSheet {
     if (locationShopNPCs.length > 0) {
       content += `<div class="npc-section"><h3><i class="${TemplateComponents.getAsset("icon", "shop")}"></i> ${localize("names.location")} - ${localize("names.shop")} ${localize("names.npcs")}</h3>${TemplateComponents.entityGrid(locationShopNPCs, "npc", true, true)}</div>`;
     }
-    if (data.linkedNPCsWithoutTaggedNPCs.length + directShopNPCs.length + locationNPCs.length + locationShopNPCs.length +data.regionNPCsProcessed.length === 0) {
+    if (
+      data.linkedNPCsWithoutTaggedNPCs.length +
+        directShopNPCs.length +
+        locationNPCs.length +
+        locationShopNPCs.length +
+        data.regionNPCsProcessed.length ===
+      0
+    ) {
       content = TemplateComponents.emptyState("npc");
     }
     return content;
@@ -476,7 +559,12 @@ export class RegionSheet extends CampaignCodexBaseSheet {
     }
     let content = TemplateComponents.contentHeader(TemplateComponents.getAsset("icon", "region"), label, buttons);
     if (data.isGM) {
-      content += TemplateComponents.dropZone("shop", TemplateComponents.getAsset("icon", "shop"), format("dropzone.link", { type: localize("names.shops") }), "");
+      content += TemplateComponents.dropZone(
+        "shop",
+        TemplateComponents.getAsset("icon", "shop"),
+        format("dropzone.link", { type: localize("names.shops") }),
+        "",
+      );
     }
 
     if (data.linkedShops.length > 0) {
@@ -495,7 +583,6 @@ export class RegionSheet extends CampaignCodexBaseSheet {
   // =========================================================================
   // Drop Logic
   // =========================================================================
-
 
   async _handleSceneDrop(data, event) {
     const scene = await fromUuid(data.uuid);
@@ -552,7 +639,8 @@ export class RegionSheet extends CampaignCodexBaseSheet {
         ui.notifications.info(format("info.linkfound", { type: regionJournal.name }));
         this.render(true);
         regionJournal.sheet.render(true);
-    } } else {
+      }
+    } else {
       // await this._saveFormData();
       await game.campaignCodex.linkSceneToDocument(scene, this.document);
 
@@ -570,20 +658,20 @@ export class RegionSheet extends CampaignCodexBaseSheet {
 
     // await this._saveFormData();
 
-    if (((!journalType && data.type === "JournalEntry") || data.type === "JournalEntryPage")) {
-        const locationData = this.document.getFlag("campaign-codex", "data") || {};
-        // Ensure linkedStandardJournals is an array
-        locationData.linkedStandardJournals = locationData.linkedStandardJournals || [];
+    if ((!journalType && data.type === "JournalEntry") || data.type === "JournalEntryPage") {
+      const locationData = this.document.getFlag("campaign-codex", "data") || {};
+      // Ensure linkedStandardJournals is an array
+      locationData.linkedStandardJournals = locationData.linkedStandardJournals || [];
 
-        // Avoid adding duplicates
-        if (!locationData.linkedStandardJournals.includes(journal.uuid)) {
-            locationData.linkedStandardJournals.push(journal.uuid);
-            await this.document.setFlag("campaign-codex", "data", locationData);
-            ui.notifications.info(`Linked journal "${journal.name}".`);
-        } else {
-            ui.notifications.warn(`Journal "${journal.name}" is already linked.`);
-        }
-      } else if (journalType === "location") {
+      // Avoid adding duplicates
+      if (!locationData.linkedStandardJournals.includes(journal.uuid)) {
+        locationData.linkedStandardJournals.push(journal.uuid);
+        await this.document.setFlag("campaign-codex", "data", locationData);
+        ui.notifications.info(`Linked journal "${journal.name}".`);
+      } else {
+        ui.notifications.warn(`Journal "${journal.name}" is already linked.`);
+      }
+    } else if (journalType === "location") {
       await game.campaignCodex.linkRegionToLocation(this.document, journal);
     } else if (journalType === "region") {
       await game.campaignCodex.linkRegionToRegion(this.document, journal);

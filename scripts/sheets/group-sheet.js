@@ -63,7 +63,7 @@ export class GroupSheet extends CampaignCodexBaseSheet {
         ".group-tab-panel.info", 
         ".group-tab-panel.regions", 
         ".group-tab-panel.locations", 
-        ".group-tab-panel.inventory", 
+        ".group-tab-panel.shops", 
         ".group-tab-panel.npcs", 
         ".group-tab-panel.quests", 
         ".group-tab-panel.journals", 
@@ -88,6 +88,7 @@ export class GroupSheet extends CampaignCodexBaseSheet {
     this._showTreeTags = false;
     this._processedData = null;
     this._currentTab ="info";
+    this.addingMember = false;
   }
 
   async _processGroupData() {
@@ -101,19 +102,10 @@ export class GroupSheet extends CampaignCodexBaseSheet {
 
   async _onRender(context, options) {
     await super._onRender(context, options);
-      new foundry.applications.ux.DragDrop.implementation({
-        dragSelector: ".tree-label",
-        permissions: {
-          dragstart: game.user.isGM,
-        },
-        callbacks: {
-          dragstart: this._onDragStart.bind(this),
-        }
-      }).bind(this.element);
 }
 
  async _onDragStart(event) {
-    const el = event.currentTarget;
+      const el = event.currentTarget;
     if ('link' in event.target.dataset) return;
     let journalID = event.target.dataset.entryId;
     let journalData = game.journal.get(journalID);
@@ -138,8 +130,8 @@ export class GroupSheet extends CampaignCodexBaseSheet {
         label: localize("names.locations"),
       },
       {
-        key: "inventory",
-        label: localize("names.inventory"),
+        key: "shops",
+        label: localize("names.shops"),
       },
       {
         key: "npcs",
@@ -193,8 +185,7 @@ export class GroupSheet extends CampaignCodexBaseSheet {
     context.addedWidgetNames = sheetWidgets.map(w => w.widgetName);
     context.availableWidgets = allAvailable.map(name => ({ name: name }));
     context.widgetsToRender = await widgetManager.instantiateActiveWidgets(this.document);
-
-    // TABS
+// TABS
     const tabOverrides = this.document.getFlag("campaign-codex", "tab-overrides") || [];
     let defaultTabs = this._getTabDefinitions();
     const gmOnlyTabs = ['notes'];
@@ -202,71 +193,82 @@ export class GroupSheet extends CampaignCodexBaseSheet {
       defaultTabs = defaultTabs.filter(tab => !gmOnlyTabs.includes(tab.key));
     }
 
+    // --- OPTIMIZATION START ---
+    // Helper to only render content if the tab is active
+    const isMainView = !this._selectedSheet;
+    const renderIfActive = async (key, generatorPromise) => {
+        if (isMainView && this._currentTab === key) {
+            return await generatorPromise;
+        }
+        return ""; // Return empty string for hidden tabs
+    };
+
      const tabContext = [
       {
         key: "info",
-        active: !this._selectedSheet && this._currentTab === "info",
-        content:  await this._generateInfoTab(context),
+        active: isMainView && this._currentTab === "info",
+        content:  await renderIfActive("info", this._generateInfoTab(context)),
         label: localize("names.info"),
         icon: "fas fa-info-circle",
       },
       {
         key: "regions",
-        active: !this._selectedSheet && this._currentTab === "regions",
-        content: await this._generateRegionsTab(context),
+        active: isMainView && this._currentTab === "regions",
+        content: await renderIfActive("regions", this._generateRegionsTab(context)),
         label: localize("names.regions"),
         icon: TemplateComponents.getAsset("icon", "region"),
       },
       {
         key: "locations",
-        active: !this._selectedSheet && this._currentTab === "locations",
-        content: await this._generateLocationsTab(context),
+        active: isMainView && this._currentTab === "locations",
+        content: await renderIfActive("locations", this._generateLocationsTab(context)),
         label: localize("names.locations"),
         icon: TemplateComponents.getAsset("icon", "location"),
       },
       {
-        key: "inventory",
-        active: !this._selectedSheet && this._currentTab === "inventory",
-        content: await this._generateInventoryTab(context),
-        icon: "fas fa-boxes",
-        label: localize("names.inventory"),
+        key: "shops",
+        active: isMainView && this._currentTab === "shops",
+        content: await renderIfActive("shops", this._generateShopsTab(context)),
+        icon: "fas fa-house",
+        label: localize("names.shops"),
       },
       {
         key: "npcs",
-        active: !this._selectedSheet && this._currentTab === "npcs",
-        content: await this._generateNPCsTab(context),
+        active: isMainView && this._currentTab === "npcs",
+        content: await renderIfActive("npcs", this._generateNPCsTab(context)),
         label: localize("names.npcs"),
         icon: TemplateComponents.getAsset("icon", "npc"),
       },
       { 
         key: "quests", 
-        active: !this._selectedSheet && this._currentTab === "quests", 
-        content: await this._generateQuestsTab(context) ,  
+        active: isMainView && this._currentTab === "quests", 
+        content: await renderIfActive("quests", this._generateQuestsTab(context)),  
         label: localize("names.quests"), 
         icon: "fas fa-scroll", 
       }, 
       { 
         key: "journals", 
-        active: !this._selectedSheet && this._currentTab === "journals", 
-        content: await this._generateJournalsTab(context), 
+        active: isMainView && this._currentTab === "journals", 
+        content: await renderIfActive("journals", this._generateJournalsTab(context)), 
         label: localize("names.journals"), 
         icon: "fas fa-book", 
       },
       { 
         key: "widgets", 
-        active: !this._selectedSheet && this._currentTab === "widgets",
-        content: await this._generateGroupWidgetsTab(this.document, context),
+        active: isMainView && this._currentTab === "widgets",
+        content: await renderIfActive("widgets", this._generateGroupWidgetsTab(this.document, context)),
         label: localize("names.widgets"), 
         icon: "fas fa-puzzle-piece", 
       },
       {
         key: "notes",
-        active: !this._selectedSheet && this._currentTab === "notes",
-        content: await CampaignCodexBaseSheet.generateNotesTab(this.document, context),
+        active: isMainView && this._currentTab === "notes",
+        content: await renderIfActive("notes", CampaignCodexBaseSheet.generateNotesTab(this.document, context)),
         label: localize("names.note") || "Notes",
         icon: "fas fa-sticky-note", 
       },
     ];
+
 
     const defaultTabVis = getDefaultSheetTabs(this.getSheetType());
  
@@ -313,14 +315,25 @@ export class GroupSheet extends CampaignCodexBaseSheet {
   // =========================================================================
   // Base Sheet Overrides
   // =========================================================================
-
-  /** @override */
+/** @override */
   _showTab(tabName, html) {
+    this._currentTab = tabName;
     html.querySelectorAll(".group-tabs .group-tab").forEach((tab) => tab.classList.remove("active"));
     html.querySelectorAll(".group-tab-panel").forEach((panel) => panel.classList.remove("active"));
     html.querySelector(`.group-tabs .group-tab[data-tab="${tabName}"]`)?.classList.add("active");
-    html.querySelector(`.group-tab-panel[data-tab="${tabName}"]`)?.classList.add("active");
+    const activePanel = html.querySelector(`.group-tab-panel[data-tab="${tabName}"]`);
+    activePanel?.classList.add("active");
+    if (activePanel && activePanel.innerHTML.trim() === "") {
+        this.render(false);
+    }
   }
+  // /** @override */
+  // _showTab(tabName, html) {
+  //   html.querySelectorAll(".group-tabs .group-tab").forEach((tab) => tab.classList.remove("active"));
+  //   html.querySelectorAll(".group-tab-panel").forEach((panel) => panel.classList.remove("active"));
+  //   html.querySelector(`.group-tabs .group-tab[data-tab="${tabName}"]`)?.classList.add("active");
+  //   html.querySelector(`.group-tab-panel[data-tab="${tabName}"]`)?.classList.add("active");
+  // }
 
 
   // =========================================================================
@@ -462,14 +475,19 @@ export class GroupSheet extends CampaignCodexBaseSheet {
     html.querySelector(`.group-tab-panel-selected-sheet[data-tab="${tabName}"]`)?.classList.add("active");
   }
 
+
   static #_SelectedSheetTabChange(event) {
       event.preventDefault();
       const tabName = event.target.dataset.tab;
       this._selectedSheetTab = tabName;
       const appElement = this.element.querySelector(".selected-sheet-container");
-      this._showSelectedSheetTab(tabName, appElement);
+      const targetPanel = appElement.querySelector(`.group-tab-panel-selected-sheet[data-tab="${tabName}"]`);
+      if (targetPanel && targetPanel.innerHTML.trim() === "") {
+          this.render(false);
+      } else {
+          this._showSelectedSheetTab(tabName, appElement);
+      }
   }
-
 
   static async #_onDropSingleNPCToMapClick(event) {
     event.preventDefault();
@@ -628,7 +646,11 @@ export class GroupSheet extends CampaignCodexBaseSheet {
 
 async _generateAllSelectedSheetTabs(selectedDoc, selectedData, subTabs) {
     const panelPromises = subTabs.map(async (tab) => {
-        const content = await this._generateSelectedSheetContent(selectedDoc, selectedData, tab.key);
+        // Only generate content if this specific tab is active
+        const content = tab.active 
+            ? await this._generateSelectedSheetContent(selectedDoc, selectedData, tab.key)
+            : ""; 
+            
         return {
             key: tab.key,
             content: content,
@@ -637,6 +659,7 @@ async _generateAllSelectedSheetTabs(selectedDoc, selectedData, subTabs) {
     });
     return Promise.all(panelPromises);
 }
+
 
 async _generateSelectedSheetTab() {
   if (!this._selectedSheet) return "";
@@ -707,7 +730,7 @@ async _generateSelectedSheetTab() {
 }
 
   _getSelectedSheetSubTabs(type, data, calculatedCounts = {}, tabOverrides = []) { // <-- Add tabOverrides argument
-    const baseTabs = [
+    let baseTabs = [
       { key: "info", label:localize("names.information"), icon: "fas fa-info-circle", active: this._selectedSheetTab === "info" },
       { key: "inventory", label:localize("names.inventory"), icon: "fas fa-boxes", active: this._selectedSheetTab === "inventory"  },
       { key: "quests", label: localize("names.quests"), icon: "fas fa-scroll", active: this._selectedSheetTab === "quests"  },
@@ -718,6 +741,19 @@ async _generateSelectedSheetTab() {
     ];
 
     switch (type) {
+      case "group":
+        baseTabs = baseTabs.filter(t => !["inventory", "quests"].includes(t.key));
+        baseTabs.splice(
+          1,
+          0,
+          {
+            key: "members",
+            label: localize("names.members"),
+            icon: TemplateComponents.getAsset("icon", "group"),
+            active: this._selectedSheetTab === "members",
+          },
+        );
+        break;
       case "npc":
         baseTabs.splice(
           1,
@@ -846,6 +882,9 @@ async _generateSelectedSheetTab() {
     });
 
     switch (activeTab) {
+      case "members":
+        return await this._generateSelectedGroupMembers(selectedDoc, selectedData);
+
       case "info":
         return this._generateSelectedInfoContent(selectedDoc, selectedData, enrichedDescription);
 
@@ -1009,6 +1048,26 @@ async _generateSelectedNPCsContent(selectedDoc, selectedData) {
       ${TemplateComponents.contentHeader("fas fa-globe", labelOverride)}
         <div class="locations-list">
           ${TemplateComponents.entityGrid(regions, "location", false, true)}
+        </div>
+    `;
+  }
+
+async _generateSelectedGroupMembers(selectedDoc, selectedData) {
+    const labelOverride = localize("names.members");
+    const locations = await CampaignCodexLinkers.getLinkedLocations(selectedDoc, selectedData.members || []);
+    let preparedLocations = locations;
+    if (selectedDoc && selectedDoc.getFlag("campaign-codex", "type") === "npc"){
+      const locations = await CampaignCodexLinkers.getLinkedLocations(selectedDoc, selectedData.members || []);
+      preparedLocations = locations.filter(item => item.type === "location");
+    }
+    if (preparedLocations.length === 0) {
+      return `${TemplateComponents.contentHeader("fas fa-map-marker-alt", labelOverride)}`;
+    }
+
+    return `
+      ${TemplateComponents.contentHeader("fas fa-sitemap", labelOverride)}
+        <div class="locations-list">
+          ${TemplateComponents.entityGrid(preparedLocations, "location", false, true)}
         </div>
     `;
   }
@@ -1242,31 +1301,19 @@ _getChildrenForMember(member, nestedData) {
         if (this._showTreeNPCs || this._showTreeNPCTags) {
           children.push(...(nestedData.npcsByRegion[member.uuid] || []));
         }
-        if (this._showTreeItems) {
-          children.push(...(nestedData.itemsByShop[member.uuid] || []));
-        }
         break;
       case "location":
         children.push(...(nestedData.shopsByLocation[member.uuid] || []));
         if (this._showTreeNPCs || this._showTreeNPCTags) {
           children.push(...(nestedData.npcsByLocation[member.uuid] || []));
         }
-        if (this._showTreeItems) {
-          children.push(...(nestedData.itemsByShop[member.uuid] || []));
-        }
         break;
       case "shop":
         if (this._showTreeNPCs || this._showTreeNPCTags) {
           children.push(...(nestedData.npcsByShop[member.uuid] || []));
         }
-        if (this._showTreeItems) {
-          children.push(...(nestedData.itemsByShop[member.uuid] || []));
-        }
         break;
       case "npc":
-        if (this._showTreeItems) {
-          children.push(...(nestedData.itemsByShop[member.uuid] || []));
-        }
         break;
     }
 
@@ -1275,15 +1322,11 @@ _getChildrenForMember(member, nestedData) {
       if (!isViewable) {
         return false; 
       }
-      if (child.type === "item") {
-        return this._showTreeItems;
-      }
       if (child.type === "npc") {
         const isStandardNpc = !child.tag;
         const isTaggedNpc = child.tag === true;
         return (this._showTreeNPCs && isStandardNpc) || (this._showTreeNPCTags && isTaggedNpc);
       }
-      // All other types (group, region, location, shop) are allowed
       return true;
     });
 }
@@ -1304,53 +1347,27 @@ _getChildrenForMember(member, nestedData) {
     return await renderTemplate("modules/campaign-codex/templates/partials/group-tab-info.hbs", templateData);
   }
 
-async _generateInventoryTab(data) {
-    const defaultTabvisibility = game.settings.get("campaign-codex", "defaultTabVisibility");
-    const nestedData = data.nestedData;
-    const hideByPermission = game.settings.get("campaign-codex", "hideByPermission");
-    const hideInventoryByPermission = game.settings.get("campaign-codex", "hideInventoryByPermission");
+ 
+  async _generateShopsTab(data) {
+    const rawShops = [...data.nestedData.allShops];
     const sortAlpha = game.settings.get("campaign-codex", "sortCardsAlpha");
-    const shopsForTemplate = [];
-    const inventoryHolders =[...nestedData.allShops,...nestedData.allLocations,...nestedData.allRegions,...nestedData.allNPCs];
-
-    for (const [shopUuid, items] of Object.entries(nestedData.itemsByShop)) {
-        const shop = inventoryHolders.find((s) => s.uuid === shopUuid);
-
-        const inventoryKey = `${shop.type}.inventory`;
-        const isDefaultVisible = defaultTabvisibility[inventoryKey] ?? true;
-        const inventoryOverride = shop.tabOverrides?.find(o => o.key === 'inventory');
-        let isInventoryVisible = isDefaultVisible; 
-
-        if (inventoryOverride !== undefined) {
-            isInventoryVisible = inventoryOverride.visible ?? isDefaultVisible;
-        }
-
-        if (!shop || items.length === 0 || (hideByPermission && !shop.canView) || !isInventoryVisible) {
-        continue;
-        }
-
-        const imageAreaOverride = shop.tabOverrides?.find(override => override.key === "imageArea");
-
-        let processedItems = hideInventoryByPermission
-            ? items.filter(item => item.canView)
-            : items;
-        if (sortAlpha) {
-            processedItems.sort((a, b) => a.name.localeCompare(b.name));
-        }
-        shopsForTemplate.push({
-            ...shop,
-            showImage:imageAreaOverride?.visible ?? true,
-            items: processedItems,
-            isGM:data.isGM
-        });
-    }
+    const hideByPermission = game.settings.get("campaign-codex", "hideByPermission");
+    let processedShops = hideByPermission 
+        ? rawShops.filter(loc => loc.canView) 
+        : rawShops;
     if (sortAlpha) {
-        shopsForTemplate.sort((a, b) => a.name.localeCompare(b.name));
+        processedShops.sort((a, b) => a.name.localeCompare(b.name));
     }
-    return await renderTemplate("modules/campaign-codex/templates/partials/group-tab-inventory.hbs", {
-        shops: shopsForTemplate
+    processedShops.forEach(location => {
+        const imageAreaOverride = location.tabOverrides?.find(override => override.key === "imageArea");
+        location.showImage = imageAreaOverride?.visible ?? true,
+        location.displayIcon = TemplateComponents.getAsset("icon", "shop");
+    });
+    return await renderTemplate("modules/campaign-codex/templates/partials/group-tab-shops.hbs", {
+        regions: processedShops
     });
 }
+
 
 
 async _generateJournalsTab(context) {
@@ -1516,6 +1533,10 @@ async _generateLocationsTab(data) {
   // =========================================================================
 
   async _addMemberToGroup(newMemberUuid) {
+    console.log("START");
+
+    if (!this.addingMember) return;
+    this.addingMember = false;
     if (newMemberUuid === this.document.uuid) {
       ui.notifications.warn(localize("group.self"));
       return;
@@ -1538,24 +1559,33 @@ async _generateLocationsTab(data) {
       }
     }
 
+console.log("START");
     const groupData = this.document.getFlag("campaign-codex", "data") || {};
     let currentMembers = groupData.members || [];
 
-    // const existingMembers = await GroupLinkers.getGroupMembers(currentMembers);
-    // const nestedData = await GroupLinkers.getNestedData(existingMembers);
-    const nestedData = this._processedData.nestedData;
-    const allExistingNestedUuids = new Set([
-      ...nestedData.allGroups.map((i) => i.uuid),
-      ...nestedData.allRegions.map((i) => i.uuid),
-      ...nestedData.allLocations.map((i) => i.uuid),
-      ...nestedData.allShops.map((i) => i.uuid),
-      ...nestedData.allNPCs.map((i) => i.uuid),
-    ]);
 
-    if (allExistingNestedUuids.has(newMemberUuid)) {
-      ui.notifications.warn(`"${newMemberDoc.name}" is already included in this group as a child of another member.`);
+    if (currentMembers.includes(newMemberUuid)) {
+      ui.notifications.warn(`"${newMemberDoc.name}" is already included in this group.`);
       return;
     }
+
+    const nestedData = this._processedData.nestedData;
+
+//     const allExistingNestedUuids = new Set([
+//       ...nestedData.allGroups.map((i) => i.uuid),
+//       ...nestedData.allRegions.map((i) => i.uuid),
+//       ...nestedData.allLocations.map((i) => i.uuid),
+//       ...nestedData.allShops.map((i) => i.uuid),
+//       ...nestedData.allNPCs.map((i) => i.uuid),
+//     ]);
+
+//     console.log("HERE");
+//     if (allExistingNestedUuids.has(newMemberUuid)) {
+// console.log("IN");
+//       ui.notifications.warn(`"${newMemberDoc.name}" is already included in this group as a child of another member.`);
+//       return;
+//     }
+// console.log("END");
 
     const newMemberAsGroupMember = [
       {
@@ -1564,30 +1594,32 @@ async _generateLocationsTab(data) {
       },
     ];
 
-    const nestedDataOfNewMember = await GroupLinkers.getNestedData(newMemberAsGroupMember);
-    const allNestedUuidsOfNewMember = new Set([
-      ...nestedDataOfNewMember.allGroups.map((i) => i.uuid),
-      ...nestedDataOfNewMember.allRegions.map((i) => i.uuid),
-      ...nestedDataOfNewMember.allLocations.map((i) => i.uuid),
-      ...nestedDataOfNewMember.allShops.map((i) => i.uuid),
-      ...nestedDataOfNewMember.allNPCs.map((i) => i.uuid),
-    ]);
+    // const nestedDataOfNewMember = await GroupLinkers.getNestedData(newMemberAsGroupMember);
+    // const allNestedUuidsOfNewMember = new Set([
+    //   // ...nestedDataOfNewMember.allGroups.map((i) => i.uuid),
+    //   ...nestedDataOfNewMember.allRegions.map((i) => i.uuid),
+    //   ...nestedDataOfNewMember.allLocations.map((i) => i.uuid),
+    //   ...nestedDataOfNewMember.allShops.map((i) => i.uuid),
+    //   ...nestedDataOfNewMember.allNPCs.map((i) => i.uuid),
+    // ]);
 
-    const membersToRemove = currentMembers.filter((memberUuid) => allNestedUuidsOfNewMember.has(memberUuid));
-    let updatedMembers = currentMembers.filter((memberUuid) => !allNestedUuidsOfNewMember.has(memberUuid));
-
+    // const membersToRemove = currentMembers.filter((memberUuid) => allNestedUuidsOfNewMember.has(memberUuid));
+    // let updatedMembers = currentMembers.filter((memberUuid) => !allNestedUuidsOfNewMember.has(memberUuid));
+    let updatedMembers = currentMembers;
     updatedMembers.push(newMemberUuid);
     groupData.members = updatedMembers;
+
+    // groupData.members = updatedMembers;
     await this.document.setFlag("campaign-codex", "data", groupData);
 
     this._processedData = null;
-    this.render(true);
+    // this.render();
 
-    let notification = `Added "${newMemberDoc.name}" to the group.`;
-    if (membersToRemove.length > 0) {
-      notification += ` Removed ${membersToRemove.length} redundant top-level member(s).`;
-    }
-    ui.notifications.info(notification);
+    // let notification = `Added "${newMemberDoc.name}" to the group.`;
+    // if (membersToRemove.length > 0) {
+    //   notification += ` Removed ${membersToRemove.length} redundant top-level member(s).`;
+    // }
+    // ui.notifications.info(notification);
   }
 
 
@@ -1668,7 +1700,8 @@ async _generateLocationsTab(data) {
 
   async _handleDrop(data, event) {
     event.preventDefault();
-    event.stopPropagation();
+    event.stopImmediatePropagation();
+    console.log("hDrop");
     if (data.type === "JournalEntry" || data.type === "JournalEntryPage") {
       const journal = await fromUuid(data.uuid);
       if (!journal) return;
@@ -1690,7 +1723,10 @@ async _generateLocationsTab(data) {
 
       // CC JOURNAL
       if (journal && journalType) {
+        console.log("Hin");
+        this.addingMember = true;
         await this._addMemberToGroup(journal.uuid);
+        this.addingMember = false;
       }
 
     } else if (data.type === "Actor") {

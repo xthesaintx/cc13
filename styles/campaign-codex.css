@@ -109,6 +109,7 @@
   text-align: center;
   border-bottom: 0px solid var(--cc-border);
   position: relative;
+  container-type: inline-size;
 }
 
 .campaign-codex .sheet-image {
@@ -130,17 +131,19 @@
 }
 
 .campaign-codex .sheet-title {
-  font-family: var(--cc-font-heading);
-  font-size: 28px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 2px;
-  margin: 0 0 4px 0;
-  color: var(--cc-sidebar-text);
-  cursor: pointer;
-  transition: all 0.2s ease;
-  line-height: 1.1;
-  overflow-wrap: break-word;
+    font-family: var(--cc-font-heading);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin: 0 0 4px 0;
+    color: var(--cc-sidebar-text);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    line-height: 1.1;
+    overflow-wrap: break-word;
+    white-space: normal;
+    word-break: normal;
+    font-size: clamp(10px, 10cqi, 28px);
 }
 
 .campaign-codex .sheet-title:hover {
@@ -1284,7 +1287,7 @@ width: 300px;
 .campaign-codex .tree-header {
 border-bottom: 1px solid var(--cc-border);
     display: grid;
-    grid-template-columns: repeat(10, 24px);
+    grid-template-columns: repeat(9, 24px);
     gap: 2px;
     justify-content: space-around;
     align-content: center;

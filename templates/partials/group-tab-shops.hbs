@@ -1,0 +1,8 @@
+<div class="content-header">
+    <h2><i class="fas fa-globe"></i> {{ccLocalize "names.shops" }}</h2>
+</div>
+<div class="locations-grid">
+  {{#each regions}}
+    {{> "modules/campaign-codex/templates/partials/group-location-card.hbs" location=this}}
+  {{/each}}
+</div>

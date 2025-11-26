@@ -17,6 +17,16 @@ pagesToSeparateSheets: Bool, will create a Campaign Codex sheet of type for each
 ### Open the ToC Sheet
 - campaignCodexAPI.openTOCSheet(type);
 
+## 1.5.6
+- updated the drag drop to the new v2 method
+- group sheets now only check for circular, self link, and dup links at root
+- Bug fixes
+- CSS Bug fixes
+- Removed inventory items from group sheet tree and and tab
+- Added Entries to group sheet tab
+- Implemented lazy loading on sheets
+- Added a loading state for inventory if it's not finished processing data before the tab is selected.
+
 ## 1.5.4
 - Added Show to Players in the config menu
 - Selected sheet on a group sheet: Tags tab removed, tags in header clickable

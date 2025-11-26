@@ -22,15 +22,14 @@ export class NPCSheet extends CampaignCodexBaseSheet {
 
   async _processNpcData() {
     const npcData = this.document.getFlag("campaign-codex", "data") || {};
-    const [linkedActor, rawLocations, linkedShops, associates, inventory] = await Promise.all([
+    const [linkedActor, rawLocations, linkedShops, associates] = await Promise.all([
       npcData.linkedActor ? CampaignCodexLinkers.getLinkedActor(npcData.linkedActor) : null,
       CampaignCodexLinkers.getAllLocations(this.document, npcData.linkedLocations || []),
       CampaignCodexLinkers.getLinkedShopsWithLocation(this.document, npcData.linkedShops || []),
       CampaignCodexLinkers.getAssociates(this.document, npcData.associates || []),
-     CampaignCodexLinkers.getInventory(this.document, npcData.inventory || []),
     ]);
 
-    return { npcData, linkedActor, rawLocations, linkedShops, associates, inventory };
+    return { npcData, linkedActor, rawLocations, linkedShops, associates };
   }
 
 
@@ -81,13 +80,26 @@ export class NPCSheet extends CampaignCodexBaseSheet {
 
 
   async _prepareContext(options) {
+  if (options.force) {
+    // this._processedData = null;
+    this._inventoryCache = null;
+    this._fetchingInventory = false;
+  }
     const context = await super._prepareContext(options);
 
     if (!this._processedData) {
       this._processedData = await this._processNpcData();
     }
-    const { npcData, linkedActor, rawLocations, linkedShops, associates, inventory } = this._processedData;
-    context.inventory = inventory;
+    const { npcData, linkedActor, rawLocations, linkedShops, associates } = this._processedData;
+    const rawInventoryCount = (npcData.inventory || []).length;
+    if (this._inventoryCache) {
+        context.inventory = this._inventoryCache;
+        context.loadingInventory = false;
+    } else {
+        context.inventory = [];
+        context.loadingInventory = true;
+        this._fetchInventoryBackground(npcData.inventory || []); 
+    }
     context.isLoot = npcData.isLoot || false;
     context.markup = npcData.markup || 1.0;
     context.inventoryCash = npcData.inventoryCash || 0;
@@ -134,19 +146,25 @@ export class NPCSheet extends CampaignCodexBaseSheet {
     if (!game.user.isGM) {
       defaultTabs = defaultTabs.filter(tab => !gmOnlyTabs.includes(tab.key));
     }
+    const renderIfActive = async (key, generatorPromise) => {
+        if (this._currentTab === key) {
+            return await generatorPromise;
+        }
+        return "";
+    };
     const tabContext = [
       {
         key: "info",
         active: this._currentTab === "info",
-        content:  await this._generateInfoTab(context),
+        content:  await renderIfActive("info", this._generateInfoTab(context)),
         label: localize("names.info"),
         icon: "fas fa-info-circle",
       },
       {
         key: "regions",
         statistic: { value: context.regionLinks.length, view: context.regionLinks.length > 0 },
-        active: this._currentTab === "locations",
-        content: await this._generateRegionsTab(context),
+        active: this._currentTab === "regions",
+        content: await renderIfActive("regions", this._generateRegionsTab(context)),
         label: localize("names.regions"),
         icon: TemplateComponents.getAsset("icon", "region"),
       },
@@ -154,7 +172,7 @@ export class NPCSheet extends CampaignCodexBaseSheet {
         key: "locations",
         statistic: { value: context.locationLinks.length, view: context.locationLinks.length > 0 },
         active: this._currentTab === "locations",
-        content: await this._generateLocationsTab(context),
+        content: await renderIfActive("locations", this._generateLocationsTab(context)),
         label: localize("names.locations"),
         icon: TemplateComponents.getAsset("icon", "location"),
       },
@@ -162,23 +180,23 @@ export class NPCSheet extends CampaignCodexBaseSheet {
         key: "shops",
         statistic: { value: context.linkedShops.length, view: context.linkedShops.length > 0 },
         active: this._currentTab === "shops",
-        content: await this._generateShopsTab(context),
+        content: await renderIfActive("shops",  this._generateShopsTab(context)),
         label: localize("names.shops"),
         icon: TemplateComponents.getAsset("icon", "shop"),
       },
       {
         key: "inventory",
         active: this._currentTab === "inventory",
-        content: this._generateInventoryTab(context),
+        content: await renderIfActive("inventory", this._generateInventoryTab(context)),
         icon: "fas fa-boxes",
         label: localize("names.inventory"),
-        statistic: { value: context.inventory.length, view: context.inventory.length >0, },
+        statistic: { value: rawInventoryCount, view: rawInventoryCount >0, },
       },
       {
         key: "associates",
         statistic: { value: context.associatesWithoutTaggedNPCs.length, view: context.associatesWithoutTaggedNPCs.length > 0 },
         active: this._currentTab === "associates",
-        content: await this._generateAssociatesTab(context),
+        content: await renderIfActive("associates",  this._generateAssociatesTab(context)),
         label: context.tagMode ? localize("names.members") : localize("names.associates"),
         icon: TemplateComponents.getAsset("icon", "npc"),
       },
@@ -186,7 +204,7 @@ export class NPCSheet extends CampaignCodexBaseSheet {
         key: "quests", 
         statistic: {value: context.sheetData.quests.length, view:context.sheetData.quests.length>0},
         active: this._currentTab === "quests", 
-        content: await TemplateComponents.questList(this.document, context.sheetData.quests, context.isGM) ,  
+        content: await renderIfActive("quests", TemplateComponents.questList(this.document, context.sheetData.quests, context.isGM)),
         label: localize("names.quests"), 
         icon: "fas fa-scroll", 
       }, 
@@ -194,7 +212,9 @@ export class NPCSheet extends CampaignCodexBaseSheet {
         key: "journals", 
         statistic: {value: context.linkedStandardJournals.length, view:context.linkedStandardJournals.length>0}, 
         active: this._currentTab === "journals", 
-        content:  `${TemplateComponents.contentHeader("fas fa-book", this._labelOverride(this.document, "journals") || localize("names.journals"))}${TemplateComponents.standardJournalGrid(context.linkedStandardJournals)}`, 
+        content: this._currentTab === "journals" 
+           ? `${TemplateComponents.contentHeader("fas fa-book", this._labelOverride(this.document, "journals") || localize("names.journals"))}${TemplateComponents.standardJournalGrid(context.linkedStandardJournals)}`
+           : "",
         label: localize("names.journals"), 
         icon: "fas fa-book", 
       },
@@ -202,14 +222,14 @@ export class NPCSheet extends CampaignCodexBaseSheet {
         key: "widgets", 
         statistic: {value: context.activewidget.length, view:context.activewidget.length>0},
         active: this._currentTab === "widgets",
-        content: await CampaignCodexBaseSheet.generateWidgetsTab(this.document, context, this._labelOverride(this.document, "widgets")),
+        content: await renderIfActive("widgets",  CampaignCodexBaseSheet.generateWidgetsTab(this.document, context, this._labelOverride(this.document, "widgets"))),
         label: localize("names.widgets"), 
         icon: "fas fa-puzzle-piece", 
       },
       {
         key: "notes",
         active: this._currentTab === "notes",
-        content: await CampaignCodexBaseSheet.generateNotesTab(this.document, context, this._labelOverride(this.document, "notes")),
+        content: await renderIfActive("notes",  CampaignCodexBaseSheet.generateNotesTab(this.document, context, this._labelOverride(this.document, "notes"))),
         label: localize("names.note") || "Notes",
         icon: "fas fa-sticky-note", 
       },

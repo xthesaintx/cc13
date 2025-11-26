@@ -3,7 +3,7 @@ import { TemplateComponents } from "./template-components.js";
 import { localize, format, promptForName, confirmationDialog, renderTemplate, targetedRefresh, getDefaultSheetTabs } from "../helper.js";
 import { widgetManager } from "../widgets/WidgetManager.js";
 import { tabPicker } from "../tab-picker.js";
-
+const DragDrop = foundry.applications.ux.DragDrop.implementation;
 // =========================================================================
 // BASE CLASS SETUP
 // =========================================================================
@@ -24,6 +24,7 @@ export class CampaignCodexBaseSheet extends baseSheetApp {
 
   static DEFAULT_OPTIONS = {
     classes: ["campaign-codex", "sheet", "journal-sheet", "themed theme-light"],
+    dragDrop: [{ dragSelector: '[data-drag]', dropSelector: null }],
     window: {
       frame: true,
       title: 'Campaign Codex',
@@ -182,12 +183,45 @@ export class CampaignCodexBaseSheet extends baseSheetApp {
     super(document, options);
     this._currentTab = "info";
     this._processedData = null;
-
+    this.#dragDrop = this.#createDragDropHandlers();
   }
+
   static #_onShowPlayers() {
     foundry.documents.collections.Journal.showDialog(this.document);
   }
 
+  _canDragStart(selector) {
+    return game.user.isGM; 
+  }
+
+  _canDragDrop(selector) {
+    return game.user.isGM;
+  }
+
+  _onDragStart(event) {
+  }
+
+  #createDragDropHandlers() {
+    // console.log(this.options.dragDrop);
+    return this.options.dragDrop.map((d) => {
+      d.permissions = {
+        dragstart: this._canDragStart.bind(this),
+        drop: this._canDragDrop.bind(this),
+      };
+      d.callbacks = {
+        dragstart: this._onDragStart.bind(this),
+        dragover: this._onDragOver.bind(this),
+        drop: this._onDrop.bind(this),
+      };
+      return new DragDrop(d);
+    });
+  }
+
+  #dragDrop;
+
+  get dragDrop() {
+    return this.#dragDrop;
+  }
 
   /** @inheritDoc */
   _getHeaderControls() {
@@ -258,7 +292,14 @@ export class CampaignCodexBaseSheet extends baseSheetApp {
     const allAvailable = Array.from(widgetManager.widgetRegistry.keys());
     context.addedWidgetNames = sheetWidgets.map(w => w.widgetName);
     context.availableWidgets = allAvailable.map(name => ({ name: name }));
-    context.widgetsToRender = await widgetManager.instantiateActiveWidgets(this.document);
+    // context.widgetsToRender = await widgetManager.instantiateActiveWidgets(this.document);
+
+    // Only instantiate widgets if the 'widgets' tab is active
+    if (this._currentTab === "widgets") {
+        context.widgetsToRender = await widgetManager.instantiateActiveWidgets(this.document);
+    } else {
+        context.widgetsToRender = [];
+    }
     
     // SHEET DATA PREPARATION
     context.sheetData = {
@@ -287,15 +328,18 @@ export class CampaignCodexBaseSheet extends baseSheetApp {
       { async: true, secrets: this.document.isOwner },
     );
 
-    // ENRICH NOTES
-    let notes = context.sheetData.notes;
-    if (Array.isArray(notes)) {
-      notes = notes[0] || "";
+    if (this._currentTab === "notes") {
+        let notes = context.sheetData.notes;
+        if (Array.isArray(notes)) {
+          notes = notes[0] || "";
+        }
+        context.sheetData.enrichedNotes = await foundry.applications.ux.TextEditor.implementation.enrichHTML(notes, {
+          async: true,
+          secrets: this.document.isOwner,
+        });
+    } else {
+        context.sheetData.enrichedNotes = "";
     }
-    context.sheetData.enrichedNotes = await foundry.applications.ux.TextEditor.implementation.enrichHTML(notes, {
-      async: true,
-      secrets: this.document.isOwner,
-    });
 
     context.canEdit = this.document.canUserModify(game.user, "update");
     context.currentTab = this._currentTab;
@@ -384,15 +428,18 @@ export class CampaignCodexBaseSheet extends baseSheetApp {
   });
   }
 
+
+
   async _onRender(context, options) {
     await super._onRender(context, options);
     const nativeHtml = this.element;
+    if (this.dragDrop && Array.isArray(this.dragDrop)) {
+        this.dragDrop.forEach((d) => d.bind(this.element));
+    }
 
     // BIND ALL LISTENERS
     this._activateQuestListeners(nativeHtml);
     this._activateObjectiveListeners(nativeHtml);
-    // this.secrets.bind(nativeHtml);
-    this._setupDropZones(nativeHtml);
     this._setupNameEditing(nativeHtml);
     this._activateEditorListeners(nativeHtml);
     this._addClassToEditorContent(nativeHtml);
@@ -487,11 +534,25 @@ export class CampaignCodexBaseSheet extends baseSheetApp {
   // =========================================================================
 
   _showTab(tabName, html) {
+    this._currentTab = tabName;
     html.querySelectorAll(".sidebar-tabs .tab-item").forEach((tab) => tab.classList.remove("active"));
     html.querySelectorAll(".tab-panel").forEach((panel) => panel.classList.remove("active"));
     html.querySelector(`.sidebar-tabs .tab-item[data-tab="${tabName}"]`)?.classList.add("active");
-    html.querySelector(`.tab-panel[data-tab="${tabName}"]`)?.classList.add("active");
+  
+    const activePanel = html.querySelector(`.tab-panel[data-tab="${tabName}"]`);
+    activePanel?.classList.add("active");
+
+    if (activePanel && activePanel.innerHTML.trim() === "") {
+        this.render(false);
+    }
   }
+
+  // _showTab(tabName, html) {
+  //   html.querySelectorAll(".sidebar-tabs .tab-item").forEach((tab) => tab.classList.remove("active"));
+  //   html.querySelectorAll(".tab-panel").forEach((panel) => panel.classList.remove("active"));
+  //   html.querySelector(`.sidebar-tabs .tab-item[data-tab="${tabName}"]`)?.classList.add("active");
+  //   html.querySelector(`.tab-panel[data-tab="${tabName}"]`)?.classList.add("active");
+  // }
 
   static async #_onChangeTab(event) {
     event.preventDefault();
@@ -538,10 +599,10 @@ export class CampaignCodexBaseSheet extends baseSheetApp {
   // LISTENER ACTIVATION & SETUP
   // =========================================================================
 
-  _setupDropZones(html) {
-    html.addEventListener("drop", this._onDrop.bind(this));
-    html.addEventListener("dragover", this._onDragOver.bind(this));
-  }
+  // _setupDropZones(html) {
+  //   html.addEventListener("drop", this._onDrop.bind(this));
+  //   html.addEventListener("dragover", this._onDragOver.bind(this));
+  // }
 
   _setupNameEditing(html) {
     if (game.user.isGM) {
@@ -1544,7 +1605,6 @@ _labelOverride(selectedDoc, sheetKey) {
     await locationDoc.unsetFlag("campaign-codex", "data.parentRegion");
 
     ui.notifications.info(`Removed "${locationDoc.name}" from region "${regionDoc.name}"`);
-    // console.log("remove region target")
     targetedRefresh([regionDoc.uuid, locationDoc.uuid], this.document.uuid);
   }
 
@@ -1557,6 +1617,7 @@ _labelOverride(selectedDoc, sheetKey) {
 
   static async #_onDropNPCsToMapClick(event) {
     event.preventDefault();
+    console.log(event);
     const sheetType = this.getSheetType();
     if (sheetType === "npc") {
       this._onDropNPCsToMapNPCSheet(event);
@@ -2842,6 +2903,14 @@ async _updateInventoryItem(itemUuid, updates, doc = null) {
   // =========================================================================
 
   _generateInventoryTab(data) {
+    if (data.loadingInventory) {
+        return `
+        <div style="padding: 20px; text-align: center; color: var(--color-text-light-highlight);">
+            <i class="fas fa-spinner fa-spin fa-2x"></i>
+            <p style="margin-top: 10px;">Loading Inventory...</p>
+        </div>`;
+    }
+
     let defaultLabel = localize("names.inventory")
     if (data.isLoot) defaultLabel = localize("names.loot"); 
     const label = this._labelOverride(this.document, "inventory") || defaultLabel;
@@ -2864,6 +2933,25 @@ async _updateInventoryItem(itemUuid, updates, doc = null) {
     ${TemplateComponents.inventoryTable(data.inventory, data.isLoot)}
   `;
   }
+
+  async _fetchInventoryBackground(rawInventory) {
+    if (this._fetchingInventory || !rawInventory) return;
+    this._fetchingInventory = true;
+    
+    try {
+        const result = await CampaignCodexLinkers.getInventory(this.document, rawInventory);
+        this._inventoryCache = result;
+    } catch (err) {
+        console.error("Campaign Codex | Background inventory fetch failed:", err);
+        this._inventoryCache = [];
+    } finally {
+        this._fetchingInventory = false;
+        if (this._currentTab === "inventory") {
+             this.render(false);
+        }
+    }
+  }
+
 
   // =========================================================================
   // SUBCLASS OVERRIDE METHODS

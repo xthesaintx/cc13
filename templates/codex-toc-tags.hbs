@@ -23,7 +23,7 @@
                 <ul class="cc-toc-tags-left-col {{#if this.title}}toc-collapsable {{/if}}{{#if this.isCollapsed}}is-collapsed{{/if}}" data-folder="{{this.title}}" data-section-id="{{this.sectionId}}">
                     {{#each this.items}}
                         {{#if this.canView}}
-                            <li class="document entry journalentry directory-item toc-tag-item" data-action="clickTag" data-tag-id="{{this.id}}" data-name="{{this.name}}">
+                            <li class="document entry journalentry directory-item toc-tag-item" data-action="clickTag" data-tag-id="{{this.id}}" data-uuid="{{this.uuid}}" data-name="{{this.name}}" draggable="true" data-drag="true" data-entry-id="{{this.id}}">
                                 <i class="{{#if iconOverride}}{{iconOverride}}{{else}}{{getAsset 'icon' ../../tab.type}}{{/if}}"></i>&nbsp;{{this.name}} {{#if this.hasChildren}}({{this.children.length}}){{/if}}
                                 <span>
                                     <i class="fas fa-external-link-alt" data-action="openDocument" data-uuid="{{this.uuid}}"></i>

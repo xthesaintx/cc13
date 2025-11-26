@@ -34,16 +34,16 @@ export class ShopSheet extends CampaignCodexBaseSheet {
         console.warn(`Campaign Codex | Linked scene not found: ${shopData.linkedScene}`);
       }
     }
-
-    const [linkedNPCs, linkedLocation, inventory, canViewLocation, canViewScene] = await Promise.all([
+    // const [linkedNPCs, linkedLocation, inventory, canViewLocation, canViewScene] = await Promise.all([
+    const [linkedNPCs, linkedLocation, canViewLocation, canViewScene] = await Promise.all([
         CampaignCodexLinkers.getLinkedNPCs(this.document, shopData.linkedNPCs || []),
         shopData.linkedLocation ? CampaignCodexLinkers.getLinkedLocation(shopData.linkedLocation) : null,
-        CampaignCodexLinkers.getInventory(this.document, shopData.inventory || []),
         this.constructor.canUserView(shopData.linkedLocation),
         this.constructor.canUserView(shopData.linkedScene)
     ]);
-    
-    return { shopData, linkedScene, linkedNPCs, linkedLocation, inventory, canViewLocation, canViewScene };
+    // return { shopData, linkedScene, linkedNPCs, linkedLocation, inventory, canViewLocation, canViewScene };
+  
+    return { shopData, linkedScene, linkedNPCs, linkedLocation, canViewLocation, canViewScene };
   }
 
     _getTabDefinitions() {
@@ -80,13 +80,32 @@ export class ShopSheet extends CampaignCodexBaseSheet {
   }
 
 
+
   async _prepareContext(options) {
-    const context = await super._prepareContext(options);
+  if (options.force) {
+    // this._processedData = null;
+    this._inventoryCache = null;
+    this._fetchingInventory = false;
+  }
+  const context = await super._prepareContext(options);
   if (!this._processedData) {
     this._processedData = await this._processShopData();
   }
-  const { shopData, linkedScene, linkedNPCs, linkedLocation, inventory, canViewLocation, canViewScene } = this._processedData;
+  const { shopData, linkedScene, linkedNPCs, linkedLocation, canViewLocation, canViewScene } = this._processedData;
+  // const { shopData, linkedScene, linkedNPCs, linkedLocation, inventory, canViewLocation, canViewScene } = this._processedData;
   
+  const rawInventoryCount = (shopData.inventory || []).length;
+  if (this._inventoryCache) {
+        context.inventory = this._inventoryCache;
+        context.loadingInventory = false;
+    } else {
+        context.inventory = [];
+        context.loadingInventory = true;
+        this._fetchInventoryBackground(shopData.inventory || []); 
+    }
+
+
+
   context.isLoot = shopData.isLoot || false;
   context.hideInventory = shopData.hideInventory || false;
   context.inventoryCash = shopData.inventoryCash || 0;
@@ -94,7 +113,15 @@ export class ShopSheet extends CampaignCodexBaseSheet {
   context.linkedScene = linkedScene;
   context.linkedNPCs = linkedNPCs;
   context.linkedLocation = linkedLocation;
-  context.inventory = inventory;
+  // context.inventory = inventory;
+
+  // if (this._currentTab === "inventory") {
+  //       context.inventory = await CampaignCodexLinkers.getInventory(this.document, shopData.inventory || []);
+  // } else {
+  //       context.inventory = []; 
+  // }
+
+
   context.canViewLocation = canViewLocation;
   context.canViewScene = canViewScene;
   context.taggedNPCs = context.linkedNPCs.filter((npc) => npc.tag === true);
@@ -114,27 +141,33 @@ export class ShopSheet extends CampaignCodexBaseSheet {
     if (!game.user.isGM) {
       defaultTabs = defaultTabs.filter(tab => !gmOnlyTabs.includes(tab.key));
     }
+    const renderIfActive = async (key, generatorPromise) => {
+        if (this._currentTab === key) {
+            return await generatorPromise;
+        }
+        return "";
+    };
     const tabContext = [
       {
         key: "info",
         active: this._currentTab === "info",
-        content:  await this._generateInfoTab(context),
+        content:  await renderIfActive("info", this._generateInfoTab(context)),
         label: localize("names.info"),
         icon: "fas fa-info-circle",
       },
       {
         key: "inventory",
         active: this._currentTab === "inventory",
-        content: this._generateInventoryTab(context),
+        content: await renderIfActive("inventory", this._generateInventoryTab(context)),
         icon: "fas fa-boxes",
         label: localize("names.inventory"),
-        statistic: { value: context.inventory.length, view: context.inventory.length >0 },
+        statistic: { value: rawInventoryCount, view: rawInventoryCount >0 },
       },
       {
         key: "npcs",
         statistic: { value: context.linkedNPCsWithoutTaggedNPCs.length, view: context.linkedNPCsWithoutTaggedNPCs.length>0 },
         active: this._currentTab === "npcs",
-        content: await this._generateNPCsTab(context),
+        content: await renderIfActive("npcs", this._generateNPCsTab(context)),
         label: localize("names.npcs"),
         icon: TemplateComponents.getAsset("icon", "npc"),
       },
@@ -142,7 +175,7 @@ export class ShopSheet extends CampaignCodexBaseSheet {
         key: "quests", 
         statistic: {value: context.sheetData.quests.length, view:context.sheetData.quests.length>0},
         active: this._currentTab === "quests", 
-        content: await TemplateComponents.questList(this.document, context.sheetData.quests, context.isGM) ,  
+        content: await renderIfActive("quests", TemplateComponents.questList(this.document, context.sheetData.quests, context.isGM)), 
         label: localize("names.quests"), 
         icon: "fas fa-scroll", 
       }, 
@@ -150,7 +183,9 @@ export class ShopSheet extends CampaignCodexBaseSheet {
         key: "journals", 
         statistic: {value: context.linkedStandardJournals.length, view:context.linkedStandardJournals.length>0}, 
         active: this._currentTab === "journals", 
-        content:  `${TemplateComponents.contentHeader("fas fa-book", this._labelOverride(this.document, "journals") || localize("names.journals"))}${TemplateComponents.standardJournalGrid(context.linkedStandardJournals)}`, 
+        content: this._currentTab === "journals" 
+           ? `${TemplateComponents.contentHeader("fas fa-book", this._labelOverride(this.document, "journals") || localize("names.journals"))}${TemplateComponents.standardJournalGrid(context.linkedStandardJournals)}`
+           : "",
         label: localize("names.journals"), 
         icon: "fas fa-book", 
       },
@@ -158,14 +193,14 @@ export class ShopSheet extends CampaignCodexBaseSheet {
         key: "widgets", 
         statistic: {value: context.activewidget.length, view:context.activewidget.length>0},
         active: this._currentTab === "widgets",
-        content: await CampaignCodexBaseSheet.generateWidgetsTab(this.document, context, this._labelOverride(this.document, "widgets")),
+        content: await renderIfActive("widgets", CampaignCodexBaseSheet.generateWidgetsTab(this.document, context, this._labelOverride(this.document, "widgets"))),
         label: localize("names.widgets"), 
         icon: "fas fa-puzzle-piece", 
       },
       {
         key: "notes",
         active: this._currentTab === "notes",
-        content: await CampaignCodexBaseSheet.generateNotesTab(this.document, context, this._labelOverride(this.document, "notes")),
+        content: await renderIfActive("notes",  CampaignCodexBaseSheet.generateNotesTab(this.document, context, this._labelOverride(this.document, "notes"))),
         label: localize("names.note") || "Notes",
         icon: "fas fa-sticky-note", 
       },

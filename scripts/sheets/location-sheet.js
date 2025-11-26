@@ -35,17 +35,16 @@ export class LocationSheet extends CampaignCodexBaseSheet {
       }
     }
 
-    const [linkedRegion, directNPCs, shopNPCs, linkedShops, canViewRegion, canViewScene, inventory] = await Promise.all([
+    const [linkedRegion, directNPCs, shopNPCs, linkedShops, canViewRegion, canViewScene] = await Promise.all([
       CampaignCodexLinkers.getLinkedRegion(this.document),
       CampaignCodexLinkers.getDirectNPCs(this.document, locationData.linkedNPCs || []),
       CampaignCodexLinkers.getShopNPCs(this.document, locationData.linkedShops || []),
       CampaignCodexLinkers.getLinkedShops(this.document, locationData.linkedShops || []),
       this.constructor.canUserView(locationData.parentRegion),
       this.constructor.canUserView(locationData.linkedScene),
-     CampaignCodexLinkers.getInventory(this.document, locationData.inventory || []),
     ]);
 
-    return { locationData, linkedRegion, directNPCs, shopNPCs, linkedShops, linkedScene, canViewRegion, canViewScene, inventory };
+    return { locationData, linkedRegion, directNPCs, shopNPCs, linkedShops, linkedScene, canViewRegion, canViewScene };
   }
 
   _getTabDefinitions() {
@@ -90,12 +89,25 @@ export class LocationSheet extends CampaignCodexBaseSheet {
 
 
   async _prepareContext(options) {
+  if (options.force) {
+    // this._processedData = null;
+    this._inventoryCache = null;
+    this._fetchingInventory = false;
+  }
     const context = await super._prepareContext(options);
     if (!this._processedData) {
       this._processedData = await this._processLocationData();
     }
     const { locationData, linkedRegion, directNPCs, shopNPCs, linkedShops, linkedScene, canViewRegion, canViewScene, inventory } = this._processedData;
-    context.inventory = inventory;
+  const rawInventoryCount = (locationData.inventory || []).length;
+  if (this._inventoryCache) {
+        context.inventory = this._inventoryCache;
+        context.loadingInventory = false;
+    } else {
+        context.inventory = [];
+        context.loadingInventory = true;
+        this._fetchInventoryBackground(locationData.inventory || []); 
+    }
     context.isLoot = locationData.isLoot || false;
     context.markup = locationData.markup || 1.0;
     context.inventoryCash = locationData.inventoryCash || 0;
@@ -133,13 +145,18 @@ export class LocationSheet extends CampaignCodexBaseSheet {
     if (!game.user.isGM) {
       defaultTabs = defaultTabs.filter(tab => !gmOnlyTabs.includes(tab.key));
     }
-
+    const renderIfActive = async (key, generatorPromise) => {
+        if (this._currentTab === key) {
+            return await generatorPromise;
+        }
+        return "";
+    };
 
      const tabContext = [
       {
         key: "info",
         active: this._currentTab === "info",
-        content:  await this._generateInfoTab(context),
+        content:  await renderIfActive("info", this._generateInfoTab(context)),
         label: localize("names.info"),
         icon: "fas fa-info-circle",
       },
@@ -147,31 +164,31 @@ export class LocationSheet extends CampaignCodexBaseSheet {
         key: "shops",
         statistic: { value: context.linkedShops.length, view: context.linkedShops.length > 0 },
         active: this._currentTab === "shops",
-        content: await this._generateShopsTab(context),
+        content: await renderIfActive("shops", this._generateShopsTab(context)),
         label: localize("names.shops"),
         icon: TemplateComponents.getAsset("icon", "shop"),
       },
       {
         key: "inventory",
         active: this._currentTab === "inventory",
-        content: this._generateInventoryTab(context),
+        content: await renderIfActive("inventory",this._generateInventoryTab(context)),
         icon: "fas fa-boxes",
         label: localize("names.inventory"),
-        statistic: { value: context.inventory.length, view: context.inventory.length >0, },
+        statistic: { value: rawInventoryCount, view: rawInventoryCount >0, },
       },
       {
         key: "npcs",
         statistic: { value: statAllNPCs, view: statAllNPCs > 0 },
-        active: this._currentTab === "associates",
-        content: await this._generateNPCsTab(context),
-        label: context.tagMode ? localize("names.members") : localize("names.associates"),
+        active: this._currentTab === "npcs",
+        content: await renderIfActive("npcs", this._generateNPCsTab(context)),
+        label: localize("names.npcs"),
         icon: TemplateComponents.getAsset("icon", "npc"),
       },
       { 
         key: "quests", 
         statistic: {value: context.sheetData.quests.length, view:context.sheetData.quests.length>0},
         active: this._currentTab === "quests", 
-        content: await TemplateComponents.questList(this.document, context.sheetData.quests, context.isGM) ,  
+        content: await renderIfActive("quests", TemplateComponents.questList(this.document, context.sheetData.quests, context.isGM)) ,  
         label: localize("names.quests"), 
         icon: "fas fa-scroll", 
       }, 
@@ -179,7 +196,9 @@ export class LocationSheet extends CampaignCodexBaseSheet {
         key: "journals", 
         statistic: {value: context.linkedStandardJournals.length, view:context.linkedStandardJournals.length>0},
         active: this._currentTab === "journals", 
-        content:  `${TemplateComponents.contentHeader("fas fa-book", this._labelOverride(this.document, "journals") || localize("names.journals"))}${TemplateComponents.standardJournalGrid(context.linkedStandardJournals)}`, 
+        content: this._currentTab === "journals" 
+           ? `${TemplateComponents.contentHeader("fas fa-book", this._labelOverride(this.document, "journals") || localize("names.journals"))}${TemplateComponents.standardJournalGrid(context.linkedStandardJournals)}`
+           : "",
         label: localize("names.journals"), 
         icon: "fas fa-book", 
       },
@@ -187,14 +206,14 @@ export class LocationSheet extends CampaignCodexBaseSheet {
         key: "widgets", 
         statistic: {value: context.activewidget.length, view:context.activewidget.length>0},
         active: this._currentTab === "widgets",
-        content: await CampaignCodexBaseSheet.generateWidgetsTab(this.document, context, this._labelOverride(this.document, "widgets")),
+        content: await renderIfActive("widgets", CampaignCodexBaseSheet.generateWidgetsTab(this.document, context, this._labelOverride(this.document, "widgets"))),
         label: localize("names.widgets"), 
         icon: "fas fa-puzzle-piece", 
       },
       {
         key: "notes",
         active: this._currentTab === "notes",
-        content: await CampaignCodexBaseSheet.generateNotesTab(this.document, context, this._labelOverride(this.document, "notes")),
+        content: await renderIfActive("notes", CampaignCodexBaseSheet.generateNotesTab(this.document, context, this._labelOverride(this.document, "notes"))),
         label: localize("names.note") || "Notes",
         icon: "fas fa-sticky-note", 
       },

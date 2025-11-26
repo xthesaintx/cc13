@@ -204,7 +204,6 @@ export class GroupLinkers {
   static async getGroupMembers(memberUuids) {
     const hideByPermission = game.settings.get("campaign-codex", "hideByPermission");
     if (!memberUuids) return [];
-
     const cache = this._createOperationCache();
     const memberPromises = memberUuids.map(async (uuid) => {
       try {
@@ -333,7 +332,7 @@ export class GroupLinkers {
     if (!regionDoc) return;
 
     const regionData = this._getCachedFlags(regionDoc, cache);
-    await this._processInventory(nestedData, regionDoc, regionData, cache);
+    // await this._processInventory(nestedData, regionDoc, regionData, cache);
 
     if (!nestedData.allRegions.some((r) => r.uuid === region.uuid)) {
       await this._enrichEntity(region, regionDoc, cache);
@@ -408,7 +407,7 @@ export class GroupLinkers {
 
     const childTypes = { shops: "shop", npcs: "npc" };
     const childLinks = { shops: locationData.linkedShops, npcs: locationData.linkedNPCs };
-    await this._processInventory(nestedData, locationDoc, locationData, cache);
+    // await this._processInventory(nestedData, locationDoc, locationData, cache);
 
     await Promise.all(
       Object.entries(childTypes).map(async ([key, type]) => {
@@ -532,7 +531,7 @@ export class GroupLinkers {
       await this._processEntity(npcInfo, nestedData, processedUuids, cache, shop, locationContext);
     }
     
-    await this._processInventory(nestedData, shopDoc, shopData, cache);
+    // await this._processInventory(nestedData, shopDoc, shopData, cache);
   }
 
   static async _processInventory(nestedData, doc, data, cache) {
@@ -591,7 +590,7 @@ export class GroupLinkers {
     let sourceLocationName = null;
     let sourceShopName = null;
 
-    if (nestedData)  await this._processInventory(nestedData, npcDoc, npcData, cache);
+    // if (nestedData)  await this._processInventory(nestedData, npcDoc, npcData, cache);
    
 
     if (sourceType === "shop") {
