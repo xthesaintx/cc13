@@ -352,7 +352,14 @@ export class CampaignCodexBaseSheet extends baseSheetApp {
         try {
           const document = await fromUuid(uuid);
           if (!document) {
+
+          if (sheetData.linkedStandardJournals && Array.isArray(sheetData.linkedStandardJournals)) {
+            sheetData.linkedStandardJournals = sheetData.linkedStandardJournals.filter(u => u !== uuid);
+            await this.document.setFlag("campaign-codex", "data", sheetData);
             console.warn(`Campaign Codex | Linked standard journal not found: ${uuid}`);
+            console.warn("Unlinked journal.");
+          }
+
             return null;
           }
 

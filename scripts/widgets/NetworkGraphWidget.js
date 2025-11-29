@@ -273,23 +273,88 @@ try {
         }
     }
 
+_iconOverride(icon) {
+        const ASSET_MAP = [
+            { key: "fas fa-map-pin", label: "Default", icon: "\uf041" },
+            // --- Default Tags ---
+            { key: "fas fa-globe", label: "Region", icon: "\uf0ac" },
+            { key: "fas fa-map-marker-alt", label: "Location", icon: "\uf3c5" },
+            { key: "fas fa-house", label: "Shop", icon: "\uf015" },
+            { key: "fas fa-user", label: "NPC", icon: "\uf007" },
+            { key: "fas fa-box", label: "Item", icon: "\uf466" },
+            { key: "fas fa-sitemap", label: "Group", icon: "\uf0e8" },
+            { key: "fas fa-tag", label: "Tag", icon: "\uf02b" },
+            // --- Places & Structures ---
+            { key: "fas fa-campground", label: "Camp", icon: "\uf6bb" },
+            { key: "fas fa-chess-rook", label: "Castle", icon: "\uf447" },
+            { key: "fas fa-dungeon", label: "Dungeon", icon: "\uf6d9" },
+            { key: "fas fa-gopuram", label: "Gopuram", icon: "\uf664" },
+            { key: "fas fa-landmark", label: "Landmark", icon: "\uf66f" },
+            { key: "fas fa-monument", label: "Monument", icon: "\uf5a6" },
+            { key: "fas fa-portal-enter", label: "Portal", icon: "\uf52b" },
+            { key: "fas fa-store", label: "Store", icon: "\uf54e" },
+            { key: "fas fa-beer", label: "Tavern", icon: "\uf0fc" },
+            { key: "fas fa-place-of-worship", label: "Temple", icon: "\uf67f" },
+            { key: "fas fa-tents", label: "Tents", icon: "\ue582" },
+            // --- Nature & Geography ---
+            { key: "fas fa-tree", label: "Forest", icon: "\uf1bb" },
+            { key: "fas fa-mountain", label: "Mountain", icon: "\uf6fc" },
+            { key: "fas fa-earth-africa", label: "World", icon: "\uf57c" },
+            // --- Creatures & People ---
+            { key: "fas fa-paw", label: "Animal", icon: "\uf1b0" },
+            { key: "fas fa-user-shield", label: "Guard", icon: "\uf505" },
+            { key: "fas fa-horse", label: "Horse", icon: "\uf6f0" },
+            { key: "fas fa-shield-dog", label: "Pet", icon: "\ue573" },
+            { key: "fas fa-spider", label: "Spider", icon: "\uf717" },
+            { key: "fas fa-users-viewfinder", label: "Users", icon: "\ue595" },
+            // --- Items & Objects ---
+            { key: "fas fa-sailboat", label: "Boat", icon: "\ue448" },
+            { key: "fas fa-coins", label: "Coins", icon: "\uf51e" },
+            { key: "fas fa-crown", label: "Crown", icon: "\uf521" },
+            { key: "fas fa-flask", label: "Flask", icon: "\uf0c3" },
+            { key: "fas fa-utensils", label: "Food", icon: "\uf2e7" },
+            { key: "fas fa-scroll", label: "Quest", icon: "\uf70e" },
+            { key: "fas fa-shield", label: "Shield", icon: "\uf132" },
+            { key: "fas fa-gem", label: "Treasure", icon: "\uf3a5" },
+            { key: "fas fa-bed", label: "Bed", icon: "\uf236" },
+            // --- Concepts & Symbols ---
+            { key: "fas fa-skull-crossbones", label: "Danger", icon: "\uf714" },
+            { key: "fas fa-magic", label: "Magic", icon: "\uf0d0" },
+            { key: "fas fa-puzzle-piece", label: "Puzzle", icon: "\uf12e" }
+        ];
+
+        const iconMap = ASSET_MAP.reduce((acc, item) => {
+            acc[item.key] = item; 
+            return acc;
+        }, {});
+
+        const selectedEntry = iconMap[icon] || iconMap["fas fa-map-pin"];
+        return selectedEntry ? selectedEntry.icon : "\uf041";
+    }
+
+
     _createNode(doc, isCenter) {
         const type = doc.getFlag("campaign-codex", "type") || "default";
         const isTag = doc.getFlag("campaign-codex", "data.tagMode");
-        
-        const iconMap = {
-            group:   { code: '\uf0e8', color: '#d4af37' }, // fas fa-globe
-            region:   { code: '\uf0ac', color: '#d4af37' }, // fas fa-globe
-            location: { code: '\uf3c5', color: '#d4af37' }, // fas fa-map-marker-alt
-            shop:     { code: '\uf015', color: '#d4af37' }, // fas fa-house
-            npc:      { code: '\uf007', color: '#d4af37' }, // fas fa-user
-            tag:      { code: '\uf02b', color: '#d4af37' }, // fas fa-tag
-            default:  { code: '\uf15b', color: '#d4af37' }  // fas fa-file-alt
-        };
+        let config;
 
-        const config = isTag ? iconMap.tag : (iconMap[type] || iconMap.default);
+        const iconOverride = doc.getFlag("campaign-codex", "icon-override");
+        if (iconOverride) {
+            config = {code:this._iconOverride(iconOverride), color: '#d4af37'};
+        }
+        else {
+            const iconMap = {
+                group:   { code: '\uf0e8', color: '#d4af37' },
+                region:   { code: '\uf0ac', color: '#d4af37' }, 
+                location: { code: '\uf3c5', color: '#d4af37' }, 
+                shop:     { code: '\uf015', color: '#d4af37' }, 
+                npc:      { code: '\uf007', color: '#d4af37' }, 
+                tag:      { code: '\uf02b', color: '#d4af37' }, 
+                default:  { code: '\uf15b', color: '#d4af37' }  
+            };
+            config = isTag ? iconMap.tag : (iconMap[type] || iconMap.default);
+        }   
         
-        // Center node gets Highlight Color (Orange), others get Type Color
         const finalColor = isCenter ? "#2a2a2a" : config.color;
 
         return {
