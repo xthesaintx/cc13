@@ -1177,7 +1177,7 @@ _prepareTreeTagNodes(nodes) {
             const typeA = typeOrder[a.type] || 99;
             const typeB = typeOrder[b.type] || 99;
             if (typeA !== typeB) return typeA - typeB;
-            return a.name.localeCompare(b.name);
+            return a.name.localeCompare(b.name, undefined, { numeric: true });
         })
         .map(node => {
             const childrenData = node.associates ? [...node.associates, ...node.locations, ...node.shops, ...node.regions] : [];
@@ -1223,7 +1223,7 @@ _prepareTreeNodes(nodes, nestedData) {
         const typeA = typeOrder[a.type] || 99;
         const typeB = typeOrder[b.type] || 99;
         if (typeA !== typeB) return typeA - typeB;
-        return a.name.localeCompare(b.name);
+        return a.name.localeCompare(b.name, undefined, { numeric: true });
     });
 
     return sortedNodes.map(node => {
@@ -1356,7 +1356,7 @@ _getChildrenForMember(member, nestedData) {
         ? rawShops.filter(loc => loc.canView) 
         : rawShops;
     if (sortAlpha) {
-        processedShops.sort((a, b) => a.name.localeCompare(b.name));
+        processedShops.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
     }
     processedShops.forEach(location => {
         const imageAreaOverride = location.tabOverrides?.find(override => override.key === "imageArea");
@@ -1440,7 +1440,7 @@ async _generateNPCsTab(data) {
 
   async _generateNPCCards(npcs) {
     const npcCards = game.settings.get("campaign-codex", "sortCardsAlpha");
-    const npcstoRender = npcCards ? [...npcs].sort((a, b) => a.name.localeCompare(b.name)) : npcs;
+    const npcstoRender = npcCards ? [...npcs].sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true })) : npcs;
     const cardPromises = npcstoRender.map(async (npc) => {
       const sourcesArray = [];
       if (npc.regions.length > 0) {
@@ -1479,7 +1479,7 @@ async _generateRegionsTab(data) {
         ? rawRegions.filter(loc => loc.canView) 
         : rawRegions;
     if (sortAlpha) {
-        processedRegions.sort((a, b) => a.name.localeCompare(b.name));
+        processedRegions.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
     }
     processedRegions.forEach(location => {
         const imageAreaOverride = location.tabOverrides?.find(override => override.key === "imageArea");
@@ -1500,7 +1500,7 @@ async _generateLocationsTab(data) {
         ? rawLocations.filter(loc => loc.canView) 
         : rawLocations;
     if (sortAlpha) {
-        processedLocations.sort((a, b) => a.name.localeCompare(b.name));
+        processedLocations.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
     }
     processedLocations.forEach(location => {
         const imageAreaOverride = location.tabOverrides?.find(override => override.key === "imageArea");

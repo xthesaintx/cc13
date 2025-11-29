@@ -25,7 +25,7 @@ class JournalTemplateManager {
         // const uniqueTemplates = Array.from(new Map(combined.map(item => [item.filePath, item])).values());
         // uniqueTemplates.sort((a, b) => a.title.localeCompare(b.title));
         // return uniqueTemplates;
-        return combined.sort((a, b) => a.title.localeCompare(b.title));
+        return combined.sort((a, b) => a.title.localeCompare(b.title, undefined, { numeric: true }));
     }
 
     /**

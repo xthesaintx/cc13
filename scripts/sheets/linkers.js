@@ -80,7 +80,7 @@ export class CampaignCodexLinkers {
   static createQuickTags(sources, uniqueKey = "id") {
     if (!sources || !Array.isArray(sources)) return [];
     const alphaCards = game.settings.get("campaign-codex", "sortCardsAlpha");
-    const sourcesToRender = alphaCards ? [...sources].sort((a, b) => a.name.localeCompare(b.name)) : sources;
+    const sourcesToRender = alphaCards ? [...sources].sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true })) : sources;
     const seen = new Set();
     const uniqueLinks = sourcesToRender.filter((item) => {
       const identifier = item[uniqueKey];

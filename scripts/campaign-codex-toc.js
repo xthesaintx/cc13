@@ -371,7 +371,7 @@ async _prepareContext(options) {
                 const typeA = typeOrder[a.type] || 99;
                 const typeB = typeOrder[b.type] || 99;
                 if (typeA !== typeB) return typeA - typeB;
-                return a.name.localeCompare(b.name);
+                return a.name.localeCompare(b.name, undefined, { numeric: true });
             });
             
         return {
@@ -396,12 +396,12 @@ Object.values(content).forEach(arr => {
                 if (!aIsEmpty && bIsEmpty) {
                     return -1;
                 }
-                const pathCompare = pathA.localeCompare(pathB);
+                const pathCompare = pathA.localeCompare(pathB, undefined, { numeric: true });
                 if (pathCompare !== 0) return pathCompare;
-                return a.name.localeCompare(b.name);
+                return a.name.localeCompare(b.name, undefined, { numeric: true });
             });
         } else if (arr[0].hasOwnProperty('title')) {
-            arr.sort((a, b) => a.title.localeCompare(b.title));
+            arr.sort((a, b) => a.title.localeCompare(b.title, undefined, { numeric: true }));
         }
     }
 });

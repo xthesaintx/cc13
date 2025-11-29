@@ -235,6 +235,7 @@ export class CampaignCodexBaseSheet extends baseSheetApp {
     return controls;
   }
 
+
   async _prepareContext(options) {
     const context = await super._prepareContext(options);
     if (options.force) {
@@ -413,7 +414,8 @@ export class CampaignCodexBaseSheet extends baseSheetApp {
   /** @inheritDoc */
   async _onFirstRender(context, options) {
     await super._onFirstRender(context, options);
-  
+      this._createContextMenus();
+
     this.element.addEventListener("click", (event) => {
       const clickedImage = event.target.closest("img:not(.nopopout)");
       if (!clickedImage) {
@@ -428,6 +430,47 @@ export class CampaignCodexBaseSheet extends baseSheetApp {
   });
   }
 
+
+  /**
+   * Register context menu entries and fire hooks.
+   * @protected
+   */
+  _createContextMenus() {
+    this._createContextMenu(this._getEntryContextOptions, ".scene-name[data-scene-uuid]", {
+      fixed: true,
+      hookName: `get${this.documentName}ContextOptions`,
+      parentClassHooks: false
+    });
+  }
+
+
+  /** @inheritDoc */
+  _getEntryContextOptions() {
+    return [{
+      name: "SCENE.View",
+      icon: '<i class="fa-solid fa-eye"></i>',
+      condition: span => !canvas.ready || (span.dataset.sceneUuid !== canvas.scene.uuid),
+      callback: span => game.scenes.get(foundry.utils.parseUuid(span.dataset.sceneUuid).id)?.view()
+    }, {
+      name: "SCENE.Activate",
+      icon: '<i class="fa-solid fa-bullseye"></i>',
+      condition: span => game.user.isGM && !game.scenes.get(span.dataset.sceneUuid)?.active,
+      callback: span => game.scenes.get(foundry.utils.parseUuid(span.dataset.sceneUuid).id)?.activate()
+    }, {
+      name: "SCENE.Configure",
+      icon: '<i class="fa-solid fa-gears"></i>',
+      callback: span => game.scenes.get(foundry.utils.parseUuid(span.dataset.sceneUuid).id)?.sheet.render({ force: true })
+    },
+    {
+      name: "SCENE.ToggleNav",
+      icon: '<i class="fa-solid fa-compass"></i>',
+      condition: span => game.user.isGM && !game.scenes.get(foundry.utils.parseUuid(span.dataset.sceneUuid).id)?.active,
+      callback: span => {
+        const scene = game.scenes.get(foundry.utils.parseUuid(span.dataset.sceneUuid).id);
+        scene?.update({ navigation: !scene.navigation });
+      }
+    }].concat();
+  }
 
 
   async _onRender(context, options) {
@@ -1806,7 +1849,7 @@ _labelOverride(selectedDoc, sheetKey) {
     const currentData = this.document.getFlag("campaign-codex", "data") || {};
     const inventory = await CampaignCodexLinkers.getInventory(this.document, currentData.inventory || []);
 
-    inventory.sort((a, b) => a.name.localeCompare(b.name));
+    inventory.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
 
     const sortedMinimalInventory = inventory.map((item) => ({
       customPrice: item.customPrice,

@@ -322,7 +322,7 @@ export class TemplateComponents {
     }
 
     const alphaCards = game.settings.get("campaign-codex", "sortCardsAlpha");
-    const entitiesToRender = alphaCards ? [...entities].sort((a, b) => a.name.localeCompare(b.name)) : entities;
+    const entitiesToRender = alphaCards ? [...entities].sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true })) : entities;
 
     return `
       <div class="entity-grid">

@@ -97,7 +97,7 @@ export class SimpleCampaignCodexImporter {
         }
 
         const optionsHTML = importOptions
-            .sort((a, b) => a.label.localeCompare(b.label))
+            .sort((a, b) => a.label.localeCompare(b.label, undefined, { numeric: true, sensitivity: 'base' }))
             .map((opt) => `<option value="${opt.value}">${opt.label}</option>`)
             .join("");
 
