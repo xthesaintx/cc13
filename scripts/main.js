@@ -401,8 +401,21 @@ Hooks.on("updateFolder", async (document, changes, options, userId) => {
     }
 }
 });
+
+
+
  
 Hooks.on("updateJournalEntry", async (document, changes, options, userId) => {
+
+    if (canvas.ready){
+    const mapMarkerChanged = foundry.utils.hasProperty(changes, "flags.campaign-codex.data.mapMarker");
+    if (mapMarkerChanged) {
+        const linkedNotes = canvas.notes.placeables.filter(n => n.document.entryId === document.id);
+        for (const note of linkedNotes) {
+            note.draw(); 
+        }
+    }
+}
   if (
     document._skipRelationshipUpdates ||
     options.skipRelationshipUpdates ||
@@ -414,6 +427,8 @@ Hooks.on("updateJournalEntry", async (document, changes, options, userId) => {
 
   const type = document.getFlag("campaign-codex", "type");
   const isTag = type === "npc" && !!document.getFlag("campaign-codex", "data")?.tagMode;
+
+
 
   if (type) {
     try {
@@ -437,13 +452,8 @@ Hooks.on("updateJournalEntry", async (document, changes, options, userId) => {
      } else {
          await game.campaignCodex.scheduleSheetRefresh(document.uuid);
      }
-  // if (isTag && changes.hasOwnProperty("name")) {
-  //   await game.campaignCodex.refreshAllOpenCodexSheets();
-  //   console.log("all");
-  // } else {
-  //   await game.campaignCodex._scheduleSheetRefresh(document.uuid);
-  //   console.log("schedule");
-  // }
+
+
 });
 
 Hooks.on("updateActor", async (actor, changes, options, userId) => {

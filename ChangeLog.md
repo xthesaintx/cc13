@@ -1,3 +1,19 @@
+## 1.5.7
+- Bug fixes (currency can be 0)
+- Tab override defaults can be overriden at sheet level, tabs with defaults will be highlighted
+- Map marker input text box next to subtitle, can be hidden in sheet config
+-
+
+## 1.5.6
+- updated the drag drop to the new v2 method
+- group sheets now only check for circular, self link, and dup links at root
+- Bug fixes
+- CSS Bug fixes
+- Removed inventory items from group sheet tree and and tab
+- Added Entries to group sheet tab
+- Implemented lazy loading on sheets
+- Added a loading state for inventory if it's not finished processing data before the tab is selected.
+
 ## API
 Assign the API:
 - campaignCodexAPI = game.modules.get('campaign-codex')?.api;
@@ -16,16 +32,6 @@ pagesToSeparateSheets: Bool, will create a Campaign Codex sheet of type for each
 
 ### Open the ToC Sheet
 - campaignCodexAPI.openTOCSheet(type);
-
-## 1.5.6
-- updated the drag drop to the new v2 method
-- group sheets now only check for circular, self link, and dup links at root
-- Bug fixes
-- CSS Bug fixes
-- Removed inventory items from group sheet tree and and tab
-- Added Entries to group sheet tab
-- Implemented lazy loading on sheets
-- Added a loading state for inventory if it's not finished processing data before the tab is selected.
 
 ## 1.5.4
 - Added Show to Players in the config menu

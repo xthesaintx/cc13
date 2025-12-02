@@ -254,7 +254,7 @@ export class CampaignCodexBaseSheet extends baseSheetApp {
     context.isOwnerOrHigher = this.constructor.isOwnerOrHigher(this.document);
     context.showStats = game.settings.get("campaign-codex", "showStats");
     context.sheetTypeLabelOverride = sheetData.sheetTypeLabelOverride;
-
+    context.mapMarker = sheetData.mapMarker || "";
     // ICON OVERRIDE
     const iconOverride = this.document.getFlag("campaign-codex", "icon-override");
     if (iconOverride) {
@@ -263,6 +263,8 @@ export class CampaignCodexBaseSheet extends baseSheetApp {
 
     // IMAGE CONFIGURATION
     const allOverrides = this.document.getFlag("campaign-codex", "tab-overrides") || [];
+    const mapMarkerOverride = allOverrides.find(override => override.key === "mapMarker");
+    context.mapMarkerOverride = mapMarkerOverride?.visible ?? true;
     const imageAreaOverride = allOverrides.find(override => override.key === "imageArea");
     context.showImage = imageAreaOverride?.visible ?? true;
     const imagePath = this.document.getFlag("campaign-codex", "image") || null;
@@ -495,7 +497,7 @@ export class CampaignCodexBaseSheet extends baseSheetApp {
     this._addClassToEditorContent(nativeHtml);
     this._activateSheetSpecificListeners(nativeHtml); 
     this._setupTypeEditing(nativeHtml); 
- 
+    this._setupMarkerEditing(nativeHtml);
     this._showTab(this._currentTab, nativeHtml);
     
     // INVENTORY & QUEST INVENTORY LISTENERS
@@ -674,6 +676,17 @@ export class CampaignCodexBaseSheet extends baseSheetApp {
     }
   }
 
+  _setupMarkerEditing(html) {
+    if (game.user.isGM) {
+      const typeElement = html.querySelector(".sheet-marker");
+      if (typeElement) {
+        typeElement.addEventListener("click", this._onMarkerEdit.bind(this));
+        html.addEventListener("blur", this._onMarkerSave.bind(this), true);
+        html.addEventListener("keypress", this._onMarkerKeypress.bind(this));
+      }
+    }
+  }
+
   _activateObjectiveListeners(html) {
     if (!game.user.isGM) return;
 
@@ -685,9 +698,6 @@ export class CampaignCodexBaseSheet extends baseSheetApp {
       el.addEventListener('click', this._onRemoveObjective.bind(this));
     });
 
-    // html.querySelectorAll('.objective-toggle-icon').forEach(el => {
-    //   el.addEventListener('click', this._onUpdateObjective.bind(this));
-    // });
     
     html.querySelectorAll('.objective-text.editable').forEach(el => {
       el.addEventListener('click', this._onObjectiveTextEdit.bind(this));
@@ -735,9 +745,6 @@ export class CampaignCodexBaseSheet extends baseSheetApp {
     }
   }
 
-  // _activateJournalListeners(html) {
-  //   html.querySelectorAll(".remove-standard-journal")?.forEach(el => el.addEventListener("click", this._onRemoveStandardJournal.bind(this)));
-  // }
 
   _activateEditorListeners(html) {
     html.querySelectorAll("prose-mirror").forEach((editor) => {
@@ -1009,7 +1016,7 @@ _labelOverride(selectedDoc, sheetKey) {
         key: defaultTab.key,
         originalLabel: defaultTab.label,
         overrideLabel: override?.label || "",
-        visible: override?.visible ?? true,
+        visible: override?.visible ?? defaultVisibility,
         defaultVisibility: defaultVisibility
       };
     });
@@ -1021,6 +1028,15 @@ _labelOverride(selectedDoc, sheetKey) {
       overrideLabel: "",
       hideLabel: true,
       visible: imageAreaOverride?.visible ?? true,
+      defaultVisibility: true
+    });
+    const mapMarkerOverride = currentOverrides.find(o => o.key === "mapMarker");
+    dialogTabs.push({
+      key: "mapMarker",
+      originalLabel: "Map Marker",
+      overrideLabel: "",
+      hideLabel: true,
+      visible: mapMarkerOverride?.visible ?? true,
       defaultVisibility: true
     });
 
@@ -1103,7 +1119,7 @@ _labelOverride(selectedDoc, sheetKey) {
           const originalTab = dialogTabs.find(d => d.key === o.key); 
           if (!originalTab) return false; 
           const isLabelOverridden = o.label && o.label !== originalTab.originalLabel;
-          const isVisibilityOverridden = !o.visible; 
+          const isVisibilityOverridden = o.visible !== originalTab.defaultVisibility;
           return isLabelOverridden || isVisibilityOverridden;
         });
 
@@ -1785,7 +1801,7 @@ _labelOverride(selectedDoc, sheetKey) {
   }
 
   async _onCashChange(event) {
-    const inventoryCash = parseFloat(event.target.value) || 1.0;
+    const inventoryCash = parseFloat(event.target.value) || 0;
     const currentData = this.document.getFlag("campaign-codex", "data") || {};
     currentData.inventoryCash = inventoryCash;
     await this.document.setFlag("campaign-codex", "data", currentData);
@@ -2572,6 +2588,40 @@ static async #_objectiveToggle (event, target) {
   // =========================================================================
   // INSTANCE EVENT HANDLERS - NAME & TYPE EDITING
   // =========================================================================
+
+
+
+_onMarkerEdit(event) {
+    const typeElement = event.currentTarget;
+    const input = document.createElement("input");
+    input.type = "text";
+    input.className = "marker-input"; 
+    input.maxLength = 4; // Limits input to 4 characters
+    input.value = typeElement.textContent;
+
+    input.addEventListener("input", function() {
+      this.value = this.value.replace(/[^a-zA-Z0-9]/g, "");
+    });
+
+    typeElement.replaceWith(input);
+    input.focus();
+    input.select();
+  }
+
+  async _onMarkerSave(event) {
+    if (!event.target.classList.contains("marker-input")) return;
+    const input = event.target;
+    const newType = input.value.trim();
+    await this.document.setFlag("campaign-codex", "data.mapMarker", newType);
+    this.render(false);
+  }
+
+  async _onMarkerKeypress(event) {
+    if (event.key === "Enter" && event.target.classList.contains("marker-input")) {
+      event.preventDefault();
+      event.target.blur();
+    }
+  }
 
   _onTypeEdit(event) {
     const typeElement = event.currentTarget;

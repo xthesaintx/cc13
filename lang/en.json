@@ -153,8 +153,8 @@
         "hint": "Automatically create and organise Campaign Codex journals in folders"
       },
       "hideByPermission": {
-        "name": "Hide Cards by ownership",
-        "hint": "Hide cards if the user does not have observer or higher ownership of the journal or item"
+        "name": "Hide by ownership",
+        "hint": "Hide linked sheets if the user does not have observer or higher ownership of the journal"
       },
       "hideInventoryByPermission":{
         "name": "Hide Inventory Items by ownership",

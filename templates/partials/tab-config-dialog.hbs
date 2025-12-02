@@ -1,3 +1,4 @@
+
 <form>
     {{!-- Header Row --}}
     <div class="form-group" style="display: grid; grid-template-columns: minmax(120px, 1fr) minmax(120px, 1fr) 60px; gap: 8px; align-items: center; margin-bottom: 10px; padding-bottom: 5px; border-bottom: 1px solid #CCC;">
@@ -9,9 +10,9 @@
     {{!-- Tab Rows --}}
     {{#each tabs as |tab|}}
 
-    <div class="form-group campaign-codex{{#if (not tab.defaultVisibility)}} cc-disabled-row{{/if}}" style="display: grid; grid-template-columns: minmax(120px, 1fr) minmax(120px, 1fr) 60px; gap: 8px; align-items: center; margin-bottom: 5px;{{#if tab.hideLabel}}border-top: dotted 1px var(--cc-accent){{/if}}">
+    <div class="form-group campaign-codex" style="display: grid; grid-template-columns: minmax(120px, 1fr) minmax(120px, 1fr) 60px; gap: 8px; align-items: center; margin-bottom: 5px;">
         
-        <label title="{{tab.originalLabel}}" style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+        <label title="{{tab.originalLabel}}" style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;{{#if (not tab.defaultVisibility)}} color: var(--cc-accent){{/if}}">
             {{tab.originalLabel}}
         </label>
         

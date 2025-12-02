@@ -12,7 +12,7 @@
         </div>
 
         <h1 class="sheet-title">{{document.name}}</h1>
-        <div class="sub-title"><i class="{{#if customIcon}}{{customIcon}}{{else}}{{#if tagMode}}{{getAsset 'icon' 'tag'}}{{else}}{{getAsset 'icon' sheetType}}{{/if}}{{/if}}" data-action="editIcon"></i> <div class="sheet-type">{{sheetTypeLabel}}</div></div>
+        <div class="sub-title"><div class="type-wrapper"><i class="{{#if customIcon}}{{customIcon}}{{else}}{{#if tagMode}}{{getAsset 'icon' 'tag'}}{{else}}{{getAsset 'icon' sheetType}}{{/if}}{{/if}}" data-action="editIcon"></i> <div class="sheet-type">{{sheetTypeLabel}}</div></div>{{#if mapMarkerOverride}}<div class="map-marker"><i class="fas fa-map-marker"></i><div class="sheet-marker">{{#if mapMarker}}{{mapMarker}}{{else}}-{{/if}}</div></div>{{/if}}</div>
         {{#if (and isGM showImage)}}
           <i class="fas fa-camera image-change-btn" data-action="imageChange"></i>{{/if}} {{!-- Custom header content --}} {{{customHeaderContent}}}
       </div>

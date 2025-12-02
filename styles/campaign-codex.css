@@ -149,7 +149,7 @@
 .campaign-codex .sheet-title:hover {
   color: var(--cc-accent);
 }
-
+.campaign-codex .sheet-marker,
 .campaign-codex .sheet-type {
   font-size: 12px;
   text-transform: uppercase;
@@ -158,6 +158,15 @@
   margin-bottom: 16px;
   cursor: text;
 }
+.campaign-codex .map-marker,
+.campaign-codex .type-wrapper {
+    display: flex;
+    flex-direction: row;
+    gap: 8px;
+    justify-content: center;
+}
+
+
 
 .campaign-codex .sub-title i {
   cursor: pointer;
@@ -168,7 +177,7 @@
 .campaign-codex .sub-title {
     display: flex;
     flex-direction: row;
-    gap: 8px;
+    gap: 16px;
     justify-content: center;
   }
 
@@ -3964,10 +3973,21 @@ QUESTS
   padding: 2px 6px;
   border-radius: 4px;
   text-transform: uppercase;
-
   font-size: 12px;
   letter-spacing: 1px;
   width: 100%;
+}
+
+.campaign-codex .marker-input {
+  background: transparent;
+  border: 1px solid var(--cc-accent30);
+  color: var(--cc-sidebar-text);
+  padding: 2px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  font-size: 12px;
+  letter-spacing: 1px;
+  width: 30%;
 }
 
 /*

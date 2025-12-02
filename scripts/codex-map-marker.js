@@ -110,6 +110,44 @@ export class CampaignCodexMapMarker extends PIXI.Container {
 }
 
 
+// /**
+//  * A helper function to be attached to the Note.prototype.
+//  * It checks if a note should have a custom Campaign Codex icon.
+//  * 'this' is assumed to be an instance of a Note.
+//  * @returns {PIXI.Container|void}
+//  */
+// export function _getCampaignCodexIcon() {
+//   const journal = this.document.entry;
+//   if ( !journal ) return;
+
+//   const isCC = journal.getFlag("campaign-codex", "type");
+//   if ( !isCC ) return;
+
+//   const mapCodeRegex = /^([A-Z]?\d{1,3}[A-Z]?)(?=\s*[-: ]|$)/i;
+//   // const mapCodeRegex = /^([A-Z]?\d{1,3})\s*-\s*/i;
+//   const match = journal.name.match(mapCodeRegex);
+
+//   if ( !match ) return;
+
+//   const code = match[1].toUpperCase(); // Get the code (e.g., "H1" or "001")
+
+//   // We have a match! Create the custom icon.
+//   const {icon: IconClass, ...style} = foundry.utils.mergeObject(
+//     CONFIG.CampaignCodex.mapLocationMarker.default,
+//     {},
+//     {inplace: false},
+//   );
+
+//   const options = {
+//     size: this.document.iconSize,
+//     tint: Color.from(this.document.texture.tint || null),
+//   };
+//   return new IconClass({code: code, ...options, ...style});
+// }
+
+
+
+
 /**
  * A helper function to be attached to the Note.prototype.
  * It checks if a note should have a custom Campaign Codex icon.
@@ -123,15 +161,25 @@ export function _getCampaignCodexIcon() {
   const isCC = journal.getFlag("campaign-codex", "type");
   if ( !isCC ) return;
 
-  const mapCodeRegex = /^([A-Z]?\d{1,3}[A-Z]?)(?=\s*[-: ]|$)/i;
-  // const mapCodeRegex = /^([A-Z]?\d{1,3})\s*-\s*/i;
-  const match = journal.name.match(mapCodeRegex);
+  // Retrieve mapMarker from the 'data' flag object
+  const mapMarker = journal.getFlag("campaign-codex", "data")?.mapMarker;
+  let code;
 
-  if ( !match ) return;
+  // 1. If mapMarker is set (not "" or undefined), use it
+  if (mapMarker) {
+    code = mapMarker.toUpperCase();
+  } 
+  // 2. Else, try to match the Regex
+  else {
+    const mapCodeRegex = /^([A-Z]?\d{1,3}[A-Z]?)(?=\s*[-: ]|$)/i;
+    const match = journal.name.match(mapCodeRegex);
 
-  const code = match[1].toUpperCase(); // Get the code (e.g., "H1" or "001")
-
-  // We have a match! Create the custom icon.
+    // 3. If no regex match, return
+    if ( !match ) return;
+    
+    code = match[1].toUpperCase();
+  }
+console.log(code);
   const {icon: IconClass, ...style} = foundry.utils.mergeObject(
     CONFIG.CampaignCodex.mapLocationMarker.default,
     {},
@@ -144,3 +192,15 @@ export function _getCampaignCodexIcon() {
   };
   return new IconClass({code: code, ...options, ...style});
 }
+
+
+
+
+
+
+
+
+
+
+
+
