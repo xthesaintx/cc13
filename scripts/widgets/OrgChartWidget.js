@@ -69,19 +69,21 @@ export class OrgChartWidget extends CampaignCodexWidget {
         for (const uuid of allLinkedUuids) {
             try {
                 const doc = await fromUuid(uuid);
+                const canView = doc?.testUserPermission(game.user, CONST.DOCUMENT_OWNERSHIP_LEVELS.OBSERVER);
                 if (doc) {
                     let node = hierarchy.find(n => n.id === uuid);
                     if (!node) {
                         node = { 
                             id: uuid, 
                             parentId: rootId, 
-                            className: 'standard-node',
-                            hidden: false // Default visibility
+                            className: `standard-node`,
+                            hidden: false,
                         };
                         hierarchy.push(node);
                     }
-                    // Update display props
+                    node.permission = canView;
                     node.name = doc.name;
+                    node.className = `standard-node ${canView}`
                     node.title = this._getTitle(doc);
                     // node.img = doc.img; 
                 }
@@ -90,7 +92,6 @@ export class OrgChartWidget extends CampaignCodexWidget {
             }
         }
 
-        // 4. Filter out stale nodes (IDs that are no longer linked)
         const validIds = new Set([rootId, ...allLinkedUuids]);
         return hierarchy.filter(node => validIds.has(node.id));
     }
@@ -101,19 +102,21 @@ export class OrgChartWidget extends CampaignCodexWidget {
     async _getHierarchyData() {
         const allNodes = await this._syncAndGetNodes();
         const rootId = this.document.uuid;
+        const canView = this.document?.testUserPermission(game.user, CONST.DOCUMENT_OWNERSHIP_LEVELS.OBSERVER);
 
-        // Filter out hidden nodes for the chart view
+        // const permissionNodes = allNodes.filter(node => node.permission);
         const visibleNodes = allNodes.filter(node => !node.hidden);
-
         const buildTree = (parentId) => {
             return visibleNodes
                 .filter(node => node.parentId === parentId)
+                .filter(node => node.permission)
                 .map(node => ({
                     id: node.id,
                     name: node.name,
                     title: node.title,
                     className: node.className || 'standard-node',
-                    children: buildTree(node.id)
+                    children: buildTree(node.id),
+                    permission: node.permission
                 }));
         };
 
@@ -126,6 +129,7 @@ export class OrgChartWidget extends CampaignCodexWidget {
             title: finalRoot.title,
             className: 'root-node',
             img: finalRoot.img,
+            permission: canView,
             children: buildTree(rootId)
         };
     }
@@ -253,10 +257,10 @@ export class OrgChartWidget extends CampaignCodexWidget {
         let hierarchy = Array.isArray(savedData?.hierarchy) ? savedData.hierarchy : [];
         let nodeIndex = hierarchy.findIndex(n => n.id === uuid);
 
-        // FIX 1: If node doesn't exist in hierarchy (Auto-Synced), create it first
         if (nodeIndex === -1) {
             try {
                 const doc = await fromUuid(uuid);
+                const canView = doc?.testUserPermission(game.user, CONST.DOCUMENT_OWNERSHIP_LEVELS.OBSERVER);
                 if (doc) {
                     // It was auto-synced, so its parent was the Root
                     hierarchy.push({
@@ -264,8 +268,9 @@ export class OrgChartWidget extends CampaignCodexWidget {
                         parentId: this.document.uuid, 
                         name: doc.name,
                         title: this._getTitle(doc), 
-                        className: 'standard-node',
-                        hidden: hide
+                        className: `standard-node`,
+                        hidden: hide,
+                        permission: canView
                     });
                     nodeIndex = hierarchy.length - 1;
                 } else { return; }
@@ -313,14 +318,16 @@ export class OrgChartWidget extends CampaignCodexWidget {
         } else {
             try {
                 const doc = await fromUuid(childId);
+                const canView = doc?.testUserPermission(game.user, CONST.DOCUMENT_OWNERSHIP_LEVELS.OBSERVER);
                 if (doc) {
                     hierarchy.push({
                         id: childId,
                         parentId: newParentId,
                         name: doc.name,
                         title: this._getTitle(doc), 
-                        className: 'standard-node',
-                        hidden: false
+                        className: `standard-node`,
+                        hidden: false,
+                        permission:canView
                     });
                 }
             } catch (e) { return; }

@@ -991,6 +991,10 @@ display: none;
   text-align: center;
   font-size: 12px;
 }
+.campaign-codex .price-input.custom-price-active {
+      border: 2px solid var(--cc-accent);
+}
+
 
 .campaign-codex .item-actions {
   display: grid;
@@ -5072,5 +5076,14 @@ QUESTS
 
 
 
+.application.cc-tab-config .window-content {
+  overflow-y: scroll;
+}
 
+.application.cc-tab-config .window-content .form-group.campaign-codex{
+  display: grid; grid-template-columns: minmax(120px, 1fr) minmax(120px, 1fr) 60px; gap: 8px; align-items: center; margin-bottom: 5px;
+}
+.application.cc-tab-config .window-content .dialog-content.standard-form{
+  gap:8px;
+}
 

@@ -35,15 +35,16 @@ export class ShopSheet extends CampaignCodexBaseSheet {
       }
     }
     // const [linkedNPCs, linkedLocation, inventory, canViewLocation, canViewScene] = await Promise.all([
-    const [linkedNPCs, linkedLocation, canViewLocation, canViewScene] = await Promise.all([
+    const [linkedNPCs, linkedLocation, canViewLocation, canViewScene,inventory] = await Promise.all([
         CampaignCodexLinkers.getLinkedNPCs(this.document, shopData.linkedNPCs || []),
         shopData.linkedLocation ? CampaignCodexLinkers.getLinkedLocation(shopData.linkedLocation) : null,
         this.constructor.canUserView(shopData.linkedLocation),
-        this.constructor.canUserView(shopData.linkedScene)
+        this.constructor.canUserView(shopData.linkedScene),
+        CampaignCodexLinkers.getInventory(this.document, shopData.inventory)
     ]);
     // return { shopData, linkedScene, linkedNPCs, linkedLocation, inventory, canViewLocation, canViewScene };
   
-    return { shopData, linkedScene, linkedNPCs, linkedLocation, canViewLocation, canViewScene };
+    return { shopData, linkedScene, linkedNPCs, linkedLocation, canViewLocation, canViewScene,inventory };
   }
 
     _getTabDefinitions() {
@@ -91,20 +92,11 @@ export class ShopSheet extends CampaignCodexBaseSheet {
   if (!this._processedData) {
     this._processedData = await this._processShopData();
   }
-  const { shopData, linkedScene, linkedNPCs, linkedLocation, canViewLocation, canViewScene } = this._processedData;
+  const { shopData, linkedScene, linkedNPCs, linkedLocation, canViewLocation, canViewScene, inventory } = this._processedData;
   // const { shopData, linkedScene, linkedNPCs, linkedLocation, inventory, canViewLocation, canViewScene } = this._processedData;
   
   const rawInventoryCount = (shopData.inventory || []).length;
-  if (this._inventoryCache) {
-        context.inventory = this._inventoryCache;
-        context.loadingInventory = false;
-    } else {
-        context.inventory = [];
-        context.loadingInventory = true;
-        this._fetchInventoryBackground(shopData.inventory || []); 
-    }
-
-
+  context.inventory = inventory;
 
   context.isLoot = shopData.isLoot || false;
   context.hideInventory = shopData.hideInventory || false;

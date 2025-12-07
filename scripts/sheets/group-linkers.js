@@ -655,11 +655,12 @@ export class GroupLinkers {
     const hideByPermission = game.settings.get("campaign-codex", "hideByPermission");
     const data = this._getCachedFlags(doc, cache);
     
-    const [linkedTags, linkedShops, canView, region, npcs, shopNpcCount] = await Promise.all([
+    const [linkedTags, linkedShops, canView, region, parentregions, npcs, shopNpcCount] = await Promise.all([
       this._getCachedTaggedNPCs(data.linkedNPCs || data.associates || [], cache),
       CampaignCodexLinkers.getNameFromUuids(data.linkedShops || []),
       this._getCachedCanView(doc.uuid, cache),
-      entity.type === "location" || entity.type === "region" ? CampaignCodexLinkers.getLinkedRegion(doc) : null,
+      entity.type === "location" ? CampaignCodexLinkers.getLinkedRegion(doc) : null,
+      entity.type === "region" ? CampaignCodexLinkers.getNameFromUuids(data.parentRegions || [], true) : Promise.resolve([]),
       entity.type === "location" || entity.type === "region" ? CampaignCodexLinkers.getNameFromUuids(data.linkedNPCs || [], true) : Promise.resolve([]),
       entity.type === "location" ? CampaignCodexLinkers.getShopNPCs(doc, data.linkedShops || []).then((npcs) => npcs.length) : Promise.resolve(0),
     ]);
@@ -677,11 +678,11 @@ export class GroupLinkers {
     entity.npcs = npcs;
     
     if (entity.type === "region") {
-      entity.region = region?.name;
+      entity.region = parentregions.sort();
     }
 
     if (entity.type === "location") {
-      entity.region = region?.name;
+      entity.region = [region?.name];
       const directNpcCount = (data.linkedNPCs || []).length;
       entity.npcCount = directNpcCount + shopNpcCount;
       entity.shopCount = (data.linkedShops || []).length;

@@ -16,7 +16,8 @@
     "button":{
         "title":"Create new {type}",
         "droptoscene" : "Drop  {type} to current scene",
-        "tagmode": "Tag Mode"
+        "tagmode": "Tag Mode",
+        "dropactortoscene": "Drop Actor to current scene"
     },
     "info": {
         "automatically":"{type} are automatically populated from all {source}.",
@@ -60,6 +61,7 @@
       "shops": "Entries",
       "region": "Region",
       "regions": "Regions",
+      "parentregions": "Parents",
       "npc": "NPC",
       "npcs": "NPCs",
       "items": "Items",

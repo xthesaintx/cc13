@@ -278,6 +278,7 @@ _iconOverride(icon) {
             { key: "fas fa-map-pin", label: "Default", icon: "\uf041" },
             // --- Default Tags ---
             { key: "fas fa-globe", label: "Region", icon: "\uf0ac" },
+            { key: "fas fa-book-atlas", label: "Domain", icon: "\uf558" },
             { key: "fas fa-map-marker-alt", label: "Location", icon: "\uf3c5" },
             { key: "fas fa-house", label: "Shop", icon: "\uf015" },
             { key: "fas fa-user", label: "NPC", icon: "\uf007" },
@@ -375,14 +376,14 @@ _iconOverride(icon) {
         const data = doc.getFlag("campaign-codex", "data") || {};
         const links = new Set();
 
-        const arrayFields = ["linkedShops", "linkedNPCs", "linkedLocations", "linkedRegions", "associates", "members"];
+        const arrayFields = ["linkedShops","parentRegions", "linkedNPCs", "linkedLocations", "linkedRegions", "associates", "members"];
         arrayFields.forEach(field => {
             if (Array.isArray(data[field])) {
                 data[field].forEach(uuid => links.add(uuid));
             }
         });
 
-        if (data.parentRegion) links.add(data.parentRegion);
+        // if (data.parentRegion) links.add(data.parentRegion);
         // if (data.linkedActor) links.add(data.linkedActor);
         if (data.linkedLocation) links.add(data.linkedLocation);
 

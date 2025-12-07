@@ -22,14 +22,15 @@ export class NPCSheet extends CampaignCodexBaseSheet {
 
   async _processNpcData() {
     const npcData = this.document.getFlag("campaign-codex", "data") || {};
-    const [linkedActor, rawLocations, linkedShops, associates] = await Promise.all([
+    const [linkedActor, rawLocations, linkedShops, associates, inventory] = await Promise.all([
       npcData.linkedActor ? CampaignCodexLinkers.getLinkedActor(npcData.linkedActor) : null,
       CampaignCodexLinkers.getAllLocations(this.document, npcData.linkedLocations || []),
       CampaignCodexLinkers.getLinkedShopsWithLocation(this.document, npcData.linkedShops || []),
       CampaignCodexLinkers.getAssociates(this.document, npcData.associates || []),
+      CampaignCodexLinkers.getInventory(this.document, npcData.inventory)
     ]);
 
-    return { npcData, linkedActor, rawLocations, linkedShops, associates };
+    return { npcData, linkedActor, rawLocations, linkedShops, associates,inventory };
   }
 
 
@@ -82,7 +83,7 @@ export class NPCSheet extends CampaignCodexBaseSheet {
   async _prepareContext(options) {
   if (options.force) {
     // this._processedData = null;
-    this._inventoryCache = null;
+    // this._inventoryCache = null;
     this._fetchingInventory = false;
   }
     const context = await super._prepareContext(options);
@@ -90,16 +91,9 @@ export class NPCSheet extends CampaignCodexBaseSheet {
     if (!this._processedData) {
       this._processedData = await this._processNpcData();
     }
-    const { npcData, linkedActor, rawLocations, linkedShops, associates } = this._processedData;
+    const { npcData, linkedActor, rawLocations, linkedShops, associates,inventory } = this._processedData;
     const rawInventoryCount = (npcData.inventory || []).length;
-    if (this._inventoryCache) {
-        context.inventory = this._inventoryCache;
-        context.loadingInventory = false;
-    } else {
-        context.inventory = [];
-        context.loadingInventory = true;
-        this._fetchInventoryBackground(npcData.inventory || []); 
-    }
+    context.inventory = inventory;
     context.isLoot = npcData.isLoot || false;
     context.markup = npcData.markup || 1.0;
     context.inventoryCash = npcData.inventoryCash || 0;

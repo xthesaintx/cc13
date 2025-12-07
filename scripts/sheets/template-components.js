@@ -143,6 +143,7 @@ export class TemplateComponents {
    */
   static emptyState(type) {
     const icons = {
+      parentregion: "fas fa-book-atlas",
       region: "fas fa-globe",
       location: "fas fa-map-marker-alt",
       shop: "fas fa-book-open",
@@ -152,6 +153,7 @@ export class TemplateComponents {
     };
 
     const messages = {
+      parentregion: format("dropzone.empty", { type: localize("names.parentregions") }),
       region: format("dropzone.empty", { type: localize("names.regions") }),
       location: format("dropzone.empty", { type: localize("names.locations") }),
       shop: format("dropzone.empty", { type: localize("names.shops") }),
@@ -161,6 +163,7 @@ export class TemplateComponents {
     };
 
     const descriptions = {
+      parentregion: format("dropzone.region", { type: localize("names.parentregions") }),
       region: format("dropzone.region", { type: localize("names.regions") }),
       location: format("dropzone.location", { type: localize("names.locations") }),
       shop: format("dropzone.shop", { type: localize("names.shop") }),
@@ -501,6 +504,8 @@ export class TemplateComponents {
         if (hideByPermission && !item.canView) {
           return "";
         }
+        const isCustom = item.customPrice ? "custom-price-active" : "";
+
         const priceColumns = isLootMode
           ? ""
           : `
@@ -513,7 +518,7 @@ export class TemplateComponents {
                 : ""
             }
             <div class="item-final-price cc-inv-price-table">
-              <input type="number" class="price-input" data-uuid="${item.itemUuid}" value="${item.finalPrice}" step="0.01" min="0">
+              <input type="number" class="price-input ${game.user.isGM ? isCustom:''}" data-uuid="${item.itemUuid}" value="${item.finalPrice}" step="0.01" min="0">
               <span class="price-currency">${item.currency}</span>
             </div>
           `;

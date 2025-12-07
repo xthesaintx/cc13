@@ -10,7 +10,7 @@
     {{!-- Tab Rows --}}
     {{#each tabs as |tab|}}
 
-    <div class="form-group campaign-codex" style="display: grid; grid-template-columns: minmax(120px, 1fr) minmax(120px, 1fr) 60px; gap: 8px; align-items: center; margin-bottom: 5px;">
+    <div class="form-group campaign-codex">
         
         <label title="{{tab.originalLabel}}" style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;{{#if (not tab.defaultVisibility)}} color: var(--cc-accent){{/if}}">
             {{tab.originalLabel}}

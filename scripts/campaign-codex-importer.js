@@ -658,7 +658,7 @@ static _folderContainsImportableDocs(folder, docsToImport) {
             });
         }
 
-        ["linkedNPCs", "linkedShops", "linkedLocations", "linkedRegions", "associates", "members"].forEach((field) => {
+        ["linkedNPCs", "linkedShops", "linkedLocations", "linkedRegions", "associates", "members", "parentRegions"].forEach((field) => {
             if (Array.isArray(newCodexData[field])) newCodexData[field] = newCodexData[field].map(relink);
         });
 

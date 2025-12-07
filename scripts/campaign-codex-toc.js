@@ -140,7 +140,6 @@ _getRelativeFolderPath(journal, rootFolderName) {
     }
 
     if (pathParts.length === 0) {
-        // Use a unique constant ID for the top-level items on this tab.
         return { path: "", folderId: "Root" }; 
     }
 
@@ -439,8 +438,10 @@ async _preparePartContext(partId, context) {
         case 'npcs':
         case 'tags':
         case 'shops':
-            const items = context[partId].items || [];
-
+            let items = context[partId].items || [];
+            if (!context.isGM) {
+                items = items.filter(i => i.canView);
+            }
             const sections = [];
             let currentPath = null;
             let currentSection = null;

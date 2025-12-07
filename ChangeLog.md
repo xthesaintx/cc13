@@ -1,3 +1,8 @@
+## 1.5.8
+- Regions can have multiple parents
+- inventory bug fix
+- Macro Compendium added, a migration macro is included.
+
 ## 1.5.7
 - Bug fixes (currency can be 0)
 - Tab override defaults can be overriden at sheet level, tabs with defaults will be highlighted

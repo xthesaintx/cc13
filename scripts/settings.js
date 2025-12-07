@@ -331,7 +331,7 @@ function getDefaultVisibilities() {
     npc: ["info", "locations", "shops", "inventory", "npcs", "quests", "journals", "widgets", "notes"],
     location: ["info", "shops", "inventory", "npcs", "quests", "journals", "widgets", "notes"],
     shop: ["info", "inventory", "npcs", "quests", "journals", "widgets", "notes"],
-    region: ["info", "shops", "regions", "inventory", "npcs", "quests", "journals", "widgets", "notes"],
+    region: ["info", "shops", "regions", "parentregions", "inventory", "npcs", "quests", "journals", "widgets", "notes"],
     tag: ["info", "locations", "shops", "inventory", "npcs", "quests", "journals", "widgets", "notes"]
   };
   

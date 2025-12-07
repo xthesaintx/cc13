@@ -1043,17 +1043,17 @@ async _processSheetRefresh(changedDocUuids) {
     }
 
     const childData = childRegionDoc.getFlag("campaign-codex", "data") || {};
-    const oldParentUuid = childData.parentRegion;
+    // const oldParentUuid = childData.parentRegion;
 
-    // 1. Unlink from the old parent, if it exists and is different from the new parent.
-    if (oldParentUuid && oldParentUuid !== parentRegionDoc.uuid) {
-      const oldParentDoc = await fromUuid(oldParentUuid).catch(() => null);
-      if (oldParentDoc) {
-        const oldParentData = oldParentDoc.getFlag("campaign-codex", "data") || {};
-        oldParentData.linkedRegions = (oldParentData.linkedRegions || []).filter(uuid => uuid !== childRegionDoc.uuid);
-        await oldParentDoc.setFlag("campaign-codex", "data", oldParentData);
-      }
-    }
+    // // 1. Unlink from the old parent, if it exists and is different from the new parent.
+    // if (oldParentUuid && oldParentUuid !== parentRegionDoc.uuid) {
+    //   const oldParentDoc = await fromUuid(oldParentUuid).catch(() => null);
+    //   if (oldParentDoc) {
+    //     const oldParentData = oldParentDoc.getFlag("campaign-codex", "data") || {};
+    //     oldParentData.linkedRegions = (oldParentData.linkedRegions || []).filter(uuid => uuid !== childRegionDoc.uuid);
+    //     await oldParentDoc.setFlag("campaign-codex", "data", oldParentData);
+    //   }
+    // }
 
     const parentData = parentRegionDoc.getFlag("campaign-codex", "data") || {};
     const parentRegions = new Set(parentData.linkedRegions || []);
@@ -1061,17 +1061,16 @@ async _processSheetRefresh(changedDocUuids) {
     parentData.linkedRegions = [...parentRegions];
     await parentRegionDoc.setFlag("campaign-codex", "data", parentData);
 
-    // 3. Set the `parentRegion` flag on the child document.
-    childData.parentRegion = parentRegionDoc.uuid;
+    const childParentRegions = new Set(childData.parentRegions || []);
+    childParentRegions.add(parentRegionDoc.uuid);
+    childData.parentRegions= [...childParentRegions];
+    // childData.parentRegion = parentRegionDoc.uuid;
     await childRegionDoc.setFlag("campaign-codex", "data", childData);
 
     ui.notifications.info(`Moved "${childRegionDoc.name}" into "${parentRegionDoc.name}".`);
 
     for (const app of foundry.applications.instances.values()) {
-    // for (const app of Object.values(ui.windows)) {
-      if (app.document && (app.document.uuid === parentRegionDoc.uuid || app.document.uuid === childRegionDoc.uuid || app.document.uuid ===  oldParentUuid)) {
-
-      // if (app.document && [parentRegionDoc.uuid, childRegionDoc.uuid, oldParentUuid].includes(app.document.uuid)) {
+      if (app.document && (app.document.uuid === parentRegionDoc.uuid || app.document.uuid === childRegionDoc.uuid )) {
       if (app.rendered) app.render(true);
       }
     }
@@ -1122,14 +1121,25 @@ async _processSheetRefresh(changedDocUuids) {
    * @returns {Promise<boolean>} - True if a circular dependency is detected.
    * @private
    */
-  async _isAncestor(potentialAncestor, doc) {
-    let current = doc;
-    while (current) {
-      const parentUuid = current.getFlag("campaign-codex", "data")?.parentRegion;
-      if (!parentUuid) return false; // Reached the top of the tree.
-      if (parentUuid === potentialAncestor.uuid) return true; // Found the ancestor.
-      current = await fromUuid(parentUuid).catch(() => null);
+async _isAncestor(potentialAncestor, doc) {
+    const queue = [doc];
+    const visited = new Set([doc.uuid]);
+    while (queue.length > 0) {
+      const current = queue.shift();
+      const parentUuids = current.getFlag("campaign-codex", "data")?.parentRegions;
+      if (!parentUuids || !Array.isArray(parentUuids)) continue;
+      if (parentUuids.includes(potentialAncestor.uuid)) return true;
+      for (const parentUuid of parentUuids) {
+        if (!visited.has(parentUuid)) {
+          visited.add(parentUuid);
+          const parentDoc = await fromUuid(parentUuid).catch(() => null);
+          if (parentDoc) {
+            queue.push(parentDoc);
+          }
+        }
+      }
     }
+
     return false;
   }
 

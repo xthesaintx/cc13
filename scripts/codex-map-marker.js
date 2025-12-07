@@ -179,7 +179,6 @@ export function _getCampaignCodexIcon() {
     
     code = match[1].toUpperCase();
   }
-console.log(code);
   const {icon: IconClass, ...style} = foundry.utils.mergeObject(
     CONFIG.CampaignCodex.mapLocationMarker.default,
     {},

@@ -40,5 +40,26 @@
   "styles": ["styles/campaign-codex.css", "scripts/lib/leaflet/leaflet.css", "scripts/lib/orgchart/orgchart.css"],
   "relationships": {
     "systems": []
+  },
+  "packs": [
+    {
+      "name": "macros",
+      "label": "macros",
+      "path": "packs/macros",
+      "type": "Macro",
+      "ownership": {
+        "PLAYER": "OBSERVER",
+        "ASSISTANT": "OWNER"
+      }
+    }
+  ],
+  "packFolders": [
+  {
+    "name": "CampaignCodex",
+    "sorting": "m",
+    "color": "#205d9e",
+    "packs": ["macros"]
   }
+  ]
+  
 }

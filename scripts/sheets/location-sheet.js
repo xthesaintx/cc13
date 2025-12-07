@@ -35,16 +35,17 @@ export class LocationSheet extends CampaignCodexBaseSheet {
       }
     }
 
-    const [linkedRegion, directNPCs, shopNPCs, linkedShops, canViewRegion, canViewScene] = await Promise.all([
+    const [linkedRegion, directNPCs, shopNPCs, linkedShops, canViewRegion, canViewScene, inventory] = await Promise.all([
       CampaignCodexLinkers.getLinkedRegion(this.document),
       CampaignCodexLinkers.getDirectNPCs(this.document, locationData.linkedNPCs || []),
       CampaignCodexLinkers.getShopNPCs(this.document, locationData.linkedShops || []),
       CampaignCodexLinkers.getLinkedShops(this.document, locationData.linkedShops || []),
       this.constructor.canUserView(locationData.parentRegion),
       this.constructor.canUserView(locationData.linkedScene),
+      CampaignCodexLinkers.getInventory(this.document, locationData.inventory)
     ]);
 
-    return { locationData, linkedRegion, directNPCs, shopNPCs, linkedShops, linkedScene, canViewRegion, canViewScene };
+    return { locationData, linkedRegion, directNPCs, shopNPCs, linkedShops, linkedScene, canViewRegion, canViewScene, inventory };
   }
 
   _getTabDefinitions() {
@@ -99,15 +100,11 @@ export class LocationSheet extends CampaignCodexBaseSheet {
       this._processedData = await this._processLocationData();
     }
     const { locationData, linkedRegion, directNPCs, shopNPCs, linkedShops, linkedScene, canViewRegion, canViewScene, inventory } = this._processedData;
-  const rawInventoryCount = (locationData.inventory || []).length;
-  if (this._inventoryCache) {
-        context.inventory = this._inventoryCache;
-        context.loadingInventory = false;
-    } else {
-        context.inventory = [];
-        context.loadingInventory = true;
-        this._fetchInventoryBackground(locationData.inventory || []); 
-    }
+    const rawInventoryCount = (locationData.inventory || []).length;
+  
+    context.inventory=inventory;
+  
+
     context.isLoot = locationData.isLoot || false;
     context.markup = locationData.markup || 1.0;
     context.inventoryCash = locationData.inventoryCash || 0;
@@ -344,7 +341,7 @@ export class LocationSheet extends CampaignCodexBaseSheet {
       `;
       regionSection = `<div class="form-section">${regionCard}</div>`;
     } else if (data.isGM) {
-      regionSection = `<div class="form-section">${TemplateComponents.dropZone("region", "fas fa-globe", format("dropzone.link", { type: localize("names.region") }), "")}</div>`;
+      regionSection = `<div class="form-section">${TemplateComponents.dropZone("region", TemplateComponents.getAsset("icon", "region"), format("dropzone.link", { type: localize("names.region") }), "")}</div>`;
     }
     return `
       ${TemplateComponents.contentHeader("fas fa-info-circle", label)}

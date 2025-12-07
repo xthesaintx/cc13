@@ -175,6 +175,10 @@
   width: 130px;
 }
 
+.orgchart .node.standard-node.false{
+  display: none;
+}
+
 .orgchart.l2r .node,
 .orgchart.r2l .node {
   width: 50px;

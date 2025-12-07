@@ -9,7 +9,9 @@
     {{#if location.region}}
       <div class="entity-locations">
         <i class="{{getAsset "icon" "region"}}"></i>
-        <span class="location-tag">{{location.region}}</span>
+        {{#each location.region}}
+        <span class="location-tag">{{this}}</span>
+        {{/each}}
       </div>
     {{/if}}
 

@@ -501,7 +501,7 @@ static async _collectExportData(config) {
             }
         }
 
-        const multiLinkFields = ["linkedNPCs", "linkedShops", "linkedLocations", "linkedRegions", "associates", "members"];
+        const multiLinkFields = ["linkedNPCs", "linkedShops", "linkedLocations", "linkedRegions", "associates", "members", "parentRegions"];
         for (const field of multiLinkFields) {
             if (Array.isArray(codexData[field])) {
                 uuids.push(...codexData[field]);
@@ -877,7 +877,7 @@ static async _pruneEmptyFolders(pack, exemptFolderId = null) {
             });
         }
 
-        const multiLinkFields = ["linkedNPCs", "linkedShops", "linkedLocations", "linkedRegions", "associates", "members"];
+        const multiLinkFields = ["linkedNPCs", "linkedShops", "linkedLocations", "linkedRegions", "associates", "members", "parentRegions"];
         for (const field of multiLinkFields) {
             if (Array.isArray(newCodexData[field])) {
                 newCodexData[field] = newCodexData[field].map(relink);
@@ -1026,6 +1026,7 @@ static async _pruneEmptyFolders(pack, exemptFolderId = null) {
 
     const linkFields = {
       "Regions": "linkedRegions",
+      "Parent Regions": "parentRegions",
       "Locations": "linkedLocations",
       "NPCs": "linkedNPCs",
       "Shops": "linkedShops",

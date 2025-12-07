@@ -36,7 +36,7 @@ export const getButtonGrouphead = () => `
             <i class="fas fa-folder-tree"></i>
         </button>
         <button class="create-region-btn cc-create-buttons" type="button" title="${format('button.title', {type: localize('names.region')})}" >
-            <i class="fas fa-globe"></i>
+            <i class="fas fa-map"></i>
         </button>
         <button class="create-location-btn cc-create-buttons" type="button" title="${format('button.title', {type: localize('names.location')})}" >
             <i class="fas fa-map-marker-alt"></i>

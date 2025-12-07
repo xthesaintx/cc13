@@ -7,22 +7,23 @@ const TABS_BY_SHEET = {
   npc: ["info", "locations", "shops", "inventory", "npcs", "quests", "journals", "widgets", "notes"],
   location: ["info", "shops", "inventory", "npcs", "quests", "journals", "widgets", "notes"],
   shop: ["info", "inventory", "npcs", "quests", "journals", "widgets", "notes"],
-  region: ["info", "shops", "regions", "inventory", "npcs", "quests", "journals", "widgets", "notes"],
+  region: ["info", "shops", "regions", "parentregions", "inventory", "npcs", "quests", "journals", "widgets", "notes"],
   tag: ["info", "locations", "shops", "inventory", "npcs", "quests", "journals", "widgets", "notes"]
 };
 
 
 const ALL_TABS_MAP = {
   info: "Info",
+  parentregions: "Parent",
+  regions: "Regions",
   locations: "Locations",
   shops: "Shops",
-  inventory: "Inventory",
   npcs: "NPCs",
-  regions: "Regions",
+  inventory: "Inventory",
   quests: "Quests",
   journals: "Journals",
   widgets: "Widgets",
-  notes: "Notes (GM)"
+  notes: "Notes (GM)",
 };
 
 
@@ -98,11 +99,11 @@ export class tabPicker extends TabPickerApp {
     const settings = game.settings.get("campaign-codex", "defaultTabVisibility");
     const currentData = foundry.utils.mergeObject(defaults, settings);
 
-    // Create a master list of all tabs for the table header
     const allTabs = Object.keys(ALL_TABS_MAP).map(key => ({
       key: key,
       label: ALL_TABS_MAP[key]
     }));
+    console.log(allTabs);
 
     const sheetRows = Object.keys(TABS_BY_SHEET).map(sheetKey => {
       const friendlyName = sheetKey.charAt(0).toUpperCase() + sheetKey.slice(1);

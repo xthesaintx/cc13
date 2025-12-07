@@ -70,14 +70,16 @@ export class CampaignCodexBaseSheet extends baseSheetApp {
       openLocation: this.#_openLocation,
       openGroup: this.#_openGroup,
       openRegion: this.#_openRegion,
+      openParentregion: this.#_openRegion,
       openJournal: this.#_openJournal,
       openAssociate: this.#_openAssociate,
       // REMOVE
+      removeParentregion: this.#_onRemoveParentRegion,
       removeQuestItem: this.#_onRemoveQuestItem,
       removeImage: this.#_onRemoveImage,
       removeScene: this.#_onRemoveScene,
       removeLocationFromRegion:this.#_onRemoveLocation,
-      removeParentRegion: this.#_onRemoveParentFromRegion,
+      // removeParentRegion: this.#_onRemoveParentFromRegion,
       removeLocation: this.#_onRemoveLocation,
       removeShop: this.#_onRemoveShop,
       removeAssociate: this.#_onRemoveNPC,
@@ -94,7 +96,7 @@ export class CampaignCodexBaseSheet extends baseSheetApp {
   static PARTS = {
     main: {
       template: "modules/campaign-codex/templates/base-sheet.html",
-      scrollable: ["",".scrollable", ".tab-panel.info", ".tab-panel.locations", ".tab-panel.shops", ".tab-panel.inventory", ".tab-panel.associates", ".tab-panel.quests", ".tab-panel.journals", ".tab-panel.notes", ".tab-panel.npcs", ".tab-panel.regions", ".tab-panel.widgets"]
+      scrollable: ["",".scrollable", ".tab-panel.info", ".tab-panel.locations", ".tab-panel.shops", ".tab-panel.associates",".tab-panel.inventory",".tab-panel.widgets", ".tab-panel.quests", ".tab-panel.journals", ".tab-panel.notes", ".tab-panel.npcs", ".tab-panel.regions"]
     }
   }
 
@@ -859,6 +861,7 @@ _labelOverride(selectedDoc, sheetKey) {
       { key: "default", label: "Default", icon: "fas fa-map-pin" },
       // --- Default Tags ---
       { key: "region", label: "Region", icon: "fas fa-globe" },
+      { key: "atlas", label: "Atlas", icon: "fas fa-book-atlas" },
       { key: "location", label: "Location", icon: "fas fa-map-marker-alt" },
       { key: "shop", label: "Shop", icon: "fas fa-house" },
       { key: "npc", label: "NPC", icon: "fas fa-user" },
@@ -1179,6 +1182,10 @@ _labelOverride(selectedDoc, sheetKey) {
 
   static async #_onRemoveAssociate(event) {
     await this._onRemoveFromList(event,"associates");
+  }  
+
+  static async #_onRemoveParentRegion(event) {
+    await this._onRemoveFromList(event,"parentRegions");
   }  
 
 
@@ -2762,7 +2769,8 @@ _onMarkerEdit(event) {
           "region:linkedNPCs": { targetType: "npc", reverseField: "linkedLocations", isArray: true },
           "region:linkedShops": { targetType: "shop", reverseField: "linkedLocation", isArray: false },
           "location:linkedNPCs": { targetType: "npc", reverseField: "linkedLocations", isArray: true },
-          "region:linkedRegions": { targetType: "region", reverseField: "parentRegion", isArray: false },
+          "region:linkedRegions": { targetType: "region", reverseField: "parentRegions", isArray: true },
+          "region:parentRegions": { targetType: "region", reverseField: "linkedRegions", isArray: true },
           "location:linkedShops": { targetType: "shop", reverseField: "linkedLocation", isArray: false },
           "shop:linkedNPCs": { targetType: "npc", reverseField: "linkedShops", isArray: true },
         };
@@ -2848,35 +2856,49 @@ async _updateInventoryItem(itemUuid, updates, doc = null) {
 
     await currentDoc.setFlag("campaign-codex", "data.inventory", inventory);
 
-    // if (currentDoc.uuid === this.document.uuid) {
-    //   this.render(true);
-    // }
+
   }
 }
+// /**
+//    * Updates an inventory item's data in the specified document's flag.
+//    * @param {string} itemUuid - The UUID of the item to update.
+//    * @param {object} updates - The key/value pairs to update on the item.
+//    * @param {Document|null} [doc=null] - The document to update. If null, defaults to this.document.
+//    */
+//   async _updateInventoryItem(itemUuid, updates, doc = null) {
+//     let currentDoc;
+//     if (doc instanceof foundry.abstract.Document) {
+//       currentDoc = doc;
+//     } else {
+//       currentDoc = this.document;
+//     }
+    
+//     if (!currentDoc || typeof currentDoc.getFlag !== 'function') {
+//       console.error("Campaign Codex | _updateInventoryItem called with no valid document.");
+//       return;
+//     }
 
-  // async _updateInventoryItem(itemUuid, updates, doc=null) {
-  //   let currentData;
-  //   let currentDoc = this.document;
-  //   if (doc instanceof foundry.abstract.Document) {
-  //     currentDoc = doc; 
-  //   } else {
-  //     currentDoc = this.document; 
-  //   }
-  //   if (!currentDoc || typeof currentDoc.getFlag !== 'function') {
-  //     console.error("Campaign Codex | _updateInventoryItem called with no valid document.");
-  //     return;
-  //   }
-  //   currentData = currentDoc.getFlag("campaign-codex", "data") || {};
-  //   const inventory = currentData.inventory || [];
-  //   const itemIndex = inventory.findIndex((i) => i.itemUuid === itemUuid);
+//     const currentData = currentDoc.getFlag("campaign-codex", "data") || {};
+//     const inventory = foundry.utils.deepClone(currentData.inventory || []);
+    
+//     const itemIndex = inventory.findIndex((i) => i.itemUuid === itemUuid);
 
-  //   if (itemIndex !== -1) {
-  //     inventory[itemIndex] = { ...inventory[itemIndex], ...updates };
-  //     currentData.inventory = inventory;
-  //     await currentDoc.setFlag("campaign-codex", "data", currentData);
-  //     this.render(true);
-  //   }
-  // }
+//     if (itemIndex !== -1) {
+//       // 1. Update the Database (Flag)
+//       inventory[itemIndex] = { ...inventory[itemIndex], ...updates };
+      
+//       // 2. Update the Local Cache (Memory) to prevent "Loading..." spinner on render
+//       if (currentDoc === this.document && this._inventoryCache) {
+//         const cachedItem = this._inventoryCache.find(i => i.itemUuid === itemUuid);
+//         if (cachedItem) {
+//           foundry.utils.mergeObject(cachedItem, updates);
+//         }
+//       }
+
+//       // 3. Save Flag (Triggers Render)
+//       await currentDoc.setFlag("campaign-codex", "data.inventory", inventory);
+//     }
+//   }
 
   async _transferItemToActor(item, targetActor, document, questId = "") {
     try {
@@ -3003,13 +3025,13 @@ async _updateInventoryItem(itemUuid, updates, doc = null) {
   // =========================================================================
 
   _generateInventoryTab(data) {
-    if (data.loadingInventory) {
-        return `
-        <div style="padding: 20px; text-align: center; color: var(--color-text-light-highlight);">
-            <i class="fas fa-spinner fa-spin fa-2x"></i>
-            <p style="margin-top: 10px;">Loading Inventory...</p>
-        </div>`;
-    }
+    // if (data.loadingInventory) {
+    //     return `
+    //     <div style="padding: 20px; text-align: center; color: var(--color-text-light-highlight);">
+    //         <i class="fas fa-spinner fa-spin fa-2x"></i>
+    //         <p style="margin-top: 10px;">Loading Inventory...</p>
+    //     </div>`;
+    // }
 
     let defaultLabel = localize("names.inventory")
     if (data.isLoot) defaultLabel = localize("names.loot"); 
@@ -3034,23 +3056,23 @@ async _updateInventoryItem(itemUuid, updates, doc = null) {
   `;
   }
 
-  async _fetchInventoryBackground(rawInventory) {
-    if (this._fetchingInventory || !rawInventory) return;
-    this._fetchingInventory = true;
+  // async _fetchInventoryBackground(rawInventory) {
+  //   if (this._fetchingInventory || !rawInventory) return;
+  //   this._fetchingInventory = true;
     
-    try {
-        const result = await CampaignCodexLinkers.getInventory(this.document, rawInventory);
-        this._inventoryCache = result;
-    } catch (err) {
-        console.error("Campaign Codex | Background inventory fetch failed:", err);
-        this._inventoryCache = [];
-    } finally {
-        this._fetchingInventory = false;
-        if (this._currentTab === "inventory") {
-             this.render(false);
-        }
-    }
-  }
+  //   try {
+  //       const result = await CampaignCodexLinkers.getInventory(this.document, rawInventory);
+  //       this._inventoryCache = result;
+  //   } catch (err) {
+  //       console.error("Campaign Codex | Background inventory fetch failed:", err);
+  //       this._inventoryCache = [];
+  //   } finally {
+  //       this._fetchingInventory = false;
+  //       if (this._currentTab === "inventory") {
+  //            // this.render();
+  //       }
+  //   }
+  // }
 
 
   // =========================================================================

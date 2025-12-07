@@ -758,7 +758,7 @@ async _generateSelectedSheetTab() {
         baseTabs.splice(
           1,
           0,
-          {
+         {
             key: "regions",
             label: localize("names.regions"),
             icon: TemplateComponents.getAsset("icon", "region"),
@@ -821,6 +821,12 @@ async _generateSelectedSheetTab() {
         baseTabs.splice(
           1,
           0,
+          {
+            key: "parentregions",
+            label: localize("names.parentregions"),
+            icon: "fas fa-book-atlas",
+            active: this._selectedSheetTab === "parentregions",
+          },   
           {
             key: "regions",
             label: localize("names.regions"),
@@ -908,6 +914,9 @@ async _generateSelectedSheetTab() {
       
       case "regions":
         return await this._generateSelectedRegionsContent(selectedDoc, selectedData);
+
+      case "parentregions":
+        return await this._generateSelectedParentRegionsContent(selectedDoc, selectedData);
 
       case "widgets":
         const widgetLabelOverride = this._labelOverride(selectedDoc, "widgets");
@@ -1032,6 +1041,21 @@ async _generateSelectedNPCsContent(selectedDoc, selectedData) {
 
  
 
+  async _generateSelectedParentRegionsContent(selectedDoc, selectedData) {
+    const labelOverride = this._labelOverride(selectedDoc, "parentregions") ||localize("names.parentregions");
+    let regions = await CampaignCodexLinkers.getLinkedRegions(selectedDoc, selectedData.parentRegions || []);
+    if (regions.length === 0) {
+      return `${TemplateComponents.contentHeader(TemplateComponents.getAsset("icon", "region"), labelOverride)}`;
+    }
+
+    return `
+      ${TemplateComponents.contentHeader("fas fa-book-atlas", labelOverride)}
+        <div class="locations-list">
+          ${TemplateComponents.entityGrid(regions, "location", false, true)}
+        </div>
+    `;
+  }
+
   async _generateSelectedRegionsContent(selectedDoc, selectedData) {
     const labelOverride = this._labelOverride(selectedDoc, "regions") ||localize("names.regions");
     let regions = await CampaignCodexLinkers.getLinkedRegions(selectedDoc, selectedData.linkedRegions || []);
@@ -1041,11 +1065,11 @@ async _generateSelectedNPCsContent(selectedDoc, selectedData) {
     }
 
     if (regions.length === 0) {
-      return `${TemplateComponents.contentHeader("fas fa-globe", labelOverride)}`;
+      return `${TemplateComponents.contentHeader(TemplateComponents.getAsset("icon", "region"), labelOverride)}`;
     }
 
     return `
-      ${TemplateComponents.contentHeader("fas fa-globe", labelOverride)}
+      ${TemplateComponents.contentHeader(TemplateComponents.getAsset("icon", "region"), labelOverride)}
         <div class="locations-list">
           ${TemplateComponents.entityGrid(regions, "location", false, true)}
         </div>

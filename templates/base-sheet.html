@@ -127,7 +127,7 @@
     <main class="sheet-main">
       <form class="sheet-form">
         {{!-- Tab Panels --}} {{#each tabs}}
-        <section class="tab-panel {{key}} {{#if active}}active{{/if}}" data-tab="{{key}}" {{#if (eq key 'widgets')}}data-preserve-scroll{{/if}}>{{{content}}}</section>
+        <section class="tab-panel {{key}} {{#if active}}active{{/if}}" data-tab="{{key}}" {{#if (eq key 'widgets')}}data-preserve-scroll{{/if}}{{#if (eq key 'inventory')}}data-preserve-scroll{{/if}}>{{{content}}}</section>
         {{/each}}
       </form>
     </main>

@@ -1,7 +1,7 @@
 <div class="content-header">
     <h2><i class="fas fa-info-circle"></i> {{#if labelOverride}}{{labelOverride}}{{else}}{{ccLocalize "names.information" }}{{/if}}</h2>
     {{#if dropToMap}}
-      <button type="button" class="refresh-btn npcs-to-map-button npc-sheet" data-action="npcsToMapButton" title="{{ccFormat "button.droptoscene" type=(ccLocalize "names.npc")}}"><i class="fas fa-street-view"></i></button>
+      <button type="button" class="refresh-btn npcs-to-map-button npc-sheet" data-action="npcsToMapButton" title="{{ccLocalize "button.dropactortoscene"}}"><i class="fas fa-street-view"></i></button>
     {{/if}}
 </div>
 {{#if actor}}
