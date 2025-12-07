@@ -76,6 +76,15 @@ export default async function campaigncodexSettings() {
         default: false,
     });
 
+    game.settings.register("campaign-codex", "runonlyonce185", {
+        name: localize("runonlyonce.name"),
+        hint: localize("runonlyonce.hint"),
+        scope: "world",
+        requiresReload: true,
+        type: Boolean,
+        default: false,
+    });
+
     game.settings.register("campaign-codex", "useOrganizedFolders", {
         name: localize("useOrganizedFolders.name"),
         hint: localize("useOrganizedFolders.hint"),

@@ -207,6 +207,18 @@ Hooks.once("ready", async function () {
             );
             await game.settings.set(MODULE_NAME, "runonlyonce", true);
         }
+        if (game.settings.get(MODULE_NAME, "runonlyonce185") === false) {
+            game.packs.find(i => i.metadata.id === "campaign-codex.macros").render(true)
+            await ChatMessage.create(
+                {
+                    user: game.user.id,
+                    speaker: ChatMessage.getSpeaker(),
+                    content: localize("updateHTML"),
+                },
+                {},
+            );
+            await game.settings.set(MODULE_NAME, "runonlyonce185", true);
+        }
     }
     console.log("Campaign Codex | Resuming relationship updates");
     delete game.campaignCodexImporting;
