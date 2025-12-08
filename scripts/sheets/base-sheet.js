@@ -1,8 +1,9 @@
 import { CampaignCodexLinkers } from "./linkers.js";
 import { TemplateComponents } from "./template-components.js";
-import { localize, format, promptForName, confirmationDialog, renderTemplate, targetedRefresh, getDefaultSheetTabs } from "../helper.js";
+import { localize, format, promptForName, confirmationDialog, renderTemplate, targetedRefresh, getDefaultSheetTabs, journalSystemClass } from "../helper.js";
 import { widgetManager } from "../widgets/WidgetManager.js";
 import { tabPicker } from "../tab-picker.js";
+
 const DragDrop = foundry.applications.ux.DragDrop.implementation;
 // =========================================================================
 // BASE CLASS SETUP
@@ -775,7 +776,8 @@ export class CampaignCodexBaseSheet extends baseSheetApp {
     html.querySelectorAll("prose-mirror").forEach((editor) => {
       editor.addEventListener("open", () => {
         const containerDiv = editor.querySelector(".editor-container");
-        const journalClassString = game.system.id === "dnd5e" ? "dnd5e2-journal journal-page-content" : "journal-page-content";
+        const journalClassString = journalSystemClass(game.system.id);
+        // const journalClassString = game.system.id === "dnd5e" ? "dnd5e2-journal journal-page-content" : "journal-page-content";
         if (containerDiv && journalClassString) {
           containerDiv.classList.add(...journalClassString.split(" "));
         }
