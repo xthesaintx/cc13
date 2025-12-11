@@ -2670,13 +2670,13 @@ border-bottom: 1px solid var(--cc-border);
 .campaign-codex :is(.dnd5e, .dnd5e2, .dnd5e2-journal) :is(.editor-content, .card-content, .item-summary) h3 {
   font-family:unset;
 }*/
-.campaign-codex .dnd5e2-journal h1,
+/*.campaign-codex .dnd5e2-journal h1,
 .campaign-codex .dnd5e2-journal h2,
 .campaign-codex .dnd5e2-journal h3 {
   font-family: var(--cc-font-heading);
   font-weight: bold;
   border-bottom: none;
-}
+}*/
 .campaign-codex .dnd5e2-journal .editor-content h1,
 .campaign-codex .dnd5e2-journal .editor-content h2,
 .campaign-codex .dnd5e2-journal .editor-content h3 {

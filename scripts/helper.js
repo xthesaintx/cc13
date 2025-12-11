@@ -23,7 +23,7 @@ export const gameSystemClass = (id) => {
   switch (id) {
     case "dnd5e": return " dnd5e2-journal";
     case "pf2e":  return " journal-entry-page"; 
-    default:      return "";
+    default:      return " journal-entry-page";
   }
 };
 
