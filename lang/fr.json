@@ -1,5 +1,6 @@
 {
   "CAMPAIGN_CODEX": {
+    "updateHTML": "<div> <p><strong>ACTION REQUISE : Campaign Codex</strong></p><p>Si vous venez de mettre à jour Campaign Codex depuis la version 1.5.7 ou antérieure, exécutez la macro 'Migrate Parent Region' incluse dans le Compendium.</p></div>",
     "welcomePageHTML": "<div> <p><strong>Bienvenue dans Campaign Codex</strong></p> <p>La gestion des dossiers, l'emplacement du prix et de la devise des objets du système, ainsi que d'autres configurations peuvent être modifiés dans les paramètres.</p> <div><button data-campaign-codex-handler=\"campaign-codex|openMenu|core_settings\"><i class=\"fas fa-wrench\"></i>Paramètres</button></div> <hr> <p><strong>Rejoignez la communauté Campaign Codex</strong></p> <p>Si vous souhaitez suggérer une fonctionnalité, signaler un bug, ou simplement discuter, n'hésitez pas à nous rejoindre sur Discord.</p> <div><button data-campaign-codex-handler=\"campaign-codex|openWindow|https://discord.gg/fycwH79s2y\"><i class=\"fab fa-discord\"></i> Rejoindre le Discord</button></div> <p><strong>Vous avez trouvé un bug ?</strong></p> <p>Si vous souhaitez signaler un bug et que Discord n'est pas votre truc, rendez-vous sur GitHub.</p> <div><button data-campaign-codex-handler=\"campaign-codex|openWindow|https://github.com/xthesaintx/cc13\"><i class=\"fas fa-bug\"></i> Signaler un bug</button></div> <p><strong>Soutenir le développement</strong></p> <p>Si vous souhaitez soutenir le développement, envisagez de jeter un œil aux options d'adhésion sur Patreon</a>.</p> <div><button data-campaign-codex-handler=\"campaign-codex|openWindow|https://patreon.com/wgtngm\"><i class=\"fas fa-star\"></i> Devenir membre</button></div><p><strong>Documentation</strong></p> <p>Vous vous sentez un peu perdu ? Rendez-vous sur notre page de documentation pour vous orienter, ou venez poser une question sur Discord</a>.</p> <div><button data-campaign-codex-handler=\"campaign-codex|openWindow|https://campaigncodex.wgtngm.com\"><i class=\"fas fa-book\"></i> Documentation</button></div></div>",
     "context": {
       "export": "Exporter vers un Journal standard",
@@ -15,7 +16,8 @@
     "button": {
       "title": "Créer : {type}",
       "droptoscene": "Déposer sur la scène : {type}",
-      "tagmode": "Mode Tag"
+      "tagmode": "Mode Tag",
+      "dropactortoscene": "Déposer sur la scène : Acteur"
     },
     "info": {
       "automatically": "Peuplement automatique ({type}) depuis : {source}.",
@@ -59,6 +61,7 @@
       "shops": "Entrées",
       "region": "Région",
       "regions": "Régions",
+      "parentregions": "Parents",
       "npc": "PNJ",
       "npcs": "PNJ",
       "items": "Objets",
@@ -152,8 +155,8 @@
         "hint": "Créer et organiser automatiquement les journaux Campaign Codex dans des dossiers."
       },
       "hideByPermission": {
-        "name": "Masquer les cartes selon la propriété",
-        "hint": "Masquer les cartes si l'utilisateur n'a pas la permission Observateur ou supérieure sur le journal ou l'objet."
+        "name": "Masquer selon la propriété",
+        "hint": "Masquer les fiches liées si l'utilisateur n'a pas la permission Observateur ou supérieure sur le journal."
       },
       "hideInventoryByPermission": {
         "name": "Masquer l'inventaire selon la propriété",
