@@ -1399,13 +1399,13 @@ _labelOverride(selectedDoc, sheetKey) {
   static async #_onRemoveQuestItem(event) {
     event.stopPropagation();
     const target = event.target.closest('[data-uuid]');
-    const { questId, itemUuid } = target.dataset;
+    const { questId, uuid } = target.dataset;
     const currentData = this.document.getFlag("campaign-codex", "data") || {};
     const quests = foundry.utils.deepClone(currentData.quests || []);
     const quest = quests.find(q => q.id === questId);
 
     if (quest) {
-      quest.inventory = (quest.inventory || []).filter((i) => i.itemUuid !== itemUuid);
+      quest.inventory = (quest.inventory || []).filter((i) => i.itemUuid !== uuid);
       await this.document.setFlag("campaign-codex", "data.quests", quests);
       this.render();
     }
