@@ -1012,6 +1012,7 @@ export class CampaignCodexLinkers {
     const finalCurrency = denominationOverride || defaultCurrency;
     return finalCurrency || "gp";
   }
+
 static async getInventory(document, inventoryData) {
   if (!inventoryData || !Array.isArray(inventoryData)) return [];
 
@@ -1074,10 +1075,13 @@ static async getInventory(document, inventoryData) {
     };
   }
 
+  const brokenItemUuids = [];
+  
   const itemPromises = inventoryData.map(async (itemData) => {
     const item = await this._getCachedDoc(itemData.itemUuid, cache);
     
     if (!item) {
+      brokenItemUuids.push(itemData.itemUuid);
       console.warn(`Campaign Codex | Inventory item not found: ${itemData.itemUuid}`);
       return null; 
     }
@@ -1118,146 +1122,31 @@ static async getInventory(document, inventoryData) {
   });
 
   const results = await Promise.all(itemPromises);
+  if (brokenItemUuids.length > 0) {
+      await this._removeBrokenItems(document, brokenItemUuids);
+  }
   return results.filter(i => i !== null);
 }
 
-  // static async getInventory(document, inventoryData) {
-  //   if (!inventoryData || !Array.isArray(inventoryData)) return [];
-  //   const roundFinalPrice = game.settings.get("campaign-codex", "roundFinalPrice");
-  //   const systemId = game.system.id;
-  //   const { pricePath, denominationPath, currency: defaultCurrency } = this._getSystemSettings(systemId);
-  //   const denominationOverride = game.settings.get("campaign-codex", "itemDenominationOverride");
-  //   const finalCurrency = denominationOverride || defaultCurrency;
-  //   const markup = document.getFlag("campaign-codex", "data.markup") || 1.0;
-  //   const cache = this._createOperationCache();
+static async _removeBrokenItems(document, items) {
+    if (!items || items.length === 0) return;
 
-  //   const itemPromises = inventoryData.map(async (itemData) => {
-  //     const [item, canView] = await Promise.all([
-  //       this._getCachedDoc(itemData.itemUuid, cache),
-  //       this._getCachedCanView(itemData.itemUuid, cache),
-  //     ]);
+    try {
+        const currentData = document.getFlag("campaign-codex", "data") || {};
+        const currentInventory = currentData.inventory || [];
+        const cleanedInventory = currentInventory.filter((item) => !items.includes(item.itemUuid));
 
-  //     if (!item) throw new Error(`Inventory item not found: ${itemData.itemUuid}`);
+        if (cleanedInventory.length !== currentInventory.length) {
+            currentData.inventory = cleanedInventory;
+            await document.setFlag("campaign-codex", "data", currentData);
+            const removedCount = currentInventory.length - cleanedInventory.length;
+            ui.notifications.warn(`Removed ${removedCount} broken inventory items from ${document.name}`);
+        }
+    } catch (error) {
+        console.error(`Campaign Codex | Error cleaning broken inventory items:`, error);
+    }
+}
 
-  //     const rawPrice = this.getValue(item, pricePath) || 0;
-  //     let basePrice = parseFloat(String(rawPrice).replace(/[^\d.]/g, "")) || 0;
-  //     let currency = "gp";
-
-  //     if (finalCurrency) {
-  //       currency = finalCurrency;
-  //     } else if (denominationPath) {
-  //       currency = this.getValue(item, denominationPath) || "gp";
-  //     }
-
-  //     if (systemId === "pf2e") {
-  //       const pf2ePrice = this.getValue(item, "system.price.value");
-  //       if (pf2ePrice) {
-  //         const pp = pf2ePrice.pp || 0;
-  //         const gp = pf2ePrice.gp || 0;
-  //         const sp = pf2ePrice.sp || 0;
-  //         const cp = pf2ePrice.cp || 0;
-  //         if (pp > 0) {
-  //           const totalPrice = pp + (gp / 10) + (sp / 100) + (cp / 1000);
-  //           basePrice = parseFloat(totalPrice.toFixed(3));
-  //           currency = "pp";
-  //         } else if (gp > 0) {
-  //           const totalPrice = gp + (sp / 10) + (cp / 100);
-  //           basePrice = parseFloat(totalPrice.toFixed(2));
-  //           currency = "gp";
-  //         } else if (sp > 0) {
-  //           const totalPrice = sp + (cp / 10);
-  //           basePrice = parseFloat(totalPrice.toFixed(1));
-  //           currency = "sp";
-  //         } else {
-  //           basePrice = cp;
-  //           currency = "cp";
-  //         }
-  //       }
-  //     }
-      
-  //     if (systemId === "shadowdark") {
-  //       const sdPrice = this.getValue(item, "system.cost");
-  //       if (sdPrice) {
-  //         const gp = sdPrice.gp || 0;
-  //         const sp = sdPrice.sp || 0;
-  //         const cp = sdPrice.cp || 0;
-
-  //         if (gp > 0) {
-  //           const totalPrice = gp + (sp / 10) + (cp / 100);
-  //           basePrice = parseFloat(totalPrice.toFixed(2));
-  //           currency = "gp";
-  //         } else if (sp > 0) {
-  //           const totalPrice = sp + (cp / 10);
-  //           basePrice = parseFloat(totalPrice.toFixed(1));
-  //           currency = "sp";
-  //         } else {
-  //           basePrice = cp;
-  //           currency = "cp";
-  //         }
-  //       }
-  //     }
-  //     let calculatedPrice = basePrice * markup;
-      
-  //     if (roundFinalPrice) {
-  //       calculatedPrice = Math.round(calculatedPrice);
-  //     } else {
-  //       calculatedPrice = Math.round(calculatedPrice * 100) / 100;
-  //     }
-
-  //     const finalPrice = (itemData.customPrice !== null && itemData.customPrice !== undefined)
-  //       ? itemData.customPrice 
-  //       : calculatedPrice;
-
-
-  //     return {
-  //       permission: item.permission,
-  //       canView: canView,
-  //       itemId: item.id,
-  //       itemUuid: item.uuid,
-  //       uuid: item.uuid,
-  //       name: item.name,
-  //       img: item.img,
-  //       basePrice: basePrice,
-  //       finalPrice: finalPrice,
-  //       customPrice: itemData.customPrice,
-  //       currency: currency,
-  //       quantity: itemData.quantity === undefined ? 1 : itemData.quantity,
-  //       weight: null,
-  //     };
-  //   });
-
-  //   const results = await Promise.allSettled(itemPromises);
-  //   const inventory = [];
-  //   const brokenItemUuids = [];
-    
-  //   results.forEach((result, index) => {
-  //     if (result.status === "fulfilled") {
-  //       inventory.push(result.value);
-  //     } else {
-  //       brokenItemUuids.push(inventoryData[index].itemUuid);
-  //       // console.error(`Campaign Codex | Error processing inventory item:`, result.reason);
-  //     }
-  //   });
-
-  //   if (brokenItemUuids.length > 0) {
-  //     try {
-  //       const currentData = document.getFlag("campaign-codex", "data") || {};
-  //       const currentInventory = currentData.inventory || [];
-  //       const cleanedInventory = currentInventory.filter((item) => !brokenItemUuids.includes(item.itemUuid));
-
-  //       if (cleanedInventory.length !== currentInventory.length) {
-  //         currentData.inventory = cleanedInventory;
-  //         await document.setFlag("campaign-codex", "data", currentData);
-  //         const removedCount = currentInventory.length - cleanedInventory.length;
-  //         ui.notifications.warn(`Removed ${removedCount} broken inventory items from ${document.name}`);
-  //       }
-  //     } catch (error) {
-  //       // console.error(`Campaign Codex | Error cleaning broken inventory items:`, error);
-  //     }
-  //   }
-
-  //   return inventory;
-  // }
 
   static async getNameFromUuids(ccUuids, removeTags = false) {
     if (!ccUuids || !Array.isArray(ccUuids)) return [];
