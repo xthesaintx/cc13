@@ -2,17 +2,33 @@
   "CAMPAIGN_CODEX": 
   {
     "updateHTML":"<div> <p><strong>IMPORTANT ACTION REQUIRED: Campaign Codex</strong></p><p>If you have just updated Campaign Codex from an 1.5.7 or older Execute the 'Migrate Parent Region' macro in the included Compendium</p></div>",
-    "welcomePageHTML" : "<div> <p><strong>Welcome to Campaign Codex</strong></p> <p>Folder management, system item price location and system item currency location, and other configurations can be changed in settings.</p> <div><button data-campaign-codex-handler=\"campaign-codex|openMenu|core_settings\"><i class=\"fas fa-wrench\"></i>Settings</button></div> <hr> <p><strong>Be part of the Campaign Codex Community</strong></p> <p>If you would like to suggest a feature, report a bug, or just want to chat, feel free to join us on Discord.</p> <div><button data-campaign-codex-handler=\"campaign-codex|openWindow|https://discord.gg/fycwH79s2y\"><i class=\"fab fa-discord\"></i> Join Discord</button></div> <p><strong>Found a bug?</strong></p> <p>If you would like to report a bug and Discord is not your thing head on over to GitHub.</p> <div><button data-campaign-codex-handler=\"campaign-codex|openWindow|https://github.com/xthesaintx/cc13\"><i class=\"fas fa-bug\"></i> Report a Bug</button></div> <p><strong>Supporting the development</strong></p> <p>If you want to support the development, consider taking a look at the membership options on Patreon</a>.</p> <div><button data-campaign-codex-handler=\"campaign-codex|openWindow|https://patreon.com/wgtngm\"><i class=\"fas fa-star\"></i> Become a member</button></div><p><strong>Documentation</strong></p> <p>Feeling a little lost? Head over to our documentation page for some direction, or jump on Discord and ask a question</a>.</p> <div><button data-campaign-codex-handler=\"campaign-codex|openWindow|https://campaigncodex.wgtngm.com\"><i class=\"fas fa-book\"></i> Documentation</button></div></div>",   
-    "context":{
-        "export":"Export to Standard Journal",
-        "group":"Add to {type}"
-    },
+    "welcomePageHTML" : "<div> <p><strong>Welcome to Campaign Codex</strong></p> <p>Folder management, system item price location and system item currency location, and other configurations can be changed in settings.</p> <div><button data-campaign-codex-handler=\"campaign-codex|openMenu|core_settings\"><i class=\"fas fa-wrench\"></i>Settings</button></div> <hr> <p><strong>Be part of the Campaign Codex Community</strong></p> <p>If you would like to suggest a feature, report a bug, or just want to chat, feel free to join us on Discord.</p> <div><button data-campaign-codex-handler=\"campaign-codex|openWindow|https://discord.gg/fycwH79s2y\"><i class=\"fab fa-discord\"></i> Join Discord</button></div> <p><strong>Found a bug?</strong></p> <p>If you would like to report a bug and Discord is not your thing head on over to GitHub.</p> <div><button data-campaign-codex-handler=\"campaign-codex|openWindow|https://github.com/xthesaintx/cc13\"><i class=\"fas fa-bug\"></i> Report a Bug</button></div> <p><strong>Supporting the development</strong></p> <p>If you want to support the development, consider taking a look at the membership options on Patreon.</p> <div><button data-campaign-codex-handler=\"campaign-codex|openWindow|https://patreon.com/wgtngm\"><i class=\"fa-brands fa-patreon\"></i> Become a member</button></div><p>If you prefer, you can support via Ko-fi.</p><div><button data-campaign-codex-handler=\"campaign-codex|openWindow|https://ko-fi.com/wgtngm\"><i class=\"fas fa-cup-togo\"></i> Buy a coffee</button></div><p><strong>Documentation</strong></p> <p>Feeling a little lost? Head over to our documentation page for some direction, or jump on Discord and ask a question</a>.</p> <div><button data-campaign-codex-handler=\"campaign-codex|openWindow|https://campaigncodex.wgtngm.com\"><i class=\"fas fa-book\"></i> Documentation</button></div></div>",   
     "tabs": {
       "original-name": "Original Name",
       "override-name": "Override Name",
-      "visible": "Visible",
+      "visible": "Enabled",
+      "hidden": "Hidden",
       "edit-title": "Configure Tabs",
       "reset": "Reset to Defaults"
+    },
+    "widgets":{
+      "available":"Available",
+      "inactive":"Inactive",
+      "active":"Active"
+
+    },
+    "context":{
+      "export":"Export to Standard Journal",
+      "group":"Add to {type}",
+      "changeImage": "Change Image",
+      "removeImage": "Remove Image",
+      "showImage": "Show Image to Players",
+      "removeLink":"Unlink",
+      "removeTag":"Remove Tag"
+    },
+    "toc":{
+      "filter":"Left-click to Include, Right-click to Exclude.",
+      "clear":"Clear Filters"
     },
     "button":{
         "title":"Create new {type}",
@@ -91,9 +107,13 @@
       "widgets": "Widgets"
     },
     "settings": {
+      "allowPlayerPurchasing":{
+        "name": "Allow players to puchase from Inventories",
+        "hint": "If enabled players can send items to themselves from an inventory"
+      },
       "mapMarkerColor":{
-        "name": "Use CC UI colour for the map markers",
-        "hint": "If enabled CC map markers will use the CC UI colour for the background"
+        "name": "Use CC Accent colour for the map markers",
+        "hint": "If enabled CC map markers will use the CC Accent colour for the background"
       },
       "mapMarkers":{
         "name": "Enable Campaign Codex Map Markers",
@@ -130,6 +150,10 @@
       "itemPricePath": {
         "name": "Override Item Price Path",
         "hint": "Path to item price value (e.g., 'system.price.value' for D&D5e). Leave blank to use detected system."
+      },
+      "enableThemes": {
+        "name": "Enable custom theme",
+        "hint": "Enables the custom colour and typeface selected in Configure Colours."
       },
       "itemDenominationPath": {
         "name": "Override Item Currency Path",
@@ -182,10 +206,15 @@
       "link": "Drop {type} to link",
       "empty": "Empty {type}"
     },
+    "dragToAdd": {
+      "item": "Drag items here to add to inventory",
+      "empty": "Empty"
+    },
     "error": {
       "faileditem": "Failed to transfer item"
     },
     "warn": {
+      "notEnoughCurrency":"Not enough funds",
       "directly": "Cannot remove {type} directly",
       "remove": "Remove {type}",
       "invaliddrop":"No members with linked actors found to drop!",
@@ -214,10 +243,14 @@
       },
       "send": {
         "player": "Send to Player",
+        "purchase": "Purchase",
         "item": {
           "player": "Send Item to Player Character",
           "typetoplayer":"Sent {type} to {player}."
         }
+      },
+      "infinite":{
+        "item":"Toggle infinite ammount"
       },
       "remove": {
         "item": "Remove Item",
