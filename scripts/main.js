@@ -133,36 +133,36 @@ Hooks.once("setup", async function () {
 Hooks.once("i18nInit", async function () {
     await campaigncodexSettings();
     foundry.applications.apps.DocumentSheetConfig.registerSheet(JournalEntry, "campaign-codex", LocationSheet, {
-        canBeDefault: false, 
+        canBeDefault: true, 
         makeDefault: false,
         label: `Campaign Codex: ${game.i18n.localize('CAMPAIGN_CODEX.names.location')}`,
     });
 
     foundry.applications.apps.DocumentSheetConfig.registerSheet(JournalEntry, "campaign-codex", ShopSheet, {
-        canBeDefault: false, 
+        canBeDefault: true, 
         makeDefault: false,
         label: `Campaign Codex: ${game.i18n.localize('CAMPAIGN_CODEX.names.shop')}`,
     });
 
     foundry.applications.apps.DocumentSheetConfig.registerSheet(JournalEntry, "campaign-codex", NPCSheet, {
-        canBeDefault: false, 
+        canBeDefault: true, 
         makeDefault: false,
         label: `Campaign Codex: ${game.i18n.localize('CAMPAIGN_CODEX.names.npc')}`,
     });
 
     foundry.applications.apps.DocumentSheetConfig.registerSheet(JournalEntry, "campaign-codex", RegionSheet, {
-        canBeDefault: false, 
+        canBeDefault: true, 
         makeDefault: false,
         label: `Campaign Codex: ${game.i18n.localize('CAMPAIGN_CODEX.names.region')}`,
     });
     foundry.applications.apps.DocumentSheetConfig.registerSheet(JournalEntry, "campaign-codex", GroupSheet, {
-        canBeDefault: false, 
+        canBeDefault: true, 
         makeDefault: false,
         label: `Campaign Codex: ${game.i18n.localize('CAMPAIGN_CODEX.names.group')}`,
     });
 
     foundry.applications.apps.DocumentSheetConfig.registerSheet(JournalEntry, "campaign-codex", TagSheet, {
-        canBeDefault: false, 
+        canBeDefault: true, 
         makeDefault: false,
         label: `Campaign Codex: ${game.i18n.localize('CAMPAIGN_CODEX.names.tag') || "Tag"}`, 
     });
@@ -306,6 +306,7 @@ Hooks.on("renderDialogV2", (dialog, html, data) => {
         location: "campaign-codex.LocationSheet",
         shop: "campaign-codex.ShopSheet",
         npc: "campaign-codex.NPCSheet", 
+        tag: "campaign-codex.TagSheet",
         group: "campaign-codex.GroupSheet",
     };
     const campaignCodexTypes = {
@@ -314,6 +315,7 @@ Hooks.on("renderDialogV2", (dialog, html, data) => {
         shop: `Campaign Codex: ${localize("names.shop")}`,
         npc: `Campaign Codex: ${localize("names.npc")}`,
         group: `Campaign Codex: ${localize("names.group")}`,
+        tag: `Campaign Codex: ${localize("names.tag")}`,
     };
 
     const nameInput = form.querySelector('input[name="name"]');
