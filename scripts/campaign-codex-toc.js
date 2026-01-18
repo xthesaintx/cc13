@@ -342,6 +342,13 @@ async _prepareContext(options) {
         const shopUuids = journalData.linkedShops || [];
         const groupUuids = journalData.linkedGroups || [];
 
+        const tagownershipLevel = journal.ownership.default;
+        const tagownershipIcon = tagownershipLevel >= 2 ? 'fas fa-eye' : 'fas fa-eye-slash';
+
+        tagItem.ownershipIcon = tagownershipIcon;
+        tagItem.ownershipLevel = tagownershipLevel;
+        tagItem.canView = journal.testUserPermission(game.user, CONST.DOCUMENT_OWNERSHIP_LEVELS.OBSERVER);
+
         const allUuids = [...associateUuids, ...locationUuids, ...shopUuids, ...groupUuids];
         if (allUuids.length === 0) {
              return { ...tagItem, children: [], hasChildren: false };
@@ -410,6 +417,9 @@ async _prepareContext(options) {
         if (selectionState === -1) stateClass = "excluded";
 
         return {
+            ownershipIcon: t.ownershipIcon,
+            ownershipLevel: t.ownershipLevel,
+            canView: t.canView,
             uuid: t.uuid,
             id: t.id,
             name: t.name,

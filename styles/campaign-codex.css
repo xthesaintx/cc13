@@ -4265,7 +4265,8 @@ QUESTS
     background: var(--cc-accent80);
     color: var(--color-text-light-highlight);
 }
-
+.campaign-codex-toc-app .tag-pill .fa-eye,
+.campaign-codex-toc-app .tag-pill .fa-eye-slash,
 .campaign-codex-toc-app .tag-pill .fa-external-link-alt{
  font-size: 11px;
 }

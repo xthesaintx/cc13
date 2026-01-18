@@ -13,6 +13,7 @@
                     {{ccLocalize "toc.clear"}}
                 </button>                
                 {{#each cloudTags}}
+                    {{#if this.canView}}
                     <div class="tag-pill {{this.state}}" 
                          data-action="toggleTagFilter" 
                          data-tag-id="{{this.id}}"
@@ -21,7 +22,11 @@
                         <span class="tag-name">{{this.name}}</span>
                         <span class="tag-count">{{this.count}}</span>
                         <i class="fas fa-external-link-alt" data-action="openDocument" data-uuid="{{this.uuid}}" title="Open Sheet"></i>
+                    {{#if ../isGM}}
+                        <i class="fa {{this.ownershipIcon}}" data-action="changeDefaultOwnership" data-uuid="{{this.uuid}}" data-ownership="{{this.ownershipLevel}}"></i>
+                    {{/if}} 
                     </div>
+                    {{/if}}
                 {{/each}}
 
             </div>
