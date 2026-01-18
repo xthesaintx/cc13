@@ -11,7 +11,7 @@ export class CampaignCodexMapMarker extends PIXI.Container {
 
     this.tooltip = tooltip;
     this.style = style;
-    this.uiColor = game.settings.get("campaign-codex", "color-ui");
+    this.uiColor = game.settings.get("campaign-codex", "color-accent");
     this.customColour = game.settings.get("campaign-codex", "mapMarkerColor");
 
 
@@ -108,43 +108,6 @@ export class CampaignCodexMapMarker extends PIXI.Container {
     return style;
   }
 }
-
-
-// /**
-//  * A helper function to be attached to the Note.prototype.
-//  * It checks if a note should have a custom Campaign Codex icon.
-//  * 'this' is assumed to be an instance of a Note.
-//  * @returns {PIXI.Container|void}
-//  */
-// export function _getCampaignCodexIcon() {
-//   const journal = this.document.entry;
-//   if ( !journal ) return;
-
-//   const isCC = journal.getFlag("campaign-codex", "type");
-//   if ( !isCC ) return;
-
-//   const mapCodeRegex = /^([A-Z]?\d{1,3}[A-Z]?)(?=\s*[-: ]|$)/i;
-//   // const mapCodeRegex = /^([A-Z]?\d{1,3})\s*-\s*/i;
-//   const match = journal.name.match(mapCodeRegex);
-
-//   if ( !match ) return;
-
-//   const code = match[1].toUpperCase(); // Get the code (e.g., "H1" or "001")
-
-//   // We have a match! Create the custom icon.
-//   const {icon: IconClass, ...style} = foundry.utils.mergeObject(
-//     CONFIG.CampaignCodex.mapLocationMarker.default,
-//     {},
-//     {inplace: false},
-//   );
-
-//   const options = {
-//     size: this.document.iconSize,
-//     tint: Color.from(this.document.texture.tint || null),
-//   };
-//   return new IconClass({code: code, ...options, ...style});
-// }
-
 
 
 

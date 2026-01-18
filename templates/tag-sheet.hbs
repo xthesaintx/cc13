@@ -1,0 +1,86 @@
+<div class="hide-existing-tags {{sheetType}}-sheet cc-scroll-fix {{#if sidebarCollapsed}}sidebar-collapsed{{/if}}">
+    <div class="sheet-container">
+
+        <aside class="sheet-container sheet-sidebar sidebar-collapsable">
+            
+            {{!-- 1. Header (Fixed) --}}
+            <div class="sidebar-header">
+                <div class="sheet-image" {{#if (not showImage)}}style="display:none"{{/if}}>
+                    <img src="{{#if customImage}}{{customImage}}{{/if}}" data-action="showPortraitArtwork" alt="{{document.name}}" onerror="this.src='{{defaultImage}}'" />
+                </div>
+
+                <h1 class="sheet-title">{{document.name}}</h1>
+                
+                <div class="sub-title">
+                    <div class="type-wrapper">
+                        <i class="{{#if customIcon}}{{customIcon}}{{else}}{{#if tagMode}}{{getAsset 'icon' 'tag'}}{{else}}{{getAsset 'icon' sheetType}}{{/if}}{{/if}}" data-action="editIcon"></i>
+                        <div class="sheet-type">{{sheetTypeLabel}}</div>
+                    </div>
+                    {{#if mapMarkerOverride}}
+                        <div class="map-marker">
+                            <i class="fas fa-map-marker"></i>
+                            <div class="sheet-marker">{{#if mapMarker}}{{mapMarker}}{{else}}-{{/if}}</div>
+                        </div>
+                    {{/if}}
+                </div>
+                
+                {{!-- Custom header content --}} 
+                {{{customHeaderContent}}}
+            </div>
+
+            <div class="group-tree-container">
+                {{{leftPanel}}}
+            </div>
+
+                {{!-- Tags --}}
+                <div class="sidebar-links cc-tags">
+                    <h3 class="cc-tags">Tags
+                        <i class="fas fa-circle-plus" title="Create new Tag" data-action="createTag"></i>
+                        <i class="fas fa-eye toggletags" data-action="toggleTags" title="Toggle Existing Tags"></i>
+                    </h3>
+                    <div class="link-tags">
+                        {{#each quickTags}}
+                            <div class="link-card npc-link tag-card" data-action="openNPC" data-uuid="{{uuid}}" title="{{name}}">
+                                <span class="link-name">{{name}}</span> 
+                            </div>
+                        {{/each}}
+                        {{#if (and isGM showTags)}}
+                            {{#each existingTags}}
+                                <div class="link-card existing-tag " data-action="linkTag" data-uuid="{{uuid}}" title="{{name}}">
+                                    <span class="link-name">{{name}}</span>
+                                </div>
+                            {{/each}}
+                        {{/if}}
+                    </div>
+                </div>
+
+
+            {{#if isGM}}
+                <i class="fas fa-cog cc-customise-tabs" title="Customise Tabs" data-action="editTabs"></i>
+            {{/if}}
+        </aside>
+
+        <div class="sidebar-collapser" data-action="toggleSidebar">
+            <i class="fas fa-caret-{{#if sidebarCollapsed}}right{{else}}left{{/if}}" inert></i>
+        </div>
+
+        <main class="group-main">
+            {{#if isShowingSelectedView}}
+                {{{selectedSheetContent}}}
+            {{else}}
+                {{#each tabPanels}}
+                    <section class="group-tab-panel {{key}} {{#if active}}active{{/if}}" data-tab="{{key}}" {{#if (eq key 'widgets')}}data-preserve-scroll{{/if}}>
+                        {{{this.content}}}
+                    </section>
+                {{/each}}
+            {{/if}}
+        </main>
+
+        <nav class="group-tabs">
+            {{#each tabPanels}}
+                <i class="{{icon}} group-tab vertical {{#if active}}active{{/if}}" data-tab="{{key}}" data-action="ccChangeTab" title="{{label}}"></i>
+            {{/each}}
+        </nav>
+
+    </div>
+</div>

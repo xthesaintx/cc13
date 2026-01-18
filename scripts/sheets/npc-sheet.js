@@ -1,7 +1,7 @@
 import { CampaignCodexBaseSheet } from "./base-sheet.js";
 import { TemplateComponents } from "./template-components.js";
 import { CampaignCodexLinkers } from "./linkers.js";
-import { promptForName, localize, format, renderTemplate, getDefaultSheetTabs } from "../helper.js";
+import { promptForName, localize, format, renderTemplate, getDefaultSheetTabs, getDefaultSheetHidden } from "../helper.js";
 
 export class NPCSheet extends CampaignCodexBaseSheet {
   // =========================================================================
@@ -15,7 +15,7 @@ export class NPCSheet extends CampaignCodexBaseSheet {
       icon: 'fas fa-user-tag',
     },
     actions: {
-      removeActor: this.#_onRemoveActor,
+      npcTagMode:this.#_npcSheetMode
     }
   };
 
@@ -80,11 +80,31 @@ export class NPCSheet extends CampaignCodexBaseSheet {
   }
 
 
+    static async #_npcSheetMode(event){
+    this.document.setFlag("core", "sheetClass", "campaign-codex.TagSheet");
+  }      
+
+  async _renderFrame(options) {
+    const frame = await super._renderFrame(options);
+    if ( !this.hasFrame ) return frame;
+    if (this.document.getFlag("campaign-codex", "data")?.tagMode){
+    const copyId = `
+        <button type="button" class="header-control fa-solid fa-tag icon" data-action="npcTagMode"
+                data-tooltip="Migrate to Tag Sheet" aria-label="Migrate to Tag Sheet"></button>
+      `;
+      this.window.close.insertAdjacentHTML("beforebegin", copyId);
+    }
+    return frame;
+  }
+
+
   async _prepareContext(options) {
+  if (options.renderContext === "updateJournalEntry" && !game.user.isGM) {
+    this._processedData = null;
+  }
+  
   if (options.force) {
-    // this._processedData = null;
-    // this._inventoryCache = null;
-    this._fetchingInventory = false;
+    this._processedData = null;
   }
     const context = await super._prepareContext(options);
 
@@ -113,6 +133,9 @@ export class NPCSheet extends CampaignCodexBaseSheet {
     context.taggedNPCs = context.associates.filter((npc) => npc.tag === true);
     context.associatesWithoutTaggedNPCs = context.associates.filter((npc) => npc.tag !== true);
 
+
+    const allowedTypes = ["character", "player", "group"];
+
     // --- Basic Sheet Info ---
     context.sheetType = "npc";
         if (context.sheetTypeLabelOverride !== undefined && context.sheetTypeLabelOverride !== "") {
@@ -120,7 +143,7 @@ export class NPCSheet extends CampaignCodexBaseSheet {
         } else if (context.tagMode) {
             context.sheetTypeLabel = localize("names.tag") 
         } else {
-            context.sheetTypeLabel = context.linkedActor?.type === "character" 
+            context.sheetTypeLabel = context.linkedActor?.type && allowedTypes.includes(context.linkedActor?.type.toLowerCase()) 
                 ? format("sheet.journal", { type: localize("names.player") }) 
                 : format("sheet.journal", { type: localize("names.npc") });
         }
@@ -181,7 +204,7 @@ export class NPCSheet extends CampaignCodexBaseSheet {
       {
         key: "inventory",
         active: this._currentTab === "inventory",
-        content: await renderIfActive("inventory", this._generateInventoryTab(context)),
+        content: await renderIfActive("inventory", await this._generateInventoryTab(context)),
         icon: "fas fa-boxes",
         label: localize("names.inventory"),
         statistic: { value: rawInventoryCount, view: rawInventoryCount >0, },
@@ -216,7 +239,7 @@ export class NPCSheet extends CampaignCodexBaseSheet {
         key: "widgets", 
         statistic: {value: context.activewidget.length, view:context.activewidget.length>0},
         active: this._currentTab === "widgets",
-        content: await renderIfActive("widgets",  CampaignCodexBaseSheet.generateWidgetsTab(this.document, context, this._labelOverride(this.document, "widgets"))),
+        content: await renderIfActive("widgets",  this.generateWidgetsTab(this.document, context, this._labelOverride(this.document, "widgets"))),
         label: localize("names.widgets"), 
         icon: "fas fa-puzzle-piece", 
       },
@@ -229,17 +252,34 @@ export class NPCSheet extends CampaignCodexBaseSheet {
       },
     ];
     const defaultSheetType = context.tagMode ? 'tag' : 'npc';
+    
     const defaultTabVis = getDefaultSheetTabs(defaultSheetType);
-    if (defaultTabVis.hasOwnProperty('npcs') && !defaultTabVis.hasOwnProperty('associates')) {
-    defaultTabVis.associates = defaultTabVis.npcs;
-    delete defaultTabVis.npcs;
+    const defaultTabHidden = getDefaultSheetHidden(defaultSheetType);
+
+
+  if (["npc", "tag"].includes(defaultSheetType) && defaultTabVis.hasOwnProperty('npcs') && !defaultTabVis.hasOwnProperty('associates')) {
+      defaultTabVis.associates = defaultTabVis.npcs;
+      delete defaultTabVis.npcs;
+      if (defaultTabHidden.hasOwnProperty('npcs')) {
+          defaultTabHidden.associates = defaultTabHidden.npcs;
+          delete defaultTabHidden.npcs;
+      }
     }
+
+
+
     context.tabs = defaultTabs
       .map(tab => {
         const override = tabOverrides.find(o => o.key === tab.key);
         const isVisibleByDefault = defaultTabVis[tab.key] ?? true;
         const isVisible = override?.visible ?? isVisibleByDefault;
+        
         if (!isVisible) return null;
+        const isHiddenByDefault = defaultTabHidden[tab.key] ?? false;
+        const isHidden = override?.hidden ?? isHiddenByDefault;
+        if (!game.user.isGM && isHidden) {
+            return null;
+        }
 
         const dynamicTab = tabContext.find(t => t.key === tab.key);
         if (!dynamicTab) return null;
@@ -251,15 +291,15 @@ export class NPCSheet extends CampaignCodexBaseSheet {
           label: finalLabel, 
         };
       })
-      .filter(Boolean); 
-    
-    // Validate and set the active tab
+      .filter(Boolean);
     if (context.tabs.length > 0) {
       const availableKeys = context.tabs.map(t => t.key);
       if (!this._currentTab || !availableKeys.includes(this._currentTab)) {
         this._currentTab = context.tabs[0].key;
       }
     }
+
+
 
     // --- Tags and Links ---
 
@@ -274,22 +314,6 @@ export class NPCSheet extends CampaignCodexBaseSheet {
       { data: context.associatesWithoutTaggedNPCs, type: "npc" },
     ]);
 
-    // --- Tag Mode ---
-    let headerContent = "";
-
-    if (game.user.isGM) {
-      headerContent = `
-      <div class="shop-toggles npc-toggles tag-toggles" title="Toggle Tagged NPC mode">
-      <span class="stat-label"><i class ="${TemplateComponents.getAsset('icon', 'tag')}"></i></span>
-        <label class="toggle-control">
-          <input type="checkbox" class="tag-mode-toggle" ${context.tagMode ? "checked" : ""} style="margin: 0;"><span class="slider"></span>
-        </label>
-      </div>
-    `;
-    }
-    context.customFooterContent = headerContent;
-
-
 
     return context;
   }
@@ -299,8 +323,7 @@ export class NPCSheet extends CampaignCodexBaseSheet {
     const nativeHtml = this.element;
 
     // --- Listeners for non-click events (e.g., change) ---
-    nativeHtml.querySelector(".tag-mode-toggle")?.addEventListener("change", this._onTagToggle.bind(this));
-  
+    // nativeHtml.querySelector(".tag-mode-toggle")?.addEventListener("change", this._onTagToggle.bind(this));
   }
 
   async _handleDrop(data, event) {
@@ -328,18 +351,22 @@ export class NPCSheet extends CampaignCodexBaseSheet {
   async _generateInfoTab(context) {
     const label = this._labelOverride(this.document, "info");
     const hideByPermission = game.settings.get("campaign-codex", "hideByPermission");
-    const dropToMapBtn = canvas.scene && context.linkedActor && context.isGM
     let actorSection = "";
     if (context.linkedActor && (!hideByPermission || context.linkedActor.canView)) {
       actorSection = TemplateComponents.actorLinkCard(context.linkedActor);
     } else if (context.isGM) {
-      actorSection = TemplateComponents.dropZone("actor", TemplateComponents.getAsset("icon", "npc"), format("dropzone.link", { type: localize("names.actor")}));
     }
-      
+
      const templateData = {
+      widgetsPosition: context.widgetsPosition,
+      widgetsToRender: context.infoWidgetsToRender,
+      activewidget: context.activewidgetInfo,
+      inactivewidgets: context.inactivewidgetsInfo,
+      addedWidgetNames: context.addedWidgetNamesInfo,
+      availableWidgets: context.availableWidgets,
+      isWidgetTrayOpen:this._isWidgetInfoTrayOpen,
       isGM: context.isGM,
       labelOverride:label,
-      dropToMap: dropToMapBtn,
       actor: actorSection,
       richTextDescription: TemplateComponents.richTextSection(this.document, context.sheetData.enrichedDescription, "description", context.isOwnerOrHigher)
     };
@@ -464,11 +491,6 @@ export class NPCSheet extends CampaignCodexBaseSheet {
   }
 
 
-  static async #_onRemoveActor(event) {
-    // await this._saveFormData();
-    await this.document.setFlag("campaign-codex", "data.linkedActor", null);
-    this.render(true);
-  }
 
   // async _onRefreshLocations(event) {
   //   this.render(true);
@@ -522,7 +544,6 @@ export class NPCSheet extends CampaignCodexBaseSheet {
     const journalType = journal.getFlag("campaign-codex", "type");
     const dropOnInfoTab = event.target.closest('.tab-panel[data-tab="info"]');
 
-    // await this._saveFormData();
 
     // Journal
     if (((!journalType && data.type === "JournalEntry") || data.type === "JournalEntryPage")) {
@@ -541,22 +562,11 @@ export class NPCSheet extends CampaignCodexBaseSheet {
 
 
 
-    // if (((!journalType && data.type === "JournalEntry") || data.type === "JournalEntryPage")) {
-    //     const locationData = this.document.getFlag("campaign-codex", "data") || {};
-    //     locationData.linkedStandardJournals = locationData.linkedStandardJournals || [];
-    //     if (!locationData.linkedStandardJournals.includes(journal.uuid)) {
-    //         locationData.linkedStandardJournals.push(journal.uuid);
-    //         await this.document.setFlag("campaign-codex", "data", locationData);
-    //         ui.notifications.info(`Linked journal "${journal.name}".`);
-    //     } else {
-    //         ui.notifications.warn(`Journal "${journal.name}" is already linked.`);
-    //     }
-    //   } else
     if (journalType === "location") {
       await game.campaignCodex.linkLocationToNPC(journal, this.document);
     } else if (journalType === "shop") {
       await game.campaignCodex.linkShopToNPC(journal, this.document);
-    } else if (journalType === "npc") {
+    } else if (["npc", "tag"].includes(journalType)) {
       await game.campaignCodex.linkNPCToNPC(this.document, journal);
     } else if (journalType === "region") {
       await game.campaignCodex.linkRegionToNPC(journal, this.document);

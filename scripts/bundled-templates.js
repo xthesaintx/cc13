@@ -5,6 +5,43 @@ const summaryTemplate = `
 </details>
 `;
 
+const galleryTemplate = `
+<div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; width: 100%;">
+    <div style="display: flex; flex-direction: column;">
+        <img src="modules/campaign-codex/ui/group.webp" style="width: 100%; object-fit: cover; border: none; border-radius: 5px; aspect-ratio: 1/1;">
+        <p style="margin-top: 0.5rem;">Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
+    </div>
+    <div style="display: flex; flex-direction: column;">
+        <img src="modules/campaign-codex/ui/group.webp" style="width: 100%; object-fit: cover; border: none; border-radius: 5px; aspect-ratio: 1/1;">
+        <p style="margin-top: 0.5rem;">Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p>
+    </div>
+    <div style="display: flex; flex-direction: column;">
+        <img src="modules/campaign-codex/ui/group.webp" style="width: 100%; object-fit: cover; border: none; border-radius: 5px; aspect-ratio: 1/1;">
+        <p style="margin-top: 0.5rem;">Ut enim ad minim veniam, quis nostrud exercitation ullamco.</p>
+    </div>
+    <div style="display: flex; flex-direction: column;">
+        <img src="modules/campaign-codex/ui/group.webp" style="width: 100%; object-fit: cover; border: none; border-radius: 5px; aspect-ratio: 1/1;">
+        <p style="margin-top: 0.5rem;">Duis aute irure dolor in reprehenderit in voluptate velit.</p>
+    </div>
+    <div style="display: flex; flex-direction: column;">
+        <img src="modules/campaign-codex/ui/group.webp" style="width: 100%; object-fit: cover; border: none; border-radius: 5px; aspect-ratio: 1/1;">
+        <p style="margin-top: 0.5rem;">Excepteur sint occaecat cupidatat non proident.</p>
+    </div>
+    <div style="display: flex; flex-direction: column;">
+        <img src="modules/campaign-codex/ui/group.webp" style="width: 100%; object-fit: cover; border: none; border-radius: 5px; aspect-ratio: 1/1;">
+        <p style="margin-top: 0.5rem;">Sunt in culpa qui officia deserunt mollit anim id est laborum.</p>
+    </div>
+    <div style="display: flex; flex-direction: column;">
+        <img src="modules/campaign-codex/ui/group.webp" style="width: 100%; object-fit: cover; border: none; border-radius: 5px; aspect-ratio: 1/1;">
+        <p style="margin-top: 0.5rem;">Lorem ipsum dolor sit amet description.</p>
+    </div>
+    <div style="display: flex; flex-direction: column;">
+        <img src="modules/campaign-codex/ui/group.webp" style="width: 100%; object-fit: cover; border: none; border-radius: 5px; aspect-ratio: 1/1;">
+        <p style="margin-top: 0.5rem;">Lorem ipsum dolor sit amet description.</p>
+    </div>
+</div>
+`;
+
 const columnsTemplate =`<div style="column-width: 15rem; gap:1rem">
     <img src="modules/campaign-codex/ui/group.webp" style="object-fit: cover; border: none; border-radius: 5px; aspect-ratio: 1/1;">
     <p>Lorem ipsum dolor, sit amet consectetur adipisicing elit. Quaerat voluptas magni illum totam, corrupti corporis facilis adipisci cum blanditiis vitae dignissimos ab ut vel molestiae ducimus dolorem commodi, sit repudiandae!</p>
@@ -309,6 +346,11 @@ export const BUNDLED_TEMPLATES = [
     {
         title: "Summary", 
         content: summaryTemplate,
+        filePath: null 
+    },
+    {
+        title: "Gallery", 
+        content: galleryTemplate,
         filePath: null 
     },
     {

@@ -1,5 +1,5 @@
 import { CampaignCodexBaseSheet } from "./base-sheet.js";
-import { localize, format, renderTemplate } from "../helper.js";
+import { localize, format, renderTemplate, isThemed, journalSystemClass } from "../helper.js";
 import { CampaignCodexLinkers } from "./linkers.js";
 import { widgetManager } from "../widgets/WidgetManager.js";
 import { gameSystemClass } from "../helper.js";
@@ -80,22 +80,16 @@ export class TemplateComponents {
    */
   static richTextSection(docIn, enrichedValue, editlocation, isOwner = false) {
     const systemClass = gameSystemClass(game.system.id);
+    const journalClass = journalSystemClass(game.system.id);
 
     if (!isOwner) {
       return `
-        <article class="cc-enriched themed theme-light ${systemClass}">
+        <article class="cc-enriched ${isThemed() ? 'themed':''} ${isThemed()} ${systemClass}">
           <section class="journal-entry-content cc-non-owner-view">
             ${enrichedValue}
           </section>
         </article>
       `;
-      // return `
-      //   <article class="journal-entry-page cc-enriched themed theme-light ${systemClass}">
-      //     <section class="journal-page-content cc-non-owner-view">
-      //       ${enrichedValue}
-      //     </section>
-      //   </article>
-      // `;
     }
 
     const sheetData = docIn.getFlag("campaign-codex", "data") || {};
@@ -107,9 +101,9 @@ export class TemplateComponents {
     const escapedRawValue = foundry.utils.escapeHTML(rawValue);
 
     return `
-      <article class="cc-enriched themed theme-light ${systemClass}">
+      <article class="cc-enriched ${isThemed() ? 'themed':''} ${isThemed()} ${systemClass}">
         <section class="journal-entry-content">
-          <prose-mirror name="flags.campaign-codex.data.${editlocation}" value="${escapedRawValue}" document-uuid="${docIn.uuid}" toggled class="journal-page-content cc-prosemirror">
+          <prose-mirror name="flags.campaign-codex.data.${editlocation}" value="${escapedRawValue}" document-uuid="${docIn.uuid}" toggled class="journal-page-content cc-prosemirror ${journalClass} ${isThemed() ? 'themed':''} ${isThemed()}">
             ${enrichedValue}
           </prose-mirror>
         </section>
@@ -182,44 +176,6 @@ export class TemplateComponents {
   }
 
 
-  /**
-   * Generates a control for setting a global price markup.
-   * @param {number} markup - The current markup value.
-   * @returns {string} The HTML for the markup control.
-   */
-  static cashControl(inventoryCash) {
-    const currency = CampaignCodexLinkers.getCurrency();
-    if (!game.user.isGM) {
-      return "";
-    }
-    return `
-        <div>
-        <h3>Held Currency</h3>
-        <div class="cash-input-group">
-          <input type="number" class="cash-input" value="${inventoryCash}" min="0" max="9999999" step="1">
-          <span class="cash-label">${currency}</span>
-        </div></div>
-    `;
-  }
-
-  /**
-   * Generates a control for setting a global price markup.
-   * @param {number} markup - The current markup value.
-   * @returns {string} The HTML for the markup control.
-   */
-  static markupControl(markup) {
-    if (!game.user.isGM) {
-      return "";
-    }
-    return `<div>
-        <h3><i class="fas fa-percentage"></i> ${localize("inventory.global.markup")}</h3>
-        <div class="markup-input-group">
-          <input type="number" class="markup-input" value="${markup}" min="0.1" max="10" step="0.1">
-          <span class="markup-label">x ${localize("inventory.price.base")}</span>
-        </div>
-        <p class="markup-help">${localize("inventory.help.markup")}</p></div>
-    `;
-  }
 
   /**
    * Generates a small card for displaying a statistic.
@@ -289,7 +245,8 @@ export class TemplateComponents {
     );
 
     const hideSection = !processedQuests || processedQuests.length === 0;
-
+    const journalClass = journalSystemClass(game.system.id);
+    const themed = isThemed() ? `themed ${isThemed()}` :``;
     const templateData = {
       hide: hideSection,
       doc: docIn,
@@ -298,6 +255,8 @@ export class TemplateComponents {
       isGroupSheet: isGroupSheet,
       header: this.contentHeader("fas fa-scroll", label, addButton),
       systemClass: gameSystemClass(game.system.id),
+      themed:themed,
+      journalClass:journalClass,
     };
 
     return renderTemplate("modules/campaign-codex/templates/quests/quest-list.hbs", templateData);
@@ -351,27 +310,19 @@ export class TemplateComponents {
       return "";
     }
 
-    const actorButton =
-      showActorButton && entity.actor && entity.canViewActor
-        ? `<i class="fas fa-user action-btn open-actor" data-action="openActor" data-uuid="${entity.actor.uuid}" title="${localize("title.open.actor")}</i>`
-        : "";
-
     const isShopSource = entity.source === "shop";
     const sourceAttr = entity.source ? `data-source="${entity.source}"` : "";
 
     let removeButton = "";
     if (disableRemove) {
-      const entityTypeName = type === "location" ? "shop-based locations" : "entry NPCs";
-      removeButton = `<span></span>`;
-    } else {
-      removeButton = `
-        <i class="fas fa-link-slash action-btn remove-${type}" data-action="remove${this.getHandlerName(type)}" data-uuid="${entity.uuid}" title="${format("warn.remove", { type: localize("names." + type) })}"></i>`;
-    }
+      removeButton = `data-remove-disabled="true"`;
+    } 
+
     return `
         ${
           entity.canView
-            ? `<div class="entity-card ${type}-card open-${type} ${entity.showImage ? ``:`hide-entity-image`}" data-action="open${this.getHandlerName(type)}" data-uuid="${entity.uuid}" ${customDataAttr} style="cursor: pointer; position:relative;" ${sourceAttr}>`
-            : `<div class="entity-card ${type}-card ${entity.showImage ? ``:`hide-entity-image`}" ${customDataAttr} ${sourceAttr}>`
+            ? `<div class="entity-card ${type}-card open-${type} ${entity.showImage ? ``:`hide-entity-image`}" data-action="open${this.getHandlerName(type)}" data-type="${type}" ${removeButton} data-uuid="${entity.uuid}" ${customDataAttr} draggable="true" data-drag="true" data-entry-id="${entity.id}" style="cursor: pointer; position:relative;" ${sourceAttr}>`
+            : `<div class="entity-card ${type}-card ${entity.showImage ? ``:`hide-entity-image`}" style="position:relative;" ${customDataAttr} ${sourceAttr}>`
         } 
         <div class="entity-image ${entity.showImage ? ``:`hide-entity-image`}">
           <img src="${entity.img}" alt="${entity.name}">
@@ -422,10 +373,6 @@ export class TemplateComponents {
               : ""
           }              
         </div>
-        <div class="entity-actions">
-          ${game.user.isGM ? `${removeButton}` : ""}
-          ${entity.canView ? actorButton : ""}
-        </div>
       </div>
     `;
   }
@@ -437,141 +384,14 @@ export class TemplateComponents {
    * @returns {string} The HTML for the linked actor card.
    */
   static actorLinkCard(actor, showActions = true) {
-    const actions = showActions
-      ? `
-      <div class="actor-actions">
-        ${
-          actor.canView
-            ? `
-          <i class="fas fa-user action-btn open-actor" data-action="openActor" data-uuid="${actor.uuid}" title="${localize("title.open.actor")}"></i>`
-            : ""
-        }
-        ${
-          game.user.isGM
-            ? `<i class="fas fa-unlink action-btn remove-actor" data-action="removeActor" title="${localize("title.unlink.actor")}"></i>`
-            : ""
-        }
-      </div>
-    `
-      : "";
-
     return `
-      <div class="linked-actor-card">
+      <div class="linked-actor-card linked-actor" data-uuid="${actor.uuid}">
         <div class="actor-image">
           <img src="${actor.img}" alt="${actor.name}">
         </div>
-        <div class="actor-content">
+        <div class="actor-content" data-action="openActor" data-uuid="${actor.uuid}" title="${localize("title.open.actor")}">
           <h4 class="actor-name">${actor.name}</h4>
         </div>
-        ${actions}
-      </div>
-    `;
-  }
-
-  // =========================================================================
-  // Inventory Components
-  // =========================================================================
-
-  /**
-   * Generates an inventory table for items.
-   * @param {Array<object>} inventory - The array of item data.
-   * @param {boolean} [isLootMode=false] - If true, hides pricing columns.
-   * @returns {string} The HTML for the inventory table.
-   */
-  static inventoryTable(inventory, isLootMode = false) {
-    const hideBase = game.settings.get("campaign-codex", "hideBaseCost");
-    const hideByPermission = game.settings.get("campaign-codex", "hideInventoryByPermission");
-
-    if (!inventory || inventory.length === 0) {
-      return this.emptyState("item");
-    }
-
-    const sortButton = `<button type="button" class="sort-btn sort-inventory-alpha" title="${localize("title.sort.alphabetically")}"><i class="fas fa-sort-alpha-down"></i></button>`;
-
-    const priceHeader = isLootMode
-      ? ""
-      : hideBase
-        ? `<div class="cc-inv-price-table">${localize("inventory.price.name")}</div>`
-        : `
-          <div class="cc-inv-price-table">${localize("inventory.price.base")}</div>
-          <div class="cc-inv-price-table">${localize("inventory.price.final")}</div>
-        `;
-
-    const gridColumns = isLootMode ? "cc-loot-mode" : hideBase ? "cc-hide-base" : "cc-shop-mode";
-
-    const inventoryRows = inventory
-      .map((item) => {
-        if (hideByPermission && !item.canView) {
-          return "";
-        }
-        const isCustom = item.customPrice ? "custom-price-active" : "";
-
-        const priceColumns = isLootMode
-          ? ""
-          : `
-            ${
-              !hideBase
-                ? `
-              <div class="item-base-price cc-inv-price-table">
-                ${item.basePrice} ${item.currency}
-              </div>`
-                : ""
-            }
-            <div class="item-final-price cc-inv-price-table">
-              <input type="number" class="price-input ${game.user.isGM ? isCustom:''}" data-uuid="${item.itemUuid}" value="${item.finalPrice}" step="0.01" min="0">
-              <span class="price-currency">${item.currency}</span>
-            </div>
-          `;
-        return `
-          <div class="inventory-item ${gridColumns}" data-uuid="${item.itemUuid}" data-item-name="${item.name}">
-            <div class="item-image">
-              <img src="${item.img}" alt="${item.name}">
-            </div>
-            <div class="item-details">
-              <div class="item-name">${item.name}</div>
-            </div>
-            ${priceColumns}
-            <div class="quantity-control" style="text-align:center">
-              <input type="number" class="quantity-input" data-uuid="${item.itemUuid}" value="${item.quantity}" min="0">
-              <div class="cc-quantity-buttons" style="text-align:center">
-              <button type="button" class="quantity-btn quantity-increase" data-uuid="${item.itemUuid}">
-                <i class="fas fa-plus"></i>
-              </button>
-              <button type="button" class="quantity-btn quantity-decrease" data-uuid="${item.itemUuid}">
-                <i class="fas fa-minus"></i>
-              </button>
-          </div>
-            </div>
-            <div class="item-actions" style="text-align:center">
-              <button type="button" class="action-btn open-item" data-uuid="${item.itemUuid}" data-action="openItem" title="${localize("title.open.sheet")}">
-                <i class="fas fa-external-link-alt"></i>
-              </button>
-              ${
-                game.user.isGM
-                  ? `<button type="button" class="action-btn send-to-player" data-type="inventory" data-action="sendToPlayer" data-uuid="${item.itemUuid}" title="${localize("title.send.player")}">
-                      <i class="fas fa-paper-plane"></i>
-                    </button>
-                    <button type="button" class="action-btn remove-item" data-uuid="${item.itemUuid}" title="${localize("title.remove.item")}">
-                      <i class="fas fa-trash"></i>
-                    </button>`
-                  : ""
-              }
-            </div>
-          </div>
-        `;
-      })
-      .join("");
-
-    return `
-      <div class="inventory-table">
-        <div class="table-header ${gridColumns}">
-          <div>${sortButton}</div>
-          <div style="align-content: center;">${localize("inventory.item.name")}</div>
-          ${priceHeader}
-          <div class="cc-inv-price-table">${localize("inventory.quantity")}</div>
-          <div class="cc-inv-price-table">${localize("inventory.actions")}</div>
-        </div>
-        ${inventoryRows}
       </div>
     `;
   }
@@ -609,28 +429,14 @@ export class TemplateComponents {
    * @returns {string} The HTML for the journal card.
    */
   static standardJournalCard(journal, disableRemove = false) {
-    // Only show the remove button to GMs
-    const removeButton = game.user.isGM
-      ? `
-        <i class="fas fa-unlink action-btn remove-standard-journal" data-action="removeJournal" data-journal-uuid="${journal.uuid}" title="${format("message.unlink", { type: localize("names.journal") })}"></i>`
-      : "";
-
-    // Determine the correct icon based on whether the UUID is for a page or a whole entry
     const iconClass = journal.uuid.includes("JournalEntryPage") ? "fas fa-book-bookmark" : "fas fa-book";
-
+    const contextOverride = disableRemove ? ``:`data-removable="true"`;
     return `
-        <div class="entity-card journal-card open-journal" data-action="openJournal" data-uuid="${journal.uuid}" style="cursor: pointer;">
+        <div class="entity-card journal-card open-journal" data-action="openJournal" ${contextOverride} data-uuid="${journal.uuid}" style="cursor: pointer;" data-type="journal">
             <div class="entity-content" style="display: flex; align-items: center; gap: 8px; flex-grow: 1;">
                  <i class="${iconClass}" style="font-size: 1.5em; flex-shrink: 0;"></i>
                  <h4 class="entity-name">${journal.name}</h4>
             </div>
-            ${
-              !disableRemove
-                ? `<div class="entity-actions">
-                ${removeButton}
-            </div>`
-                : ""
-            }
         </div>
     `;
   }
@@ -639,22 +445,39 @@ export class TemplateComponents {
   // Dialogs
   // =========================================================================
 
-  static async createPlayerSelectionDialog(itemName, onPlayerSelected) {
-    // const playerCharacters = game.actors.filter(
-    //   (actor) => actor.type === "character",
-    // );
+static async createPlayerSelectionDialog(itemName, onPlayerSelected) {
     const allowedTypes = ["character", "player", "group"];
-    const playerCharacters = game.actors.filter(
-      (actor) => actor.type && allowedTypes.includes(actor.type.toLowerCase()),
-    );
+    
+    const playerCharacters = game.actors
+      .filter((actor) => actor.type && allowedTypes.includes(actor.type.toLowerCase()))
+      .sort((a, b) => {
+        const aAssigned = game.users.some(u => u.character?.uuid === a.uuid);
+        const bAssigned = game.users.some(u => u.character?.uuid === b.uuid);
+
+        if (aAssigned && !bAssigned) return -1;
+        if (!aAssigned && bAssigned) return 1;
+        return a.name.localeCompare(b.name);
+      });
+
     if (playerCharacters.length === 0) {
       ui.notifications.warn("No player characters found");
       return;
     }
 
     const content = `
-      <div class="player-selection campaign-codex">
+      <div class="player-selection header campaign-codex">
         <p>Send <strong>${itemName}</strong> to which player character?</p>
+        
+        <div class="form-group" style="margin-bottom: 10px;">
+            <input type="text" name="filter" placeholder="Filter Characters..." autocomplete="off">
+        </div>
+        <div class="form-group" style="display: flex; align-items: center; margin-bottom: 5px;">
+           <input type="checkbox" name="deductFunds" id="deductFunds" style="margin-right: 8px;"> 
+           <label for="deductFunds" style="cursor: pointer;">Deduct funds from actor</label>
+        </div>
+      </div>
+      <div class="player-selection campaign-codex">
+
         <div class="player-list">
           ${playerCharacters
             .map((char) => {
@@ -662,11 +485,11 @@ export class TemplateComponents {
               const userInfo = assignedUser ? ` (${assignedUser.name})` : " (Unassigned)";
 
               return `
-              <div class="player-option" data-actor-uuid="${char.uuid}">
+              <div class="player-option" data-actor-uuid="${char.uuid}" >
                 <img src="${char.img}" alt="${char.name}" style="width: 32px; height: 32px; border-radius: 4px; margin-right: 8px;">
                 <div class="player-info">
-                  <span class="character-name">${char.name}</span>
-                  <span class="user-info">${userInfo}</span>
+                  <span class="character-name" >${char.name}</span>
+                  <span class="user-info" >${userInfo}</span>
                 </div>
               </div>
             `;
@@ -693,15 +516,36 @@ export class TemplateComponents {
 
     await dialog.render(true);
 
-    dialog.element.querySelectorAll(".player-option").forEach((element) => {
+    const filterInput = dialog.element.querySelector("input[name='filter']");
+    const deductCheckbox = dialog.element.querySelector("input[name='deductFunds']");
+    const playerOptions = dialog.element.querySelectorAll(".player-option");
+
+    filterInput.focus();
+
+    filterInput.addEventListener("input", (event) => {
+      const query = event.target.value.toLowerCase().trim();
+      
+      playerOptions.forEach((option) => {
+        const name = option.querySelector(".character-name").innerText.toLowerCase();
+        const user = option.querySelector(".user-info").innerText.toLowerCase();
+        const match = name.includes(query) || user.includes(query);
+        option.style.display = match ? "flex" : "none";
+      });
+    });
+
+    playerOptions.forEach((element) => {
       element.addEventListener("click", async (event) => {
         const actorUuid = event.currentTarget.dataset.actorUuid;
         const actor = await fromUuid(actorUuid);
+        const shouldDeduct = deductCheckbox.checked;
         if (actor) {
-          onPlayerSelected(actor);
+          onPlayerSelected(actor, shouldDeduct);
         }
         dialog.close();
       });
+    
     });
   }
+
+
 }

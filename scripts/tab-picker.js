@@ -4,11 +4,11 @@ var HandlebarsApplicationMixin = foundry.applications.api.HandlebarsApplicationM
 const TabPickerApp = HandlebarsApplicationMixin((ApplicationV2));
 
 const TABS_BY_SHEET = {
-  npc: ["info", "locations", "shops", "inventory", "npcs", "quests", "journals", "widgets", "notes"],
+  npc: ["info", "locations", "regions", "shops", "inventory", "npcs", "quests", "journals", "widgets", "notes"],
   location: ["info", "shops", "inventory", "npcs", "quests", "journals", "widgets", "notes"],
   shop: ["info", "inventory", "npcs", "quests", "journals", "widgets", "notes"],
-  region: ["info", "shops", "regions", "parentregions", "inventory", "npcs", "quests", "journals", "widgets", "notes"],
-  tag: ["info", "locations", "shops", "inventory", "npcs", "quests", "journals", "widgets", "notes"]
+  region: ["info", "shops", "regions", "parentregions", "locations", "inventory", "npcs", "quests", "journals", "widgets", "notes"],
+  tag: ["info", "inventory", "quests", "journals", "widgets", "notes"]
 };
 
 
@@ -17,7 +17,7 @@ const ALL_TABS_MAP = {
   parentregions: "Parent",
   regions: "Regions",
   locations: "Locations",
-  shops: "Shops",
+  shops: "Entries",
   npcs: "NPCs",
   inventory: "Inventory",
   quests: "Quests",
@@ -26,13 +26,17 @@ const ALL_TABS_MAP = {
   notes: "Notes (GM)",
 };
 
-
-function getDefaultVisibilities() {
+/**
+ * Helper to get the default structure.
+ * @param {boolean} visibleDefault - Default value for 'visible' (default: true)
+ * @param {boolean} hiddenDefault - Default value for 'hidden' (default: false)
+ */
+function getDefaultVisibilities(visibleDefault = true, hiddenDefault = false) {
   const defaults = {};
   for (const [sheetType, tabs] of Object.entries(TABS_BY_SHEET)) {
     defaults[sheetType] = {};
     for (const tabKey of tabs) {
-      defaults[sheetType][tabKey] = true;
+      defaults[sheetType][tabKey] = { visible: visibleDefault, hidden: hiddenDefault };
     }
   }
   return defaults;
@@ -42,13 +46,13 @@ export class tabPicker extends TabPickerApp {
   static DEFAULT_OPTIONS = {
     tag: 'form',
     id: "campaign-codex-tab-config",
-    title: "Default Tab Visibility",
     classes: ["campaign-codex-tab-config", "campaign-codex"],
     window: {
       icon: "fas fa-bars",
+      title: "Default Tab Visibility",
       contentClasses: ["standard-form"]
     },
-    position: { width: "auto", height: "auto" },
+    position: { width: 500, height: "auto" },
     form: {
       handler: this.#onSubmitForm,
       closeOnSubmit: true,
@@ -80,9 +84,16 @@ export class tabPicker extends TabPickerApp {
     for (const [sheetType, tabs] of Object.entries(TABS_BY_SHEET)) {
       const tabFields = {};
       for (const tabKey of tabs) {
-        tabFields[tabKey] = new BooleanField({
-          label: ALL_TABS_MAP[tabKey] || tabKey,
-          initial: defaultVisibilities[sheetType]?.[tabKey] ?? true
+        const defaults = defaultVisibilities[sheetType]?.[tabKey] || { visible: true, hidden: false };
+        tabFields[tabKey] = new SchemaField({
+            visible: new BooleanField({
+                label: ALL_TABS_MAP[tabKey] || tabKey,
+                initial: defaults.visible
+            }),
+            hidden: new BooleanField({
+                label: "Hidden from Players",
+                initial: defaults.hidden
+            })
         });
       }
       fields[sheetType] = new SchemaField(tabFields);
@@ -94,44 +105,61 @@ export class tabPicker extends TabPickerApp {
   async _prepareContext(options) {
     const context = await super._prepareContext(options);
     
-    // Get the current settings, merging them with defaults
-    const defaults = getDefaultVisibilities();
+    const defaults = getDefaultVisibilities(true, false);
     const settings = game.settings.get("campaign-codex", "defaultTabVisibility");
-    const currentData = foundry.utils.mergeObject(defaults, settings);
-
-    const allTabs = Object.keys(ALL_TABS_MAP).map(key => ({
-      key: key,
-      label: ALL_TABS_MAP[key]
-    }));
-    console.log(allTabs);
-
-    const sheetRows = Object.keys(TABS_BY_SHEET).map(sheetKey => {
-      const friendlyName = sheetKey.charAt(0).toUpperCase() + sheetKey.slice(1);
-      
-      const tabs = allTabs.map(tab => {
-        const tabKey = tab.key;
-        if (TABS_BY_SHEET[sheetKey].includes(tabKey)) {
-          return {
-            exists: true,
-            key: tabKey,
-            name: `${sheetKey}.${tabKey}`, // e.g., "npc.info"
-            label: tab.label,
-            checked: currentData[sheetKey]?.[tabKey] ?? true
-          };
-        } else {
-          return { exists: false };
+    
+    const normalizedSettings = {};
+    if (settings) {
+        for (const [sheet, tabs] of Object.entries(settings)) {
+            normalizedSettings[sheet] = {};
+            for (const [tab, value] of Object.entries(tabs)) {
+                if (typeof value === "boolean") {
+                    normalizedSettings[sheet][tab] = { visible: value, hidden: false };
+                } else {
+                    normalizedSettings[sheet][tab] = value;
+                }
+            }
         }
-      });
+    }
 
-      return {
-        key: sheetKey,
-        name: friendlyName,
-        tabs: tabs
-      };
+    const currentData = foundry.utils.mergeObject(defaults, normalizedSettings);
+
+    const sheetTypes = Object.keys(TABS_BY_SHEET).map(key => ({
+        key: key,
+        label: key.charAt(0).toUpperCase() + key.slice(1)
+    }));
+
+    const tabRows = Object.keys(ALL_TABS_MAP).map(tabKey => {
+        const row = {
+            key: tabKey,
+            label: ALL_TABS_MAP[tabKey],
+            isNotes: tabKey === "notes",
+            sheets: []
+        };
+
+        row.sheets = sheetTypes.map(sheet => {
+            const sheetKey = sheet.key;
+            if (TABS_BY_SHEET[sheetKey].includes(tabKey)) {
+                const setting = currentData[sheetKey]?.[tabKey];
+                return {
+                    exists: true,
+                    sheetName: sheet.label, 
+                    tabLabel: row.label,    
+                    nameVisible: `${sheetKey}.${tabKey}.visible`, 
+                    nameHidden: `${sheetKey}.${tabKey}.hidden`,
+                    visible: setting?.visible ?? true,
+                    hidden: setting?.hidden ?? false
+                };
+            } else {
+                return { exists: false };
+            }
+        });
+
+        return row;
     });
 
-    context.allTabs = allTabs;
-    context.sheetRows = sheetRows;
+    context.sheetTypes = sheetTypes;
+    context.tabRows = tabRows;
     context.buttons = this._getButtons();
     return context;
   }
@@ -154,16 +182,19 @@ export class tabPicker extends TabPickerApp {
 
   static async #onSubmitForm(event, form, formData) {
     event.preventDefault();
-    await game.settings.set("campaign-codex", "defaultTabVisibility", formData.object);
+    const skeleton = getDefaultVisibilities(false, false);
+    const submitData = foundry.utils.mergeObject(skeleton, formData.object);
+
+    await game.settings.set("campaign-codex", "defaultTabVisibility", submitData);
     ui.notifications.info("Campaign Codex default tab visibility saved!");
     game.campaignCodex.refreshAllOpenCodexSheets();
   }
 
   static async #onResetDefaults(event) {
     event.preventDefault();
-    const defaults = getDefaultVisibilities();
+    const defaults = getDefaultVisibilities(true, false);
     await game.settings.set("campaign-codex", "defaultTabVisibility", defaults);
     ui.notifications.info("Campaign Codex default tab visibility has been reset.");
-    this.render(); // Re-render the form
+    this.render(); 
   }
 }

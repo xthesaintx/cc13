@@ -71,14 +71,13 @@ export class GroupLinkers {
     return formattedTags;
   }
 
-  static async buildTagTree(nestedData) {
+static async buildTagTree(nestedData) {
     const cache = this._createOperationCache();
     const hideByPermission = game.settings.get("campaign-codex", "hideByPermission");
 
     const validUuids = new Set([...nestedData.allGroups, ...nestedData.allRegions, ...nestedData.allLocations, ...nestedData.allShops, ...nestedData.allNPCs].map((e) => e.uuid));
 
     const rootTagMap = new Map();
-    const allNpcUuids = new Set(nestedData.allNPCs.map(npc => npc.uuid));
 
     const npcDocs = await Promise.all(
       nestedData.allNPCs.map(npc => this._getCachedDoc(npc.uuid, cache))
@@ -110,17 +109,19 @@ export class GroupLinkers {
     const tagPromises = rootTags.map(async (taggedNpc) => {
       const doc = await this._getCachedDoc(taggedNpc.uuid, cache);
       const flags = doc ? this._getCachedFlags(doc, cache) : {};
+      
       const associates = doc ? await CampaignCodexLinkers.getAssociates(doc, flags.associates || []) : [];
       
-      // const allLinkedLocationEntities = nestedData.allLocations.filter((loc) => taggedNpc.locations.includes(loc.name));
-      // Split them based on their 'typeData' property, just as you suggested
-      // const locations = allLinkedLocationEntities.filter(item => item.typeData !== "region");
-      // const regions = allLinkedLocationEntities.filter(item => item.typeData === "region");
+      // Start with the Tag's own links
+      const allLocationUuids = new Set(flags.linkedLocations || []);
+      const allShopUuids = new Set(flags.linkedShops || []);
+      const allGroupUuids = new Set(flags.linkedGroups || []);
 
-      const locations = nestedData.allLocations.filter((loc) => taggedNpc.locations.includes(loc.name));
-      const regions = nestedData.allRegions.filter((loc) => taggedNpc.locations.includes(loc.name));
-      const shops = nestedData.allShops.filter((shop) => taggedNpc.shops.includes(shop.name));
-      
+
+      const locations = nestedData.allLocations.filter((loc) => allLocationUuids.has(loc.uuid));
+      const regions = nestedData.allRegions.filter((reg) => allLocationUuids.has(reg.uuid));
+      const shops = nestedData.allShops.filter((shop) => allShopUuids.has(shop.uuid));
+      const groups = nestedData.allGroups.filter((group) => allGroupUuids.has(group.uuid));
       const formatAndFilter = (entities) => {
         return entities
           .filter((entity) => validUuids.has(entity.uuid))
@@ -147,11 +148,13 @@ export class GroupLinkers {
         locations: formatAndFilter(locations),
         regions: formatAndFilter(regions),
         shops: formatAndFilter(shops),
+        groups: formatAndFilter(groups),
       };
     });
 
     return Promise.all(tagPromises);
   }
+
 
   static async processJournalLinks(journalUuids) {
     if (!journalUuids || !Array.isArray(journalUuids) || journalUuids.length === 0) {

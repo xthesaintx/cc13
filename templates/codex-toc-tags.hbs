@@ -1,58 +1,70 @@
 <section class="campaign-codex-toc-app tab{{#if tab.active}} active{{/if}} scrollable" data-group="{{tab.group}}" data-tab="{{tab.id}}">
 
-    {{#if tab.create}}<i class="fas fa-circle-plus cc-create" data-action="createSheet" data-group="{{tab.group}}" data-type="{{tab.type}}" title="Create {{tab.title}} sheet"></i>{{/if}}
-
-<article class="two-column-layout">
-    {{#if sections.length}} {{! Check if there are any sections/items to display }}
-        
-        {{! --- LEFT COLUMN (Tags by Folder) --- }}
-        <div class="toc-tags-left-col scrollable">
-            {{#each sections}}
-                
-                {{! 1. FOLDER HEADER --}}
-                {{#if this.title}}
-                    <ul class="cc-toc-header-list">
-                        <li class="document entry journalentry directory-header" 
-                            data-action="toggleCollapse" 
-                            data-folder-="{{this.title}}" data-section-id="{{this.sectionId}}">
-                            <i class="fas fa-folder collapse-icon"></i> 
-                            <span class="cc-header-title">{{this.title}}</span>
-                        </li>
-                    </ul>
-                {{/if}}
-                <ul class="cc-toc-tags-left-col {{#if this.title}}toc-collapsable {{/if}}{{#if this.isCollapsed}}is-collapsed{{/if}}" data-folder="{{this.title}}" data-section-id="{{this.sectionId}}">
-                    {{#each this.items}}
-                        {{#if this.canView}}
-                            <li class="document entry journalentry directory-item toc-tag-item" data-action="clickTag" data-tag-id="{{this.id}}" data-uuid="{{this.uuid}}" data-name="{{this.name}}" draggable="true" data-drag="true" data-entry-id="{{this.id}}">
-                                <i class="{{#if iconOverride}}{{iconOverride}}{{else}}{{getAsset 'icon' ../../tab.type}}{{/if}}"></i>&nbsp;{{this.name}} {{#if this.hasChildren}}({{this.children.length}}){{/if}}
-                                <span>
-                                    <i class="fas fa-external-link-alt" data-action="openDocument" data-uuid="{{this.uuid}}"></i>
-                                </span>
-                            </li>
-                        {{/if}}
-                    {{/each}}
-                </ul>
-            {{/each}}
-        </div>
-        
-        {{! --- RIGHT COLUMN (Children of Tags) --- }}
-        <div class="toc-tags-right-col scrollable">
-            {{! NOTE: The 'items' array here is the FLATTENED, complete list of tags }}
-            {{#each items}}
-                {{#if this.canView}}
-                    <ul class="cc-toc-journal-list tag-child-list cc-two-col-right" data-tag-id="{{this.id}}" style="display: none;">
-                        {{#if this.hasChildren}}
-                            {{#each this.children}}
-                                <li class="document entry journalentry directory-item cc-child-item" data-action="openDocument" data-uuid="{{this.uuid}}" draggable="true" data-drag="true" data-entry-id="{{this.id}}" data-name="{{this.name}}">
-                                    <i class="{{#if childIconOverride}}{{childIconOverride}}{{else}}{{this.displayIcon}}{{/if}}"></i>{{this.name}}
-                                </li>
-                            {{/each}}
-                        {{/if}}
-                    </ul>
-                {{/if}}
-            {{/each}}
-        </div>
+    {{#if tab.create}}
+        <i class="fas fa-circle-plus cc-create" data-action="createSheet" data-group="{{tab.group}}" data-type="{{tab.type}}" title="Create {{tab.title}} sheet"></i>
     {{/if}}
-    </article>
+
+    <div class="codex-tag-view">
+        
+        <div class="tag-cloud-container">
+            
+            <div class="tag-cloud">
+                <button type="button" data-action="clearTagFilters" class="clear-filters">
+                    {{ccLocalize "toc.clear"}}
+                </button>                
+                {{#each cloudTags}}
+                    <div class="tag-pill {{this.state}}" 
+                         data-action="toggleTagFilter" 
+                         data-tag-id="{{this.id}}"
+                         title="{{this.name}}">
+                        <i class="{{#if this.icon}}{{this.icon}}{{else}}fas fa-tag{{/if}}"></i>
+                        <span class="tag-name">{{this.name}}</span>
+                        <span class="tag-count">{{this.count}}</span>
+                        <i class="fas fa-external-link-alt" data-action="openDocument" data-uuid="{{this.uuid}}" title="Open Sheet"></i>
+                    </div>
+                {{/each}}
+
+            </div>
+        </div>
+
+        <div class="tag-results-container">
+        
+            {{#if hasActiveFilters}}
+                {{#if resultCount}}
+                    <ul class="cc-toc-journal-list tag-results-grid">
+                        {{#each filteredResults}}
+                            {{#if this.canView}}
+                                <li class="document entry journalentry directory-item cc-child-item" data-uuid="{{this.uuid}}" draggable="true" data-drag="true" data-entry-id="{{this.id}}" data-name="{{this.name}}">
+                                    <i class="{{#if childIconOverride}}{{childIconOverride}}{{else}}{{this.displayIcon}}{{/if}}"></i>
+                                    <a data-action="openDocument" data-uuid="{{this.uuid}}">{{this.name}}</a>
+                            {{#if (and this.quests this.questsvisible)}}
+                                <i class="fas fa-scroll"></i>
+                            {{else}}
+                                <span></span>
+                            {{/if}}
+                            
+                            {{#if ../isGM}}
+                                <i class="fa {{this.ownershipIcon}}" data-action="changeDefaultOwnership" data-uuid="{{this.uuid}}" data-ownership="{{this.ownershipLevel}}"></i>
+                            {{/if}} 
+
+
+                                </li>
+                            {{/if}}
+
+
+
+
+                        {{/each}}
+                    </ul>
+                {{else}}
+                    <p class="no-results">{{localize "No entries match the selected criteria."}}</p>
+                {{/if}}
+            {{else}}
+                <p class="instruction">{{ccLocalize "toc.filter"}}</p>
+            {{/if}}
+        </div>
+
+    </div>
 
 </section>
+

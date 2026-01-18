@@ -363,7 +363,6 @@ export class CampaignCodexLinkers {
       if (result.status === "fulfilled" && result.value?.isBroken) {
         brokenShopUuids.push(npcLinkedShopUuids[index]);
       } else if (result.status === "rejected") {
-        // console.error(`Campaign Codex | Error processing shop ${npcLinkedShopUuids[index]} for location discovery:`, result.reason);
       }
     });
 
@@ -697,6 +696,59 @@ export class CampaignCodexLinkers {
     return resolvedTags.filter(Boolean);
   }
 
+  static async getGroups(document, groupUuids) {
+    if (!groupUuids || !Array.isArray(groupUuids)) return [];
+    const hideByPermission = game.settings.get("campaign-codex", "hideByPermission");
+    const cache = this._createOperationCache();
+    
+    const groupPromises = groupUuids.map(async (uuid) => {
+      const journal = await this._getCachedDoc(uuid, cache);
+      if (!journal) throw new Error(`Linked group not found: ${uuid}`);
+      
+      const groupData = this._getCachedFlags(journal, cache);
+      const imageData = journal.getFlag("campaign-codex", "image") || TemplateComponents.getAsset("image", "group");
+      const [linkedTags, canView] = await Promise.all([
+        this._getCachedTaggedNPCs(groupData.linkedNPCs || [], cache),
+        this._getCachedCanView(journal.uuid, cache),
+      ]);
+
+      return {
+        id: journal.id,
+        uuid: journal.uuid,
+        name: journal.name,
+        canView: canView,
+        permission: journal.permission,
+        tags: linkedTags
+          .sort(),
+        img: imageData,
+        type: journal.getFlag("campaign-codex", "type"),
+        meta: null,
+      };
+    });
+
+    const results = await Promise.allSettled(groupPromises);
+    const group = [];
+    const brokenGroupUuids = [];
+    
+    results.forEach((result, index) => {
+      if (result.status === "fulfilled") {
+        group.push(result.value);
+      } else {
+        brokenGroupUuids.push(groupUuids[index]);
+        console.warn(`Campaign Codex | ${result.reason.message}`);
+      }
+    });
+
+    if (brokenGroupUuids.length > 0) {
+      document._skipRelationshipUpdates = true;
+      await this.clearBrokenReferences(document, brokenGroupUuids, "linkedGroups");
+      delete document._skipRelationshipUpdates;
+    }
+
+    return group;
+  }
+
+
   static async getAssociates(document, associateUuids) {
     if (!associateUuids || !Array.isArray(associateUuids)) return [];
     const hideByPermission = game.settings.get("campaign-codex", "hideByPermission");
@@ -830,6 +882,8 @@ export class CampaignCodexLinkers {
     return Array.from(npcMap.values());
   }
 
+
+
   // =========================================================================
   // Shop & Inventory Data
   // =========================================================================
@@ -939,7 +993,6 @@ export class CampaignCodexLinkers {
         shops.push(result.value);
       } else {
         brokenShopUuids.push(shopUuids[index]);
-        // console.error(`Campaign Codex | Error processing shop ${failedUuid}:`, result.reason);
       }
     });
 
@@ -1013,6 +1066,7 @@ export class CampaignCodexLinkers {
     return finalCurrency || "gp";
   }
 
+
 static async getInventory(document, inventoryData) {
   if (!inventoryData || !Array.isArray(inventoryData)) return [];
 
@@ -1040,20 +1094,18 @@ static async getInventory(document, inventoryData) {
     calculateBasePrice = (item) => {
       const price = this.getValue(item, "system.price.value");
       if (!price) return 0;
-      // prioritize largest denomination for base unit? Or convert to standard gold?
-      // Keeping your original logic's intent (converting to highest denom found):
       if (price.pp > 0) return parseFloat((price.pp + (price.gp / 10) + (price.sp / 100) + (price.cp / 1000)).toFixed(3));
       if (price.gp > 0) return parseFloat((price.gp + (price.sp / 10) + (price.cp / 100)).toFixed(2));
       if (price.sp > 0) return parseFloat((price.sp + (price.cp / 10)).toFixed(1));
       return price.cp || 0;
     };
     getCurrency = (item) => {
-      if (finalCurrency) return finalCurrency; // specific override
+      if (denominationOverride) return finalCurrency; 
       const price = this.getValue(item, "system.price.value") || {};
       if (price.pp > 0) return "pp";
       if (price.gp > 0) return "gp";
       if (price.sp > 0) return "sp";
-      return "cp";
+      if (price.cp > 0) return "cp";
     };
   }
   
@@ -1067,18 +1119,31 @@ static async getInventory(document, inventoryData) {
       return cost.cp || 0;
     };
     getCurrency = (item) => {
-      if (finalCurrency) return finalCurrency;
+      if (denominationOverride) return finalCurrency; 
       const cost = this.getValue(item, "system.cost") || {};
       if ((cost.gp || 0) > 0) return "gp";
       if ((cost.sp || 0) > 0) return "sp";
-      return "cp";
+      if ((cost.cp || 0) > 0) return "cp";
+    };
+  }
+
+  // shadowrun6 Strategy
+  else if (systemId === "shadowrun6-eden") {
+    calculateBasePrice = (item) => {
+      const cost = this.getValue(item, "system.priceDef");
+      if (!cost) return 0;
+      return cost;
+    };
+    getCurrency = (item) => {
+      if (denominationOverride) return finalCurrency; 
+      return "¥";
     };
   }
 
   const brokenItemUuids = [];
   
   const itemPromises = inventoryData.map(async (itemData) => {
-    const item = await this._getCachedDoc(itemData.itemUuid, cache);
+  const item = await this._getCachedDoc(itemData.itemUuid, cache);
     
     if (!item) {
       brokenItemUuids.push(itemData.itemUuid);
@@ -1088,10 +1153,8 @@ static async getInventory(document, inventoryData) {
 
     const canView = item.testUserPermission(game.user, "OBSERVER"); 
 
-    // Execute the pre-defined strategy
     const basePrice = calculateBasePrice(item, this.getValue(item, pricePath));
     const currency = getCurrency(item);
-
     let calculatedPrice = basePrice * markup;
 
     if (roundFinalPrice) {
@@ -1106,6 +1169,8 @@ static async getInventory(document, inventoryData) {
 
     return {
       permission: item.permission,
+      infinite: itemData?.infinite || false,
+      type: item?.type || null,
       canView: canView,
       itemId: item.id,
       itemUuid: item.uuid,
@@ -1146,7 +1211,6 @@ static async _removeBrokenItems(document, items) {
         console.error(`Campaign Codex | Error cleaning broken inventory items:`, error);
     }
 }
-
 
   static async getNameFromUuids(ccUuids, removeTags = false) {
     if (!ccUuids || !Array.isArray(ccUuids)) return [];

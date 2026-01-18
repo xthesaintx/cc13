@@ -3,6 +3,7 @@
   "title": "Campaign Codex",
   "version": "",
   "scripts": ["scripts/jszip.min.js", "scripts/lib/leaflet/leaflet.js", "scripts/lib/vis/vis-network.min.js"],
+  "socket":true,
   "esmodules": ["scripts/main.js"],
   "languages": [
     {

@@ -1,32 +1,45 @@
 <div class="form-body">
     <p class="notes">
-        Select which tabs are visible by default for each sheet type.
-        This setting applies to all users. GMs can override this for individual sheets using the "Configure Tabs" button <i class="fas fa-cog"></i> on the sheet header.
+        Select which tabs are visible by default <i class="fas fa-power-off"></i> and which are hidden from players <i class="fas fa-eye-slash"></i> for each sheet type. This setting applies to all users. GMs can override this for individual sheets using the "Configure Tabs" button <i class="fas fa-cog"></i> on the sheet header.
     </p>
 
     <div class="table-container">
         <table class="cc-tab-picker">
             <thead>
                 <tr>
-                    <th>Sheet Type</th>
-                    {{#each allTabs as |tab|}}
-                        <th title="{{tab.label}}">{{tab.label}}</th>
+                    <th>Tab Name</th>
+                    {{#each sheetTypes as |sheet|}}
+                        <th title="{{sheet.label}}" colspan="2">{{#unless (eq sheet.label 'Shop')}}{{sheet.label}}{{else}}Entry{{/unless}}</th>
+                    {{/each}}
+                </tr>
+                <tr>
+                    <th></th>
+                    {{#each sheetTypes as |sheet|}}
+                        <th class="sub-header" title="Default Visible"><i class="fas fa-power-off"></i></th>
+                        <th class="sub-header" title="Hidden from Player"><i class="fas fa-eye-slash"></i></th>
                     {{/each}}
                 </tr>
             </thead>
             <tbody>
-                {{#each sheetRows as |row|}}
+                {{#each tabRows as |row|}}
                     <tr>
-                        <td><strong>{{row.name}}</strong></td>
+                        <td><strong>{{row.label}}</strong></td>
                         
-                        {{#each row.tabs as |tab|}}
-                            <td>
-                                {{#if tab.exists}}
-                                    <input type="checkbox" name="{{tab.name}}" {{checked tab.checked}} title="{{row.name}} - {{tab.label}}">
-                                {{else}}
-                                    <span class="no-tab">&mdash;</span>
-                                {{/if}}
-                            </td>
+                        {{#each row.sheets as |cell|}}
+                            {{#if cell.exists}}
+                                <td class="checkbox-cell">
+                                    <input type="checkbox" name="{{cell.nameVisible}}" {{checked cell.visible}} title="{{cell.sheetName}} - {{cell.tabLabel}} (Visible)">
+                                </td>
+                                <td class="checkbox-cell player-hidden">
+                                    {{#unless ../isNotes}}
+                                        <input type="checkbox" name="{{cell.nameHidden}}" {{checked cell.hidden}} title="{{cell.sheetName}} - {{cell.tabLabel}} (Hidden from Player)">
+                                    {{else}}
+                                        <span class="no-tab">&mdash;</span>
+                                    {{/unless}}
+                                </td>
+                            {{else}}
+                                <td colspan="2" class="no-tab">&mdash;</td>
+                            {{/if}}
                         {{/each}}
                     </tr>
                 {{/each}}
@@ -34,4 +47,3 @@
         </table>
     </div>
 </div>
-

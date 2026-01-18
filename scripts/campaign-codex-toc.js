@@ -36,6 +36,12 @@ export class CampaignCodexTOCSheet extends campaignCodexToc {
             sendToPlayer:this.#sendToPlayer,
             clickTag: this.#clickTag,
             toggleCollapse:this.#toggleCollapse,
+            toggleTagFilter: {
+                handler: this.#toggleTagFilter,
+                buttons: [0, 2] 
+            },
+            clearTagFilters: this.#clearTagFilters,
+
         },
     };
 
@@ -54,8 +60,10 @@ export class CampaignCodexTOCSheet extends campaignCodexToc {
    * @type {Array<{element: HTMLElement, name: string}>}
    */
   #filterableItems = [];
-
-
+    #includedTags = new Set();
+    #excludedTags = new Set();
+    #tagSelection = new Map();
+    
     static PARTS = {
         tabs: {
             template: "modules/campaign-codex/templates/codex-toc-tabnav.hbs",
@@ -314,6 +322,12 @@ async _prepareContext(options) {
                 content.tags.push(item);
                 }
                 break;
+            case "tag":
+                pathData = this._getRelativeFolderPath(journal, folderNames["tag"]);
+                item.folderPath = pathData.path;
+                item.folderId = pathData.folderId || "Root";
+                content.tags.push(item);
+                break;
         }
     });
     
@@ -326,8 +340,9 @@ async _prepareContext(options) {
         const associateUuids = journalData.associates || [];
         const locationUuids = journalData.linkedLocations || []; 
         const shopUuids = journalData.linkedShops || [];
+        const groupUuids = journalData.linkedGroups || [];
 
-        const allUuids = [...associateUuids, ...locationUuids, ...shopUuids];
+        const allUuids = [...associateUuids, ...locationUuids, ...shopUuids, ...groupUuids];
         if (allUuids.length === 0) {
              return { ...tagItem, children: [], hasChildren: false };
         }
@@ -353,9 +368,15 @@ async _prepareContext(options) {
                       context.customIcon = iconOverride;
                     }
                 const type = doc.getFlag(this.constructor.SCOPE, this.constructor.TYPE_KEY);
+                const quests = doc.getFlag("campaign-codex", "data")?.quests;
+                const isAnyQuestVisible = quests && quests.some(quest => quest.visible);
+                const hasQuests = quests && quests.length > 0;
+
                 return {
                     id: doc.id,
                     uuid: doc.uuid,
+                    quests: hasQuests,
+                    questsvisible: isAnyQuestVisible, 
                     name: doc.name,
                     img: doc.img, 
                     type: type,
@@ -381,6 +402,67 @@ async _prepareContext(options) {
     });
 
     content.tags = await Promise.all(tagProcessingPromises); 
+
+    const cloudTags = content.tags.map(t => {
+        const selectionState = this.#tagSelection.get(t.id) || 0;
+        let stateClass = "neutral";
+        if (selectionState === 1) stateClass = "included";
+        if (selectionState === -1) stateClass = "excluded";
+
+        return {
+            uuid: t.uuid,
+            id: t.id,
+            name: t.name,
+            icon: t.customIcon || t.displayIcon,
+            count: t.children ? t.children.length : 0,
+            state: stateClass
+        };
+    }).sort((a,b) => a.name.localeCompare(b.name));
+
+    let filteredResults = [];
+    const hasActiveFilters = this.#tagSelection.size > 0;
+
+    if (hasActiveFilters) {
+        const requiredTags = [];
+        const excludedTags = [];
+        for (const [id, state] of this.#tagSelection) {
+            if (state === 1) requiredTags.push(id);
+            if (state === -1) excludedTags.push(id);
+        }
+
+        const itemMap = new Map();
+        for (const tag of content.tags) {
+            if (!tag.children) continue;
+            for (const child of tag.children) {
+                if (!itemMap.has(child.uuid)) {
+                    itemMap.set(child.uuid, { data: child, tags: new Set() });
+                }
+                itemMap.get(child.uuid).tags.add(tag.id);
+            }
+        }
+
+        for (const [uuid, entry] of itemMap.entries()) {
+            const itemTags = entry.tags;
+
+            const isExcluded = excludedTags.some(tagId => itemTags.has(tagId));
+            if (isExcluded) continue;
+
+            const matchesRequirements = requiredTags.every(tagId => itemTags.has(tagId));
+
+            if (matchesRequirements) {
+                filteredResults.push(entry.data);
+            }
+        }
+        
+        filteredResults.sort((a, b) => a.name.localeCompare(b.name));
+    }
+
+    context.cloudTags = cloudTags;
+    context.filteredResults = filteredResults;
+    context.hasActiveFilters = hasActiveFilters;
+    context.resultCount = filteredResults.length;
+
+
 Object.values(content).forEach(arr => {
     if (Array.isArray(arr) && arr.length > 0) {
         if (arr[0].hasOwnProperty('name') && arr[0].hasOwnProperty('folderPath')) {
@@ -484,6 +566,34 @@ async _preparePartContext(partId, context) {
     context.tab = context.tabs[partId];
     return context;
   }
+
+    static async #toggleTagFilter(event, target) {
+        event.preventDefault();
+        const tagId = target.dataset.tagId;
+        const current = this.#tagSelection.get(tagId) || 0;
+        let next = 0;
+
+        if (event.button === 2) {
+            if (current === -1) next = 0;
+            else if (current === 0) next = -1;
+            else next = 0; 
+        } else {
+            if (current === 0) next = 1;
+            else if (current === 1) next = 0;
+            else next = 0;
+        }
+
+        if (next === 0) this.#tagSelection.delete(tagId);
+        else this.#tagSelection.set(tagId, next);
+
+        this.render();
+    }
+
+    static async #clearTagFilters(event, target) {
+        this.#tagSelection.clear();
+        this.render();
+    }
+    
 
 
 static async #changeDefaultOwnership(event, target) {

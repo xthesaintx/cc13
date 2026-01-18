@@ -3,6 +3,8 @@ import { SimpleCampaignCodexExporter } from "./campaign-codex-exporter.js";
 import { SimpleCampaignCodexImporter } from "./campaign-codex-importer.js";
 import { GroupLinkers } from "./sheets/group-linkers.js";
 import { CampaignCodexTOCSheet } from "./campaign-codex-toc.js";
+import { sheetConversion } from "./sheet-conversion.js";
+
 /**
  * localization.
  * @type {string}
@@ -30,11 +32,25 @@ export const gameSystemClass = (id) => {
 export const journalSystemClass = (id) => {
   const base = "journal-page-content";
   switch (id) {
-    case "dnd5e": return `dnd5e2-journal ${base}`;
+    case "dnd5e": return `dnd5e2`;
     case "pf2e":  return ``;
     default:      return base;
   }
 };
+
+
+export const isThemed = () => {
+    const themeEnabled = game.settings.get("campaign-codex", "themeEnabled");
+    const themeOverride = game.settings.get("campaign-codex", "color-themeOverrideToLight");
+    if (themeEnabled) {
+        if (themeOverride === "light") return "theme-light";
+        if (themeOverride === "dark") return "theme-dark";
+    }
+
+    const uiConfig = game.settings.get("core", "uiConfig") || {};
+    const colorScheme = uiConfig.colorScheme;
+    return colorScheme?.applications ? `theme-${colorScheme.applications}` : "";
+}
 
 /**
  * HTML string for the main campaign codex action buttons.
@@ -75,12 +91,19 @@ export const getButtonGrouphead = () => `
  * @param {object} changed - The data being changed in the update.
  */
 export async function handleJournalConversion(journal, changed) {
-    const originalSheetClass = journal.flags?.core?.sheetClass || "";
-    const newSheetClass = changed.flags?.core?.sheetClass;
+    const originalSheetClass = foundry.utils.getProperty(journal, "flags.core.sheetClass") || "";
+    const newSheetClass = foundry.utils.getProperty(changed, "flags.core.sheetClass") || "";
 
     if (!newSheetClass || !newSheetClass.startsWith('campaign-codex.') || originalSheetClass.startsWith('campaign-codex.')) {
+        const originalType = foundry.utils.getProperty(journal, "flags.campaign-codex.type");
+        const changeType = foundry.utils.getProperty(changed, "flags.campaign-codex.type");
+        if (originalType && changeType) {
+            
+            await sheetConversion.updateRelationshipsOnTypeChange(journal, originalType, changeType);
+        }
         return;
     }
+
     if (journal.getFlag("campaign-codex", "converted")) {
         return;
     }
@@ -100,7 +123,6 @@ export async function handleJournalConversion(journal, changed) {
             journal.flags["campaign-codex"].data = {};
         }
         journal.flags["campaign-codex"].data.description += combinedContent;
-        // journal.flags["campaign-codex"].data.converted = true;
     }
     journal.render();
 }
@@ -266,15 +288,6 @@ export async function ensureCampaignCodexFolders() {
  * @returns {string} The hex color code.
  */
 export function getFolderColor(type) {
-    // const colors = {
-    //     location: "#28a745",
-    //     shop: "#6f42c1",
-    //     npc: "#fd7e14",
-    //     region: "#20c997",
-    //     group: "#17a2b8",
-    //     tag: "#a217b8"
-    // };
-    // return colors[type] || "#999999";
     return "#634c1b";
 }
 
@@ -401,7 +414,7 @@ export function addJournalDirectoryUI(html) {
         ?.addEventListener("click", async () => {
             const name = await promptForName("Tag Journal");
             if (name) {
-                const doc = await game.campaignCodex.createNPCJournal(
+                const doc = await game.campaignCodex.createTagJournal(
                     null,
                     name,
                     true
@@ -511,7 +524,7 @@ const creationConfig = {
   },
   tag: {
     prompt: "Tag Journal",
-    create: (name) => game.campaignCodex.createNPCJournal(null, name, true),
+    create: (name) => game.campaignCodex.createTagJournal(null, name),
   },
 };
 
@@ -533,33 +546,46 @@ export async function createFromScene(type) {
     doc?.sheet.render(true);
   }
 }
+export function removeThemeColors() {
+    const styleId = 'cc-theme-override-style';
+    const styleElement = document.getElementById(styleId);
+    
+    if (styleElement) {
+        styleElement.remove();
+    }
+}
 
-
-
-// This function will apply all saved colors to the UI
 export function applyThemeColors() {
-    // The keys here now match the CSS variables directly
+    if (!game.settings.get("campaign-codex", "themeEnabled")) {
+        if (game.user.isGM) removeThemeColors(); 
+        return;
+    }
+    const backgroundImageTile = game.settings.get("campaign-codex", "color-backgroundImageTile") ? "auto" : "cover";
+    const imageOpacity = game.settings.get("campaign-codex", "color-backgroundOpacity") || 100;
+    const bgImage = game.settings.get("campaign-codex", "color-backgroundImage") ? `linear-gradient(color-mix(in srgb, var(--cc-main-bg), transparent ${imageOpacity}%), color-mix(in srgb, var(--cc-main-bg), transparent ${imageOpacity}%)), url("../../../${game.settings.get("campaign-codex", "color-backgroundImage")}")`: "";
+    const anchorImage = game.settings.get("campaign-codex", "color-anchorImage") ? "100% 100%" : "0% 50%";
+
     const colorSettings = {
+        '--cc-primary': game.settings.get("campaign-codex", "color-primary"),
         '--cc-slate': game.settings.get("campaign-codex", "color-slate"),
         '--cc-text-muted': game.settings.get("campaign-codex", "color-textMuted"),
-        '--cc-border-medium': game.settings.get("campaign-codex", "color-borderMedium"),
+        '--cc-sidebar-bg': game.settings.get("campaign-codex", "color-sidebarBg"),
+        '--cc-sidebar-text': game.settings.get("campaign-codex", "color-sidebarText"),
+        '--cc-success': game.settings.get("campaign-codex", "color-success"),
+        '--cc-danger': game.settings.get("campaign-codex", "color-danger"),
+        '--cc-accent': game.settings.get("campaign-codex", "color-accent"),
         '--cc-accent80': game.settings.get("campaign-codex", "color-accent80"),
         '--cc-accent30': game.settings.get("campaign-codex", "color-accent30"),
         '--cc-accent10': game.settings.get("campaign-codex", "color-accent10"),
-        '--cc-primary': game.settings.get("campaign-codex", "color-primary"),
-        '--cc-sidebar-bg': game.settings.get("campaign-codex", "color-sidebarBg"),
-        '--cc-sidebar-text': game.settings.get("campaign-codex", "color-sidebarText"),
         '--cc-main-bg': game.settings.get("campaign-codex", "color-mainBg"),
         '--cc-main-text': game.settings.get("campaign-codex", "color-mainText"),
-        '--cc-ui': game.settings.get("campaign-codex", "color-ui"),
-        '--cc-accent': game.settings.get("campaign-codex", "color-accent"),
-        '--cc-success': game.settings.get("campaign-codex", "color-success"),
-        '--cc-danger': game.settings.get("campaign-codex", "color-danger"),
         '--cc-border': game.settings.get("campaign-codex", "color-border"),
         '--cc-card-bg': game.settings.get("campaign-codex", "color-cardBg"),
-        '--cc-border-light': game.settings.get("campaign-codex", "color-borderLight"),
         '--cc-font-heading': game.settings.get("campaign-codex", "color-fontHeading"),
-        '--cc-font-body': game.settings.get("campaign-codex", "color-fontBody")
+        '--cc-font-body': game.settings.get("campaign-codex", "color-fontBody"),
+        '--cc-background-image': bgImage,
+        '--cc-background-fit': backgroundImageTile,
+        '--cc-image-position':anchorImage,
     };
 
     const cssOverrides = Object.entries(colorSettings)
@@ -574,36 +600,36 @@ export function applyThemeColors() {
         document.head.appendChild(styleElement);
     }
     styleElement.innerHTML = `.campaign-codex { ${cssOverrides} }`;
-    applyTocButtonStyle();
+    // applyTocButtonStyle();
 }
 
-export function applyTocButtonStyle() {
-    let useStyled = game.settings.get("campaign-codex", "useStyledTocButton");
+// export function applyTocButtonStyle() {
+//     let useStyled = game.settings.get("campaign-codex", "useStyledTocButton");
 
-    const styleId = 'cc-toc-button-style-override';
-    let styleElement = document.getElementById(styleId);
-    if (!styleElement) {
-        styleElement = document.createElement('style');
-        styleElement.id = styleId;
-        document.head.appendChild(styleElement);
-    }
-    const uiColor = game.settings.get("campaign-codex", "color-ui");
-    if (useStyled) {
-        styleElement.innerHTML = `
-            button.control.ui-control.layer.icon.fas.fa-closed-captioning[data-control="campaign-codex"] {
-                background: ${uiColor};
-                color: black;
-            }
-        `;
-    } else {
-        styleElement.innerHTML = `
-            button.control.ui-control.layer.icon.fas.fa-closed-captioning[data-control="campaign-codex"] {
-                background: revert-layer;
-                color: revert-layer;
-            }
-        `;
-    }
-}
+//     const styleId = 'cc-toc-button-style-override';
+//     let styleElement = document.getElementById(styleId);
+//     if (!styleElement) {
+//         styleElement = document.createElement('style');
+//         styleElement.id = styleId;
+//         document.head.appendChild(styleElement);
+//     }
+//     const uiColor = game.settings.get("campaign-codex", "color-accent");
+//     if (useStyled) {
+//         styleElement.innerHTML = `
+//             button.control.ui-control.layer.icon.fas.fa-closed-captioning[data-control="campaign-codex"] {
+//                 background: ${uiColor};
+//                 color: black;
+//             }
+//         `;
+//     } else {
+//         styleElement.innerHTML = `
+//             button.control.ui-control.layer.icon.fas.fa-closed-captioning[data-control="campaign-codex"] {
+//                 background: revert-layer;
+//                 color: revert-layer;
+//             }
+//         `;
+//     }
+// }
 
 
 /**
@@ -701,8 +727,8 @@ export async function convertJournalToCCSheet(uuid, type, pagesToSeparateSheets 
         switch (type) {
             case "location":
                 return await game.campaignCodex.createLocationJournal(name);
-            case "npc":
-                return await game.campaignCodex.createNPCJournal(null, name, true);
+            case "tag":
+                return await game.campaignCodex.createTagJournal(null, name);
             case "npc":
                 return await game.campaignCodex.createNPCJournal(null, name);
             case "region":
@@ -748,21 +774,83 @@ export async function convertJournalToCCSheet(uuid, type, pagesToSeparateSheets 
     }
 }
 
-
 /**
  * Retrieves the default tab visibility settings for a specific sheet type.
+ * Handles both boolean (legacy) and object {visible, hidden} (new) formats.
  * @param {string} sheetType - The sheet type (e.g., "npc", "location").
  * @returns {object} An object with tab keys and their boolean visibility (e.g., {info: true, locations: false}).
  */
 export function getDefaultSheetTabs(sheetType) {
-  const allSettings = game.settings.get("campaign-codex", "defaultTabVisibility");
+  const allSettings = game.settings.get("campaign-codex", "defaultTabVisibility") || {};
   const sheetSettings = {};
-  const prefix = `${sheetType}.`;
-  for (const key in allSettings) {
-    if (key.startsWith(prefix)) {
-      const tabKey = key.substring(prefix.length);
-      sheetSettings[tabKey] = allSettings[key];
+  
+  if (allSettings[sheetType]) {
+    for (const [key, value] of Object.entries(allSettings[sheetType])) {
+        sheetSettings[key] = (typeof value === 'object') ? (value.visible ?? true) : value;
+    }
+  } else {
+    // Fallback to iterating keys if stored flat like "sheetType.tabKey" (Legacy support)
+    const prefix = `${sheetType}.`;
+    for (const key in allSettings) {
+        if (key.startsWith(prefix)) {
+            const tabKey = key.substring(prefix.length);
+            const value = allSettings[key];
+            sheetSettings[tabKey] = (typeof value === 'object') ? (value.visible ?? true) : value;
+        }
     }
   }
   return sheetSettings;
 }
+
+/**
+ * Retrieves the default hidden (from players) settings for a specific sheet type.
+ * @param {string} sheetType - The sheet type (e.g., "npc", "location").
+ * @returns {object} An object with tab keys and their boolean hidden status.
+ */
+export function getDefaultSheetHidden(sheetType) {
+  const allSettings = game.settings.get("campaign-codex", "defaultTabVisibility") || {};
+  const sheetSettings = {};
+  
+  if (allSettings[sheetType]) {
+    for (const [key, value] of Object.entries(allSettings[sheetType])) {
+        sheetSettings[key] = (typeof value === 'object') ? (value.hidden ?? false) : false;
+    }
+  }
+  return sheetSettings;
+}
+// /**
+//  * Retrieves the default tab visibility settings for a specific sheet type.
+//  * @param {string} sheetType - The sheet type (e.g., "npc", "location").
+//  * @returns {object} An object with tab keys and their boolean visibility (e.g., {info: true, locations: false}).
+//  */
+// export function getDefaultSheetTabs(sheetType) {
+//   const allSettings = game.settings.get("campaign-codex", "defaultTabVisibility");
+//   const sheetSettings = {};
+//   const prefix = `${sheetType}.`;
+//   for (const key in allSettings) {
+//     if (key.startsWith(prefix)) {
+//       const tabKey = key.substring(prefix.length);
+//       sheetSettings[tabKey] = allSettings[key];
+//     }
+//   }
+//   return sheetSettings;
+// }
+
+
+export class ExtraFunctions {
+  /**
+  * @param{string} type            "warning", "info", "error" are supported strings.
+  * @param{string} message         content of the noticiation.
+  * @param{[array|string]} push    array of ids to push the notification to, if excluded notification is only shown to caller. ["all"] sends to all clients
+  */
+  static notification(type, message, push=[]){
+    if ( push.length ) {
+      game.socket.emit(`module.campaign-codex`, { action: "notification", data: {type, message, push} });
+    }
+    ui.notifications.notify(message,type);
+  }
+}
+
+
+
+

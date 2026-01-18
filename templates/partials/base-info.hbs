@@ -1,7 +1,9 @@
 <div class="content-header">
     <h2><i class="fas fa-info-circle"></i> {{#if labelOverride}}{{labelOverride}}{{else}}{{ccLocalize "names.information" }}{{/if}}</h2>
-    {{#if dropToMap}}
-      <button type="button" class="refresh-btn npcs-to-map-button npc-sheet" data-action="npcsToMapButton" title="{{ccLocalize "button.dropactortoscene"}}"><i class="fas fa-street-view"></i></button>
+        {{#if isGM}}
+    <div class="header-actions">
+            <i class="fas fa-wrench widget-tray-toggle" data-action="toggleInfoWidgetTray"></i> 
+    </div>
     {{/if}}
 </div>
 {{#if actor}}
@@ -9,6 +11,60 @@
     {{{actor}}}
   </div>
 {{/if}}
+{{#if isGM}}
+<div class="widget-tray info {{#unless isWidgetTrayOpen}}collapsed{{/unless}}">
+    <div class="tray-inner">
+        <div class="tray-section">
+            <div class="active-widgets-bar">
+                {{#if activewidget.length}}
+                    {{#each activewidget}}
+                        <div class="widget-tag active">
+                         <span class="name">{{this.widgetName}} {{counter}}</span>
+                             <i class="fas fa-circle-x action-icon" data-action="deactivateWidget" data-id="{{this.id}}" title="{{localize 'button.deactivate'}}"></i>
+                        </div>
+                    {{/each}}
+                {{/if}}
+                {{#if inactivewidgets.length}}
+                    {{#each inactivewidgets}}
+                        <div class="tray-card inactive" >
+                          <span class="name" data-action="activateWidget" data-id="{{this.id}}">{{widgetName}} {{counter}}</span>
+                              <div class="tray-actions">
+                                <i class="fas fa-trash action-icon delete" data-action="deleteWidget" data-id="{{this.id}}" data-type="{{this.widgetName}}"></i>
+                              </div>
+                        </div>
+                    {{/each}}
+                {{/if}}
+            </div>
+        </div>
+    </div>
+    {{!-- Section: Available Widgets --}}
+    <div class="tray-section">
+    <h3>{{ccLocalize "widgets.available"}}</h3>
+        <div class="tray-grid">
+            {{#each availableWidgets}}
+                <div class="tray-card available">
+                    <span class="name" data-action="addWidget" data-name="{{this.name}}">{{this.name}}</span>
+                </div>
+            {{/each}}
+        </div>
+    </div>
+<i class="fas {{#if widgetsPosition}}fa-arrow-up-to-line{{else}}fa-arrow-down-to-line{{/if}} move-widget-tag" data-action="toggleWidgetPosition" title="Move Widgets"></i>
+</div>
+{{/if}}
+{{#if widgetsToRender}}
+  {{#unless widgetsPosition}}
+    <article class="cc-widgets-render">
+      {{{this.widgetsToRender}}}
+    </article>
+  {{/unless}}
+{{/if}}
+
 {{{richTextDescription}}}
 
-
+{{#if widgetsToRender}}
+  {{#if widgetsPosition}}
+    <article class="cc-widgets-render">
+      {{{this.widgetsToRender}}}
+    </article>
+  {{/if}}
+{{/if}}

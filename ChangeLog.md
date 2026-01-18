@@ -1,3 +1,53 @@
+## 2.1.9
+- Light / Dark Mode support
+- Collapsing Sidebar
+- Tag View improvement on group sheet
+- Improved themes.
+- Improved UI Inventory
+- Notification push to player on permission changes
+- Gallery Template added
+- Saves the state of the group sidebar on close
+- relationship tracker widgets
+- new tag sheet
+- convert NPC tag sheet to new tag sheet button
+- group sheets can be tagged
+- image gallery
+- ToC tag cloud
+- roll table widget
+- weather widget
+- event widget
+- timeline widget
+- changed some styling on the prosemirror so it collapses to 0 height if empty and inactive
+- changed the widget manager initialisation so that widgets reliant on other modules can be quietly not activated.
+- fix for when tthe heme is set to default
+- fix for timeline widget for large timespans
+- updated group NPC filters
+- search filter added to inventory
+- merchant widget rolls silently
+- changed theme setting height from auto to 750
+- widget updates to relationship trackers
+- added multipliers to merchant tables
+- added hidden to sheet tab config, hides tabs and elements from non-GM users
+- fixed dnd 5e easy ref integration style
+- fixed default browser theme conflicts
+- drop members of groups and encounters from linked actor (group/encounter) sheets to the map and not the container
+- updated calendar widgets to work with new event types
+- macro widget
+- move widgets above or below text on the info tab
+- cards (npc, location, regions, etc.) can be dragged as per journals for linking and dropping to the map
+- Items in inventory are draggable to shops and actor sheets
+- players can now purchase from the store, automatic fund deduction available for fallout, dnd5e, shadowrun6-eden, pf1, shadowdark, swade, sfrpg & pf2e
+- Player purchasing can be disabled in the settings
+- Inventory items with 0 quantity will not show in the player view.
+- filter added to send to player dialogue
+- deduct funds added to send to player dialogue
+- infinite toggle for inventory items
+- scenes can be linked to groups
+- inventory is sorted by type, and is collapsible
+- added a converter when converting one cc type to another, giving the option to convert.
+- default tab visibility for player added to tab config
+
+
 ## 1.5.8
 - Regions can have multiple parents
 - inventory bug fix

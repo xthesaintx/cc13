@@ -1,10 +1,10 @@
-
 <form>
     {{!-- Header Row --}}
-    <div class="form-group" style="display: grid; grid-template-columns: minmax(120px, 1fr) minmax(120px, 1fr) 60px; gap: 8px; align-items: center; margin-bottom: 10px; padding-bottom: 5px; border-bottom: 1px solid #CCC;">
+    <div class="form-group" style="display: grid; grid-template-columns: minmax(120px, 1fr) minmax(120px, 1fr) 60px 60px; gap: 8px; align-items: center; margin-bottom: 10px; padding-bottom: 5px; border-bottom: 1px solid #CCC;">
         <strong>{{ccLocalize "tabs.original-name"}}</strong>
         <strong>{{ccLocalize "tabs.override-name"}}</strong>
         <strong style="text-align: center;">{{ccLocalize "tabs.visible"}}</strong>
+         <strong style="text-align: center;">{{ccLocalize "tabs.hidden"}}</strong>
     </div>
 
     {{!-- Tab Rows --}}
@@ -19,6 +19,7 @@
         {{#if tab.hideLabel}}<span></span>{{else}}<input type="text" name="{{tab.key}}.label" value="{{tab.overrideLabel}}" placeholder="{{tab.originalLabel}}">{{/if}}
         
         <input type="checkbox" name="{{tab.key}}.visible" {{checked tab.visible}} style="justify-self: center;">
+        {{#if (not (eq tab.key 'notes'))}}<input type="checkbox" name="{{tab.key}}.hidden" {{checked tab.hidden}} style="justify-self: center;">{{/if}}
 
     </div>
     {{/each}}

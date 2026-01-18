@@ -1,6 +1,6 @@
 import { widgetManager } from "./widgets/WidgetManager.js";
 import { CampaignCodexWidget} from "./widgets/CampaignCodexWidget.js";
-
+import { TagSheet } from "./sheets/tag-sheet.js";
 import { templateManager } from "./journal-template-manager.js";
 import { SimpleCampaignCodexExporter } from "./campaign-codex-exporter.js";
 import "./prosemirror-integration.js";
@@ -28,11 +28,12 @@ import {
     addJournalDirectoryUI,
     mergeDuplicateCodexFolders,
     applyThemeColors,
-    applyTocButtonStyle,
+    // applyTocButtonStyle,
     handleJournalConversion, 
     confirmationDialog,
     convertJournalToCCSheet,
-    migrateLegacyWidgets
+    migrateLegacyWidgets,
+    ExtraFunctions,
 } from "./helper.js";
 import { CampaignCodexMapMarker, _getCampaignCodexIcon } from "./codex-map-marker.js";
 import { CampaignCodexTOCSheet } from "./campaign-codex-toc.js";
@@ -40,6 +41,9 @@ import { CampaignCodexTOCSheet } from "./campaign-codex-toc.js";
 
 Hooks.once("init", async function () {
     console.log("Campaign Codex | Initializing");
+    
+    widgetManager.initialize();
+
     console.log("Campaign Codex | Pausing relationship updates for until ready.");
     const templatePaths = [
     "modules/campaign-codex/templates/partials/toc-quest-objective.hbs",
@@ -66,6 +70,7 @@ Hooks.once("init", async function () {
     "modules/campaign-codex/templates/partials/base-info.hbs",
     "modules/campaign-codex/templates/partials/base-notes.hbs",
     "modules/campaign-codex/templates/partials/group-widgets.hbs",
+    "modules/campaign-codex/templates/partials/tag-nodes.hbs",
     ];
     foundry.applications.handlebars.loadTemplates(templatePaths);
     // if (game.settings.get("campaign-codex", "mapMarkers")) {
@@ -91,7 +96,7 @@ Hooks.once("init", async function () {
     });
 });
 Hooks.once("setup", async function () {
-    const uiColor = game.settings.get("campaign-codex", "color-ui");
+    const uiColor = game.settings.get("campaign-codex", "color-accent");
 
     if (game.settings.get("campaign-codex", "mapMarkers")){
     // === [MAP MARKERS] ===
@@ -156,11 +161,19 @@ Hooks.once("i18nInit", async function () {
         label: `Campaign Codex: ${game.i18n.localize('CAMPAIGN_CODEX.names.group')}`,
     });
 
+    foundry.applications.apps.DocumentSheetConfig.registerSheet(JournalEntry, "campaign-codex", TagSheet, {
+        canBeDefault: false, 
+        makeDefault: false,
+        label: `Campaign Codex: ${game.i18n.localize('CAMPAIGN_CODEX.names.tag') || "Tag"}`, 
+    });
     console.log("Campaign Codex | Sheets registered");
 });
 
 
+
+
 Hooks.once("ready", async function () {
+
     // TEMPLATE MENU BUILD
     templateManager.scanAllTemplates();
 
@@ -189,8 +202,9 @@ Hooks.once("ready", async function () {
     game.campaignCodexNPCDropper = NPCDropper;
     game.campaignCodexTokenPlacement = CampaignCodexTokenPlacement;
     window.CampaignCodexTokenPlacement = CampaignCodexTokenPlacement;
-    // THEMES
-    applyThemeColors();
+    if (game.settings.get("campaign-codex", "themeEnabled")) {
+        applyThemeColors();
+    }
     if (game.settings.get("campaign-codex", "useOrganizedFolders")) {
         await ensureCampaignCodexFolders();
     }
@@ -347,7 +361,7 @@ Hooks.on("createJournalEntry", async (document, options, userId) => {
     const journalType = document.getFlag("campaign-codex", "type");
     if (!journalType) return;
     const tag = document.getFlag("campaign-codex", "data")?.tagMode;
-    const folderType = (tag && journalType === "npc") ? 'tag' : journalType;
+    const folderType = (tag && ["npc", "tag"].includes(journalType)) ? 'tag' : journalType;
     const folder = getCampaignCodexFolder(folderType, document.folder);
     if (folder) {
         await document.update({ folder: folder.id });
@@ -360,50 +374,38 @@ Hooks.on("createScene", async (scene, options, userId) => {
     }
 });
 
-Hooks.on("renderJournalEntry", async (journal, html, data) => {
-    const journalType = journal.getFlag("campaign-codex", "type");
-    if (!journalType) return;
-
-    const currentSheetName = journal.sheet.constructor.name;
-    let targetSheet = null;
-
-    switch (journalType) {
-        case "location":
-            if (currentSheetName !== "LocationSheet") targetSheet = LocationSheet;
-            break;
-        case "shop":
-            if (currentSheetName !== "ShopSheet") targetSheet = ShopSheet;
-            break;
-        case "npc":
-            if (currentSheetName !== "NPCSheet") targetSheet = NPCSheet;
-            break;
-        case "region":
-            if (currentSheetName !== "RegionSheet") targetSheet = RegionSheet;
-            break;
-        case "group":
-            if (currentSheetName !== "GroupSheet") targetSheet = GroupSheet;
-            break;
-    }
-
-    if (targetSheet) {
-        await journal.sheet.close();
-
-        const sheet = new targetSheet(journal);
-        sheet.render(true);
-    }
-});
 
 Hooks.on("preUpdateJournalEntry", async (journal, changed, options, userId) => {
     const sheetClass = changed.flags?.core?.sheetClass;
     if (sheetClass && sheetClass.startsWith('campaign-codex.')) {
-        const type = sheetClass.split('.')[1]?.replace('Sheet', '').toLowerCase();
-        if (type) {
-            console.log(`Campaign Codex | Setting type for '${journal.name}' to '${type}'`);
-            foundry.utils.setProperty(changed, "flags.campaign-codex.type", type);
+        const newType = sheetClass.split('.')[1]?.replace('Sheet', '').toLowerCase();
+        const oldType = journal.getFlag("campaign-codex", "type");
+
+        if (newType) {
+            console.log(`Campaign Codex | Setting type for '${journal.name}' to '${newType}'`);
+            foundry.utils.setProperty(changed, "flags.campaign-codex.type", newType);
+
+            if (newType === "tag") {
+                foundry.utils.setProperty(changed, "flags.campaign-codex.data.tagMode", true);
+            } else if (oldType === "tag" || journal.getFlag("campaign-codex", "data.tagMode")) {
+                foundry.utils.setProperty(changed, "flags.campaign-codex.data.tagMode", false);
+            }
+
             await handleJournalConversion(journal, changed);
         }
     }
 });
+// Hooks.on("preUpdateJournalEntry", async (journal, changed, options, userId) => {
+//     const sheetClass = changed.flags?.core?.sheetClass;
+//     if (sheetClass && sheetClass.startsWith('campaign-codex.')) {
+//         const type = sheetClass.split('.')[1]?.replace('Sheet', '').toLowerCase();
+//         if (type) {
+//             console.log(`Campaign Codex | Setting type for '${journal.name}' to '${type}'`);
+//             foundry.utils.setProperty(changed, "flags.campaign-codex.type", type);
+//             await handleJournalConversion(journal, changed);
+//         }
+//     }
+// });
 
 Hooks.on("updateFolder", async (document, changes, options, userId) => {
   if (document && document.type === "JournalEntry"){
@@ -414,6 +416,30 @@ Hooks.on("updateFolder", async (document, changes, options, userId) => {
 }
 });
 
+
+Hooks.on("ready", () => {
+  game.socket.on("module.campaign-codex", async (request) => {
+    if ( request.action === "notification" && (request.data.push.includes(game.user.id) || request.data.push.includes("all")) ) {
+      ExtraFunctions.notification(request.data.type, request.data.message);
+      // console.log("here");
+    }
+    if (request.action === "updateInventory" && game.user.id === game.users.activeGM?.id) {
+        const { docUuid, itemUuid, updates } = request.data;
+        const doc = await fromUuid(docUuid);
+        if (doc) {
+            const currentData = doc.getFlag("campaign-codex", "data") || {};
+            const inventory = foundry.utils.deepClone(currentData.inventory || []);
+            const itemIndex = inventory.findIndex(i => i.itemUuid === itemUuid);
+            if (itemIndex !== -1) {
+                inventory[itemIndex] = { ...inventory[itemIndex], ...updates };
+                await doc.setFlag("campaign-codex", "data.inventory", inventory);
+                // console.log(`Campaign Codex | Updated inventory for ${doc.name} via socket.`);
+            }
+        }
+    }
+
+  });
+})
 
 
  
@@ -438,7 +464,31 @@ Hooks.on("updateJournalEntry", async (document, changes, options, userId) => {
   }
 
   const type = document.getFlag("campaign-codex", "type");
-  const isTag = type === "npc" && !!document.getFlag("campaign-codex", "data")?.tagMode;
+  const isTag = ["npc", "tag"].includes(type) && !!document.getFlag("campaign-codex", "data")?.tagMode;
+
+  if (type){
+    const cleanChanges = foundry.utils.expandObject(changes);
+    const newOwnership = cleanChanges.ownership || cleanChanges["==ownership"];
+    if (newOwnership) {
+        let recipients = [];
+        if (newOwnership.default >= 2) {
+            recipients = "all";
+        } 
+        else {
+        const targetIds = Object.entries(newOwnership)
+            .filter(([id, level]) => id !== "default" && level >= 2)
+            .map(([id, level]) => id);
+        if (targetIds.length > 0) {
+            recipients = game.users.players
+                .filter(u => u.active && targetIds.includes(u.id))
+                .map(u => u.id);
+        }
+    }
+    if (recipients === "all" || (Array.isArray(recipients) && recipients.length > 0)) {
+        ExtraFunctions.notification("info", `"${document.name}" has been shared`, recipients);
+    }
+    }
+}
 
 
 

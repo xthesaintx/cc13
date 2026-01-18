@@ -1,7 +1,7 @@
 <div class="content-header">
     <h2><i class="fas fa-boxes"></i> {{#if labelOverride}}{{labelOverride}}{{else}}{{ccLocalize "names.inventory" }}{{/if}}</h2>
 </div>
-  {{#if inventory.length}}
+<!--   {{#if inventory.length}}
     <div class="inventory-list">
       {{#each inventory as |item|}}
         <div class="selected-inventory-item btn-open-sheet" data-uuid="{{item.uuid}}" data-action="openItem">
@@ -20,3 +20,27 @@
       {{/each}}
     </div>
   {{/if}}
+
+ -->
+
+{{#if inventory}}
+<div class="inventory-table inventory">
+    {{#each inventory}}
+    {{#unless (and ../hideByPermission (not canView))}}
+      <div class="inventory-item" data-uuid="{{itemUuid}}" data-item-name="{{name}}" data-action="openItem" title="{{ccLocalize "title.open.sheet"}}">
+        <div class="item-image">
+          <img src="{{img}}" alt="{{name}}">
+        </div>
+        <div class="item-details">
+          <div class="item-name">{{name}}</div>
+        </div>
+        {{#if ../isGM}}
+        <div class="item-actions" style="text-align:center">
+          <i class="fas fa-paper-plane inventory-button send-to-player"" data-sheet-uuid="{{../selectedSheetUuid}}" data-doc-uuid="{{../selectedSheetUuid}}" data-action="sendToPlayer" data-uuid="{{itemUuid}}" title="{{ccLocalize "title.send.player"}}"></i>
+        </div>
+        {{/if}}
+      </div>
+   {{/unless}}   
+  {{/each}}
+  </div>
+{{/if}}

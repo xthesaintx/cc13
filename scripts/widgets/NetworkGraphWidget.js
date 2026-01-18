@@ -376,7 +376,7 @@ _iconOverride(icon) {
         const data = doc.getFlag("campaign-codex", "data") || {};
         const links = new Set();
 
-        const arrayFields = ["linkedShops","parentRegions", "linkedNPCs", "linkedLocations", "linkedRegions", "associates", "members"];
+        const arrayFields = ["linkedShops","parentRegions", "linkedNPCs","linkedGroups", "linkedLocations", "linkedRegions", "associates", "members"];
         arrayFields.forEach(field => {
             if (Array.isArray(data[field])) {
                 data[field].forEach(uuid => links.add(uuid));
