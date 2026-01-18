@@ -31,7 +31,9 @@ export class CampaignManager {
         console.log("Campaign Codex | Initializing Tag Cache");
         const taggedNpcs = [];
         for (const journal of game.journal) {
-            if (["npc", "tag"].includes(journal.getFlag("campaign-codex", "type")) && journal.getFlag("campaign-codex", "data")?.tagMode) {
+          const type = journal.getFlag("campaign-codex", "type");
+          const tagMode = journal.getFlag("campaign-codex", "data")?.tagMode;
+          if ((["npc"].includes(type) && tagMode) || ["tag"].includes(type)) {
                 taggedNpcs.push({
                     uuid: journal.uuid,
                     id: journal.id,
@@ -47,6 +49,7 @@ export class CampaignManager {
         if (!this.tagCache.some(tag => tag.uuid === npcDoc.uuid)) {
             this.tagCache.push({
                 uuid: npcDoc.uuid,
+                id: npcDoc.id,
                 name: npcDoc.name
             });
         }
@@ -64,7 +67,6 @@ export class CampaignManager {
     }
 
     async getTagCache() {
-// 
         await this._ready; 
         return this.tagCache;
     }
@@ -128,7 +130,7 @@ export class CampaignManager {
         pages: [{ name: "Overview", type: "text", text: { content: `<h1>${journalName}</h1><p>Tag details...</p>` } }],
       };
       const newJournal = await JournalEntry.create(journalData);
-      this.addTagToCache(newJournal);
+      // this.addTagToCache(newJournal);
       return (newJournal);
     } finally {
       this._creationQueue.delete(creationKey);
@@ -162,7 +164,7 @@ export class CampaignManager {
         pages: [{ name: "Overview", type: "text", text: { content: `<h1>${journalName}</h1><p>NPC details...</p>` } }],
       };
       const newJournal = await JournalEntry.create(journalData);
-      if (tagged){this.addTagToCache(newJournal)};
+      // if (tagged){this.addTagToCache(newJournal)};
       return (newJournal);
     } finally {
       this._creationQueue.delete(creationKey);

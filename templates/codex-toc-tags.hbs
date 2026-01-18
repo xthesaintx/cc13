@@ -1,8 +1,5 @@
 <section class="campaign-codex-toc-app tab{{#if tab.active}} active{{/if}} scrollable" data-group="{{tab.group}}" data-tab="{{tab.id}}">
 
-    {{#if tab.create}}
-        <i class="fas fa-circle-plus cc-create" data-action="createSheet" data-group="{{tab.group}}" data-type="{{tab.type}}" title="Create {{tab.title}} sheet"></i>
-    {{/if}}
 
     <div class="codex-tag-view">
         
@@ -17,7 +14,9 @@
                     <div class="tag-pill {{this.state}}" 
                          data-action="toggleTagFilter" 
                          data-tag-id="{{this.id}}"
-                         title="{{this.name}}">
+                         title="{{this.name}}"
+                        data-name="{{this.name}}"
+                         >
                         <i class="{{#if this.icon}}{{this.icon}}{{else}}fas fa-tag{{/if}}"></i>
                         <span class="tag-name">{{this.name}}</span>
                         <span class="tag-count">{{this.count}}</span>

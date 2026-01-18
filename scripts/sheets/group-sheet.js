@@ -1426,11 +1426,16 @@ _getChildrenForMember(member, nestedData) {
       if (!isViewable) {
         return false; 
       }
-      if (["npc", "tag"].includes(child.type)) {
+      if (["npc"].includes(child.type)) {
         const isStandardNpc = !child.tag;
         const isTaggedNpc = child.tag === true;
         return (this._showTreeNPCs && isStandardNpc) || (this._showTreeNPCTags && isTaggedNpc);
       }
+      if (["tag"].includes(child.type)) {
+        const isTaggedNpc = true;
+        return (this._showTreeNPCs) || (this._showTreeNPCTags && isTaggedNpc);
+      }
+
       return true;
     });
 }
@@ -1821,7 +1826,7 @@ async _generateLocationsTab(data) {
       const journalDoc = journal.getFlag("campaign-codex", "data") || {};
 
       if (journal && journalType) {
-       if (["npc", "tag"].includes(journalType) && journalDoc.tagMode) {
+       if ((["npc"].includes(journalType) && journalDoc.tagMode) || (["npc", "tag"].includes(journalType))) {
           await game.campaignCodex.linkGroupToTag(this.document, journal);
         } else {
         this.addingMember = true;

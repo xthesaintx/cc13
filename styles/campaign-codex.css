@@ -4337,6 +4337,15 @@ QUESTS
   border: none;
 }
 
+.campaign-codex.codex-toc .window-header .header-hide {
+}
+
+#campaign-codex-toc-sheet:has(section.campaign-codex-toc-app[data-tab="quests"].active) 
+.window-header .header-control.fa-circle-plus {
+    display: none;
+}
+
+
 .campaign-codex-toc-app .cc-toc-header-list li {
   display: grid;
   grid-template-columns: 24px 1fr;

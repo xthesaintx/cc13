@@ -4,6 +4,17 @@ import { localize } from "./helper.js";
 // CURRENCY DEFINITIONS
 // ===========================================================================
 const CURRENCY_CONFIG = {
+"demonlord": [
+    { key: "gc", label: "Gold Crowns",     rate: 1,     path: "system.wealth.gc" },
+    { key: "ss", label: "Silver Shillings", rate: 0.1,   path: "system.wealth.ss" },
+    { key: "cp", label: "Copper Pennies",   rate: 0.01,  path: "system.wealth.cp" },
+    { key: "bits", label: "Bits",           rate: 0.001, path: "system.wealth.bits" }
+  ],    
+"wfrp4e": [
+    { key: "gc", label: "Gold Crown", rate: 240, path: "transaction" }, 
+    { key: "ss", label: "Silver Shilling", rate: 12, path: "transaction" }, 
+    { key: "bp", label: "Brass Penny", rate: 1, path: "transaction" }
+  ],
   "shadowrun6-eden":[ 
     { key: "¥", label: "Nuyen",     rate: 1,    path: "system.nuyen" }
   ],
@@ -50,7 +61,7 @@ export class EconomyHelper {
     const config = CURRENCY_CONFIG[systemId];
 
     if (!config) {
-      ui.notifications.warn(`Campaign Codex | System '${systemId}' is not configured for payments.`);
+      console.warn(`Campaign Codex | System '${systemId}' is not configured for payments.`);
       return true;
     }
 
@@ -62,6 +73,10 @@ export class EconomyHelper {
     try {
       if (systemId === "pf2e") {
         return await this._payPF2e(targetActor, cost, currency, config);
+      }
+
+    if (systemId === "wfrp4e") {
+        return await this._payWFRP4e(targetActor, cost, currency, config);
       }
 
       if (config.length === 1) {
@@ -168,6 +183,59 @@ static async _paySimple(actor, cost, path) {
     return false;
 }
 
+static async _payWFRP4e(actor, cost, currency, config) {
+    let costBP = 0;
+    if (currency === "gc") costBP = Math.round(cost * 240);
+    else if (currency === "ss") costBP = Math.round(cost * 12);
+    else costBP = Math.round(cost);
+
+    const moneyItems = actor.itemTags["money"];
+    if (!moneyItems || moneyItems.length === 0) {
+      ui.notifications.warn(localize("warn.notEnoughCurrency") || "No money items found.");
+      return false;
+    }
+
+    let totalActorBP = 0;
+    let gcItem, ssItem, bpItem;
+
+    for (const item of moneyItems) {
+      const val = item.system.coinValue?.value;
+      const quantity = item.system.quantity?.value || 0;
+      
+      if (typeof val === "number") {
+        totalActorBP += val * quantity;
+        
+        if (val === 240) gcItem = item;
+        else if (val === 12) ssItem = item;
+        else if (val === 1) bpItem = item;
+      }
+    }
+
+    if (totalActorBP < costBP) {
+      ui.notifications.warn(localize("warn.notEnoughCurrency") || "Not enough funds.");
+      return false;
+    }
+
+    let remainingBP = totalActorBP - costBP;
+
+    const newGC = Math.floor(remainingBP / 240);
+    remainingBP %= 240;
+    const newSS = Math.floor(remainingBP / 12);
+    const newBP = remainingBP % 12;
+
+    const updates = [];
+    if (gcItem) updates.push({ _id: gcItem.id, "system.quantity.value": newGC });
+    if (ssItem) updates.push({ _id: ssItem.id, "system.quantity.value": newSS });
+    if (bpItem) updates.push({ _id: bpItem.id, "system.quantity.value": newBP });
+
+    if (updates.length > 0) {
+      await actor.updateEmbeddedDocuments("Item", updates);
+    }
+    return true;
+  }
+
+
+
 static async _payPF2e(actor, cost, currency, config) {
     const currencyInfo = config.find(c => c.key === currency) || config.find(c => c.key === "gp");
     const rate = currencyInfo.rate; 
@@ -229,6 +297,20 @@ static async _payPF2e(actor, cost, currency, config) {
            return { price: goldValue, currency: "gp" };
         }
     }
+    
+    if (sys === "demonlord") {
+        const valStr = String(item.system.value || "0");
+        const match = valStr.match(/([\d\.]+)\s*(gc|ss|cp|bits)?/i);
+        if (!match) return { price: 0, currency: "gc" };
+        return { price: parseFloat(match[1]), currency: (match[2] || "gc").toLowerCase() };
+    }
+
+    if (sys === "wfrp4e") {
+        const cost = item.system.price || {};
+        if (cost.gc) return { price: (cost.gc || 0) + (cost.ss || 0)/20 + (cost.bp || 0)/240, currency: "gc" };
+        if (cost.ss) return { price: (cost.ss || 0) + (cost.bp || 0)/12, currency: "ss" };
+        return { price: cost.bp || 0, currency: "bp" };
+    }
 
     if (sys === "shadowdark") {
         const cost = item.system.cost || {};
@@ -251,6 +333,12 @@ static async _payPF2e(actor, cost, currency, config) {
 
   static _getItemCurrency(item) {
       const sys = game.system.id;
+     if (sys === "demonlord") {
+           const valStr = String(item.system.value || "");
+           const match = valStr.match(/[a-zA-Z]+/);
+           return match ? match[0].toLowerCase() : "gc";
+      }      
+      if (sys === "wfrp4e") return "gc";
       if (sys === "shadowrun6-eden") return "¥";
       if (sys === "pf2e") return "gp";
       if (sys === "sfrpg") return "credit";

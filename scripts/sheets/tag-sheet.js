@@ -253,45 +253,7 @@ export class TagSheet extends CampaignCodexBaseSheet {
         };
       })
       .filter(Boolean);
-    // if (context.tabs.length > 0) {
-    //   const availableKeys = context.tabs.map(t => t.key);
-    //   if (!this._currentTab || !availableKeys.includes(this._currentTab)) {
-    //     this._currentTab = context.tabs[0].key;
-    //   }
-    // }
 
-
-    // const defaultTabVis = getDefaultSheetTabs(this.getSheetType());
-
-    // if (this._selectedSheet) {
-    //   context.isShowingSelectedView = true;
-    //   context.selectedSheetContent = await this._generateSelectedSheetTab();
-    //   this._currentTab = null;
-    // } else {
-    //   context.isShowingSelectedView = false;
-    // }
-
-    // context.tabPanels = defaultTabs
-    //   .map(tab => {
-    //     const override = tabOverrides.find(o => o.key === tab.key);
-    //     const isVisibleByDefault = defaultTabVis[tab.key] ?? true;
-    //     const isVisible = override?.visible ?? isVisibleByDefault;
-    //     if (!isVisible) return null;
-    //     if (!game.user.isGM && override?.hidden === true) {
-    //         return null;
-    //     }
-
-    //     const dynamicTab = tabContext.find(t => t.key === tab.key);
-    //     if (!dynamicTab) return null;
-
-    //     const finalLabel = override?.label || tab.label;
-    //     return {
-    //       ...tab,
-    //       ...dynamicTab,
-    //       label: finalLabel,
-    //     };
-    //   })
-    //   .filter(Boolean);
 
     if (!this._selectedSheet && context.tabPanels.length > 0 && (!this._currentTab || !context.tabPanels.find(t => t.key === this._currentTab))) {
        this._currentTab = context.tabPanels[0].key;
@@ -311,18 +273,6 @@ export class TagSheet extends CampaignCodexBaseSheet {
   static async #_npcSheetMode(event){
     this.document.setFlag("core", "sheetClass", "campaign-codex.NPCSheet");
   }
-
-  // async _renderFrame(options) {
-  //   const frame = await super._renderFrame(options);
-  //   if ( !this.hasFrame ) return frame;
-  //   const copyId = `
-  //       <button type="button" class="header-control fa-solid fa-user-tag icon" data-action="npcTagMode"
-  //               data-tooltip="NPC Tag Sheet Mode" aria-label="NPC Tag Sheet Mode"></button>
-  //     `;
-  //     this.window.close.insertAdjacentHTML("beforebegin", copyId);
-    
-  //   return frame;
-  // }
 
 
  async _onDragStart(event) {

@@ -1,7 +1,5 @@
 <section class="campaign-codex-toc-app scrollable tab{{#if tab.active}} active{{/if}}" {{#if tab.active}} active{{/if}} data-group="{{tab.group}}" data-tab="{{tab.id}}">
 
-  {{#if tab.create}}<i class="fas fa-circle-plus cc-create" data-action="createSheet" data-group="{{tab.group}}" data-type="{{tab.type}}"  title="Create {{tab.title}} sheet"></i>{{/if}}
-
     {{#if sections.length}}
         {{#each sections}}
             {{#if this.title}}

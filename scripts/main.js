@@ -362,8 +362,12 @@ Hooks.on("createJournalEntry", async (document, options, userId) => {
 
     const journalType = document.getFlag("campaign-codex", "type");
     if (!journalType) return;
-    const tag = document.getFlag("campaign-codex", "data")?.tagMode;
-    const folderType = (tag && ["npc", "tag"].includes(journalType)) ? 'tag' : journalType;
+    const tag = document.getFlag("campaign-codex", "data")?.tagMode || ["tag"].includes(journalType);
+    if (tag) {
+        await document.setFlag("campaign-codex", "data", { tagMode: true });
+        game.campaignCodex.addTagToCache(document);
+    }
+    const folderType = (tag && ["npc"].includes(journalType)) ? 'tag' : journalType;
     const folder = getCampaignCodexFolder(folderType, document.folder);
     if (folder) {
         await document.update({ folder: folder.id });
@@ -397,17 +401,7 @@ Hooks.on("preUpdateJournalEntry", async (journal, changed, options, userId) => {
         }
     }
 });
-// Hooks.on("preUpdateJournalEntry", async (journal, changed, options, userId) => {
-//     const sheetClass = changed.flags?.core?.sheetClass;
-//     if (sheetClass && sheetClass.startsWith('campaign-codex.')) {
-//         const type = sheetClass.split('.')[1]?.replace('Sheet', '').toLowerCase();
-//         if (type) {
-//             console.log(`Campaign Codex | Setting type for '${journal.name}' to '${type}'`);
-//             foundry.utils.setProperty(changed, "flags.campaign-codex.type", type);
-//             await handleJournalConversion(journal, changed);
-//         }
-//     }
-// });
+
 
 Hooks.on("updateFolder", async (document, changes, options, userId) => {
   if (document && document.type === "JournalEntry"){
@@ -466,7 +460,7 @@ Hooks.on("updateJournalEntry", async (document, changes, options, userId) => {
   }
 
   const type = document.getFlag("campaign-codex", "type");
-  const isTag = ["npc", "tag"].includes(type) && !!document.getFlag("campaign-codex", "data")?.tagMode;
+  const isTag = (["npc"].includes(type) && !!document.getFlag("campaign-codex", "data")?.tagMode) || ["tag"].includes(type);
 
   if (type){
     const cleanChanges = foundry.utils.expandObject(changes);

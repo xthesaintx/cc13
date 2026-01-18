@@ -1,3 +1,13 @@
+## 2.2.4
+- fixes (theming, tags)
+- Moved add sheet button in ToC to window header
+- added wfrp4e and shadow of the demon lord to the inventory auto deduct
+- added tag buttons to the filter
+- cc sheets added to default sheet list
+- tag sheet added to create sheet list
+- tag button in toc improvements
+
+
 ## 2.1.9
 - Light / Dark Mode support
 - Collapsing Sidebar

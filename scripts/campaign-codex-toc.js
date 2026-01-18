@@ -636,7 +636,7 @@ async _onRender(context, options) {
     const content = form.querySelector("section");
     if (content) {
       this.#filterableItems = []; 
-      for (const element of content.querySelectorAll("li, .toc-quest-item")) {
+      for (const element of content.querySelectorAll("li, .toc-quest-item, div.tag-pill")) {
         const name = element.dataset.name;
         if (name) {
           this.#filterableItems.push({
@@ -650,7 +650,7 @@ async _onRender(context, options) {
 
     this.#search.bind(form);
 
-const tagTab = form.querySelector('[data-tab="tags"].active');
+    const tagTab = form.querySelector('[data-tab="tags"].active');
     if (tagTab) {
         const firstTag = tagTab.querySelector('.toc-tags-left-col li.toc-tag-item');
         if (firstTag) {
@@ -661,6 +661,7 @@ const tagTab = form.querySelector('[data-tab="tags"].active');
             }, 0);
         }
     }
+
 
         this._resizeObserver?.disconnect();
         const debouncedSave = foundry.utils.debounce((width, height) => {
@@ -778,8 +779,9 @@ static async #sendToPlayer(event, target) {
   }
 
 static async #createSheet(event, target) {
+    const activeTab = this.element.querySelector(".campaign-codex-toc-app.tab.active")
     event.preventDefault();
-    switch (target.dataset.type){
+    switch (activeTab.dataset.type){
         case 'group':
         case 'tag':
         case 'location':
@@ -791,6 +793,19 @@ static async #createSheet(event, target) {
         default:
         }
       }
+
+  async _renderFrame(options) {
+    const frame = await super._renderFrame(options);
+    if ( !this.hasFrame || !game.user.isGM) return frame;
+    const copyId = `
+        <button type="button" class="header-control fa-solid fa-circle-plus icon" data-action="createSheet"
+                data-tooltip="Create Sheet" aria-label="Create Sheet"></button>
+      `;
+      this.window.close.insertAdjacentHTML("beforebegin", copyId);
+    
+    return frame;
+  }
+
 
 static async #clickTag(event, target) {
     const appElement = target.closest(".campaign-codex-toc-app");

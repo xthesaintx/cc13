@@ -11,7 +11,7 @@ export class CleanUp {
       if (!type) return;
 
       const data = document.getFlag("campaign-codex", "data") || {};
-      if (["npc", "tag"].includes(type) && data.tagMode) {
+      if ((["npc"].includes(type) && data.tagMode) || ["tag"].includes(type)) {
         game.campaignCodex.removeTagFromCache(document);
         console.log(`Campaign Codex | Removed deleted tag "${document.name}" from cache.`);
       }

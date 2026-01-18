@@ -336,7 +336,8 @@ _iconOverride(icon) {
 
     _createNode(doc, isCenter) {
         const type = doc.getFlag("campaign-codex", "type") || "default";
-        const isTag = doc.getFlag("campaign-codex", "data.tagMode");
+        const isTag = doc.getFlag("campaign-codex", "data.tagMode") || doc.getFlag("campaign-codex", "type") === "tag";
+;
         let config;
 
         const iconOverride = doc.getFlag("campaign-codex", "icon-override");

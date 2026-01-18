@@ -506,6 +506,8 @@ export class CampaignCodexLinkers {
       const imageData = journal.getFlag("campaign-codex", "image") || actor?.img || TemplateComponents.getAsset("image", "npc");
       const tabOverrides = journal.getFlag("campaign-codex", "tab-overrides") || [];
       const imageAreaOverride = tabOverrides?.find(override => override.key === "imageArea");
+      const isTagged =  journal.getFlag("campaign-codex", "type") === "tag" || npcData.tagMode ;
+
       return {
         id: journal.id,
         uuid: journal.uuid,
@@ -515,7 +517,7 @@ export class CampaignCodexLinkers {
         img: imageData,
         showImage: imageAreaOverride?.visible ?? true,
         iconOverride: journal.getFlag("campaign-codex", "icon-override") || null,
-        tag: npcData.tagMode,
+        tag: isTagged,
         tags: (linkedTags || [])
           .filter((tag) => !hideByPermission || tag.canView)
           .map((tag) => tag.name)
@@ -569,6 +571,8 @@ export class CampaignCodexLinkers {
       const imageData = journal.getFlag("campaign-codex", "image") || actor?.img || TemplateComponents.getAsset("image", "npc");
       const tabOverrides = journal.getFlag("campaign-codex", "tab-overrides") || [];
       const imageAreaOverride = tabOverrides?.find(override => override.key === "imageArea");
+      const isTagged =  journal.getFlag("campaign-codex", "type") === "tag" || npcData.tagMode ;
+
       return {
         id: journal.id,
         uuid: journal.uuid,
@@ -579,7 +583,7 @@ export class CampaignCodexLinkers {
         actor: actor,
         canView: canView,
         permission: journal.permission,
-        tag: npcData.tagMode,
+        tag: isTagged,
         tags: (linkedTags || [])
           .filter((tag) => !hideByPermission || tag.canView)
           .map((tag) => tag.name)
@@ -674,14 +678,16 @@ export class CampaignCodexLinkers {
         if (!journal) return null;
 
         const npcData = this._getCachedFlags(journal, cache);
-        if (npcData.tagMode) {
+        const isTagged =  journal.getFlag("campaign-codex", "type") === "tag" || npcData.tagMode ;
+
+        if (isTagged) {
           return {
             id: journal.id,
             uuid: journal.uuid,
             name: journal.name,
             permission: journal.permission,
             meta: `<span class="entity-type" style="background: var(--cc-border);">${localize("names.tag")}</span>`,
-            tag: npcData.tagMode,
+            tag: isTagged,
             canView: await this._getCachedCanView(journal.uuid, cache),
           };
         }
@@ -775,6 +781,8 @@ export class CampaignCodexLinkers {
         .map((tag) => tag.name)
         .sort();
 
+      const isTagged =  journal.getFlag("campaign-codex", "type") === "tag" || npcData.tagMode ;
+
       return {
         id: journal.id,
         uuid: journal.uuid,
@@ -783,7 +791,7 @@ export class CampaignCodexLinkers {
         showImage: imageAreaOverride?.visible ?? true,
         iconOverride: journal.getFlag("campaign-codex", "icon-override") || null,
         actor: actor,
-        tag: npcData.tagMode,
+        tag: isTagged,
         type: journal.getFlag("campaign-codex", "type") || "npc",
         tags: filteredTags,
         permission: journal.permission,
@@ -1089,6 +1097,8 @@ static async getInventory(document, inventoryData) {
     return "gp";
   };
 
+
+
   // PF2E Strategy
   if (systemId === "pf2e") {
     calculateBasePrice = (item) => {
@@ -1108,7 +1118,18 @@ static async getInventory(document, inventoryData) {
       if (price.cp > 0) return "cp";
     };
   }
-  
+    // WFRP4e Strategy
+  else if (systemId === "wfrp4e") {
+    calculateBasePrice = (item) => {
+      const price = this.getValue(item, "system.price") || {};
+      let val = (price.gc || 0) + (price.ss || 0) / 20 + (price.bp || 0) / 240;
+      return parseFloat(val.toFixed(3));
+    };
+    getCurrency = (item) => {
+      if (denominationOverride) return finalCurrency; 
+      return "gc";
+    };
+  }
   // Shadowdark Strategy
   else if (systemId === "shadowdark") {
     calculateBasePrice = (item) => {
@@ -1124,6 +1145,29 @@ static async getInventory(document, inventoryData) {
       if ((cost.gp || 0) > 0) return "gp";
       if ((cost.sp || 0) > 0) return "sp";
       if ((cost.cp || 0) > 0) return "cp";
+    };
+  }
+
+// Shadow of the Demon Lord Strategy
+  else if (systemId === "demonlord") {
+    calculateBasePrice = (item) => {
+      const valStr = String(this.getValue(item, "system.value") || "0");
+      const match = valStr.match(/([\d\.]+)\s*(gc|ss|cp|bits)?/i);
+      if (!match) return 0;
+
+      const amt = parseFloat(match[1]);
+      const type = (match[2] || "gc").toLowerCase();
+
+      if (type === "bits") return parseFloat((amt / 1000).toFixed(3));
+      if (type === "cp") return parseFloat((amt / 100).toFixed(2));
+      if (type === "ss") return parseFloat((amt / 10).toFixed(1));
+      return amt; // gc
+    };
+    getCurrency = (item) => {
+      if (denominationOverride) return finalCurrency;
+      const valStr = String(this.getValue(item, "system.value") || "");
+      const match = valStr.match(/[a-zA-Z]+/);
+      return match ? match[0].toLowerCase() : "gc";
     };
   }
 
@@ -1216,19 +1260,18 @@ static async _removeBrokenItems(document, items) {
     if (!ccUuids || !Array.isArray(ccUuids)) return [];
     const cache = this._createOperationCache();
     
-    // NEW: Batch all doc fetches at once
     const docs = await Promise.all(ccUuids.map(uuid => this._getCachedDoc(uuid, cache)));
     
     const namePromises = docs.map(async (doc, index) => {
       try {
         if (!doc) return null;
-        // PERMISSION CHECK
         const canView = game.user.isGM || doc.testUserPermission(game.user, CONST.DOCUMENT_OWNERSHIP_LEVELS.OBSERVER);
         if (!canView) return null;
         
         if (removeTags) {
           const docData = doc.getFlag("campaign-codex", "data") || {};
-          if (docData.tagMode === true) return null;
+          const isTagged =  doc.getFlag("campaign-codex", "type") === "tag" || docData.tagMode ;
+          if (isTagged === true) return null;
         }
 
         return doc.name;
@@ -1256,6 +1299,10 @@ static async _removeBrokenItems(document, items) {
 
     // Original switch statement preserved exactly
     switch (systemId) {
+      case "demonlord":
+        return { pricePath: "system.value", denominationPath: null, currency: "gc" };
+      case "wfrp4e":
+        return { pricePath: "system.price", denominationPath: null, currency: "gc" };
       case "dnd5e":
         return { pricePath: "system.price.value", denominationPath: "system.price.denomination", currency: null };
       case "pf2e":

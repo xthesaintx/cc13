@@ -290,7 +290,7 @@ export class CampaignCodexBaseSheet extends baseSheetApp {
       this.document.getFlag("campaign-codex", "data")?.associates ||
       this.document.getFlag("campaign-codex", "data")?.linkedNPCs ||
       [];
-    const isThisDocATag = this.document.getFlag("campaign-codex", "data")?.tagMode;
+    const isThisDocATag = this.document.getFlag("campaign-codex", "data")?.tagMode || this.document.getFlag("campaign-codex", "type") === "tag";
     context.existingTags = allTags.filter((tag) => {
       if (linkedTagUuids.includes(tag.uuid)) return false;
       if (isThisDocATag && tag.uuid === this.document.uuid) return false;
@@ -658,7 +658,10 @@ export class CampaignCodexBaseSheet extends baseSheetApp {
 
   async _onRender(context, options) {
     await super._onRender(context, options);
-    if (isThemed()) this.element.classList.add("themed", isThemed());
+    if (isThemed()) {
+      this.element.classList.add('themed', isThemed());
+      this.element.classList.add(isThemed(), isThemed());
+    }
     
     const nativeHtml = this.element;
     if (this.dragDrop && Array.isArray(this.dragDrop)) {
@@ -3114,7 +3117,7 @@ _onMarkerEdit(event) {
     nameElement.textContent = this.document.name;
     input.replaceWith(nameElement);
     nameElement.addEventListener("click", this._onNameEdit.bind(this));
-    if (this.document.getFlag("campaign-codex", "data")?.tagMode) {
+    if (this.document.getFlag("campaign-codex", "data")?.tagMode || this.document.getFlag("campaign-codex", "type") === "tag") {
       game.campaignCodex.updateTagInCache(this.document);
     }
   }

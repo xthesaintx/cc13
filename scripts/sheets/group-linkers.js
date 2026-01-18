@@ -226,6 +226,8 @@ static async buildTagTree(nestedData) {
           
         const type = doc.getFlag("campaign-codex", "type") || "unknown";
         const quests = doc.getFlag("campaign-codex", "data")?.quests || [];
+        const isTagged =  doc.getFlag("campaign-codex", "type") === "tag" || flags.tagMode ;
+
 
         return {
           id: doc.id,
@@ -237,7 +239,7 @@ static async buildTagTree(nestedData) {
           quests: quests.length > 0 && (game.user.isGM || quests.some(q => q.visible)),
           img: doc.getFlag("campaign-codex", "image") || doc.img,
           type: type,
-          tag: flags.tagMode || false,
+          tag: isTagged || false,
         };
       } catch (error) {
         console.error(`Error processing group member ${uuid}:`, error);
@@ -369,6 +371,7 @@ static async buildTagTree(nestedData) {
             .filter((tag) => !hideByPermission || tag.canView)
             .map((tag) => tag.name)
             .sort();
+            const isTagged =  doc.getFlag("campaign-codex", "type") === "tag" || childData.tagMode ;
 
           const allQuests = childData.quests || [];
           return {
@@ -379,7 +382,7 @@ static async buildTagTree(nestedData) {
             img: doc.getFlag("campaign-codex", "image") || doc.img,
             type,
             tags: filteredTags,
-            tag: childData.tagMode,
+            tag: isTagged,
             canView: canView,
             iconOverride: doc.getFlag("campaign-codex", "icon-override") || null,
           };
@@ -432,6 +435,7 @@ static async buildTagTree(nestedData) {
               .filter((tag) => !hideByPermission || tag.canView)
               .map((tag) => tag.name)
               .sort();
+            const isTagged =  doc.getFlag("campaign-codex", "type") === "tag" || childData.tagMode ;
 
             const allQuests = childData.quests || [];
             return {
@@ -442,7 +446,7 @@ static async buildTagTree(nestedData) {
               img: doc.getFlag("campaign-codex", "image") || doc.img,
               type,
               tags: filteredTags,
-              tag: childData.tagMode,
+              tag: isTagged,
               canView: canView,
               tabOverrides: doc.getFlag("campaign-codex", "tab-overrides") || [],
               iconOverride: doc.getFlag("campaign-codex", "icon-override") || null,
@@ -511,6 +515,8 @@ static async buildTagTree(nestedData) {
         .map((tag) => tag.name)
         .sort();
 
+      const isTagged =  npcDoc.getFlag("campaign-codex", "type") === "tag" || npcData?.tagMode ;
+
       const allQuests = npcData.quests || [];
       return {
         id: npcDoc.id,
@@ -520,7 +526,7 @@ static async buildTagTree(nestedData) {
         img: npcDoc.getFlag("campaign-codex", "image") || npcDoc.img,
         type: "npc",
         tags: npcTags,
-        tag: npcData?.tagMode,
+        tag: tagged,
         canView: npcCanView,
         tabOverrides: npcDoc.getFlag("campaign-codex", "tab-overrides") || [],
         iconOverride: npcDoc.getFlag("campaign-codex", "icon-override") || null,
@@ -624,6 +630,7 @@ static async buildTagTree(nestedData) {
     const imageData = npcDoc.getFlag("campaign-codex", "image") || actor?.img || TemplateComponents.getAsset("image", "npc");
     const tabOverrides = npcDoc.getFlag("campaign-codex", "tab-overrides") || [];
     const imageAreaOverride = tabOverrides?.find(override => override.key === "imageArea");
+    const isTagged =  npcDoc.getFlag("campaign-codex", "type") === "tag" || npcData.tagMode ;
 
 
     return {
@@ -637,7 +644,7 @@ static async buildTagTree(nestedData) {
         .filter((tag) => !hideByPermission || tag.canView)
         .map((tag) => tag.name)
         .sort(),
-      tag: npcData.tagMode,
+      tag: isTagged,
       source: sourceType,
       sourceLocation: sourceLocationName,
       sourceShop: sourceShopName,
