@@ -13,7 +13,7 @@ export class CampaignCodexMapMarker extends PIXI.Container {
     this.style = style;
     this.uiColor = game.settings.get("campaign-codex", "color-accent");
     this.customColour = game.settings.get("campaign-codex", "mapMarkerColor");
-
+    this.customScale = (game.settings.get("campaign-codex", "mapMarkerOverride") * 18) - 18;
 
 
     this.renderMarker();
@@ -21,9 +21,13 @@ export class CampaignCodexMapMarker extends PIXI.Container {
   }
   
   renderMarker() {
+
     const bgColor = this.customColour ? this.uiColor: Color.from(this.style.tint);
     this.style.textColor = this._getContrastColor(Number(bgColor));
-    this.radius = this.size;
+    this.radius = this.size + (this.customScale);
+    console.log(this.customScale);
+    console.log(this.size);
+    console.log(this.radius);
     const centerX = this.radius /2;
     const centerY = this.radius/2;
     // Define hit area
@@ -50,7 +54,7 @@ export class CampaignCodexMapMarker extends PIXI.Container {
 
     // Text
     // Use standard PIXI.Text for compatibility.
-    this.text = new PIXI.Text(this.code, this._getTextStyle(this.code.length, this.size));
+    this.text = new PIXI.Text(this.code, this._getTextStyle(this.code.length, this.size + (this.customScale/2)));
     this.text.anchor.set(0.5, 0.5);
     this.text.position.set(centerX, centerY);
     this.addChild(this.text);

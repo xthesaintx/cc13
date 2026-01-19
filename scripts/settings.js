@@ -33,6 +33,8 @@ export default async function campaigncodexSettings() {
     });
 
 
+
+
     game.settings.register("campaign-codex", "itemPricePath", {
         name: localize("itemPricePath.name"),
         hint: localize("itemPricePath.hint"),
@@ -183,15 +185,15 @@ export default async function campaigncodexSettings() {
         default: true,
     });
 
-    // game.settings.register("campaign-codex", "useStyledTocButton", {
-    //     name: localize("useStyledTocButton.name"),
-    //     hint: localize("useStyledTocButton.hint"),
-    //     scope: "world",
-    //     config: true,
-    //     type: Boolean,
-    //     default: true,
-    //     onChange: (value) => applyTocButtonStyle(value),
-    // });
+    game.settings.register("campaign-codex", "useStyledTocButton", {
+        name: localize("useStyledTocButton.name"),
+        hint: localize("useStyledTocButton.hint"),
+        scope: "world",
+        config: true,
+        type: Boolean,
+        default: true,
+        onChange: (value) => applyTocButtonStyle(value),
+    });
 
     game.settings.register("campaign-codex", "mapMarkers", {
         name: localize("mapMarkers.name"),
@@ -212,6 +214,17 @@ export default async function campaigncodexSettings() {
         type: Boolean,
         default: true,
     });
+
+game.settings.register("campaign-codex", "mapMarkerOverride", {
+    name: localize("mapMarkerOverride.name"),
+    hint: localize("mapMarkerOverride.hint"),
+    scope: "world",
+    config: true,
+    requiresReload: true,
+    type: new foundry.data.fields.NumberField({nullable: false, min: 0, max: 1, step: 0.5}),
+    default: 1,
+});
+
 
 const accentDefault = "#d4af37";
 

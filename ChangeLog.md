@@ -1,3 +1,7 @@
+## 2.2.5
+- map marker scale in settings
+- toc cc button colouring reenabled
+
 ## 2.2.4
 - fixes (theming, tags)
 - Moved add sheet button in ToC to window header

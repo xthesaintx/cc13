@@ -600,36 +600,36 @@ export function applyThemeColors() {
         document.head.appendChild(styleElement);
     }
     styleElement.innerHTML = `.campaign-codex { ${cssOverrides} }`;
-    // applyTocButtonStyle();
+    applyTocButtonStyle();
 }
 
-// export function applyTocButtonStyle() {
-//     let useStyled = game.settings.get("campaign-codex", "useStyledTocButton");
+export function applyTocButtonStyle() {
+    let useStyled = game.settings.get("campaign-codex", "useStyledTocButton");
 
-//     const styleId = 'cc-toc-button-style-override';
-//     let styleElement = document.getElementById(styleId);
-//     if (!styleElement) {
-//         styleElement = document.createElement('style');
-//         styleElement.id = styleId;
-//         document.head.appendChild(styleElement);
-//     }
-//     const uiColor = game.settings.get("campaign-codex", "color-accent");
-//     if (useStyled) {
-//         styleElement.innerHTML = `
-//             button.control.ui-control.layer.icon.fas.fa-closed-captioning[data-control="campaign-codex"] {
-//                 background: ${uiColor};
-//                 color: black;
-//             }
-//         `;
-//     } else {
-//         styleElement.innerHTML = `
-//             button.control.ui-control.layer.icon.fas.fa-closed-captioning[data-control="campaign-codex"] {
-//                 background: revert-layer;
-//                 color: revert-layer;
-//             }
-//         `;
-//     }
-// }
+    const styleId = 'cc-toc-button-style-override';
+    let styleElement = document.getElementById(styleId);
+    if (!styleElement) {
+        styleElement = document.createElement('style');
+        styleElement.id = styleId;
+        document.head.appendChild(styleElement);
+    }
+    const uiColor = game.settings.get("campaign-codex", "color-accent");
+    if (useStyled) {
+        styleElement.innerHTML = `
+            button.control.ui-control.layer.icon.fas.fa-closed-captioning[data-control="campaign-codex"] {
+                background: ${uiColor};
+                color: black;
+            }
+        `;
+    } else {
+        styleElement.innerHTML = `
+            button.control.ui-control.layer.icon.fas.fa-closed-captioning[data-control="campaign-codex"] {
+                background: revert-layer;
+                color: revert-layer;
+            }
+        `;
+    }
+}
 
 
 /**

@@ -111,6 +111,10 @@
         "name": "Allow players to puchase from Inventories",
         "hint": "If enabled players can send items to themselves from an inventory"
       },
+      "mapMarkerOverride":{
+        "name": "Map Marker Scale",
+        "hint": "Size of the Campaign Codex Map marker. Default 1"
+      },
       "mapMarkerColor":{
         "name": "Use CC Accent colour for the map markers",
         "hint": "If enabled CC map markers will use the CC Accent colour for the background"

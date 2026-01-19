@@ -73,8 +73,7 @@ Hooks.once("init", async function () {
     "modules/campaign-codex/templates/partials/tag-nodes.hbs",
     ];
     foundry.applications.handlebars.loadTemplates(templatePaths);
-    // if (game.settings.get("campaign-codex", "mapMarkers")) {
-    // }
+
 
 
 
@@ -113,15 +112,15 @@ Hooks.once("setup", async function () {
         textColor: 0x2a2a2a  
       }
     };
-    
+    const customScale = (game.settings.get("campaign-codex", "mapMarkerOverride") * 18) - 18;
     const NoteClass = CONFIG.Note.objectClass;
     NoteClass.prototype._getCampaignCodexIcon = _getCampaignCodexIcon;
     const originalDrawControlIcon = NoteClass.prototype._drawControlIcon;
     NoteClass.prototype._drawControlIcon = function(...args) {
       const codexIcon = this._getCampaignCodexIcon();
       if (codexIcon) {
-        codexIcon.x -= (this.document.iconSize / 2);
-        codexIcon.y -= (this.document.iconSize / 2);
+        codexIcon.x -= ((this.document.iconSize+customScale) / 2);
+        codexIcon.y -= ((this.document.iconSize+customScale) / 2);
         return codexIcon;
       }
       return originalDrawControlIcon.apply(this, args);
@@ -450,6 +449,7 @@ Hooks.on("updateJournalEntry", async (document, changes, options, userId) => {
         }
     }
 }
+
   if (
     document._skipRelationshipUpdates ||
     options.skipRelationshipUpdates ||
