@@ -4,7 +4,7 @@ import { templateManager } from "./journal-template-manager.js";
 import { tabPicker } from "./tab-picker.js";
 import { TemplatePicker } from "./template-picker.js";
 import {
-    // applyTocButtonStyle,
+    applyTocButtonStyle,
     applyThemeColors
 } from "./helper.js";
 export const MODULE_NAME = "campaign-codex";
@@ -33,7 +33,14 @@ export default async function campaigncodexSettings() {
     });
 
 
-
+    game.settings.register("campaign-codex", "playerCurrencyPath", {
+        name: localize("playerCurrencyPath.name"),
+        hint: localize("playerCurrencyPath.hint"),
+        scope: "world",
+        config: true,
+        type: String,
+        default: "",
+    });
 
     game.settings.register("campaign-codex", "itemPricePath", {
         name: localize("itemPricePath.name"),
@@ -43,8 +50,6 @@ export default async function campaigncodexSettings() {
         type: String,
         default: "",
     });
-
-
 
     game.settings.register("campaign-codex", "itemDenominationPath", {
         name: localize("itemDenominationPath.name"),

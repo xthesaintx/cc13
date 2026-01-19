@@ -57,6 +57,18 @@ const CURRENCY_CONFIG = {
 export class EconomyHelper {
 
   static async removeCost(item, targetActor, shopItemData, markup = 1.0) {
+    const customCurrencyPath = game.settings.get("campaign-codex", "playerCurrencyPath");
+    
+    if (customCurrencyPath) {
+    console.log(customCurrencyPath);
+      const priceDetails = this._calculateFinalPrice(item, shopItemData, markup);
+          console.log(priceDetails);
+
+      if (!priceDetails || priceDetails.cost <= 0) return true;
+
+      return await this._payCustomPath(targetActor, priceDetails.cost, customCurrencyPath);
+    }
+
     const systemId = game.system.id;
     const config = CURRENCY_CONFIG[systemId];
 
@@ -183,6 +195,32 @@ static async _paySimple(actor, cost, path) {
     return false;
 }
 
+static async _payCustomPath(actor, cost, path) {
+    try {
+      const currentVal = foundry.utils.getProperty(actor, path);
+      if (currentVal === undefined || currentVal === null) {
+        console.warn(`Campaign Codex | Custom currency path '${path}' not found on actor '${actor.name}'.`);
+        return false;
+      }
+      const numericCurrent = Number(currentVal);
+      if (isNaN(numericCurrent)) {
+        console.warn(`Campaign Codex | Value at '${path}' is not a valid number on actor '${actor.name}'.`);
+        return false;
+      }
+      if (numericCurrent >= cost) {
+        await actor.update({ [path]: numericCurrent - cost });
+        return true;
+      } else {
+        ui.notifications.warn(localize("warn.notEnoughCurrency") || "Not enough funds.");
+        return false;
+      }
+    } catch (error) {
+      console.error("Campaign Codex | Error processing custom currency deduction:", error);
+      return false;
+    }
+  }
+
+
 static async _payWFRP4e(actor, cost, currency, config) {
     let costBP = 0;
     if (currency === "gc") costBP = Math.round(cost * 240);
@@ -281,6 +319,23 @@ static async _payPF2e(actor, cost, currency, config) {
 
   static _getItemBasePrice(item) {
     const clean = (v) => parseFloat(String(v).replace(/[^\d.]/g, "")) || 0;
+    
+    const customPricePath = game.settings.get("campaign-codex", "itemPricePath");
+    const customDenominationPath = game.settings.get("campaign-codex", "itemDenominationPath");
+    const denominationOverride = game.settings.get("campaign-codex", "itemDenominationOverride");
+
+    if (customPricePath) {
+        const val = foundry.utils.getProperty(item, customPricePath);
+        let denom = "gp";
+        if (denominationOverride) {
+            denom = denominationOverride;
+        } else if (customDenominationPath) {
+            denom = foundry.utils.getProperty(item, customDenominationPath) || "gp";
+        }
+        return { price: clean(val), currency: denom };
+    }
+
+
     const sys = game.system.id;
 
     if (sys === "shadowrun6-eden") {

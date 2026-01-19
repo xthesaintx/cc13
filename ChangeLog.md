@@ -1,3 +1,8 @@
+## 2.2.6
+- ToC header button fix
+- Linking npcs directly to group fix
+- custom price, currency paths for auto deduction
+
 ## 2.2.5
 - map marker scale in settings
 - toc cc button colouring reenabled

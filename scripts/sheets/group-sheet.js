@@ -1826,7 +1826,7 @@ async _generateLocationsTab(data) {
       const journalDoc = journal.getFlag("campaign-codex", "data") || {};
 
       if (journal && journalType) {
-       if ((["npc"].includes(journalType) && journalDoc.tagMode) || (["npc", "tag"].includes(journalType))) {
+       if ((["npc"].includes(journalType) && journalDoc.tagMode) || (["tag"].includes(journalType))) {
           await game.campaignCodex.linkGroupToTag(this.document, journal);
         } else {
         this.addingMember = true;

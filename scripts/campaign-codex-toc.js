@@ -779,16 +779,27 @@ static async #sendToPlayer(event, target) {
   }
 
 static async #createSheet(event, target) {
-    const activeTab = this.element.querySelector(".campaign-codex-toc-app.tab.active")
     event.preventDefault();
-    switch (activeTab.dataset.type){
-        case 'group':
-        case 'tag':
-        case 'location':
-        case 'region':            
-        case 'npc':
-        case 'shop':
-             createFromScene(target.dataset.type);
+    const activeTab = this.element.querySelector(".campaign-codex-toc-app.tab.active")
+    console.log(activeTab);
+    switch (activeTab.dataset.tab){
+        case 'groups':
+             createFromScene("group");
+            break;
+        case 'tags':
+             createFromScene("tag");
+            break;
+        case 'locations':
+             createFromScene("location");
+            break;
+        case 'regions':            
+             createFromScene("region");
+            break;
+        case 'npcs':
+             createFromScene("npc");
+            break;
+        case 'shops':
+             createFromScene("shop");
             break;
         default:
         }
