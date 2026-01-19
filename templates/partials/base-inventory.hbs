@@ -1,0 +1,122 @@
+<div class="content-header">
+    <h2>
+        <i class="fas fa-boxes"></i> 
+        {{#if labelOverride}}{{labelOverride}}{{else}}{{ccLocalize "names.inventory"}}{{/if}}
+    </h2>
+</div>
+{{#if isGM}}
+<div class="shop-toggles">
+    <span class="stat-label">Loot Mode</span>
+    <label class="toggle-control">
+        <input type="checkbox" class="shop-loot-toggle" {{checked isLoot}} style="margin: 0;">
+        <span class="slider"></span>
+    </label>
+</div>
+
+<div class="markup-control">
+    {{#unless isLoot}}
+    <div class="ccsub">
+        <div class="markup-input-group">
+            <input type="number" class="markup-input" value="{{markup}}" min="0.1" max="10" step="0.1">
+            <span class="markup-label">x {{ccLocalize "inventory.global.markup"}}</span>
+        </div>
+    </div>
+    {{/unless}}
+    <div class="ccsub">
+        <div class="cash-input-group">
+            <input type="number" class="cash-input" value="{{inventoryCash}}" min="0" max="9999999" step="1">
+            <span class="cash-label">{{currency}}</span>
+        </div>
+    </div>
+</div>
+{{/if}}
+
+{{#if inventory}}
+<div class="inventory-table inventory">
+    <div class="form-group">
+        <div class="form-fields">
+            <input type="search" id="inventory-filter" name="filter" placeholder="Filter...">
+        </div>
+    </div>
+
+    {{#each inventorySections}}
+        {{#if ../showHeaders}}
+        <details open>
+            <summary class="inventory-header">
+                <h3>{{label}}</h3>
+        </summary>
+        {{/if}}
+
+    {{#each items}}
+    {{#unless (and ../../hideByPermission (not canView))}}
+    {{#if (or quantity ../../isGM)}}
+    <div class="inventory-item" data-uuid="{{itemUuid}}" data-item-name="{{name}}" {{#if canView}}data-action="openItem"{{/if}} title="{{ccLocalize 'title.open.sheet'}}" {{#if ../../isGM}}draggable="true"{{/if}}>
+        
+        <div class="item-image">
+            <img src="{{img}}" alt="{{name}}">
+        </div>
+
+        <div class="item-details">
+            <div class="item-name">{{name}}</div>
+        </div>
+
+        {{#unless ../../isLoot}}
+        <div class="item-final-price cc-inv-price-table">
+            {{#if ../../isGM}}
+                <input type="number" class="price-input {{#if customPrice}}custom-price-active{{/if}}" data-uuid="{{itemUuid}}" value="{{finalPrice}}" step="0.01" min="0">
+                <span class="price-currency {{#if customPrice}}custom-price-active{{/if}}">{{../../currency}}</span>
+            {{else}}
+                <span class="price-currency {{#if customPrice}}custom-price-active{{/if}}">{{finalPrice}} {{../../currency}}</span>
+            {{/if}}
+        </div>
+        {{/unless}}
+        {{#unless infinite}}
+        <div class="quantity-control" style="text-align:center">
+            {{#if ../../isGM}}
+                <button type="button" class="quantity-btn quantity-increase" data-uuid="{{itemUuid}}">
+                    <i class="fas fa-plus"></i>
+                </button>
+                <input type="number" class="quantity-input" data-uuid="{{itemUuid}}" value="{{quantity}}" min="0">
+                <button type="button" class="quantity-btn quantity-decrease" data-uuid="{{itemUuid}}">
+                    <i class="fas fa-minus"></i>
+                </button>
+            {{else}}
+               {{#if quantity}}{{quantity}} <i class="fas fa-boxes"></i>{{else}} <i class="fas fa-ban"></i>{{/if}}
+            {{/if}}
+        </div>
+        {{/unless}}
+        {{#if (or ../../isGM (not ../../isLoot))}}
+            {{#if ../../isGM}}
+            <div class="item-actions" style="text-align:center">
+                <i class="fas fa-infinity inventory-button {{#if infinite}}enabled{{/if}}" data-uuid="{{itemUuid}}" data-action="infiniteToggle"  title="{{ccLocalize 'title.infinite.item'}}"></i>
+                <i class="fas fa-paper-plane inventory-button send-to-player" data-type="inventory" data-action="sendToPlayer" data-uuid="{{itemUuid}}" title="{{ccLocalize 'title.send.player'}}"></i>
+                <i class="fas fa-trash inventory-button remove-item" data-action="removeItem" data-uuid="{{itemUuid}}" title="{{ccLocalize 'title.remove.item'}}"></i>
+            </div>
+            {{else}}
+            {{#if ../../allowPlayerPurchasing}}
+            <div class="item-actions" style="text-align:center">
+                <i class="fas fa-coins inventory-button send-to-player" data-type="inventory" data-action="playerPurchase" data-uuid="{{itemUuid}}" title="{{ccLocalize 'title.send.purchase'}}"></i>
+              </div>
+              {{/if}}
+            {{/if}}
+        {{/if}}
+
+    </div>
+    {{/if}}
+    {{/unless}}
+    {{/each}}
+    {{#if ../showHeaders}}
+        </details>
+    {{/if}}
+    {{/each}}
+</div>
+
+{{else}}
+    {{#if isGM}}
+    <div class="empty-state">
+        <i class="fas fa-boxes"></i>
+        <h3>{{ccLocalize "dragToAdd.empty"}}</h3>
+        <p>{{ccLocalize "dragToAdd.item"}}</p>
+    </div>
+    {{/if}}
+{{/if}}

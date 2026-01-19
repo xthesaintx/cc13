@@ -13,7 +13,7 @@ export class OrgChartWidget extends CampaignCodexWidget {
         
         if (data.sheetTypeLabelOverride) {
             title = data.sheetTypeLabelOverride;
-        } else if (data.tagMode) {
+        } else if (data.tagMode || doc.getFlag("campaign-codex", "type") === "tag") {
             title = 'Tag';
         } else {
             title = doc.getFlag("campaign-codex", "type") || 'Member';

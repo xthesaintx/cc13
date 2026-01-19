@@ -31,7 +31,9 @@ export class CampaignManager {
         console.log("Campaign Codex | Initializing Tag Cache");
         const taggedNpcs = [];
         for (const journal of game.journal) {
-            if (journal.getFlag("campaign-codex", "type") === "npc" && journal.getFlag("campaign-codex", "data")?.tagMode) {
+          const type = journal.getFlag("campaign-codex", "type");
+          const tagMode = journal.getFlag("campaign-codex", "data")?.tagMode;
+          if ((["npc"].includes(type) && tagMode) || ["tag"].includes(type)) {
                 taggedNpcs.push({
                     uuid: journal.uuid,
                     id: journal.id,
@@ -47,6 +49,7 @@ export class CampaignManager {
         if (!this.tagCache.some(tag => tag.uuid === npcDoc.uuid)) {
             this.tagCache.push({
                 uuid: npcDoc.uuid,
+                id: npcDoc.id,
                 name: npcDoc.name
             });
         }
@@ -64,7 +67,6 @@ export class CampaignManager {
     }
 
     async getTagCache() {
-// 
         await this._ready; 
         return this.tagCache;
     }
@@ -101,6 +103,40 @@ export class CampaignManager {
 
   }
 
+  async createTagJournal(actor = null, name = null) {
+    const journalName = name || (actor ? `${actor.name} - Journal` : "New Tag Journal");
+    const creationKey = `npc-${actor?.uuid || journalName}`;
+    if (this._creationQueue.has(creationKey)) return;
+    this._creationQueue.add(creationKey);
+
+    try {
+      const journalData = {
+        name: journalName,
+        flags: {
+          "campaign-codex": {
+            type: "tag",
+            data: {
+              linkedActor: actor ? actor.uuid : null,
+              description: "",
+              linkedLocations: [],
+              linkedShops: [],
+              associates: [],
+              notes: "",
+              tagMode: true,
+            },
+          },
+          core: { sheetClass: "campaign-codex.TagSheet" },
+        },
+        pages: [{ name: "Overview", type: "text", text: { content: `<h1>${journalName}</h1><p>Tag details...</p>` } }],
+      };
+      const newJournal = await JournalEntry.create(journalData);
+      // this.addTagToCache(newJournal);
+      return (newJournal);
+    } finally {
+      this._creationQueue.delete(creationKey);
+    }
+  }
+
   async createNPCJournal(actor = null, name = null, tagged = false) {
     const journalName = name || (actor ? `${actor.name} - Journal` : "New NPC Journal");
     const creationKey = `npc-${actor?.uuid || journalName}`;
@@ -128,7 +164,7 @@ export class CampaignManager {
         pages: [{ name: "Overview", type: "text", text: { content: `<h1>${journalName}</h1><p>NPC details...</p>` } }],
       };
       const newJournal = await JournalEntry.create(journalData);
-      if (tagged){this.addTagToCache(newJournal)};
+      // if (tagged){this.addTagToCache(newJournal)};
       return (newJournal);
     } finally {
       this._creationQueue.delete(creationKey);
@@ -294,6 +330,29 @@ export class CampaignManager {
       }
   }
 
+
+    async linkGroupToTag(groupDoc, tagDoc) {
+    if (groupDoc.uuid === tagDoc.uuid) return;
+    const groupData = groupDoc.getFlag("campaign-codex", "data") || {};
+    const tagData = tagDoc.getFlag("campaign-codex", "data") || {};
+    const groupNPCs = new Set(groupData.linkedNPCs || []);
+      if (!groupNPCs.has(tagDoc.uuid)) {
+        groupNPCs.add(tagDoc.uuid);
+        groupData.linkedNPCs = [...groupNPCs];
+        await groupDoc.setFlag("campaign-codex", "data", groupData);
+      }
+      const tagGroups = new Set(tagData.linkedGroups || []);
+      if (!tagGroups.has(groupDoc.uuid)) {
+        tagGroups.add(groupDoc.uuid);
+        tagData.linkedGroups = [...tagGroups];
+        await tagDoc.setFlag("campaign-codex", "data", tagData);
+      }
+  }
+
+
+
+
+
   async linkLocationToShop(locationDoc, shopDoc) {
     if (locationDoc.uuid === shopDoc.uuid) return;
     const shopData = shopDoc.getFlag("campaign-codex", "data") || {};
@@ -424,7 +483,7 @@ export class CampaignManager {
     if (existingItem) {
       existingItem.quantity += quantity;
     } else {
-      inventory.push({ itemUuid: itemDoc.uuid, quantity: quantity, customPrice: null });
+      inventory.push({ itemUuid: itemDoc.uuid, quantity: quantity, customPrice: null, infinite: null });
     }
     shopData.inventory = inventory;
     await shopDoc.setFlag("campaign-codex", "data", shopData);
@@ -717,7 +776,6 @@ async scheduleSheetRefresh(changedDocUuid) {
   }
 
   this._sheetRefreshTimeout = setTimeout(async () => {
-    // console.log("Campaign Codex | Debounce timer fired. Processing refresh queue.");
     const uuidsToProcess = Array.from(this._sheetRefreshQueue);
     this._sheetRefreshQueue.clear();
     this._sheetRefreshTimeout = null;
@@ -751,7 +809,6 @@ async refreshAllOpenCodexSheets() {
       const isCodexSheet = app.document?.getFlag && app.document.getFlag("campaign-codex", "type");
       if ( isCodexSheet && !docsWithOpenEditors.has(app.document.uuid) ) {
           if (app.rendered) app.render(true);
-          console.log("ALL");
         }
       }
     if (activeWindow.rendered) activeWindow.bringToFront();
@@ -765,7 +822,6 @@ async refreshAllOpenCodexSheets() {
 async _processSheetRefresh(changedDocUuids) {
   if (changedDocUuids.length === 0) return;
 
-  // console.log(`Campaign Codex | Processing refreshes for:`, changedDocUuids);
 
   const allUuidsToRefresh = new Set();
   const allIndirectUuids = new Set();
@@ -779,7 +835,7 @@ async _processSheetRefresh(changedDocUuids) {
 
       const changedType = changedDoc.getFlag("campaign-codex", "type");
 
-      if (changedType === "npc") {
+      if (["npc", "tag"].includes(changedType)) {
         const npcData = changedDoc.getFlag("campaign-codex", "data") || {};
         
         (npcData.linkedLocations || []).forEach(uuid => allIndirectUuids.add(uuid));
@@ -847,10 +903,7 @@ async _processSheetRefresh(changedDocUuids) {
     tocSheet.render();
   }
   
-  // if (!finalUuidsToRefresh || finalUuidsToRefresh.length === 0) {
-  //   if (activeWindow.rendered) activeWindow.bringToFront();
-  //   return;
-  // }
+
 
   const renderPromises = [];
   const uuidSet = new Set(finalUuidsToRefresh);
@@ -871,12 +924,6 @@ async _processSheetRefresh(changedDocUuids) {
   }
 
 
-  // const uuidSet = new Set(finalUuidsToRefresh);
-  //   for (const app of foundry.applications.instances.values()) {
-  //     if (app.document && uuidSet.has(app.document.uuid)) {
-  //         if (app.rendered) app.render(true);
-  //       }
-  //     }
  }
 
   // =========================================================================
@@ -1043,17 +1090,7 @@ async _processSheetRefresh(changedDocUuids) {
     }
 
     const childData = childRegionDoc.getFlag("campaign-codex", "data") || {};
-    // const oldParentUuid = childData.parentRegion;
 
-    // // 1. Unlink from the old parent, if it exists and is different from the new parent.
-    // if (oldParentUuid && oldParentUuid !== parentRegionDoc.uuid) {
-    //   const oldParentDoc = await fromUuid(oldParentUuid).catch(() => null);
-    //   if (oldParentDoc) {
-    //     const oldParentData = oldParentDoc.getFlag("campaign-codex", "data") || {};
-    //     oldParentData.linkedRegions = (oldParentData.linkedRegions || []).filter(uuid => uuid !== childRegionDoc.uuid);
-    //     await oldParentDoc.setFlag("campaign-codex", "data", oldParentData);
-    //   }
-    // }
 
     const parentData = parentRegionDoc.getFlag("campaign-codex", "data") || {};
     const parentRegions = new Set(parentData.linkedRegions || []);

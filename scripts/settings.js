@@ -4,7 +4,7 @@ import { templateManager } from "./journal-template-manager.js";
 import { tabPicker } from "./tab-picker.js";
 import { TemplatePicker } from "./template-picker.js";
 import {
-    applyTocButtonStyle,
+    // applyTocButtonStyle,
     applyThemeColors
 } from "./helper.js";
 export const MODULE_NAME = "campaign-codex";
@@ -20,6 +20,20 @@ export default async function campaigncodexSettings() {
         type: Object,
         default: { width: 450, height: 500 } 
     });
+    
+    game.settings.register("campaign-codex", "themeEnabled", {
+        name: localize("enableThemes.name"),
+        hint: localize("enableThemes.hint"),
+        scope: "world",
+        config: true,
+        type: Boolean,
+        default: false,
+        onChange: () => applyThemeColors() 
+
+    });
+
+
+
 
     game.settings.register("campaign-codex", "itemPricePath", {
         name: localize("itemPricePath.name"),
@@ -29,6 +43,8 @@ export default async function campaigncodexSettings() {
         type: String,
         default: "",
     });
+
+
 
     game.settings.register("campaign-codex", "itemDenominationPath", {
         name: localize("itemDenominationPath.name"),
@@ -48,14 +64,14 @@ export default async function campaigncodexSettings() {
         default: "",
     });
 
-    game.settings.register("campaign-codex", "hideBaseCost", {
-        name: localize("hideBaseCost.name"),
-        hint: localize("hideBaseCost.hint"),
-        scope: "world",
-        config: true,
-        type: Boolean,
-        default: false,
-    });
+    // game.settings.register("campaign-codex", "hideBaseCost", {
+    //     name: localize("hideBaseCost.name"),
+    //     hint: localize("hideBaseCost.hint"),
+    //     scope: "world",
+    //     config: true,
+    //     type: Boolean,
+    //     default: false,
+    // });
 
     game.settings.register("campaign-codex", "sortCardsAlpha", {
         name: localize("sortCardsAlpha.name"),
@@ -112,6 +128,15 @@ export default async function campaigncodexSettings() {
         requiresReload: true,
         type: Boolean,
         default: false,
+    });
+    game.settings.register("campaign-codex", "allowPlayerPurchasing", {
+        name: localize("allowPlayerPurchasing.name"),
+        hint: localize("allowPlayerPurchasing.hint"),
+        scope: "world",
+        config: true,
+        requiresReload: true,
+        type: Boolean,
+        default: true,
     });
     game.settings.register("campaign-codex", "roundFinalPrice", {
         name: localize("roundFinalPrice.name"),
@@ -190,28 +215,32 @@ export default async function campaigncodexSettings() {
         default: true,
     });
 
+game.settings.register("campaign-codex", "mapMarkerOverride", {
+    name: localize("mapMarkerOverride.name"),
+    hint: localize("mapMarkerOverride.hint"),
+    scope: "world",
+    config: true,
+    requiresReload: true,
+    type: new foundry.data.fields.NumberField({nullable: false, min: 0, max: 1, step: 0.5}),
+    default: 1,
+});
+
+
 const accentDefault = "#d4af37";
 
 
 const colors = {
-    ui: "#d4af37",
     primary: "#8b1538",
-    sidebarBg: "#2a2a2a",
-    sidebarText: "#ffffff",
-    mainBg: "#f8f9fa",
-    mainText: "#2a2a2a",
-    // accent: "#d4af37",
-    success: "#28a745",
-    danger: "#dc3545",
-    border: "#444444",
-    cardBg: "#ffffff",
-    borderLight: "#e9ecef",
     slate:"#5a6268",
     textMuted: "#888",
-    borderMedium:"#CCC",
-    // accent80: "#d4af37CC",
-    // accent30: "#d4af374D",
-    // accent10: "#d4af371A",
+    sidebarBg: "#2a2a2a",
+    sidebarText: "#ffffff",
+    success: "#28a745",
+    danger: "#dc3545",
+    mainBg: "#f8f9fa",
+    mainText: "#2a2a2a",
+    border: "#444444",
+    cardBg: "#ffffff",
     fontHeading: 'Modesto Condensed',
     fontBody: '"Segoe UI", Tahoma, Geneva, Verdana, sans-serif;',
 };
@@ -225,6 +254,52 @@ for (const [key, defaultValue] of Object.entries(colors)) {
         onChange: () => applyThemeColors() 
     });
 }
+
+game.settings.register("campaign-codex", "color-backgroundImage", {
+    scope: "world",
+    config: false, 
+    type: String,
+    filePicker: "image",
+    default: "",
+    onChange: () => applyThemeColors() 
+});
+
+game.settings.register("campaign-codex", "color-themeOverrideToLight", {
+    scope: "world",
+    config: false,
+    requiresReload: true,
+    type: String,
+    default: "none",
+    onChange: () => applyThemeColors(),
+});
+
+game.settings.register("campaign-codex", "color-anchorImage", {
+    scope: "world",
+    config: false,
+    requiresReload: true,
+    type: Boolean,
+    default: false,
+    onChange: () => applyThemeColors(),
+});
+
+
+game.settings.register("campaign-codex", "color-backgroundImageTile", {
+    scope: "world",
+    config: false,
+    requiresReload: true,
+    type: Boolean,
+    default: false,
+    onChange: () => applyThemeColors(),
+});
+
+game.settings.register("campaign-codex", "color-backgroundOpacity", {
+    scope: "world",
+    config: false,
+    requiresReload: true,
+    type: new foundry.data.fields.NumberField({nullable: false, min: 1, max: 100, step: 1}),
+    default: 100,
+    onChange: () => applyThemeColors() 
+});
 
 game.settings.register("campaign-codex", "color-accent", {
     scope: "world",

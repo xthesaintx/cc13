@@ -1,7 +1,7 @@
 import { CampaignCodexBaseSheet } from "./base-sheet.js";
 import { TemplateComponents } from "./template-components.js";
 import { CampaignCodexLinkers } from "./linkers.js";
-import { promptForName, localize, format, renderTemplate, getDefaultSheetTabs } from "../helper.js";
+import { promptForName, localize, format, renderTemplate, getDefaultSheetTabs, getDefaultSheetHidden } from "../helper.js";
 
 export class LocationSheet extends CampaignCodexBaseSheet {
   // =========================================================================
@@ -91,10 +91,11 @@ export class LocationSheet extends CampaignCodexBaseSheet {
 
   async _prepareContext(options) {
   if (options.force) {
-    // this._processedData = null;
-    this._inventoryCache = null;
-    this._fetchingInventory = false;
+    this._processedData = null;
   }
+    if (options.renderContext === "updateJournalEntry" && !game.user.isGM) {
+      this._processedData = null;
+    }
     const context = await super._prepareContext(options);
     if (!this._processedData) {
       this._processedData = await this._processLocationData();
@@ -139,9 +140,11 @@ export class LocationSheet extends CampaignCodexBaseSheet {
     const tabOverrides = this.document.getFlag("campaign-codex", "tab-overrides") || [];
     let defaultTabs = this._getTabDefinitions();
     const gmOnlyTabs = ['notes'];
+    
     if (!game.user.isGM) {
       defaultTabs = defaultTabs.filter(tab => !gmOnlyTabs.includes(tab.key));
     }
+
     const renderIfActive = async (key, generatorPromise) => {
         if (this._currentTab === key) {
             return await generatorPromise;
@@ -203,7 +206,7 @@ export class LocationSheet extends CampaignCodexBaseSheet {
         key: "widgets", 
         statistic: {value: context.activewidget.length, view:context.activewidget.length>0},
         active: this._currentTab === "widgets",
-        content: await renderIfActive("widgets", CampaignCodexBaseSheet.generateWidgetsTab(this.document, context, this._labelOverride(this.document, "widgets"))),
+        content: await renderIfActive("widgets", this.generateWidgetsTab(this.document, context, this._labelOverride(this.document, "widgets"))),
         label: localize("names.widgets"), 
         icon: "fas fa-puzzle-piece", 
       },
@@ -217,12 +220,21 @@ export class LocationSheet extends CampaignCodexBaseSheet {
     ];
 
     const defaultTabVis = getDefaultSheetTabs(this.getSheetType());
+    const defaultTabHidden = getDefaultSheetHidden(this.getSheetType());
+
+
     context.tabs = defaultTabs
       .map(tab => {
         const override = tabOverrides.find(o => o.key === tab.key);
         const isVisibleByDefault = defaultTabVis[tab.key] ?? true;
         const isVisible = override?.visible ?? isVisibleByDefault;
+        
         if (!isVisible) return null;
+        const isHiddenByDefault = defaultTabHidden[tab.key] ?? false;
+        const isHidden = override?.hidden ?? isHiddenByDefault;
+        if (!game.user.isGM && isHidden) {
+            return null;
+        }
 
         const dynamicTab = tabContext.find(t => t.key === tab.key);
         if (!dynamicTab) return null;
@@ -234,14 +246,14 @@ export class LocationSheet extends CampaignCodexBaseSheet {
           label: finalLabel, 
         };
       })
-      .filter(Boolean); 
-    // Validate and set the active tab
+      .filter(Boolean);
     if (context.tabs.length > 0) {
       const availableKeys = context.tabs.map(t => t.key);
       if (!this._currentTab || !availableKeys.includes(this._currentTab)) {
         this._currentTab = context.tabs[0].key;
       }
     }
+
     // END OF TABS
 
     // QUICK LINKS
@@ -324,31 +336,53 @@ export class LocationSheet extends CampaignCodexBaseSheet {
   // Tab Generation
   // =========================================================================
 
-  _generateInfoTab(data) {
-    let regionSection = "";
-    const label = this._labelOverride(this.document, "info") || localize("names.information");
 
-    if (data.linkedRegion) {
-      const regionCard = `
-        <div class="linked-actor-card">
-          <div class="actor-image"><img src="${data.linkedRegion.img}" alt="${data.linkedRegion.name}"></div>
-          <div class="actor-content"><h4 class="actor-name">${data.linkedRegion.name}</h4></div>
-          <div class="actor-actions">
-            ${data.canViewRegion ? `<i class="fas fa-external-link-alt action-btn open-region" data-action="openRegion" data-uuid="${data.linkedRegion.uuid}" title="Open Region"></i>` : ""}
-            ${data.isGM ? `<i class="fas fa-unlink action-btn remove-location" data-action="removeLocationFromRegion" data-uuid="${data.linkedRegion.uuid}" title="Remove from Region"></i>` : ""}
-          </div>
-        </div>
-      `;
-      regionSection = `<div class="form-section">${regionCard}</div>`;
-    } else if (data.isGM) {
-      regionSection = `<div class="form-section">${TemplateComponents.dropZone("region", TemplateComponents.getAsset("icon", "region"), format("dropzone.link", { type: localize("names.region") }), "")}</div>`;
-    }
-    return `
-      ${TemplateComponents.contentHeader("fas fa-info-circle", label)}
-      ${regionSection}
-      ${TemplateComponents.richTextSection(this.document, data.sheetData.enrichedDescription, "description", data.isOwnerOrHigher)}
-    `;
+  async _generateInfoTab(context) {
+    const label = this._labelOverride(this.document, "info");
+    const hideByPermission = game.settings.get("campaign-codex", "hideByPermission");
+
+     const templateData = {
+      widgetsPosition: context.widgetsPosition,
+      widgetsToRender: context.infoWidgetsToRender,
+      activewidget: context.activewidgetInfo,
+      inactivewidgets: context.inactivewidgetsInfo,
+      addedWidgetNames: context.addedWidgetNamesInfo,
+      availableWidgets: context.availableWidgets,
+      isWidgetTrayOpen:this._isWidgetInfoTrayOpen,
+      isGM: context.isGM,
+      labelOverride:label,
+      richTextDescription: TemplateComponents.richTextSection(this.document, context.sheetData.enrichedDescription, "description", context.isOwnerOrHigher)
+    };
+    return await renderTemplate("modules/campaign-codex/templates/partials/base-info.hbs", templateData);
   }
+
+
+
+  // _generateInfoTab(data) {
+  //   let regionSection = "";
+  //   const label = this._labelOverride(this.document, "info") || localize("names.information");
+
+  //   if (data.linkedRegion) {
+  //     const regionCard = `
+  //       <div class="linked-actor-card">
+  //         <div class="actor-image"><img src="${data.linkedRegion.img}" alt="${data.linkedRegion.name}"></div>
+  //         <div class="actor-content"><h4 class="actor-name">${data.linkedRegion.name}</h4></div>
+  //         <div class="actor-actions">
+  //           ${data.canViewRegion ? `<i class="fas fa-external-link-alt action-btn open-region" data-action="openRegion" data-uuid="${data.linkedRegion.uuid}" title="Open Region"></i>` : ""}
+  //           ${data.isGM ? `<i class="fas fa-unlink action-btn remove-location" data-action="removeLocationFromRegion" data-uuid="${data.linkedRegion.uuid}" title="Remove from Region"></i>` : ""}
+  //         </div>
+  //       </div>
+  //     `;
+  //     regionSection = `<div class="form-section">${regionCard}</div>`;
+  //   } else if (data.isGM) {
+  //     regionSection = `<div class="form-section">${TemplateComponents.dropZone("region", TemplateComponents.getAsset("icon", "region"), format("dropzone.link", { type: localize("names.region") }), "")}</div>`;
+  //   }
+  //   return `
+  //     ${TemplateComponents.contentHeader("fas fa-info-circle", label)}
+  //     ${regionSection}
+  //     ${TemplateComponents.richTextSection(this.document, data.sheetData.enrichedDescription, "description", data.isOwnerOrHigher)}
+  //   `;
+  // }
 
   async _generateNPCsTab(data) {
     const label = this._labelOverride(this.document, "npcs") || localize("names.npcs");
@@ -438,7 +472,7 @@ export class LocationSheet extends CampaignCodexBaseSheet {
       } else {
         ui.notifications.warn(`Journal "${journal.name}" is already linked.`);
       }
-    } else if (journalType === "npc") {
+    } else if (["npc", "tag"].includes(journalType)) {
       await game.campaignCodex.linkLocationToNPC(this.document, journal);
     } else if (journalType === "shop") {
       await game.campaignCodex.linkLocationToShop(this.document, journal);

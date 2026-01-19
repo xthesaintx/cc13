@@ -1,35 +1,54 @@
-<div class="{{cssClass}} campaign-codex group-sheet">
+<div class="{{cssClass}} campaign-codex group-sheet {{#if sidebarCollapsed}}sidebar-collapsed{{/if}}">
     <div class="sheet-container">
-      <aside class="group-sidebar">
+      <aside class="group-sidebar sidebar-collapsable">
         <div class="sidebar-header">
           <div class="sheet-image">
             <img src="{{#if customImage}}{{customImage}}{{/if}}" 
                  alt="{{document.name}}" 
                  onerror="this.src='{{defaultImage}}'">
-           {{#if (and isGM userImage)}}
-                     <i class="fas fa-times-circle cc-remove-image" title="Remove Image" data-action="removeImage"></i>
-            {{/if}}
           </div>
           
           <h1 class="sheet-title">{{document.name}}</h1>
         
-            {{#if isGM}}
-          <i class="fas fa-camera image-change-btn" data-action="imageChange"></i>{{/if}}
-                  {{!-- Custom header content --}}
+        {{!-- Custom header content --}}
         {{{customHeaderContent}}}
         </div>
 
         <div class="group-tree-container">
           {{{leftPanel}}}
         </div>
+                        {{!-- Tags --}}
+                <div class="sidebar-links cc-tags">
+                    <h3 class="cc-tags">Tags
+                        <i class="fas fa-circle-plus" title="Create new Tag" data-action="createTag"></i>
+                        <i class="fas fa-eye toggletags" data-action="toggleTags" title="Toggle Existing Tags"></i>
+                    </h3>
+                    <div class="link-tags">
+                        {{#each quickTags}}
+                            <div class="link-card npc-link tag-card" data-action="openNPC" data-uuid="{{uuid}}" title="{{name}}">
+                                <span class="link-name">{{name}}</span> 
+                            </div>
+                        {{/each}}
+                        {{#if (and isGM showTags)}}
+                            {{#each existingTags}}
+                                <div class="link-card existing-tag " data-action="linkTag" data-uuid="{{uuid}}" title="{{name}}">
+                                    <span class="link-name">{{name}}</span>
+                                </div>
+                            {{/each}}
+                        {{/if}}
+                    </div>
+                </div>
       </aside>
-      
+          {{!-- Collapser --}}
+      <div class="sidebar-collapser" data-action="toggleSidebar">
+         <i class="fas fa-caret-{{#if sidebarCollapsed}}right{{else}}left{{/if}}" inert></i>
+      </div>
       <main class="group-main">
           {{#if isShowingSelectedView}}
             {{{selectedSheetContent}}}
           {{else}}
             {{#each tabPanels}}
-              <section class="group-tab-panel {{key}} {{#if active}}active{{/if}}" data-tab="{{key}}" {{#if (eq key 'widgets')}}data-preserve-scroll{{/if}}>
+              <section class="group-tab-panel {{key}} {{#if active}}active{{/if}}" data-tab="{{key}}" {{#if (eq key 'widgets')}}data-preserve-scroll{{/if}}{{#if (eq key 'info')}}data-preserve-scroll{{/if}}>
                 {{{this.content}}}
               </section>
             {{/each}}

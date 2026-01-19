@@ -74,7 +74,7 @@ static async _generateAdditionalContext(data, type) {
     uuid = data.parentRegion;
   } else if (type === "shop") {
     uuid = data.linkedLocation;
-  } else if (type === "npc" && data.tagMode) {
+  } else if ((["npc"].includes(type) && data.tagMode) || (["tag"].includes(type))) {
     return `Tag<hr>`;
   }
 
@@ -168,7 +168,7 @@ static async _generateLinkListPage(title, uuids) {
         const tagged = doc.getFlag("campaign-codex", "data");
         const type = doc.getFlag("campaign-codex", "type");
         let taggedText = '';
-        if (tagged && tagged.tagMode && type === "npc") {
+        if (tagged && ((tagged.tagMode && ["npc"].includes(type)) || ["tag"].includes(type))) {
             taggedText = ' [TAG]';
         }
         content += `<li>@UUID[${doc.uuid}]{${doc.name}}${taggedText}</li>\n`;

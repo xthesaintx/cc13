@@ -336,7 +336,8 @@ _iconOverride(icon) {
 
     _createNode(doc, isCenter) {
         const type = doc.getFlag("campaign-codex", "type") || "default";
-        const isTag = doc.getFlag("campaign-codex", "data.tagMode");
+        const isTag = doc.getFlag("campaign-codex", "data.tagMode") || doc.getFlag("campaign-codex", "type") === "tag";
+;
         let config;
 
         const iconOverride = doc.getFlag("campaign-codex", "icon-override");
@@ -376,7 +377,7 @@ _iconOverride(icon) {
         const data = doc.getFlag("campaign-codex", "data") || {};
         const links = new Set();
 
-        const arrayFields = ["linkedShops","parentRegions", "linkedNPCs", "linkedLocations", "linkedRegions", "associates", "members"];
+        const arrayFields = ["linkedShops","parentRegions", "linkedNPCs","linkedGroups", "linkedLocations", "linkedRegions", "associates", "members"];
         arrayFields.forEach(field => {
             if (Array.isArray(data[field])) {
                 data[field].forEach(uuid => links.add(uuid));

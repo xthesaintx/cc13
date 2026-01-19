@@ -6,9 +6,9 @@
   </div>
   {{!-- The description section --}}
   <article class="journal-entry-page cc-enriched {{systemClass}}">
-    <section class="journal-page-content">
+    <section class="journal-page-content {{journalClass}}">
       {{#if (and isGM (not isGroupSheet))}}
-        <prose-mirror class="quest-description-editor" data-quest-id="{{quest.id}}" value="{{quest.description}}" document-uuid="{{doc.uuid}}" compact="true" toggled>
+        <prose-mirror class="quest-description-editor {{journalClass}} {{themed}}" data-quest-id="{{quest.id}}" value="{{quest.description}}" document-uuid="{{doc.uuid}}" compact="true" toggled>
           {{{quest.enrichedDescription}}}
         </prose-mirror>
       {{else}}

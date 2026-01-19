@@ -5,7 +5,7 @@
 {{#if quests}}
 <div class="quest-list">
       {{#each quests}}
-        {{> "modules/campaign-codex/templates/partials/quest-card.hbs" quest=. isGM=../isGM isGroupSheet=../isGroupSheet doc=../doc systemClass=../systemClass}}
+        {{> "modules/campaign-codex/templates/partials/quest-card.hbs" quest=. isGM=../isGM isGroupSheet=../isGroupSheet themed=../themed doc=../doc systemClass=../systemClass journalClass=../journalClass}}
       {{/each}}
     {{else}}
       {{#unless isGM}}

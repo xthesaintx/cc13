@@ -11,7 +11,7 @@ export class CleanUp {
       if (!type) return;
 
       const data = document.getFlag("campaign-codex", "data") || {};
-      if (type === "npc" && data.tagMode) {
+      if ((["npc"].includes(type) && data.tagMode) || ["tag"].includes(type)) {
         game.campaignCodex.removeTagFromCache(document);
         console.log(`Campaign Codex | Removed deleted tag "${document.name}" from cache.`);
       }
@@ -37,7 +37,6 @@ export class CleanUp {
     }
 
     for (const app of foundry.applications.instances.values()) {
-      // for (const app of Object.values(ui.windows)) {
         if (app.document && app.document.id === document.id) {
           const isCampaignCodexSheet = [
             "LocationSheet",
@@ -168,8 +167,7 @@ export class CleanUp {
         );
       }
 
-// 
-      if (docType === "npc")
+      if (["npc", "tag"].includes(docType))
       {
         if (docData.linkedLocations && docData.linkedLocations.includes(deletedUuid))
          {
@@ -189,8 +187,6 @@ export class CleanUp {
           }
         }
        } 
-// 
-
 
       if (
         docType === "group" &&
@@ -508,12 +504,8 @@ export class CleanUp {
   async refreshAffectedGroupSheets(deletedDoc) {
     const deletedUuid = deletedDoc.uuid;
 
-      // if (app.document && uuidSet.has(app.document.uuid)) {
-      //     app.render(true);
-      //   }
-      // }
+
     for (const app of foundry.applications.instances.values()) {
-    // for (const app of Object.values(ui.windows)) {
       if (app.constructor.name === "GroupSheet" && app.document) {
         const groupData = app.document.getFlag("campaign-codex", "data") || {};
         const members = groupData.members || [];

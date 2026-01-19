@@ -11,10 +11,11 @@ export class NPCDropper {
       ui.notifications.warn("No scene is currently active!");
       return;
     }
-
+    
+    const expandedNpcs = await this._expandActorContainers(npcs);
     const npcsWithActors = [];
 
-    for (const npc of npcs) {
+    for (const npc of expandedNpcs) {
       if (!npc.actor) {
         console.warn(
           `Campaign Codex | Skipping NPC ${npc.name} - no linked actor`,
@@ -36,6 +37,86 @@ export class NPCDropper {
     }
 
     return this._showDropToMapDialog(npcsWithActors, options);
+  }
+/**
+   * Checks for Encounter or Group actors and returns their members as a flat list.
+   * Keeps regular actors as they are.
+   * Assigns a temporary _uniqueId to ensure duplicates can be selected individually.
+   * @param {Array} npcs - The initial list of NPCs
+   * @returns {Promise<Array>} Flattened list of actor objects
+   */
+  static async _expandActorContainers(npcs) {
+    const results = [];
+
+    for (const npc of npcs) {
+      let actor = npc.actor;
+      if (!actor && npc.uuid) {
+        actor = await fromUuid(npc.uuid).catch(() => null);
+      }
+
+      if (!actor) {
+        // Pass through, but ensure it has a unique ID for the dialog
+        results.push({ ...npc, _uniqueId: foundry.utils.randomID() });
+        continue;
+      }
+
+      if (actor.type === "encounter") {
+        const members = actor.system?.members || [];
+        for (const member of members) {
+          if (member.uuid) {
+            const subActor = await fromUuid(member.uuid).catch(() => null);
+            if (subActor) {
+              let count = member.quantity?.value ?? 1;
+
+              if (member.quantity?.formula) {
+                try {
+                  const roll = new foundry.dice.Roll(member.quantity.formula);
+                  await roll.evaluate();
+                  count = Math.max(1, roll.total);
+                } catch (e) {
+                  console.warn(
+                    `Campaign Codex | Failed to evaluate formula '${member.quantity.formula}' for ${subActor.name}. Using default value: ${count}`,
+                    e,
+                  );
+                }
+              }
+              for (let i = 0; i < count; i++) {
+                results.push({
+                  name: subActor.name,
+                  img: subActor.img,
+                  actor: subActor,
+                  uuid: subActor.uuid,
+                  id: subActor.id,
+                  _uniqueId: foundry.utils.randomID(), // Unique ID for this specific instance
+                });
+              }
+            }
+          }
+        }
+      } else if (actor.type === "group") {
+        const members = actor.system?.members || [];
+        for (const member of members) {
+          const subActor = member.actor;
+          if (subActor) {
+            results.push({
+              name: subActor.name,
+              img: subActor.img,
+              actor: subActor,
+              uuid: subActor.uuid,
+              id: subActor.id,
+              _uniqueId: foundry.utils.randomID(), // Unique ID for this specific instance
+            });
+          }
+        }
+      } else {
+        results.push({
+          ...npc,
+          _uniqueId: foundry.utils.randomID(),
+        });
+      }
+    }
+
+    return results;
   }
 
   /**
@@ -74,7 +155,7 @@ export class NPCDropper {
             .map(
               (npc) => `
             <label>
-              <input type="checkbox" name="selected-npcs" value="${npc.uuid || npc.id}" checked style="margin-right: 8px;">
+              <input type="checkbox" name="selected-npcs" value="${npc._uniqueId}" checked style="margin-right: 8px;">
               <img src="${npc.img}" alt="${npc.name}" style="width: 32px; height: 32px; border-radius: 4px; margin-right: 8px;">
               <span style="font-weight: 600;">${npc.name}</span>
               ${npc.actor.type === "character" ? '<span style="margin-left: 8px; font-size: 8px; padding: 2px 6px;">PLAYER</span>' : ""}
@@ -108,38 +189,44 @@ export class NPCDropper {
 
     const dialogData = await foundry.applications.api.DialogV2.wait({
       window: { title: options.title || "Drop NPCs to Map" },
-      classes: ['campaign-codex npc-dropper' ],
+      classes: ["campaign-codex", "npc-dropper"],
       content,
       buttons: [
-          {
-              action: "drop",
-              icon: '<i class="fas fa-map"></i>',
-              label: "Start Placing",
-              default: true,
-              callback: (event, button) => {
-                    const form = button.form;
-                    const selectedNPCs = Array.from(form.querySelectorAll('input[name="selected-npcs"]:checked')).map(cb => cb.value);
-                    const startHidden = form.querySelector('input[name="start-hidden"]')?.checked ?? false;
-                    return { selectedNPCs, startHidden };
-              }
+        {
+          action: "drop",
+          icon: '<i class="fas fa-map"></i>',
+          label: "Start Placing",
+          default: true,
+          callback: (event, button) => {
+            const form = button.form;
+            const selectedNPCs = Array.from(
+              form.querySelectorAll('input[name="selected-npcs"]:checked'),
+            ).map((cb) => cb.value);
+            const startHidden =
+              form.querySelector('input[name="start-hidden"]')?.checked ??
+              false;
+            return { selectedNPCs, startHidden };
           },
-          {
-              action: "cancel",
-              icon: '<i class="fas fa-times"></i>',
-              label: "Cancel",
-              callback: () => null
-          }
+        },
+        {
+          action: "cancel",
+          icon: '<i class="fas fa-times"></i>',
+          label: "Cancel",
+          callback: () => null,
+        },
       ],
-      rejectClose: true
-  }).catch(() => null);
+      rejectClose: true,
+    }).catch(() => null);
 
-  if (!dialogData) return null;
+    if (!dialogData) return null;
 
-    const { selectedNPCs: selectedNPCIds, startHidden } = dialogData;
-    if (!selectedNPCIds) return;
-    if (selectedNPCIds.length > 0) {
+    const { selectedNPCs: selectedIds, startHidden } = dialogData;
+    if (!selectedIds) return;
+
+    if (selectedIds.length > 0) {
+      // Filter based on the unique instance ID
       const selectedNPCs = npcs.filter((npc) =>
-        selectedNPCIds.includes(npc.uuid || npc.id),
+        selectedIds.includes(npc._uniqueId),
       );
 
       return this._startTokenPlacement(selectedNPCs, {
@@ -150,7 +237,7 @@ export class NPCDropper {
       ui.notifications.warn("No NPCs selected!");
       return { success: 0, failed: 0, imported: 0 };
     }
-}
+  }
 
 
 

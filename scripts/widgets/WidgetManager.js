@@ -1,6 +1,17 @@
 import { WorldMapWidget } from "./WorldMapWidget.js"; 
 import { NetworkGraphWidget } from "./NetworkGraphWidget.js"; 
 import { OrgChartWidget } from "./OrgChartWidget.js";
+import { ReputationTrackerWidget } from "./ReputationTrackerWidget.js";
+import { RelationshipTrackerExtendedWidget } from "./RelationshipTrackerExtendedWidget.js";
+import { RelationshipTrackerScaleWidget } from "./RelationshipTrackerScaleWidget.js";
+import { ImageGalleryWidget } from "./ImageGalleryWidget.js";
+import { ProgressClockWidget } from "./ProgressClockWidget.js";
+import { MacroWidget } from "./MacroWidget.js";
+import { RollTableWidget } from "./RollTableWidget.js";
+import { MerchantCounterWidget } from "./MerchantCounterWidget.js";
+import { CalendarForecastWidget } from "./CalendarForecastWidget.js";
+import { CalendarEventWidget } from "./CalendarEventWidget.js";
+import { CalendarTimelineWidget } from "./CalendarTimelineWidget.js";
 
 class WidgetManager {
     constructor() {
@@ -9,11 +20,28 @@ class WidgetManager {
         this._registerDefaultWidgets();
     }
 
+    initialize() {
+            this._miniCalendar = game.modules.get('wgtgm-mini-calendar');
+            this._registerDefaultWidgets();
+        }
+
     _registerDefaultWidgets() {
         this.registerWidget("worldMap", WorldMapWidget);
         this.registerWidget("networkGraph", NetworkGraphWidget);
         this.registerWidget("orgChart", OrgChartWidget);
-        // Register other widget types here later
+        this.registerWidget("Reputation Tracker", ReputationTrackerWidget);
+        this.registerWidget("Relationship Tracker Extended", RelationshipTrackerExtendedWidget);
+        this.registerWidget("Relationship Tracker Scale", RelationshipTrackerScaleWidget);
+        this.registerWidget("Image Gallery", ImageGalleryWidget);
+        this.registerWidget("Progress Clock", ProgressClockWidget);
+        this.registerWidget("Macros", MacroWidget);
+        this.registerWidget("Roll Table", RollTableWidget);
+        this.registerWidget("Merchant Counter", MerchantCounterWidget);
+        if (this._miniCalendar?.active) {
+            this.registerWidget("Mini Calendar Forecast", CalendarForecastWidget);
+            this.registerWidget("Mini Calendar Events", CalendarEventWidget);
+            this.registerWidget("Mini Calendar Timeline", CalendarTimelineWidget);
+        }
     }
 
     /**
@@ -23,64 +51,59 @@ class WidgetManager {
      */
     registerWidget(widgetType, widgetClass) {
         if (this.widgetRegistry.has(widgetType)) {
-            console.warn(`Campaign Codex | Widget type "${widgetType}" is already registered. Overwriting.`);
+            // console.warn(`Campaign Codex | Widget type "${widgetType}" is already registered. Overwriting.`);
         }
         this.widgetRegistry.set(widgetType, widgetClass);
         console.log(`Campaign Codex | Registered widget type: ${widgetType}`);
     }
 
-/**
- * Loads active widgets from the document's flags.
- * Instantiates them and returns a single, joined HTML string of their placeholders.
- *
- * @param {Document} document - The document (e.g., JournalEntryPage) to load widgets for.
- * @returns {string} A single HTML string of all widget placeholders or error messages.
- */
-instantiateActiveWidgets(document) {
-  const widgetHtmls = [];
-  const sheetWidgets = document.getFlag("campaign-codex", "sheet-widgets") || [];
-  const activeWidgets = sheetWidgets.filter(w => w.active === true);
 
-  for (const widgetData of activeWidgets) {
-    const { id: widgetId, widgetName } = widgetData; 
-    
-    try {
-      const widgetNameLower = widgetName.toLowerCase();
-      let canonicalName = null;
-      for (const key of this.widgetRegistry.keys()) {
-        if (key.toLowerCase() === widgetNameLower) {
-          canonicalName = key; 
-          break;
+instantiateActiveWidgets(document, targetTab = "widgets") {
+        const widgetHtmls = [];
+        const sheetWidgets = document.getFlag("campaign-codex", "sheet-widgets") || [];
+        
+        const activeWidgets = sheetWidgets.filter(w => w.active === true && (w.tab || "widgets") === targetTab);
+
+        for (const widgetData of activeWidgets) {
+            const { id: widgetId, widgetName } = widgetData;
+
+            try {
+                const widgetNameLower = widgetName.toLowerCase();
+                let canonicalName = null;
+                for (const key of this.widgetRegistry.keys()) {
+                    if (key.toLowerCase() === widgetNameLower) {
+                        canonicalName = key;
+                        break;
+                    }
+                }
+                if (!canonicalName) {
+                    console.warn(`Campaign Codex | Document [${document.id}] has an active widget with unknown type: ${widgetName} (ID: ${widgetId})`);
+                    continue;
+                }
+
+                if (this.widgetInstances.has(widgetId)) {
+                    widgetHtmls.push(
+                        `<div class="cc-widget-container" data-widget-type="${canonicalName}" data-widget-id="${widgetId}"></div>`
+                    );
+                    continue;
+                }
+                
+                const WidgetClass = this.widgetRegistry.get(canonicalName);
+                const widgetInstance = new WidgetClass(widgetId, widgetData, document);
+                this.widgetInstances.set(widgetId, widgetInstance);
+
+                widgetHtmls.push(
+                    `<div class="cc-widget-container" data-widget-type="${canonicalName}" data-widget-id="${widgetId}"></div>`
+                );
+            } catch (error) {
+                console.error(`Campaign Codex | Error instantiating widget ${widgetName} (ID: ${widgetId}):`, error);
+                widgetHtmls.push(
+                    `<p style="color: red; font-weight: bold;">[Error Loading CC Widget: ${widgetName} id=${widgetId}]</p>`
+                );
+            }
         }
-      }
-      if (!canonicalName) {
-        console.warn(`Campaign Codex | Document [${document.id}] has an active widget with unknown type: ${widgetName} (ID: ${widgetId})`);
-        continue;
-      }
-
-      if (this.widgetInstances.has(widgetId)) {
-        widgetHtmls.push(
-          `<div class="cc-widget-container" data-widget-type="${canonicalName}" data-widget-id="${widgetId}"></div>`
-        );
-        continue;
-      }
-      const WidgetClass = this.widgetRegistry.get(canonicalName);
-      const widgetInstance = new WidgetClass(widgetId, widgetData, document);
-      this.widgetInstances.set(widgetId, widgetInstance);
-      
-      widgetHtmls.push(
-        `<div class="cc-widget-container" data-widget-type="${canonicalName}" data-widget-id="${widgetId}"></div>`
-      );
-    } catch (error) {
-      console.error(`Campaign Codex | Error instantiating widget ${widgetName} (ID: ${widgetId}):`, error);
-      widgetHtmls.push(
-        `<p style="color: red; font-weight: bold;">[Error Loading CC Widget: ${widgetName} id=${widgetId}]</p>`
-      );
+        return widgetHtmls.join("");
     }
-  }
-  return widgetHtmls.join("");
-}
-
 
     /**
      * Renders a specific widget into its container and activates its listeners.
@@ -109,9 +132,7 @@ instantiateActiveWidgets(document) {
             );
             containerElement.innerHTML = `<p style="color: red; font-weight: bold;">[Widget Render Error]</p>`;
         } 
-        // finally {
-        //     this.widgetInstances.delete(widgetId);
-        // }
+
     }
 
     /**
