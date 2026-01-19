@@ -1,17 +1,32 @@
 {
   "CAMPAIGN_CODEX": {
     "updateHTML": "<div> <p><strong>ACTION REQUISE : Campaign Codex</strong></p><p>Si vous venez de mettre à jour Campaign Codex depuis la version 1.5.7 ou antérieure, exécutez la macro 'Migrate Parent Region' incluse dans le Compendium.</p></div>",
-    "welcomePageHTML": "<div> <p><strong>Bienvenue dans Campaign Codex</strong></p> <p>La gestion des dossiers, l'emplacement du prix et de la devise des objets du système, ainsi que d'autres configurations peuvent être modifiés dans les paramètres.</p> <div><button data-campaign-codex-handler=\"campaign-codex|openMenu|core_settings\"><i class=\"fas fa-wrench\"></i>Paramètres</button></div> <hr> <p><strong>Rejoignez la communauté Campaign Codex</strong></p> <p>Si vous souhaitez suggérer une fonctionnalité, signaler un bug, ou simplement discuter, n'hésitez pas à nous rejoindre sur Discord.</p> <div><button data-campaign-codex-handler=\"campaign-codex|openWindow|https://discord.gg/fycwH79s2y\"><i class=\"fab fa-discord\"></i> Rejoindre le Discord</button></div> <p><strong>Vous avez trouvé un bug ?</strong></p> <p>Si vous souhaitez signaler un bug et que Discord n'est pas votre truc, rendez-vous sur GitHub.</p> <div><button data-campaign-codex-handler=\"campaign-codex|openWindow|https://github.com/xthesaintx/cc13\"><i class=\"fas fa-bug\"></i> Signaler un bug</button></div> <p><strong>Soutenir le développement</strong></p> <p>Si vous souhaitez soutenir le développement, envisagez de jeter un œil aux options d'adhésion sur Patreon</a>.</p> <div><button data-campaign-codex-handler=\"campaign-codex|openWindow|https://patreon.com/wgtngm\"><i class=\"fas fa-star\"></i> Devenir membre</button></div><p><strong>Documentation</strong></p> <p>Vous vous sentez un peu perdu ? Rendez-vous sur notre page de documentation pour vous orienter, ou venez poser une question sur Discord</a>.</p> <div><button data-campaign-codex-handler=\"campaign-codex|openWindow|https://campaigncodex.wgtngm.com\"><i class=\"fas fa-book\"></i> Documentation</button></div></div>",
-    "context": {
-      "export": "Exporter vers un Journal standard",
-      "group": "Ajouter au groupe : {type}"
-    },
+    "welcomePageHTML": "<div> <p><strong>Bienvenue dans Campaign Codex</strong></p> <p>La gestion des dossiers, l'emplacement du prix et de la devise des objets du système, ainsi que d'autres configurations peuvent être modifiés dans les paramètres.</p> <div><button data-campaign-codex-handler=\"campaign-codex|openMenu|core_settings\"><i class=\"fas fa-wrench\"></i>Paramètres</button></div> <hr> <p><strong>Rejoignez la communauté Campaign Codex</strong></p> <p>Si vous souhaitez suggérer une fonctionnalité, signaler un bug, ou simplement discuter, n'hésitez pas à nous rejoindre sur Discord.</p> <div><button data-campaign-codex-handler=\"campaign-codex|openWindow|https://discord.gg/fycwH79s2y\"><i class=\"fab fa-discord\"></i> Rejoindre le Discord</button></div> <p><strong>Vous avez trouvé un bug ?</strong></p> <p>Si vous souhaitez signaler un bug et que Discord n'est pas votre truc, rendez-vous sur GitHub.</p> <div><button data-campaign-codex-handler=\"campaign-codex|openWindow|https://github.com/xthesaintx/cc13\"><i class=\"fas fa-bug\"></i> Signaler un bug</button></div> <p><strong>Soutenir le développement</strong></p> <p>Si vous souhaitez soutenir le développement, envisagez de jeter un œil aux options d'adhésion sur Patreon.</p> <div><button data-campaign-codex-handler=\"campaign-codex|openWindow|https://patreon.com/wgtngm\"><i class=\"fa-brands fa-patreon\"></i> Devenir membre</button></div><p>Si vous préférez, vous pouvez nous soutenir via Ko-fi.</p><div><button data-campaign-codex-handler=\"campaign-codex|openWindow|https://ko-fi.com/wgtngm\"><i class=\"fas fa-cup-togo\"></i> Offrir un café</button></div><p><strong>Documentation</strong></p> <p>Vous vous sentez un peu perdu ? Rendez-vous sur notre page de documentation pour vous orienter, ou venez poser une question sur Discord</a>.</p> <div><button data-campaign-codex-handler=\"campaign-codex|openWindow|https://campaigncodex.wgtngm.com\"><i class=\"fas fa-book\"></i> Documentation</button></div></div>",
     "tabs": {
       "original-name": "Nom original",
       "override-name": "Nom de remplacement",
       "visible": "Visible",
+      "hidden": "Masqué",
       "edit-title": "Configurer les onglets",
       "reset": "Rétablir les valeurs par défaut"
+    },
+    "widgets": {
+      "available": "Disponible",
+      "inactive": "Inactif",
+      "active": "Actif"
+    },
+    "context": {
+      "export": "Exporter vers un Journal standard",
+      "group": "Ajouter au groupe : {type}",
+      "changeImage": "Changer l'image",
+      "removeImage": "Supprimer l'image",
+      "showImage": "Montrer l'image aux joueurs",
+      "removeLink": "Délier",
+      "removeTag": "Retirer le tag"
+    },
+    "toc": {
+      "filter": "Clic gauche pour inclure, clic droit pour exclure.",
+      "clear": "Effacer les filtres"
     },
     "button": {
       "title": "Créer : {type}",
@@ -90,9 +105,17 @@
       "widgets": "Widgets"
     },
     "settings": {
+      "allowPlayerPurchasing": {
+        "name": "Autoriser l'achat depuis les inventaires",
+        "hint": "Si activé, les joueurs peuvent s'envoyer des objets depuis un inventaire."
+      },
+      "mapMarkerOverride": {
+        "name": "Échelle du marqueur de carte",
+        "hint": "Taille du marqueur de carte Campaign Codex. Par défaut 1."
+      },
       "mapMarkerColor": {
-        "name": "Utiliser la couleur de l'UI CC pour les marqueurs de carte",
-        "hint": "Si activé, les marqueurs de carte CC utiliseront la couleur de l'interface CC pour l'arrière-plan."
+        "name": "Utiliser la couleur d'accentuation CC pour les marqueurs",
+        "hint": "Si activé, les marqueurs de carte CC utiliseront la couleur d'accentuation CC pour l'arrière-plan."
       },
       "mapMarkers": {
         "name": "Activer les marqueurs de carte Campaign Codex",
@@ -130,13 +153,17 @@
         "name": "Remplacer le chemin du prix de l'objet",
         "hint": "Chemin vers la valeur du prix de l'objet (ex: 'system.price.value' pour D&D5e). Laissez vide pour utiliser la détection système."
       },
+      "enableThemes": {
+        "name": "Activer le thème personnalisé",
+        "hint": "Active les couleurs et la police personnalisées sélectionnées dans Configurer les couleurs."
+      },
       "itemDenominationPath": {
         "name": "Remplacer le chemin de la devise de l'objet",
         "hint": "Chemin vers la dénomination de la devise de l'objet (ex: 'system.price.denomination' pour D&D5e). Laissez vide pour utiliser la détection système."
       },
       "itemDenominationOverride": {
         "name": "Remplacer la dénomination",
-        "hint": "Dénomination de la devise (ex: crédits, po, unités). Laissez vide pour utiliser le chemin de devise ou la détection système. Campaign Codex détectera automatiquement la valeur et la devise selon le système de jeu actif."
+        "hint": "Dénomination de la devise (ex: crédits, po, unités). Laissez vide pour utiliser le chemin de devise ou la détection système. Campaign Codex détectera automatiquement la valeur et la devise pour les objets basés sur le système de jeu actif (ex: Dungeons and Dragons 5e, Pathfinder 2e, Starfinder, Savage Worlds Adventure Edition, Pathfinder 1e, Old-School Essentials et Daggerheart)."
       },
       "hideBaseCost": {
         "name": "Masquer la colonne Coût de base",
@@ -181,10 +208,15 @@
       "link": "Déposer pour lier : {type}",
       "empty": "Vide : {type}"
     },
+    "dragToAdd": {
+      "item": "Glisser-déposer ici pour ajouter à l'inventaire",
+      "empty": "Vide"
+    },
     "error": {
       "faileditem": "Échec du transfert de l'objet"
     },
     "warn": {
+      "notEnoughCurrency": "Fonds insuffisants",
       "directly": "Suppression directe impossible : {type}",
       "remove": "Supprimer : {type}",
       "invaliddrop": "Aucun membre avec acteur lié trouvé à déposer !",
@@ -213,10 +245,14 @@
       },
       "send": {
         "player": "Envoyer au joueur",
+        "purchase": "Acheter",
         "item": {
           "player": "Envoyer l'objet au personnage joueur",
           "typetoplayer": "Envoi confirmé ({player}) : {type}."
         }
+      },
+      "infinite": {
+        "item": "Basculer en quantité infinie"
       },
       "remove": {
         "item": "Retirer l'objet",
