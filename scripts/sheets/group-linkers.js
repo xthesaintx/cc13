@@ -526,7 +526,7 @@ static async buildTagTree(nestedData) {
         img: npcDoc.getFlag("campaign-codex", "image") || npcDoc.img,
         type: "npc",
         tags: npcTags,
-        tag: tagged,
+        tag: isTagged,
         canView: npcCanView,
         tabOverrides: npcDoc.getFlag("campaign-codex", "tab-overrides") || [],
         iconOverride: npcDoc.getFlag("campaign-codex", "icon-override") || null,
