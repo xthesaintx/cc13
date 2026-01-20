@@ -49,7 +49,7 @@
 
     {{#each items}}
     {{#unless (and ../../hideByPermission (not canView))}}
-    {{#if (or quantity ../../isGM)}}
+    {{#if (or quantity infinite ../../isGM)}}
     <div class="inventory-item" data-uuid="{{itemUuid}}" data-item-name="{{name}}" {{#if canView}}data-action="openItem"{{/if}} title="{{ccLocalize 'title.open.sheet'}}" {{#if ../../isGM}}draggable="true"{{/if}}>
         
         <div class="item-image">
@@ -64,9 +64,9 @@
         <div class="item-final-price cc-inv-price-table">
             {{#if ../../isGM}}
                 <input type="number" class="price-input {{#if customPrice}}custom-price-active{{/if}}" data-uuid="{{itemUuid}}" value="{{finalPrice}}" step="0.01" min="0">
-                <span class="price-currency {{#if customPrice}}custom-price-active{{/if}}">{{../../currency}}</span>
+                <span class="price-currency {{#if customPrice}}custom-price-active{{/if}}">{{currency}}</span>
             {{else}}
-                <span class="price-currency {{#if customPrice}}custom-price-active{{/if}}">{{finalPrice}} {{../../currency}}</span>
+                <span class="price-currency {{#if customPrice}}custom-price-active{{/if}}">{{finalPrice}} {{currency}}</span>
             {{/if}}
         </div>
         {{/unless}}
@@ -89,13 +89,13 @@
             {{#if ../../isGM}}
             <div class="item-actions" style="text-align:center">
                 <i class="fas fa-infinity inventory-button {{#if infinite}}enabled{{/if}}" data-uuid="{{itemUuid}}" data-action="infiniteToggle"  title="{{ccLocalize 'title.infinite.item'}}"></i>
-                <i class="fas fa-paper-plane inventory-button send-to-player" data-type="inventory" data-action="sendToPlayer" data-uuid="{{itemUuid}}" title="{{ccLocalize 'title.send.player'}}"></i>
+                <i class="fas fa-paper-plane inventory-button send-to-player" data-type="inventory" data-action="sendToPlayer" data-uuid="{{itemUuid}}" data-doc-uuid="{{../../sourceDoc}}" title="{{ccLocalize 'title.send.player'}}"></i>
                 <i class="fas fa-trash inventory-button remove-item" data-action="removeItem" data-uuid="{{itemUuid}}" title="{{ccLocalize 'title.remove.item'}}"></i>
             </div>
             {{else}}
             {{#if ../../allowPlayerPurchasing}}
             <div class="item-actions" style="text-align:center">
-                <i class="fas fa-coins inventory-button send-to-player" data-type="inventory" data-action="playerPurchase" data-uuid="{{itemUuid}}" title="{{ccLocalize 'title.send.purchase'}}"></i>
+                <i class="fas fa-coins inventory-button send-to-player" data-doc-uuid="{{../../sourceDoc}}" data-type="inventory" data-action="playerPurchase" data-uuid="{{itemUuid}}" title="{{ccLocalize 'title.send.purchase'}}"></i>
               </div>
               {{/if}}
             {{/if}}

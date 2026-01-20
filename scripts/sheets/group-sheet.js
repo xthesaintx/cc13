@@ -1227,12 +1227,59 @@ async _generateSelectedAssociatesContent(selectedDoc, selectedData) {
 
 async _generateSelectedInventoryContent(selectedDoc, selectedData) {
       const labelOverride = this._labelOverride(selectedDoc, "inventory");
+    // const templateData = {
+    //     inventory: await CampaignCodexLinkers.getInventory(selectedDoc, selectedData.inventory || []),
+    //     isGM: game.user.isGM,
+    //     labelOverride:labelOverride,
+    //     selectedSheetUuid: this._selectedSheet.uuid
+    // };
+
+
+    const hideByPermission = game.settings.get("campaign-codex", "hideInventoryByPermission");
+    const currency = CampaignCodexLinkers.getCurrency();
+    const rawInventory = await CampaignCodexLinkers.getInventory(selectedDoc, selectedData.inventory || []) || [];
+    const allowPlayerPurchasing = game.settings.get("campaign-codex","allowPlayerPurchasing")||false;
+
+    const groups = rawInventory.reduce((acc, item) => {
+      const rawType = item.type ? String(item.type) : "General";
+      const typeLabel = rawType.charAt(0).toUpperCase() + rawType.slice(1);
+      if (!acc[typeLabel]) acc[typeLabel] = [];
+      acc[typeLabel].push(item);
+      return acc;
+    }, {});
+
+    const sortedKeys = Object.keys(groups).sort((a, b) => a.localeCompare(b));
+    const sections = sortedKeys.map(key => {
+      return {
+        label: key,
+        items: groups[key].sort((a, b) => a.name.localeCompare(b.name))
+      };
+    });
+
+    const showHeaders = sections.length > 1;
     const templateData = {
-        inventory: await CampaignCodexLinkers.getInventory(selectedDoc, selectedData.inventory || []),
-        isGM: game.user.isGM,
-        labelOverride:labelOverride,
-        selectedSheetUuid: this._selectedSheet.uuid
+      labelOverride:labelOverride,
+      allowPlayerPurchasing:allowPlayerPurchasing,
+      currency:currency,
+      hideByPermission: hideByPermission,
+      isLoot:selectedData.isLoot,
+      markup:selectedData.markup,
+      inventory: rawInventory,
+      isGM: game.user.isGM,
+      inventorySections: sections, 
+      showHeaders: showHeaders,
+      selectedSheetUuid: this._selectedSheet.uuid
     };
+
+
+
+
+
+
+
+
+
+
     return await renderTemplate("modules/campaign-codex/templates/partials/selected-tab-inventory.hbs", templateData);
 }
 

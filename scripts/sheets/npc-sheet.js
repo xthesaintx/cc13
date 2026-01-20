@@ -22,6 +22,8 @@ export class NPCSheet extends CampaignCodexBaseSheet {
 
   async _processNpcData() {
     const npcData = this.document.getFlag("campaign-codex", "data") || {};
+    // console.log(npcData);
+    // console.log(npcData.inventory);
     const [linkedActor, rawLocations, linkedShops, associates, inventory] = await Promise.all([
       npcData.linkedActor ? CampaignCodexLinkers.getLinkedActor(npcData.linkedActor) : null,
       CampaignCodexLinkers.getAllLocations(this.document, npcData.linkedLocations || []),

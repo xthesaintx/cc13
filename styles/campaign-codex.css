@@ -161,7 +161,7 @@ body.theme-dark .campaign-codex {
   border: 0px;
   background: var(--cc-main-text);
   box-shadow: var(--cc-shadow);
-  display: grid;
+  display: grid !important;
   align-items: center;
   justify-items: center;
   padding: 0px 0px 0px 0px;
@@ -3749,7 +3749,7 @@ font-size: 12px;
     position: relative;
     border-radius: 8px 8px 0px 0px;
     border: 0px;
-    display: grid;
+    display: grid !important;
     align-items: center;
     justify-items: center;
     transition: all 0.2s ease;
@@ -5150,7 +5150,7 @@ QUESTS
   border: 0px;
   background: var(--cc-main-text);
   box-shadow: var(--cc-shadow);
-  display: grid;
+  display: grid !important;
   align-items: center;
   justify-items: center;
   padding: 0px 0px 0px 0px;

@@ -1732,6 +1732,18 @@ _labelOverride(selectedDoc, sheetKey) {
     event.stopPropagation();
     const playerCharacter = game.user?.character;
     if (!playerCharacter) return;
+    
+    let sourceDoc = this.document;
+    if (["group", "tag"].includes(this.document.getFlag("campaign-codex", "type")))
+    {
+      const sourceUuid = event.target.closest('[data-doc-uuid]')?.dataset.docUuid;
+      if (!sourceUuid) {
+        ui.notifications.warn("No source document set");
+      return;
+      }
+      sourceDoc = await fromUuid(sourceUuid);
+    }
+
     const target = event.target.closest('[data-uuid]');
     const itemUuid = target.dataset.uuid;
     const item = (await fromUuid(itemUuid)) || game.items.get(itemUuid);
@@ -1739,7 +1751,7 @@ _labelOverride(selectedDoc, sheetKey) {
       ui.notifications.warn("Item not found");
       return;
     }
-    await this._handlePurchase(item, playerCharacter);
+    await this._handlePurchase(item, playerCharacter, sourceDoc);
   }
 
 
@@ -1756,9 +1768,8 @@ _labelOverride(selectedDoc, sheetKey) {
       ui.notifications.warn("Item not found");
       return;
     }
-
     let sourceDoc = this.document;
-    if (this.document.getFlag("campaign-codex", "type") ==="group")
+    if (["group", "tag"].includes(this.document.getFlag("campaign-codex", "type")))
     {
       const sourceUuid = event.target.closest('[data-doc-uuid]')?.dataset.docUuid;
       if (!sourceUuid) {
@@ -1775,7 +1786,7 @@ _labelOverride(selectedDoc, sheetKey) {
 
   TemplateComponents.createPlayerSelectionDialog(item.name, async (targetActor, deductFunds) => {
       if (deductFunds) {
-          await this._handlePurchase(item, targetActor);
+          await this._handlePurchase(item, targetActor, sourceDoc);
       } else {
           await this._transferItemToActor(item, targetActor, sourceDoc, questId);
       }
@@ -1804,24 +1815,26 @@ _labelOverride(selectedDoc, sheetKey) {
   // =========================================================================
 
 
-async _handlePurchase(item, targetActor) {
+async _handlePurchase(item, targetActor,  document) {
     try {
-      const currentData = this.document.getFlag("campaign-codex", "data") || {};
+
+      const currentData = document.getFlag("campaign-codex", "data") || {};
       const inventory = currentData.inventory || [];
       const shopItem = inventory.find((i) => i.itemUuid === item.uuid);
       const markup = currentData.markup || 1;
       const currentQty = shopItem ? shopItem.quantity : 0;
       const infinite = shopItem ? shopItem?.infinite : false;
-      const hasPaid = await EconomyHelper.removeCost(item, targetActor, shopItem, markup);
-      if (!hasPaid) return;
 
-      const itemData = item.toObject();
-      delete itemData._id;
 
       if (currentQty <= 0 && !infinite) {
         ui.notifications.warn("Item is out of stock.");
         return;
       }
+      const hasPaid = await EconomyHelper.removeCost(item, targetActor, shopItem, markup);
+      if (!hasPaid) return;
+
+      const itemData = item.toObject();
+      delete itemData._id;
 
       await targetActor.createEmbeddedDocuments("Item", [itemData]);
 
@@ -1831,17 +1844,19 @@ async _handlePurchase(item, targetActor) {
 
         if (shopItem) {
           if (game.user.isGM) {
-            await this._updateInventoryItem(item.uuid, { quantity: newQuantity }, this.document);
+            await this._updateInventoryItem(item.uuid, { quantity: newQuantity }, document);
           } else {
             game.socket.emit("module.campaign-codex", {
               action: "updateInventory",
               data: {
-                docUuid: this.document.uuid,
+                docUuid: document.uuid,
                 itemUuid: item.uuid,
                 updates: { quantity: newQuantity }
               }
             });
           }
+          if (["group", "tag"].includes(this.document.getFlag("campaign-codex", "type")) && game.user.isGM) document.render();
+
         } 
       }
 
@@ -3452,9 +3467,8 @@ async _updateInventoryItem(itemUuid, updates, doc = null) {
         items: groups[key].sort((a, b) => a.name.localeCompare(b.name))
       };
     });
-
+    CampaignCodexLinkers.getInventory(data.inventory);
     const showHeaders = sections.length > 1;
-
     const templateData = {
       allowPlayerPurchasing:data.allowPlayerPurchasing,
       currency:currency,
@@ -3466,6 +3480,8 @@ async _updateInventoryItem(itemUuid, updates, doc = null) {
       isGM: game.user.isGM,
       inventorySections: sections, 
       showHeaders: showHeaders,
+      sourceDoc:this.document.uuid,
+
     };
     return await renderTemplate("modules/campaign-codex/templates/partials/base-inventory.hbs", templateData);
   }

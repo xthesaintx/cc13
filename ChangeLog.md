@@ -1,3 +1,11 @@
+## 2.2.8
+- mitigation for other styles whack-a-mole with fa icons and display properties
+
+## 2.2.7
+- fix when inventory at 0 cost still being deducted.
+- updated tag and group selected sheet inventory to match base sheet inventory
+- fixed currency displaying default
+
 ## 2.2.6
 - ToC header button fix
 - Linking npcs directly to group fix

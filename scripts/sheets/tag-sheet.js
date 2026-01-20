@@ -615,14 +615,62 @@ export class TagSheet extends CampaignCodexBaseSheet {
     return `${TemplateComponents.contentHeader("fas fa-info-circle", labelOverride)}<article class="cc-enriched cc-hidden-secrets themed ${isThemed()} ${gameSystemClass(game.system.id)}"><section class="rich-text-content journal-entry-content" name="cc.secret.content.notes">${enrichedDescription || ""}</section></article>${infoWidgets ? `<div class="info-widgets">${infoWidgets}</div>` : ""}`;
   }
 
+  // async _generateSelectedInventoryContent(selectedDoc, selectedData) { 
+
+
+
+  //     return await renderTemplate("modules/campaign-codex/templates/partials/selected-tab-inventory.hbs", { 
+  //         inventory: await CampaignCodexLinkers.getInventory(selectedDoc, selectedData.inventory || []), 
+  //         isGM: game.user.isGM, 
+  //         labelOverride: this._labelOverride(selectedDoc, "inventory"), 
+  //         selectedSheetUuid: this._selectedSheet.uuid 
+  //     }); 
+  // }
+
   async _generateSelectedInventoryContent(selectedDoc, selectedData) { 
+    const labelOverride = this._labelOverride(selectedDoc, "inventory");
+    const hideByPermission = game.settings.get("campaign-codex", "hideInventoryByPermission");
+    const currency = CampaignCodexLinkers.getCurrency();
+    const rawInventory = await CampaignCodexLinkers.getInventory(selectedDoc, selectedData.inventory || []) || [];
+    const allowPlayerPurchasing = game.settings.get("campaign-codex","allowPlayerPurchasing")||false;
+
+    const groups = rawInventory.reduce((acc, item) => {
+      const rawType = item.type ? String(item.type) : "General";
+      const typeLabel = rawType.charAt(0).toUpperCase() + rawType.slice(1);
+      if (!acc[typeLabel]) acc[typeLabel] = [];
+      acc[typeLabel].push(item);
+      return acc;
+    }, {});
+
+    const sortedKeys = Object.keys(groups).sort((a, b) => a.localeCompare(b));
+    const sections = sortedKeys.map(key => {
+      return {
+        label: key,
+        items: groups[key].sort((a, b) => a.name.localeCompare(b.name))
+      };
+    });
+
+    const showHeaders = sections.length > 1;
+
       return await renderTemplate("modules/campaign-codex/templates/partials/selected-tab-inventory.hbs", { 
-          inventory: await CampaignCodexLinkers.getInventory(selectedDoc, selectedData.inventory || []), 
-          isGM: game.user.isGM, 
-          labelOverride: this._labelOverride(selectedDoc, "inventory"), 
-          selectedSheetUuid: this._selectedSheet.uuid 
+
+          labelOverride:labelOverride,
+          allowPlayerPurchasing:allowPlayerPurchasing,
+          currency:currency,
+          hideByPermission: hideByPermission,
+          isLoot:selectedData.isLoot,
+          markup:selectedData.markup,
+          inventory: rawInventory,
+          isGM: game.user.isGM,
+          inventorySections: sections, 
+          showHeaders: showHeaders,
+          selectedSheetUuid: this._selectedSheet.uuid
+
       }); 
   }
+
+
+
 
   async _generateSelectedShopsContent(selectedDoc, selectedData) {
     const shops = await CampaignCodexLinkers.getLinkedShops(selectedDoc, selectedData.linkedShops || []);

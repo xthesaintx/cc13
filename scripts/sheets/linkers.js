@@ -1185,7 +1185,7 @@ static async getInventory(document, inventoryData) {
   }
 
   const brokenItemUuids = [];
-  
+
   const itemPromises = inventoryData.map(async (itemData) => {
   const item = await this._getCachedDoc(itemData.itemUuid, cache);
     
@@ -1194,7 +1194,6 @@ static async getInventory(document, inventoryData) {
       console.warn(`Campaign Codex | Inventory item not found: ${itemData.itemUuid}`);
       return null; 
     }
-
     const canView = item.testUserPermission(game.user, "OBSERVER"); 
 
     const basePrice = calculateBasePrice(item, this.getValue(item, pricePath));
@@ -1289,7 +1288,7 @@ static async _removeBrokenItems(document, items) {
     const customDenominationPath = game.settings.get("campaign-codex", "itemDenominationPath");
     const denominationOverride = game.settings.get("campaign-codex", "itemDenominationOverride");
 
-    if (customPricePath && customPricePath !== "system.price.value") {
+    if (customPricePath) {
       return {
         pricePath: customPricePath,
         denominationPath: customDenominationPath,
@@ -1297,7 +1296,6 @@ static async _removeBrokenItems(document, items) {
       };
     }
 
-    // Original switch statement preserved exactly
     switch (systemId) {
       case "demonlord":
         return { pricePath: "system.value", denominationPath: null, currency: "gc" };

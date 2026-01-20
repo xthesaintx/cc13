@@ -1,46 +1,78 @@
 <div class="content-header">
     <h2><i class="fas fa-boxes"></i> {{#if labelOverride}}{{labelOverride}}{{else}}{{ccLocalize "names.inventory" }}{{/if}}</h2>
 </div>
-<!--   {{#if inventory.length}}
-    <div class="inventory-list">
-      {{#each inventory as |item|}}
-        <div class="selected-inventory-item btn-open-sheet" data-uuid="{{item.uuid}}" data-action="openItem">
-          <img src="{{getAsset "image" "item" item.img}}" alt="{{item.name}}" class="item-icon">
-          <div class="item-info">
-            <span class="item-name">{{item.name}}</span>
-            <span class="item-price ">{{item.quantity}}x {{item.finalPrice}}{{item.currency}}</span>
-          </div>
-          <div class="item-actions">
-            {{#if ../isGM}}
-              <i class="fas fa-paper-plane btn-send-to-player refresh-btn" data-sheet-uuid="{{../selectedSheetUuid}}" data-doc-uuid="{{../selectedSheetUuid}}" data-action="sendToPlayer" data-uuid="{{item.itemUuid}}" title="Send to Player">
-                </i>
-            {{/if}}
-          </div>
-        </div>
-      {{/each}}
-    </div>
-  {{/if}}
 
- -->
 
 {{#if inventory}}
 <div class="inventory-table inventory">
-    {{#each inventory}}
-    {{#unless (and ../hideByPermission (not canView))}}
-      <div class="inventory-item" data-uuid="{{itemUuid}}" data-item-name="{{name}}" data-action="openItem" title="{{ccLocalize "title.open.sheet"}}">
-        <div class="item-image">
-          <img src="{{img}}" alt="{{name}}">
+    <div class="form-group">
+        <div class="form-fields">
+            <input type="search" id="inventory-filter" name="filter" placeholder="Filter...">
         </div>
-        <div class="item-details">
-          <div class="item-name">{{name}}</div>
-        </div>
-        {{#if ../isGM}}
-        <div class="item-actions" style="text-align:center">
-          <i class="fas fa-paper-plane inventory-button send-to-player"" data-sheet-uuid="{{../selectedSheetUuid}}" data-doc-uuid="{{../selectedSheetUuid}}" data-action="sendToPlayer" data-uuid="{{itemUuid}}" title="{{ccLocalize "title.send.player"}}"></i>
-        </div>
+    </div>
+
+    {{#each inventorySections}}
+        {{#if ../showHeaders}}
+        <details open>
+            <summary class="inventory-header">
+                <h3>{{label}}</h3>
+        </summary>
         {{/if}}
-      </div>
-   {{/unless}}   
-  {{/each}}
-  </div>
-{{/if}}
+
+    {{#each items}}
+    {{#unless (and ../../hideByPermission (not canView))}}
+    {{{isGM}}}
+    {{#if (or quantity infinite ../../isGM)}}
+    <div class="inventory-item" data-uuid="{{itemUuid}}" data-item-name="{{name}}" {{#if canView}}data-action="openItem"{{/if}} title="{{ccLocalize 'title.open.sheet'}}" {{#if ../../isGM}}draggable="true"{{/if}}>
+        
+        <div class="item-image">
+            <img src="{{img}}" alt="{{name}}">
+        </div>
+
+        <div class="item-details">
+            <div class="item-name">{{name}}</div>
+        </div>
+
+        {{#unless ../../isLoot}}
+        <div class="item-final-price cc-inv-price-table">
+                <span class="price-currency {{#if customPrice}}custom-price-active{{/if}}">{{finalPrice}} {{currency}}</span>
+        </div>
+        {{/unless}}
+        {{#unless infinite}}
+        <div class="quantity-control" style="text-align:center">
+               {{#if quantity}}{{quantity}} <i class="fas fa-boxes"></i>{{else}} <i class="fas fa-ban"></i>{{/if}}
+        </div>
+        {{/unless}}
+        {{#if (or ../../isGM (not ../../isLoot))}}
+            {{#if ../../isGM}}
+            <div class="item-actions" style="text-align:center">
+                <i class="fas fa-infinity inventory-button {{#if infinite}}enabled{{/if}}" data-uuid="{{itemUuid}}" data-action="infiniteToggle"  title="{{ccLocalize 'title.infinite.item'}}"></i>
+                <i class="fas fa-paper-plane inventory-button send-to-player" data-type="inventory" data-action="sendToPlayer" data-uuid="{{itemUuid}}" data-sheet-uuid="{{../../selectedSheetUuid}}" data-doc-uuid="{{../../selectedSheetUuid}}" title="{{ccLocalize 'title.send.player'}}"></i>
+            </div>
+            {{else}}
+            {{#if ../../allowPlayerPurchasing}}
+            <div class="item-actions" style="text-align:center">
+                <i class="fas fa-coins inventory-button send-to-player" data-type="inventory" data-action="playerPurchase" data-uuid="{{itemUuid}}" data-sheet-uuid="{{../../selectedSheetUuid}}" data-doc-uuid="{{../../selectedSheetUuid}}" title="{{ccLocalize 'title.send.purchase'}}"></i>
+              </div>
+              {{/if}}
+            {{/if}}
+        {{/if}}
+
+    </div>
+    {{/if}}
+    {{/unless}}
+    {{/each}}
+    {{#if ../showHeaders}}
+        </details>
+    {{/if}}
+    {{/each}}
+</div>
+
+{{else}}
+    {{#if isGM}}
+    <div class="empty-state">
+        <i class="fas fa-boxes"></i>
+        <h3>{{ccLocalize "dragToAdd.empty"}}</h3>
+        <p>{{ccLocalize "dragToAdd.item"}}</p>
+    </div>
+    {{/if}} {{/if}}
