@@ -353,7 +353,7 @@ async _toggleVisibility(id) {
                 </article>                
             `;
         }
-
+        const themeOverride = isThemed();
         const ccEditMode = editMode ? "edit-mode" : "read-mode";
         const { DialogV2 } = foundry.applications.api;
         const baseTitle = note.title || "Note";
@@ -363,7 +363,7 @@ async _toggleVisibility(id) {
             window: { title: windowTitle || "Note", resizable: true },
             id: noteId,
             modal: false,
-            classes: ["cc-map-widget", "campaign-codex", "note-dialog", ccEditMode],
+            classes: ["cc-map-widget", "campaign-codex", "note-dialog", ccEditMode, themeOverride, "themed"],
             content: contentHtml,
             buttons: [
                 {

@@ -55,6 +55,7 @@ export async function displayCodexNote(entryId, widgetId, noteId, origin = null)
     const journalClass = journalSystemClass(game.system.id);
     const baseTitle = noteData.title || "Note";
     const windowTitle = `${baseTitle}${noteData.mapId ? ` [${noteData.mapId.toUpperCase()}]` : ""} ${parentJournal}`;
+        const themeOverride = isThemed();
 
     const width = 600;
     const position = origin ? {
@@ -72,7 +73,7 @@ export async function displayCodexNote(entryId, widgetId, noteId, origin = null)
             icon: "fas fa-map-pin",
             minimizable: true,
             },
-        classes: ["campaign-codex", "note-popup"],
+        classes: ["campaign-codex", "note-popup", "themed", themeOverride],
         position: position,
         codex: {
             journal: journal,
@@ -121,7 +122,8 @@ export async function hoverCodexNote(entryId, widgetId, noteId, origin = null) {
     
     const parentJournal = journal.testUserPermission(game.user, CONST.DOCUMENT_OWNERSHIP_LEVELS.OBSERVER) ? `: ${journal.name}` :'';
 
-    
+            const themeOverride = isThemed();
+
     const systemClass = gameSystemClass(game.system.id);
     const journalClass = journalSystemClass(game.system.id);
     const baseTitle = noteData.title || "Note";
@@ -143,7 +145,7 @@ export async function hoverCodexNote(entryId, widgetId, noteId, origin = null) {
             icon: "fas fa-map-pin",
             minimizable: false,
             },
-        classes: ["campaign-codex", "note-popup", "hover-note"],
+        classes: ["campaign-codex", "note-popup", "hover-note", "themed", themeOverride],
         position: position,
         codex: {
             journal: journal,

@@ -7146,6 +7146,9 @@ overflow: scroll;
 
 
 .application.dialog.campaign-codex.note-popup {
+}
+
+.application.dialog.campaign-codex.note-popup:not(.minimized, .minimizing, .maximizing){
   min-width: 200px;
   min-height: 100px;
   height: fit-content;
@@ -7225,5 +7228,6 @@ body.system-gurps .application.sheet.campaign-codex .tab-item>span {
 .campaign-codex .cc-prosemirror button.active{
   background:var(--cc-accent30);
 }
-
-
+.campaign-codex.note-dialog.edit-mode .cc-prosemirror .editor-menu {
+    background: var(--dropdown-background);
+  }
