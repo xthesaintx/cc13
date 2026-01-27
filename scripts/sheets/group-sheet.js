@@ -1119,7 +1119,7 @@ async _generateSelectedNPCsContent(selectedDoc, selectedData) {
 
   async _generateSelectedParentRegionsContent(selectedDoc, selectedData) {
     const labelOverride = this._labelOverride(selectedDoc, "parentregions") ||localize("names.parentregions");
-    let regions = await CampaignCodexLinkers.getLinkedRegions(selectedDoc, selectedData.parentRegions || []);
+    let regions = await CampaignCodexLinkers.getLinkedRegions(selectedDoc, selectedData.parentRegions || [], "parentRegions");
     if (regions.length === 0) {
       return `${TemplateComponents.contentHeader(TemplateComponents.getAsset("icon", "region"), labelOverride)}`;
     }
@@ -1134,7 +1134,7 @@ async _generateSelectedNPCsContent(selectedDoc, selectedData) {
 
   async _generateSelectedRegionsContent(selectedDoc, selectedData) {
     const labelOverride = this._labelOverride(selectedDoc, "regions") ||localize("names.regions");
-    let regions = await CampaignCodexLinkers.getLinkedRegions(selectedDoc, selectedData.linkedRegions || []);
+    let regions = await CampaignCodexLinkers.getLinkedRegions(selectedDoc, selectedData.linkedRegions || [],"linkedRegions");
     if (selectedDoc && ["npc", "tag"].includes(selectedDoc.getFlag("campaign-codex", "type"))){
       const locations = await CampaignCodexLinkers.getLinkedLocations(selectedDoc, selectedData.linkedLocations || []);
       regions = locations.filter(item => item.type === "region");

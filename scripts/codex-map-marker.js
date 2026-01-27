@@ -25,9 +25,6 @@ export class CampaignCodexMapMarker extends PIXI.Container {
     const bgColor = this.customColour ? this.uiColor: Color.from(this.style.tint);
     this.style.textColor = this._getContrastColor(Number(bgColor));
     this.radius = this.size + (this.customScale);
-    console.log(this.customScale);
-    console.log(this.size);
-    console.log(this.radius);
     const centerX = this.radius /2;
     const centerY = this.radius/2;
     // Define hit area
@@ -124,20 +121,20 @@ export class CampaignCodexMapMarker extends PIXI.Container {
 export function _getCampaignCodexIcon() {
   const journal = this.document.entry;
   if ( !journal ) return;
-
   const isCC = journal.getFlag("campaign-codex", "type");
   if ( !isCC ) return;
-
+  const noteMarker = this.document.getFlag("campaign-codex", "markerid");
   // Retrieve mapMarker from the 'data' flag object
   const mapMarker = journal.getFlag("campaign-codex", "data")?.mapMarker;
   let code;
+  if (noteMarker){
+    code = noteMarker.toUpperCase();
 
-  // 1. If mapMarker is set (not "" or undefined), use it
-  if (mapMarker) {
+  } else if (mapMarker && !noteMarker) {
     code = mapMarker.toUpperCase();
+
   } 
-  // 2. Else, try to match the Regex
-  else {
+ else {
     const mapCodeRegex = /^([A-Z]?\d{1,3}[A-Z]?)(?=\s*[-: ]|$)/i;
     const match = journal.name.match(mapCodeRegex);
 

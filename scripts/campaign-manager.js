@@ -1181,33 +1181,44 @@ async _isAncestor(potentialAncestor, doc) {
   }
 
   /**
-   * Calculates the nesting depth of a given region. Uses a memoization cache for performance.
-   * @param {JournalEntry} regionDoc - The region to check.
-   * @param {boolean} [countChildren=false] - If true, counts the deepest branch of its children instead of its own depth from the root.
-   * @param {Map<string, number>} [memo={}] - Memoization cache to avoid re-calculating depths.
-   * @returns {Promise<number>} - The nesting depth.
-   * @private
+   * Calculates the nesting depth of a given region.
+   * Now handles multiple 'parentRegions' and prevents infinite loops via 'visited' set.
    */
-  async _getRegionDepth(regionDoc, countChildren = false, memo = new Map()) {
+  async _getRegionDepth(regionDoc, countChildren = false, memo = new Map(), visited = new Set()) {
     if (!regionDoc) return 0;
     const cacheKey = `${regionDoc.uuid}-${countChildren}`;
     if (memo.has(cacheKey)) return memo.get(cacheKey);
+    if (visited.has(regionDoc.uuid)) return 0;
+    visited.add(regionDoc.uuid);
 
     let depth = 0;
+
     if (!countChildren) {
-      const parentUuid = regionDoc.getFlag("campaign-codex", "data")?.parentRegion;
-      if (parentUuid) {
-        const parentDoc = await fromUuid(parentUuid).catch(() => null);
-        depth = 1 + await this._getRegionDepth(parentDoc, false, memo);
+      const data = regionDoc.getFlag("campaign-codex", "data") || {};
+      const parentUuids = data.parentRegions || []; 
+
+      if (parentUuids.length > 0) {
+        const parentDepthPromises = parentUuids.map(uuid => 
+          fromUuid(uuid)
+            .catch(() => null) // Handle broken links gracefully
+            .then(parentDoc => 
+              parentDoc ? this._getRegionDepth(parentDoc, false, memo, new Set(visited)) : 0
+            )
+        );
+
+        const parentDepths = await Promise.all(parentDepthPromises);
+        
+        depth = 1 + Math.max(0, ...parentDepths);
       }
+  
     } else {
-      // Traverse downwards to find the deepest branch. This can be parallelized.
       const data = regionDoc.getFlag("campaign-codex", "data") || {};
       const linkedRegionUuids = data.linkedRegions || [];
+      
       if (linkedRegionUuids.length > 0) {
         const childDepthPromises = linkedRegionUuids.map(uuid =>
           fromUuid(uuid).then(childDoc =>
-            childDoc ? 1 + this._getRegionDepth(childDoc, true, memo) : 0
+            childDoc ? 1 + this._getRegionDepth(childDoc, true, memo, new Set(visited)) : 0
           )
         );
         const childDepths = await Promise.all(childDepthPromises);
@@ -1215,9 +1226,50 @@ async _isAncestor(potentialAncestor, doc) {
       }
     }
 
+    // Cache the result
     memo.set(cacheKey, depth);
     return depth;
   }
+
+  // /**
+  //  * Calculates the nesting depth of a given region. Uses a memoization cache for performance.
+  //  * @param {JournalEntry} regionDoc - The region to check.
+  //  * @param {boolean} [countChildren=false] - If true, counts the deepest branch of its children instead of its own depth from the root.
+  //  * @param {Map<string, number>} [memo={}] - Memoization cache to avoid re-calculating depths.
+  //  * @returns {Promise<number>} - The nesting depth.
+  //  * @private
+  //  */
+  // async _getRegionDepth(regionDoc, countChildren = false, memo = new Map()) {
+  //   if (!regionDoc) return 0;
+  //   const cacheKey = `${regionDoc.uuid}-${countChildren}`;
+  //   if (memo.has(cacheKey)) return memo.get(cacheKey);
+
+  //   let depth = 0;
+  //   if (!countChildren) {
+  //     const parentUuid = regionDoc.getFlag("campaign-codex", "data")?.parentRegion;
+  //     console.log(parentUuid);
+  //     if (parentUuid) {
+  //       const parentDoc = await fromUuid(parentUuid).catch(() => null);
+  //       depth = 1 + await this._getRegionDepth(parentDoc, false, memo);
+  //     }
+  //   } else {
+  //     // Traverse downwards to find the deepest branch. This can be parallelized.
+  //     const data = regionDoc.getFlag("campaign-codex", "data") || {};
+  //     const linkedRegionUuids = data.linkedRegions || [];
+  //     if (linkedRegionUuids.length > 0) {
+  //       const childDepthPromises = linkedRegionUuids.map(uuid =>
+  //         fromUuid(uuid).then(childDoc =>
+  //           childDoc ? 1 + this._getRegionDepth(childDoc, true, memo) : 0
+  //         )
+  //       );
+  //       const childDepths = await Promise.all(childDepthPromises);
+  //       depth = Math.max(0, ...childDepths);
+  //     }
+  //   }
+
+  //   memo.set(cacheKey, depth);
+  //   return depth;
+  // }
 
   
 }

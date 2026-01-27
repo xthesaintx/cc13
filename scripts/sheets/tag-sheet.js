@@ -123,10 +123,13 @@ export class TagSheet extends CampaignCodexBaseSheet {
     context.isLoot = npcData.isLoot || false;
     context.markup = npcData.markup || 1.0;
     context.inventoryCash = npcData.inventoryCash || 0;
+        if (context.sheetTypeLabelOverride !== undefined && context.sheetTypeLabelOverride !== "") {
+      context.sheetTypeLabel = context.sheetTypeLabelOverride;
+    } else {
+      context.sheetTypeLabel = localize("names.tag");
+    }
     context.customImage = this.document.getFlag("campaign-codex", "image") || context.linkedActor?.img || TemplateComponents.getAsset("image", "npc");
-    context.sheetTypeLabel = localize("names.tag");
     context.sheetType = "tag";
-
     context.taggedNPCs = associates.filter((npc) => npc.tag === true);
     context.associatesWithoutTaggedNPCs = associates.filter((npc) => npc.tag !== true);
     // Prepare data for the Tree/Left Panel
@@ -303,7 +306,9 @@ export class TagSheet extends CampaignCodexBaseSheet {
   // LEFT PANEL (Tree)
   // =========================================================================
   async _generateGroupWidgetsTab(doc, context) {
+    const label = this._labelOverride(this.document, "widgets");
     const templateData = {
+      labelOverride:label,
       widgetsToRender: context.widgetsToRender,
       activewidget: context.activewidget,
       inactivewidgets: context.inactivewidgets,
@@ -615,18 +620,6 @@ export class TagSheet extends CampaignCodexBaseSheet {
     return `${TemplateComponents.contentHeader("fas fa-info-circle", labelOverride)}<article class="cc-enriched cc-hidden-secrets themed ${isThemed()} ${gameSystemClass(game.system.id)}"><section class="rich-text-content journal-entry-content" name="cc.secret.content.notes">${enrichedDescription || ""}</section></article>${infoWidgets ? `<div class="info-widgets">${infoWidgets}</div>` : ""}`;
   }
 
-  // async _generateSelectedInventoryContent(selectedDoc, selectedData) { 
-
-
-
-  //     return await renderTemplate("modules/campaign-codex/templates/partials/selected-tab-inventory.hbs", { 
-  //         inventory: await CampaignCodexLinkers.getInventory(selectedDoc, selectedData.inventory || []), 
-  //         isGM: game.user.isGM, 
-  //         labelOverride: this._labelOverride(selectedDoc, "inventory"), 
-  //         selectedSheetUuid: this._selectedSheet.uuid 
-  //     }); 
-  // }
-
   async _generateSelectedInventoryContent(selectedDoc, selectedData) { 
     const labelOverride = this._labelOverride(selectedDoc, "inventory");
     const hideByPermission = game.settings.get("campaign-codex", "hideInventoryByPermission");
@@ -688,7 +681,7 @@ export class TagSheet extends CampaignCodexBaseSheet {
   }
 
   async _generateSelectedRegionsContent(selectedDoc, selectedData) {
-    const regs = await CampaignCodexLinkers.getLinkedRegions(selectedDoc, selectedData.linkedRegions || []);
+    const regs = await CampaignCodexLinkers.getLinkedRegions(selectedDoc, selectedData.linkedRegions || [], "linkedRegions");
     const regions = (["npc", "tag"].includes(selectedDoc.getFlag("campaign-codex", "type"))) ? (await CampaignCodexLinkers.getLinkedLocations(selectedDoc, selectedData.linkedLocations || [])).filter(i => i.type === "region") : regs;
     const label = this._labelOverride(selectedDoc, "regions") || localize("names.regions");
     if (regions.length === 0) return `${TemplateComponents.contentHeader(TemplateComponents.getAsset("icon", "region"), label)}`;
@@ -696,7 +689,7 @@ export class TagSheet extends CampaignCodexBaseSheet {
   }
 
   async _generateSelectedParentRegionsContent(selectedDoc, selectedData) {
-    const regions = await CampaignCodexLinkers.getLinkedRegions(selectedDoc, selectedData.parentRegions || []);
+    const regions = await CampaignCodexLinkers.getLinkedRegions(selectedDoc, selectedData.parentRegions || [], "parentRegions");
     const label = this._labelOverride(selectedDoc, "parentregions") || localize("names.parentregions");
     if (regions.length === 0) return `${TemplateComponents.contentHeader("fas fa-book-atlas", label)}`;
     return `${TemplateComponents.contentHeader("fas fa-book-atlas", label)}<div class="locations-list">${TemplateComponents.entityGrid(regions, "location", false, true)}</div>`;

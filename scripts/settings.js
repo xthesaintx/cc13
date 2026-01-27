@@ -209,6 +209,15 @@ export default async function campaigncodexSettings() {
         type: Boolean,
         default: true,
     });
+    game.settings.register("campaign-codex", "mapMarkersHover", {
+        name: localize("mapMarkersHover.name"),
+        hint: localize("mapMarkersHover.hint"),
+        scope: "world",
+        config: true,
+        requiresReload: true,
+        type: Boolean,
+        default: false,
+    });
 
     game.settings.register("campaign-codex", "mapMarkerColor", {
         name: localize("mapMarkerColor.name"),

@@ -1,3 +1,4 @@
+import { displayCodexNote, hoverCodexNote } from "./widgets/viewMapNote.js";
 import { widgetManager } from "./widgets/WidgetManager.js";
 import { CampaignCodexWidget} from "./widgets/CampaignCodexWidget.js";
 import { TagSheet } from "./sheets/tag-sheet.js";
@@ -98,7 +99,6 @@ Hooks.once("setup", async function () {
     const uiColor = game.settings.get("campaign-codex", "color-accent");
 
     if (game.settings.get("campaign-codex", "mapMarkers")){
-    // === [MAP MARKERS] ===
     console.log("Campaign Codex | Initializing custom map markers");
     CONFIG.CampaignCodex = CONFIG.CampaignCodex || {};
     CONFIG.CampaignCodex.mapLocationMarker = {
@@ -439,7 +439,6 @@ Hooks.on("ready", () => {
 
  
 Hooks.on("updateJournalEntry", async (document, changes, options, userId) => {
-
     if (canvas.ready){
     const mapMarkerChanged = foundry.utils.hasProperty(changes, "flags.campaign-codex.data.mapMarker");
     if (mapMarkerChanged) {
@@ -556,6 +555,42 @@ Hooks.on("importAdventure", async (adventure, formData, created, updated) => {
     }
 });
 
+
+Hooks.on("hoverNote", async (note, hovered) => {
+    if (game.settings.get("campaign-codex", "mapMarkersHover"))
+     {
+        const ccFlags = note.document.flags?.["campaign-codex"];
+        if (!ccFlags?.noteid || !ccFlags?.widgetid) return;
+        const notePosition = note.worldTransform;
+        const entryId = note.document.entryId; 
+        if (hovered) {
+            await hoverCodexNote(entryId, ccFlags.widgetid, ccFlags.noteid, notePosition);
+        }
+    }
+});
+
+Hooks.on("activateNote", (note, options) => {
+    const ccFlags = note.document.flags?.["campaign-codex"];
+    if (!ccFlags?.noteid || !ccFlags?.widgetid) return;
+    const notePosition = note.worldTransform;
+    const entryId = note.document.entryId; 
+
+    displayCodexNote(entryId, ccFlags.widgetid, ccFlags.noteid, notePosition);
+    return false;
+});
+
+Hooks.on("preCreateNote", (document, data, options, userId) => {
+    const pending = game.user._tempNoteDrop;
+    if (pending && pending.uuid.endsWith(document.entryId)) {
+        const updateData = {
+            text: pending.label, 
+            label: pending.label,
+            flags: pending.flags
+        };
+        document.updateSource(updateData);
+        delete game.user._tempNoteDrop;
+    }
+});
 
 Hooks.on("getSceneControlButtons", (controls) => {
   if (!game.settings.get("campaign-codex", "hideCCbutton") || game.user.isGM){

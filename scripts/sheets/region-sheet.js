@@ -53,7 +53,7 @@ export class RegionSheet extends CampaignCodexBaseSheet {
     ] = await Promise.all([
       // CampaignCodexLinkers.getLinkedRegion(this.document),
       CampaignCodexLinkers.getLinkedNPCs(this.document, regionData.linkedNPCs || []),
-      CampaignCodexLinkers.getLinkedRegions(this.document, regionUuids, true),
+      CampaignCodexLinkers.getLinkedRegions(this.document, regionUuids, "linkedRegions"),
       CampaignCodexLinkers.getLinkedLocations(this.document, locationUuids),
       CampaignCodexLinkers.getAllNPCs(locationUuids),
       CampaignCodexLinkers.getAllNPCs(regionUuids),
@@ -61,7 +61,7 @@ export class RegionSheet extends CampaignCodexBaseSheet {
       CampaignCodexLinkers.getLinkedShops(this.document, shopUuids),
       CampaignCodexLinkers.getShopNPCs(this.document, regionData.linkedShops),
       this.constructor.canUserView(regionData.linkedScene),
-      CampaignCodexLinkers.getLinkedRegions(this.document, parentRegionUuids, true),
+      CampaignCodexLinkers.getLinkedRegions(this.document, parentRegionUuids, "parentRegions"),
       CampaignCodexLinkers.getInventory(this.document, regionData.inventory)
       // this.constructor.canUserView(regionData.parentRegion),
     ]);

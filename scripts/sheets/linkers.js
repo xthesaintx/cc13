@@ -273,7 +273,7 @@ export class CampaignCodexLinkers {
     return locations;
   }
   
-  static async getLinkedRegions(document, regionUuids) {
+  static async getLinkedRegions(document, regionUuids, fieldName = "linkedRegions") {
     if (!regionUuids || !Array.isArray(regionUuids)) return [];
     const hideByPermission = game.settings.get("campaign-codex", "hideByPermission");
     const cache = this._createOperationCache();
@@ -325,7 +325,7 @@ export class CampaignCodexLinkers {
 
     if (brokenRegionUuids.length > 0) {
       document._skipRelationshipUpdates = true;
-      await this.clearBrokenReferences(document, brokenRegionUuids, "linkedRegions");
+      await this.clearBrokenReferences(document, brokenRegionUuids, fieldName); 
       delete document._skipRelationshipUpdates;
     }
 
@@ -1121,15 +1121,24 @@ static async getInventory(document, inventoryData) {
     // WFRP4e Strategy
   else if (systemId === "wfrp4e") {
     calculateBasePrice = (item) => {
-      const price = this.getValue(item, "system.price") || {};
-      let val = (price.gc || 0) + (price.ss || 0) / 20 + (price.bp || 0) / 240;
-      return parseFloat(val.toFixed(3));
+      const cost = this.getValue(item, "system.price");
+      if (!cost) return 0;
+      if ((cost.gc || 0) > 0) return parseFloat(((cost.gc||0) + ((cost.ss||0) / 20) + ((cost.bp||0) / 240)).toFixed(2));
+      if ((cost.ss || 0) > 0) return parseFloat(((cost.ss||0) + ((cost.bp||0) / 12)).toFixed(1));
+      return cost.bp || 0;
     };
     getCurrency = (item) => {
       if (denominationOverride) return finalCurrency; 
-      return "gc";
+      const cost = this.getValue(item, "system.price") || {};
+      if ((cost.gc || 0) > 0) return "gc";
+      if ((cost.ss || 0) > 0) return "ss";
+      if ((cost.bp || 0) > 0) return "bp";
     };
   }
+
+
+
+
   // Shadowdark Strategy
   else if (systemId === "shadowdark") {
     calculateBasePrice = (item) => {

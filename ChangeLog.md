@@ -1,3 +1,15 @@
+## 2.3.1
+- Nested region depth fix
+- WFRP4e currency fix
+- Map note widget, add notes to scenes that will open that note.
+- tag sheet fixes
+- added a new macro to migrate parentRegion to parentRegions and REMOVE parentRegion
+- Fixed some region linking logic and broken link checking
+- sending or purchasing will add to quantity if item is on sheet already
+- gurps style fix
+- map note hover option for map note widget
+
+
 ## 2.2.8
 - mitigation for other styles whack-a-mole with fa icons and display properties
 

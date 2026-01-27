@@ -123,6 +123,10 @@
         "name": "Enable Campaign Codex Map Markers",
         "hint": "If enabled CC sheets with a name that starts with an optional letter followed by up to three digits followd by an optional letter will create a custom map marker, ie A13"
       },
+      "mapMarkersHover":{
+        "name": "Enable Hover on Campaign Codex Map Markers",
+        "hint": "If enabled map note widget markers will show content on hover"
+      },
       "hideCCbutton": {
         "name": "Hide CC Scene Button",
         "hint": "Hide the CC scene button from NON GM users."

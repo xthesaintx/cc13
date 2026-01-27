@@ -27,6 +27,8 @@ form.application.campaign-codex:not(.minimized, .minimizing, .maximizing){
   background: var(--color-cool-5-90);
 }
 
+
+
 /* Default Light Theme Values */
 .campaign-codex {
   --cc-theme-main-bg: #f8f9fa;
@@ -2872,7 +2874,7 @@ background: var(--cc-card-bg);
 }
 
 .campaign-codex prose-mirror > button.toggle i {
-  color: var(--cc-accent30) !important;
+  color: var(--cc-accent80) !important;
 }
 
 .campaign-codex prose-mirror > button.toggle:hover i{
@@ -2883,7 +2885,7 @@ background: var(--cc-card-bg);
 }
 .campaign-codex prose-mirror > button.toggle:disabled {
   display: none;
-  color: var(--cc-accent30);
+  color: var(--cc-accent80);
 }
 
 /*
@@ -5391,6 +5393,7 @@ QUESTS
 .campaign-codex .widget-tag .action-icon {
     cursor: pointer;
     font-size: 10px;
+    font-family: "Font Awesome 6 Pro";
 }
 
 .campaign-codex .widget-tag:hover {
@@ -5869,9 +5872,6 @@ QUESTS
     aspect-ratio: 1;
     border-radius: 4px;
     overflow: hidden;
-    border: 1px solid var(--color-border-dark);
-    box-shadow: var(--cc-shadow);
-    background: var(--cc-slate);
     flex: 1;
     min-width: 120px;
 }
@@ -5879,10 +5879,10 @@ QUESTS
 .cc-widget-image-gallery .gallery-image {
     width: 100%;
     height: 100%;
-    object-fit: cover; 
+    object-fit: scale-down;
     cursor: pointer;
     transition: transform 0.2s, opacity 0.2s;
-    border: none !important; 
+    border: none !important;
     display: block;
 }
 
@@ -6978,3 +6978,252 @@ display: flex;
 .cc-widget-timeline-horizontal button.filter-save-btn:hover {
     background: var(--cc-accent10); 
 }
+
+
+/* MAP NOTE */
+.cc-widget-map-notes{
+      width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
+.cc-widget-map-notes .note-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    width: 100%;
+}
+
+.cc-widget-map-notes .note-card {
+   flex: 1 1 30%;
+   min-width: 200px;
+   position: relative;
+   background: var(--cc-card-bg);
+    border-radius: 6px;
+    padding: 0px 10px;
+    box-shadow: var(--cc-shadow);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    overflow: hidden;
+    align-content: center;
+    font-size: 12px;
+    min-height: 36px;
+}
+.cc-widget-map-notes .note-card:hover {
+    background: var(--cc-accent10);
+}
+
+.cc-widget-map-notes .note-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0px;
+    gap: 5px;
+}
+
+
+.cc-widget-map-notes .note-card .fa-bars {
+cursor: grab;
+    font-size: 20px;
+    font-weight: 500;
+    opacity: 60%;
+    margin-left: -10px;
+    transform: scaleX(.5);
+}
+
+
+.cc-widget-map-notes .note-title-input {
+    flex-grow: 1;
+    border: none;
+    color: var(--cc-main-text);
+    font-weight: bold;
+    padding: 2px 0;
+    height: 20px;
+    min-width: 0;
+    text-overflow: ellipsis;
+    margin: 8px 0px;
+}
+
+.cc-widget-map-notes .note-mapId-input {
+    flex: 1 0 36px;
+    max-width: 36px;
+    border: none;
+    color: var(--cc-main-bg);
+    font-weight: 600;
+    padding: 2px 2px;
+    height: 20px;
+    min-width: 0;
+    text-align: center;
+    background: var(--cc-accent);
+    white-space: nowrap;
+    font-size: 10px;
+    text-transform: uppercase;
+}
+
+
+.cc-widget-map-notes .note-actions {
+display: flex;
+    gap: 4px;
+    cursor: pointer;
+}
+
+.cc-widget-map-notes .note-title-display {
+    font-weight: bold;
+    color: var(--color-text-light-highlight);
+    word-break: break-word;
+}
+
+.cc-widget-map-notes .note-actions i:hover {
+    color: var(--cc-accent);
+}
+
+.cc-widget-map-notes .add-note-btn .note-header{
+    justify-content: center;
+}
+ 
+.cc-widget-map-notes .add-note-btn.note-card{
+    background: var(--cc-accent30);
+    flex: 0 1;
+    min-width: fit-content;
+    font-size: 16px;
+}
+
+.cc-note-editor .form-group {
+    margin-bottom: 10px;
+}
+
+
+.application.dialog.cc-map-widget.campaign-codex{
+  min-width:600px;
+  min-height: 150px;
+  max-height:800px;
+  max-width:800px;
+}
+
+.application.dialog.campaign-codex.note-popup .dialog-form.standard-form,
+.application.dialog.cc-map-widget.campaign-codex .dialog-form.standard-form{
+overflow: auto;
+    justify-content: space-between;
+    height: inherit;
+    gap: 0px;
+}
+
+.application.dialog.campaign-codex.note-popup .dialog-content.standard-form,
+.application.dialog.cc-map-widget.campaign-codex .dialog-content.standard-form{
+    padding: 10px 10px 10px 10px;
+overflow: scroll;
+}
+
+
+.application.dialog.cc-map-widget.campaign-codex .form-footer button{
+    opacity: 50%;
+    border: none;
+    background: none;
+    color: var(--cc-accent);
+    z-index: 150;
+}
+
+.application.dialog.campaign-codex.note-popup .form-footer,
+.application.dialog.cc-map-widget.campaign-codex.note-dialog.edit-mode .form-footer,
+.application.dialog.cc-map-widget.campaign-codex.note-dialog.read-mode .form-footer {
+  display: none;
+}
+
+.application.dialog.cc-map-widget.campaign-codex .form-footer button:hover{
+  opacity: 1;
+  outline: none;
+  box-shadow: none;
+}
+
+.application.dialog.cc-map-widget.campaign-codex .form-footer button:focus,
+.application.dialog.cc-map-widget.campaign-codex .form-footer button:active {
+  outline: none;
+  box-shadow: none;
+}
+
+
+
+.application.dialog.campaign-codex.note-popup {
+  min-width: 200px;
+  min-height: 100px;
+  height: fit-content;
+  max-height: 80vh;
+  width:30vw;
+}
+
+.application.dialog.campaign-codex.note-popup.hover-note:focus-visible{
+  outline: none;
+}
+
+.application.dialog.campaign-codex.note-popup.hover-note {
+max-height: 200px !important;
+min-height: 20px !important;
+}
+
+.application.dialog.campaign-codex.note-popup.hover-note .window-header{
+  display:none;
+}
+
+.application.dialog.campaign-codex.note-popup.hover-note .dialog-content.standard-form{
+  overflow: hidden;
+}
+
+.application.dialog.campaign-codex.note-popup.hover-note .dialog-content.standard-form .cc-enriched{
+  overflow: hidden;
+}
+
+.application.dialog.campaign-codex.note-popup.hover-note .dialog-content.standard-form .cc-enriched.overflow{
+    overflow: hidden;
+    padding-bottom: 20px;
+    -webkit-mask-image: linear-gradient(to bottom, black 80%, transparent 100%);
+    mask-image: linear-gradient(to bottom, black 90%, transparent 100%);
+}
+
+
+.application.dialog.campaign-codex.note-popup .dialog-content.standard-form .codex-overflow-indicator{
+    display:none;
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    text-align: center;
+    color: var(--cc-main-text);
+    font-size: 1.5em;
+    pointer-events: none;
+    padding-bottom: 4px;
+}
+
+
+/* GURPS FIX */
+body.system-gurps section.window-content article.journal-entry-page.cc-enriched
+{
+  overflow: unset;
+}
+
+body.system-gurps .application.sheet.campaign-codex.npc-sheet .window-content{
+ background: unset;
+ overflow-x: unset;
+}
+
+body.system-gurps .application.sheet.campaign-codex .tab-item {
+  line-height: unset;
+}
+
+body.system-gurps .application.sheet.campaign-codex .tab-item>span {
+  display: unset;
+  place-items: unset;
+  padding: unset;
+  background: unset;
+  border-radius: unset;
+}
+
+
+
+/* Prose mirror active button */
+.campaign-codex .cc-prosemirror button.active{
+  background:var(--cc-accent30);
+}
+
+

@@ -12,6 +12,7 @@ import { MerchantCounterWidget } from "./MerchantCounterWidget.js";
 import { CalendarForecastWidget } from "./CalendarForecastWidget.js";
 import { CalendarEventWidget } from "./CalendarEventWidget.js";
 import { CalendarTimelineWidget } from "./CalendarTimelineWidget.js";
+import { MapNoteWidget } from "./MapNoteWidget.js";
 
 class WidgetManager {
     constructor() {
@@ -35,6 +36,7 @@ class WidgetManager {
         this.registerWidget("Image Gallery", ImageGalleryWidget);
         this.registerWidget("Progress Clock", ProgressClockWidget);
         this.registerWidget("Macros", MacroWidget);
+        this.registerWidget("Map Notes", MapNoteWidget);
         this.registerWidget("Roll Table", RollTableWidget);
         this.registerWidget("Merchant Counter", MerchantCounterWidget);
         if (this._miniCalendar?.active) {

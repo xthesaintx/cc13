@@ -12,7 +12,7 @@ export class NPCSheet extends CampaignCodexBaseSheet {
     classes: ["campaign-codex", "sheet", "journal-sheet", "npc-sheet"],
     window: {
       title: 'Campaign Codex NPCSheet',
-      icon: 'fas fa-user-tag',
+      icon: 'fas fa-user',
     },
     actions: {
       npcTagMode:this.#_npcSheetMode

@@ -27,7 +27,7 @@ export class CampaignCodexBaseSheet extends baseSheetApp {
 
   static DEFAULT_OPTIONS = {
     classes: ["campaign-codex", "sheet", "journal-sheet", "base-sheet"],
-    dragDrop: [{ dragSelector: '[data-drag]', dropSelector: null }],
+    dragDrop: [{ dragSelector: '[data-drag], .draggable', dropSelector: null }],
     window: {
       frame: true,
       title: 'Campaign Codex',
@@ -85,7 +85,6 @@ export class CampaignCodexBaseSheet extends baseSheetApp {
       removeImage: this.#_onRemoveImage,
       removeScene: this.#_onRemoveScene,
       removeLocationFromRegion:this.#_onRemoveLocation,
-      // removeParentRegion: this.#_onRemoveParentFromRegion,
       removeLocation: this.#_onRemoveLocation,
       removeShop: this.#_onRemoveShop,
       removeAssociate: this.#_onRemoveNPC,
@@ -197,6 +196,8 @@ export class CampaignCodexBaseSheet extends baseSheetApp {
     if ('link' in event.target.dataset) return;
     let journalID = event.target.dataset.entryId;
     let journalData = game.journal.get(journalID);
+
+
     if (!journalData) return;
     let dragDataB = journalData.toDragData();
     if (!dragDataB) return;
@@ -205,7 +206,6 @@ export class CampaignCodexBaseSheet extends baseSheetApp {
 
 
   #createDragDropHandlers() {
-    // console.log(this.options.dragDrop);
     return this.options.dragDrop.map((d) => {
       d.permissions = {
         dragstart: this._canDragStart.bind(this),
@@ -463,6 +463,23 @@ export class CampaignCodexBaseSheet extends baseSheetApp {
   });
   }
 
+  /**
+   * Configure plugins for the ProseMirror instance.
+   * @param {ProseMirrorPluginsEvent} event
+   * @protected
+   */
+  _onConfigurePlugins(event) {
+    console.log(event);
+    event.plugins.highlightDocumentMatches =
+      ProseMirror.ProseMirrorHighlightMatchesPlugin.build(ProseMirror.defaultSchema);
+  }
+
+    /** @inheritDoc */
+    _attachFrameListeners() {
+      super._attachFrameListeners();
+      this.element.addEventListener("plugins", this._onConfigurePlugins.bind(this));
+    }
+  
 
   /**
    * Register context menu entries and fire hooks.
@@ -717,14 +734,6 @@ export class CampaignCodexBaseSheet extends baseSheetApp {
       el.addEventListener("dragend", this._onItemDragEnd.bind(this));
     });
 
-    // // SINGLE ACTION LISTENERS
-    // const singleActionMap = {
-    //   ".sort-inventory-alpha": this._onSortInventory,
-    // };
-
-    // for (const [selector, handler] of Object.entries(singleActionMap)) {
-    //   nativeHtml.querySelector(selector)?.addEventListener("click", handler.bind(this));
-    // }
 
     // MULTI ACTION LISTENERS
     const multiActionMap = {
@@ -2131,33 +2140,6 @@ async _removeLocation(event){
     }
 }
 
-  static async #_onRemoveParentFromRegion(event) {
-    event.preventDefault();
-    event.stopPropagation();
-    // await this._saveFormData();
-
-    const myType = this.getSheetType();
-    let regionDoc, regionParentDoc;
-
-    regionDoc = this.document;
-    const regionUuid = regionDoc.getFlag("campaign-codex", "data")?.parentRegion;
-    if (regionUuid) regionParentDoc = await fromUuid(regionUuid);
-
-    if (!regionParentDoc || !regionDoc) {
-      ui.notifications.warn("Could not find the linked region or parent region.");
-      return this.render();
-    }
-
-    const regionData = regionParentDoc.getFlag("campaign-codex", "data") || {};
-    if (regionData.linkedRegions) {
-      regionData.linkedRegions = regionData.linkedRegions.filter((uuid) => uuid !== regionDoc.uuid);
-      await regionParentDoc.setFlag("campaign-codex", "data", regionData);
-    }
-    await regionDoc.unsetFlag("campaign-codex", "data.parentRegion");
-
-    ui.notifications.info(`Removed "${regionDoc.name}" from region "${regionParentDoc.name}"`);
-    targetedRefresh([regionParentDoc.uuid, regionDoc.uuid], this.document.uuid);
-  }
 
   async _onRemoveFromRegion(event) {
     event.preventDefault();
@@ -3096,6 +3078,7 @@ _onMarkerEdit(event) {
     const input = event.target;
     const newType = input.value.trim();
     await this.document.setFlag("campaign-codex", "data.sheetTypeLabelOverride", newType);
+    console.log(this.document);
     this.render(false);
   }
 
@@ -3321,7 +3304,7 @@ async _updateInventoryItem(itemUuid, updates, doc = null) {
   }
 }
 
-
+// ... existing code ...
   async _transferItemToActor(item, targetActor, document, questId = "") {
     try {
       const itemData = item.toObject();
@@ -3342,9 +3325,25 @@ async _updateInventoryItem(itemUuid, updates, doc = null) {
       } else {
         const inventory = currentData.inventory || [];
         const shopItem = inventory.find((i) => i.itemUuid === item.uuid);
-        const quantity = shopItem ? shopItem.quantity : 1;
-        itemData.system.quantity = Math.min(quantity, 1);
-        await targetActor.createEmbeddedDocuments("Item", [itemData]);
+        
+        const quantityAvailable = shopItem ? shopItem.quantity : 1;
+        const addQty = Math.min(quantityAvailable, 1);
+
+        if (addQty > 0) {
+          const existingItem = targetActor.items.find(i => 
+            i.getFlag("core", "_stats.compendiumSource") === item.uuid || 
+            (i.name === item.name && i.type === item.type && i.img === item.img)
+           );
+
+          if (existingItem) {
+            const currentQty = existingItem.system.quantity || 0;
+            await existingItem.update({ "system.quantity": currentQty + addQty });
+          } else {
+            itemData.system.quantity = addQty;
+            await targetActor.createEmbeddedDocuments("Item", [itemData]);
+          }
+        }
+
         if (shopItem && shopItem.quantity > 0 && !shopItem.infinite) {
           await this._updateInventoryItem(item.uuid, {
             quantity: shopItem.quantity - 1,
@@ -3365,6 +3364,50 @@ async _updateInventoryItem(itemUuid, updates, doc = null) {
       ui.notifications.error(localize("error.faileditem"));
     }
   }
+
+  // async _transferItemToActor(item, targetActor, document, questId = "") {
+  //   try {
+  //     const itemData = item.toObject();
+  //     delete itemData._id;
+  //     const currentData = document.getFlag("campaign-codex", "data") || {};
+
+  //     if (questId) {
+  //       const quests = foundry.utils.deepClone(currentData.quests || []);
+  //       const quest = quests.find(q => q.id === questId);
+  //       quest.inventory = quest.inventory || [];
+  //       const existingItem = quest.inventory.find((i) => i.itemUuid === item.uuid);
+  //       if (existingItem) {
+  //         if (existingItem.quantity > 0) {
+  //           existingItem.quantity -= 1; 
+  //           await document.setFlag("campaign-codex", "data.quests", quests);
+  //         }
+  //       }
+  //     } else {
+  //       const inventory = currentData.inventory || [];
+  //       const shopItem = inventory.find((i) => i.itemUuid === item.uuid);
+  //       const quantity = shopItem ? shopItem.quantity : 1;
+  //       itemData.system.quantity = Math.min(quantity, 1);
+  //       await targetActor.createEmbeddedDocuments("Item", [itemData]);
+  //       if (shopItem && shopItem.quantity > 0 && !shopItem.infinite) {
+  //         await this._updateInventoryItem(item.uuid, {
+  //           quantity: shopItem.quantity - 1,
+  //         }, document);
+  //       }
+  //     }
+  //     ui.notifications.info(format("title.send.item.typetoplayer", { type: item.name, player: targetActor.name }));
+
+  //     const targetUser = game.users.find((u) => u.character?.id === targetActor.id);
+  //     if (targetUser && targetUser.active) {
+  //       ChatMessage.create({
+  //         content: `<p><strong>${game.user.name}</strong> sent you <strong>${item.name}</strong> from ${document.name}!</p>`,
+  //         whisper: [targetUser.id],
+  //       });
+  //     }
+  //   } catch (error) {
+  //     console.error("Error transferring item:", error);
+  //     ui.notifications.error(localize("error.faileditem"));
+  //   }
+  // }
 
 
   async _isRelatedDocument(changedDocUuid) {
@@ -3398,6 +3441,7 @@ async _updateInventoryItem(itemUuid, updates, doc = null) {
           ...(changedData.linkedLocations || []),
           ...(changedData.linkedRegions || []),
           ...(changedData.associates || []),
+          ...(changedData.parentRegions || []),
           changedData.linkedLocation,
           changedData.parentRegion, 
           changedData.linkedActor,
@@ -3447,7 +3491,7 @@ async _updateInventoryItem(itemUuid, updates, doc = null) {
   // =========================================================================
 
   async _generateInventoryTab(data) {
-
+    const label = this._labelOverride(this.document, "inventory");
     const hideByPermission = game.settings.get("campaign-codex", "hideInventoryByPermission");
     const currency = CampaignCodexLinkers.getCurrency();
     const rawInventory = data.inventory || [];
@@ -3470,6 +3514,7 @@ async _updateInventoryItem(itemUuid, updates, doc = null) {
     CampaignCodexLinkers.getInventory(data.inventory);
     const showHeaders = sections.length > 1;
     const templateData = {
+      labelOverride:label,
       allowPlayerPurchasing:data.allowPlayerPurchasing,
       currency:currency,
       hideByPermission: hideByPermission,
