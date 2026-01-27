@@ -259,7 +259,6 @@ async _toggleVisibility(id) {
             notes[index] = { ...notes[index], ...updates };
             await this.saveData({ notes });
 
-            // Update linked notes if mapId or title changed
             if (canvas.ready && (updates.mapId !== undefined || updates.title !== undefined)) {
                 const linkedNotes = canvas.notes.placeables.filter(n => 
                     n.document.getFlag("campaign-codex", "noteid") === id
@@ -281,6 +280,9 @@ async _toggleVisibility(id) {
 
                 if (noteUpdates.length > 0) {
                     await canvas.scene.updateEmbeddedDocuments("Note", noteUpdates);
+                       for (const note of linkedNotes) {
+                            note.draw(); 
+                        }
                 }
             }
         }
