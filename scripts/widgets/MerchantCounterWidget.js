@@ -52,7 +52,7 @@ export class MerchantCounterWidget extends CampaignCodexWidget {
         const data = await this._prepareContext();
         
         if (!data.isGM) return `
-            <div class="cc-widget-merchant-counter" id="widget-${this.widgetId}">
+            <div class="cc-widget-merchant-counter is-empty" id="widget-${this.widgetId}">
             </div>
         `;
 

@@ -96,7 +96,7 @@ export class MapNoteWidget extends CampaignCodexWidget {
                 </div>
                 ` : ''}
 
-                    ${notesHtml || (data.isGM ? '' : '<div class="note-empty">No notes available.</div>')}
+                    ${notesHtml || (data.isGM ? '' : '<div class="note-empty is-empty">No notes available.</div>')}
                 </div>
             </div>
         `;

@@ -51,13 +51,11 @@ export class ImageGalleryWidget extends CampaignCodexWidget {
 
         if (!this.isGM) return;
 
-        // Add Image
         htmlElement.querySelector('.gallery-add-btn')?.addEventListener('click', (e) => {
             e.preventDefault();
             this._addImage(htmlElement);
         });
 
-        // Remove Image
         htmlElement.querySelectorAll('.gallery-btn.remove').forEach(btn => {
             btn.addEventListener('click', async (e) => {
                 e.preventDefault();

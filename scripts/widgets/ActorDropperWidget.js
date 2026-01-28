@@ -50,6 +50,10 @@ export class ActorDropperWidget extends CampaignCodexWidget {
 
     async render() {
         const data = await this._prepareContext();
+        if (!data.isGM) return `
+            <div class="cc-widget-actor-dropper is-empty" id="widget-${this.widgetId}">
+            </div>
+        `;
         return foundry.applications.handlebars.renderTemplate("modules/campaign-codex/templates/widgets/actor-dropper.hbs", data);
     }
 

@@ -36,7 +36,7 @@ export class MacroWidget extends CampaignCodexWidget {
         const data = await this._prepareContext();
 
         if (!data.isGM) return `
-            <div class="cc-widget-rolltable" id="widget-${this.widgetId}">
+            <div class="cc-widget-rolltable is-empty" id="widget-${this.widgetId}">
             </div>
         `;
 

@@ -4777,6 +4777,11 @@ QUESTS
   padding: 5px;
 }
 
+
+.campaign-codex .cc-widget-container:has(.is-empty) {
+    display: none;
+}
+
 .campaign-codex .cc-widget {
   border: 1px solid var(--cc-border);
   border-radius: 8px;
@@ -7092,7 +7097,6 @@ display: flex;
     font-size: 16px;
     opacity: 1;
     display: unset;
-    color: var(--cc-accent);
     box-shadow: none;
     background: none;
 }
@@ -7101,6 +7105,13 @@ display: flex;
     margin-bottom: 10px;
 }
 
+.cc-widget-map-notes .add-note-btn.note-card i{
+      color: var(--cc-accent);
+  }
+
+  .cc-widget-map-notes .add-note-btn.note-card:hover i{
+  color: var(--cc-main-text);
+}
 
 .application.dialog.cc-map-widget.campaign-codex{
   min-width:600px;
@@ -7253,20 +7264,37 @@ body.system-gurps .application.sheet.campaign-codex .tab-item>span {
 background: var(--cc-accent80);
 }
 
+.campaign-codex .cc-widget-actor-dropper .ad-drop-map-btn i{
+  color: var(--cc-accent);
+}
+.campaign-codex .cc-widget-actor-dropper .ad-drop-map-btn:hover i{
+  color: var(--cc-main-text);
+}
+
 .campaign-codex .cc-widget-actor-dropper .ad-drop-map-btn{
-
+    outline: none;
+    border: none;
+    background: none;
 }
 
-.campaign-codex .cc-widget-actor-dropper .ad-header input{
-flex: 1;
-margin-right: 10px;
-border: none;
-background: transparent;
-font-weight: bold;
-color: var(--cc-main-text);
-border-bottom: 1px solid var(--cc-border);
+
+.campaign-codex .cc-widget-actor-dropper .ad-drop-map-btn:focus,
+.campaign-codex .cc-widget-actor-dropper .ad-drop-map-btn:active{
+  outline: none;
+  box-shadow: none;
 }
-.campaign-codex .cc-widget-actor-dropper .ad-header{
+
+.campaign-codex .cc-widget-actor-dropper .add-actor-header input{
+    flex: 1;
+    margin-right: 10px;
+    border: none;
+    background: var(--cc-card-bg);
+    font-weight: bold;
+    color: var(--cc-main-text);
+    box-shadow: var(--cc-shadow);
+
+}
+.campaign-codex .cc-widget-actor-dropper .add-actor-header{
 display: flex;
 justify-content: space-between;
 align-items: center;

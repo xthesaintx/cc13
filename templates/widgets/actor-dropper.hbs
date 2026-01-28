@@ -1,12 +1,12 @@
 <div class="cc-widget-actor-dropper inventory-table inventory" id="widget-{{id}}">
-    {{#if actors}}
-    <div class="ad-header">
+
+    <div class="add-actor-header">
         <input type="text" class="ad-title-input" value="{{title}}" placeholder="Widget Title">
         <button class="ad-drop-map-btn">
-            <i class="fas fa-street-view"></i>
+           {{#if actors}}     <i class="fas fa-street-view"></i>{{/if}}
         </button>
     </div>
-
+    {{#if actors}}
     {{#each actors}}
     <div class="inventory-item" data-uuid="{{uuid}}">
         <div class="item-image">
