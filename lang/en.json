@@ -18,6 +18,8 @@
 
     },
     "context":{
+      "hideAssociate": "Hide from Player",
+      "showAssociate": "Show to Player",
       "export":"Export to Standard Journal",
       "group":"Add to {type}",
       "changeImage": "Change Image",
@@ -104,7 +106,8 @@
       "quest":"Quest",
       "quests":"Quests",
       "toc":"Table of Contents",
-      "widgets": "Widgets"
+      "widgets": "Widgets",
+      "factions": "Factions"
     },
     "settings": {
       "allowPlayerPurchasing":{

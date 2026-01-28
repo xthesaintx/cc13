@@ -1,3 +1,10 @@
+## 2.3.3
+- hide show context menu for entity cards, this will hide/show a card on a sheet from players
+- actor drop widget, create encounter groups
+- 
+- more css rescue from other modules and their scattergun approach to styling.
+
+
 ## 2.3.1
 - Nested region depth fix
 - WFRP4e currency fix

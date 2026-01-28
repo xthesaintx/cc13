@@ -148,7 +148,6 @@ export class RegionSheet extends CampaignCodexBaseSheet {
     }
     const {
       regionData,
-      // parentRegion,
       rawLinkedNPCs,
       rawRegions,
       rawLocations,
@@ -160,9 +159,18 @@ export class RegionSheet extends CampaignCodexBaseSheet {
       linkedScene,
       canViewScene,
       parentRegions,
-      // canViewRegion,
       inventory,
     } = this._processedData;
+
+    const hiddenAssociates = this.document.getFlag("campaign-codex", "data")?.hiddenAssociates || [];
+
+    [ rawLinkedNPCs, rawRegions, rawLocations, rawNPCs, regionNPCs, rawShops, rawdirectShops, rawShopNPCs, parentRegions]
+      .flat()
+      .filter(Boolean) 
+      .forEach(item => {
+          if (hiddenAssociates.includes(item.uuid)) item.hidden = true;
+      });
+
 
     // --- Assign fetched context ---
     const rawInventoryCount = (regionData.inventory || []).length;
@@ -170,7 +178,6 @@ export class RegionSheet extends CampaignCodexBaseSheet {
     context.isLoot = regionData.isLoot || false;
     context.markup = regionData.markup || 1.0;
     context.inventoryCash = regionData.inventoryCash || 0;
-    // context.parentRegion = parentRegion;
     context.linkedLocations = rawLocations;
     context.allShops = rawShops;
     context.linkedShops = rawdirectShops;
@@ -181,8 +188,8 @@ export class RegionSheet extends CampaignCodexBaseSheet {
     context.canViewScene = canViewScene;
     context.linkedRegions = rawRegions;
     context.parentRegions = parentRegions;
-    // context.canViewRegion = canViewRegion;
     ((context.regionNPCs = regionNPCs),
+
       // --- Basic Sheet Info ---
       (context.sheetType = "region"));
     if (context.sheetTypeLabelOverride !== undefined && context.sheetTypeLabelOverride !== "") {

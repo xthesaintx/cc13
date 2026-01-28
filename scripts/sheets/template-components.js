@@ -30,6 +30,7 @@ export class TemplateComponents {
       item: { icon: "fas fa-box", image: myModulePath + "ui/item.webp" },
       group: { icon: "fas fa-sitemap", image: myModulePath + "ui/group.webp" },
       tag: { icon: "fas fa-tag", image: myModulePath + "ui/npc.webp" },
+      faction: { icon: "fas fa-people-group", image: myModulePath + "ui/npc.webp" },
       quest: { icon: "fas fa-scroll", image: myModulePath + "ui/npc.webp" },
       default: {
         icon: "fas fa-question",
@@ -310,6 +311,13 @@ export class TemplateComponents {
       return "";
     }
 
+
+    if (entity.hidden && !game.user.isGM) {
+      return "";
+    }
+    const isHidden = entity.hidden ? "hidden-associate" : "";
+
+
     const isShopSource = entity.source === "shop";
     const sourceAttr = entity.source ? `data-source="${entity.source}"` : "";
 
@@ -321,7 +329,7 @@ export class TemplateComponents {
     return `
         ${
           entity.canView
-            ? `<div class="entity-card ${type}-card open-${type} ${entity.showImage ? ``:`hide-entity-image`}" data-action="open${this.getHandlerName(type)}" data-type="${type}" ${removeButton} data-uuid="${entity.uuid}" ${customDataAttr} draggable="true" data-drag="true" data-entry-id="${entity.id}" style="cursor: pointer; position:relative;" ${sourceAttr}>`
+            ? `<div class="entity-card ${type}-card open-${type} ${isHidden} ${entity.showImage ? ``:`hide-entity-image`}" data-action="open${this.getHandlerName(type)}" data-type="${type}" ${removeButton} data-uuid="${entity.uuid}" ${customDataAttr} draggable="true" data-drag="true" data-entry-id="${entity.id}" style="cursor: pointer; position:relative;" ${sourceAttr}>`
             : `<div class="entity-card ${type}-card ${entity.showImage ? ``:`hide-entity-image`}" style="position:relative;" ${customDataAttr} ${sourceAttr}>`
         } 
         <div class="entity-image ${entity.showImage ? ``:`hide-entity-image`}">

@@ -1,0 +1,41 @@
+<div class="cc-widget-actor-dropper inventory-table inventory" id="widget-{{id}}">
+    {{#if actors}}
+    <div class="ad-header">
+        <input type="text" class="ad-title-input" value="{{title}}" placeholder="Widget Title">
+        <button class="ad-drop-map-btn">
+            <i class="fas fa-street-view"></i>
+        </button>
+    </div>
+
+    {{#each actors}}
+    <div class="inventory-item" data-uuid="{{uuid}}">
+        <div class="item-image">
+            <img src="{{img}}" alt="{{name}}">
+        </div>
+
+        <div class="item-details">
+            <div class="item-name">{{name}}</div>
+            {{#if ../showCrColumn}}
+            {{#if cr}}
+            <div class="item-weight" style="font-size: 11px; color: var(--cc-text-muted);">CR {{cr}}</div>
+            {{/if}}
+            {{/if}}
+        </div>
+
+        <div class="quantity-control" style="text-align:center">
+            <input type="number" class="quantity-input ad-quantity-input" data-uuid="{{uuid}}" value="{{quantity}}"
+                min="1" style="width: 40px; text-align: center;">
+        </div>
+
+        <div class="item-actions" style="text-align:center">
+            <i class="fas fa-trash inventory-button ad-remove-btn" data-uuid="{{uuid}}" title="Remove"></i>
+        </div>
+    </div>
+    {{/each}}
+    {{else}}
+    <div class="cc-ad-drop-area large">
+        <i class="fas fa-user-plus"></i>
+        <span>Drop Actors Here</span>
+    </div>
+    {{/if}}
+</div>

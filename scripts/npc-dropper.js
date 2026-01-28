@@ -38,6 +38,98 @@ export class NPCDropper {
 
     return this._showDropToMapDialog(npcsWithActors, options);
   }
+
+
+  /**
+   * Drops a list of actors directly to the scene
+   * @param {Array} actors - Array of Actor documents
+   * @param {Object} options - Options for the drop operation
+   */
+  static async dropActorsToScene(actors, options = {}) {
+    if (!canvas.scene) {
+      ui.notifications.warn("No scene is currently active!");
+      return;
+    }
+
+    if (!actors || actors.length === 0) {
+      ui.notifications.warn("No actors to drop!");
+      return;
+    }
+
+    const expandedResults = [];
+
+    // Expand containers (Encounters/Groups)
+    for (const actor of actors) {
+      if (!actor) continue;
+
+      if (actor.type === "encounter") {
+        const members = actor.system?.members || [];
+        for (const member of members) {
+          if (member.uuid) {
+            const subActor = await fromUuid(member.uuid).catch(() => null);
+            if (subActor) {
+              let count = member.quantity?.value ?? 1;
+
+              if (member.quantity?.formula) {
+                try {
+                  const roll = new foundry.dice.Roll(member.quantity.formula);
+                  await roll.evaluate();
+                  count = Math.max(1, roll.total);
+                } catch (e) {
+                  console.warn(
+                    `Campaign Codex | Failed to evaluate formula '${member.quantity.formula}' for ${subActor.name}. Using default value: ${count}`,
+                    e,
+                  );
+                }
+              }
+              for (let i = 0; i < count; i++) {
+                expandedResults.push({
+                  name: subActor.name,
+                  img: subActor.img,
+                  actor: subActor,
+                  uuid: subActor.uuid,
+                  id: subActor.id,
+                  _uniqueId: foundry.utils.randomID(),
+                });
+              }
+            }
+          }
+        }
+      } else if (actor.type === "group") {
+        const members = actor.system?.members || [];
+        for (const member of members) {
+          const subActor = member.actor;
+          if (subActor) {
+            expandedResults.push({
+              name: subActor.name,
+              img: subActor.img,
+              actor: subActor,
+              uuid: subActor.uuid,
+              id: subActor.id,
+              _uniqueId: foundry.utils.randomID(),
+            });
+          }
+        }
+      } else {
+        expandedResults.push({
+          name: actor.name,
+          img: actor.img,
+          actor: actor,
+          uuid: actor.uuid,
+          id: actor.id,
+          _uniqueId: foundry.utils.randomID(),
+        });
+      }
+    }
+
+    if (expandedResults.length === 0) {
+      ui.notifications.warn("No valid actors found to drop!");
+      return;
+    }
+
+    return this._showDropToMapDialog(expandedResults, options);
+  }
+
 /**
    * Checks for Encounter or Group actors and returns their members as a flat list.
    * Keeps regular actors as they are.

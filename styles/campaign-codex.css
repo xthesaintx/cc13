@@ -3059,6 +3059,7 @@ left: 296px;
 
 .campaign-codex :is(.region-sheet) .tab-panel.active[data-tab="npcs"] .npcs-to-map-button,
 .campaign-codex :is(.npc-sheet, .shop-sheet, .location-sheet) .tab-panel.active[data-tab="npcs"] .npcs-to-map-button,
+.campaign-codex :is(.npc-sheet, .shop-sheet, .location-sheet) .tab-panel.active[data-tab="factions"] .fa-street-view,
 .campaign-codex .npc-sheet .tab-panel.active[data-tab="associates"] .members-to-map-button {
   width: 40px;
   max-width: 300px;
@@ -6246,6 +6247,7 @@ display: flex;
     background: rgba(0,0,0,0.1);
 }
 
+.cc-widget-actor-dropper .cc-ad-drop-area,
 .cc-widget-rolltable .cc-rt-drop-area {
     width: 100%;
     border-radius: 8px;
@@ -6258,6 +6260,7 @@ display: flex;
     transition: all 0.2s;
 }
 
+.cc-widget-actor-dropper .cc-ad-drop-area.large,
 .cc-widget-rolltable .cc-rt-drop-area.large {
     height: 80px;
     flex-direction: column;
@@ -7071,7 +7074,7 @@ display: flex;
 
 .cc-widget-map-notes .note-title-display {
     font-weight: bold;
-    color: var(--color-text-light-highlight);
+    color: var(--cc-main-text);
     word-break: break-word;
 }
 
@@ -7084,10 +7087,14 @@ display: flex;
 }
  
 .cc-widget-map-notes .add-note-btn.note-card{
-    background: var(--cc-accent30);
     flex: 0 1;
     min-width: fit-content;
     font-size: 16px;
+    opacity: 1;
+    display: unset;
+    color: var(--cc-accent);
+    box-shadow: none;
+    background: none;
 }
 
 .cc-note-editor .form-group {
@@ -7231,3 +7238,38 @@ body.system-gurps .application.sheet.campaign-codex .tab-item>span {
 .campaign-codex.note-dialog.edit-mode .cc-prosemirror .editor-menu {
     background: var(--dropdown-background);
   }
+
+
+/* Hide Associates */
+
+.campaign-codex .hidden-associate {
+    opacity: 0.5;
+    filter: grayscale(100%);
+    border: 1px dashed var(--cc-accent80);
+}
+/* ACTOR DROPPER IMAGE FIX */
+
+.campaign-codex .cc-widget-actor-dropper .item-image {
+background: var(--cc-accent80);
+}
+
+.campaign-codex .cc-widget-actor-dropper .ad-drop-map-btn{
+
+}
+
+.campaign-codex .cc-widget-actor-dropper .ad-header input{
+flex: 1;
+margin-right: 10px;
+border: none;
+background: transparent;
+font-weight: bold;
+color: var(--cc-main-text);
+border-bottom: 1px solid var(--cc-border);
+}
+.campaign-codex .cc-widget-actor-dropper .ad-header{
+display: flex;
+justify-content: space-between;
+align-items: center;
+margin-bottom: 10px;
+}
+

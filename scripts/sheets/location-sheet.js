@@ -103,6 +103,16 @@ export class LocationSheet extends CampaignCodexBaseSheet {
     const { locationData, linkedRegion, directNPCs, shopNPCs, linkedShops, linkedScene, canViewRegion, canViewScene, inventory } = this._processedData;
     const rawInventoryCount = (locationData.inventory || []).length;
   
+
+    const hiddenAssociates = this.document.getFlag("campaign-codex", "data")?.hiddenAssociates || [];
+
+    [ directNPCs, shopNPCs, linkedShops]
+      .flat()
+      .filter(Boolean) 
+      .forEach(item => {
+          if (hiddenAssociates.includes(item.uuid)) item.hidden = true;
+      });
+  
     context.inventory=inventory;
   
 
@@ -263,7 +273,6 @@ export class LocationSheet extends CampaignCodexBaseSheet {
     ]);
     context.quickTags = CampaignCodexLinkers.createQuickTags(context.taggedDirectNPCs);
 
-        // <div class="region-info"><i class="${TemplateComponents.getAsset("icon", "region")}"></i><span class="region-name ${context.canViewRegion ? `region-link" data-action="openRegion" data-uuid="${context.linkedRegion.uuid}"` : '"'}">${context.linkedRegion.name}</span>
 
     // --- Custom Header ---
     let headerContent = "";
@@ -357,32 +366,6 @@ export class LocationSheet extends CampaignCodexBaseSheet {
   }
 
 
-
-  // _generateInfoTab(data) {
-  //   let regionSection = "";
-  //   const label = this._labelOverride(this.document, "info") || localize("names.information");
-
-  //   if (data.linkedRegion) {
-  //     const regionCard = `
-  //       <div class="linked-actor-card">
-  //         <div class="actor-image"><img src="${data.linkedRegion.img}" alt="${data.linkedRegion.name}"></div>
-  //         <div class="actor-content"><h4 class="actor-name">${data.linkedRegion.name}</h4></div>
-  //         <div class="actor-actions">
-  //           ${data.canViewRegion ? `<i class="fas fa-external-link-alt action-btn open-region" data-action="openRegion" data-uuid="${data.linkedRegion.uuid}" title="Open Region"></i>` : ""}
-  //           ${data.isGM ? `<i class="fas fa-unlink action-btn remove-location" data-action="removeLocationFromRegion" data-uuid="${data.linkedRegion.uuid}" title="Remove from Region"></i>` : ""}
-  //         </div>
-  //       </div>
-  //     `;
-  //     regionSection = `<div class="form-section">${regionCard}</div>`;
-  //   } else if (data.isGM) {
-  //     regionSection = `<div class="form-section">${TemplateComponents.dropZone("region", TemplateComponents.getAsset("icon", "region"), format("dropzone.link", { type: localize("names.region") }), "")}</div>`;
-  //   }
-  //   return `
-  //     ${TemplateComponents.contentHeader("fas fa-info-circle", label)}
-  //     ${regionSection}
-  //     ${TemplateComponents.richTextSection(this.document, data.sheetData.enrichedDescription, "description", data.isOwnerOrHigher)}
-  //   `;
-  // }
 
   async _generateNPCsTab(data) {
     const label = this._labelOverride(this.document, "npcs") || localize("names.npcs");

@@ -22,8 +22,6 @@ export class NPCSheet extends CampaignCodexBaseSheet {
 
   async _processNpcData() {
     const npcData = this.document.getFlag("campaign-codex", "data") || {};
-    // console.log(npcData);
-    // console.log(npcData.inventory);
     const [linkedActor, rawLocations, linkedShops, associates, inventory] = await Promise.all([
       npcData.linkedActor ? CampaignCodexLinkers.getLinkedActor(npcData.linkedActor) : null,
       CampaignCodexLinkers.getAllLocations(this.document, npcData.linkedLocations || []),
@@ -62,6 +60,10 @@ export class NPCSheet extends CampaignCodexBaseSheet {
         key: "associates",
         label: localize("names.associates"),
       },
+      // {
+      //   key: "factions",
+      //   label: localize("names.factions"),
+      // },
       { 
         key: "quests", 
         label: localize("names.quests"), 
@@ -114,6 +116,16 @@ export class NPCSheet extends CampaignCodexBaseSheet {
       this._processedData = await this._processNpcData();
     }
     const { npcData, linkedActor, rawLocations, linkedShops, associates,inventory } = this._processedData;
+
+    const hiddenAssociates = this.document.getFlag("campaign-codex", "data")?.hiddenAssociates || [];
+    [rawLocations, linkedShops, associates]
+      .flat()
+      .filter(Boolean) 
+      .forEach(item => {
+          if (hiddenAssociates.includes(item.uuid)) item.hidden = true;
+      });
+
+
     const rawInventoryCount = (npcData.inventory || []).length;
     context.inventory = inventory;
     context.isLoot = npcData.isLoot || false;
@@ -219,6 +231,14 @@ export class NPCSheet extends CampaignCodexBaseSheet {
         label: context.tagMode ? localize("names.members") : localize("names.associates"),
         icon: TemplateComponents.getAsset("icon", "npc"),
       },
+      // {
+      //   key: "factions",
+      //   statistic: { value: context.taggedNPCs.length, view:  context.taggedNPCs.length > 0 },
+      //   active: this._currentTab === "factions",
+      //   content: await renderIfActive("factions",  this._generateFactionsTab(context)),
+      //   label: localize("names.facttions"),
+      //   icon: TemplateComponents.getAsset("icon", "faction"),
+      // },
       { 
         key: "quests", 
         statistic: {value: context.sheetData.quests.length, view:context.sheetData.quests.length>0},
@@ -323,9 +343,6 @@ export class NPCSheet extends CampaignCodexBaseSheet {
   async _onRender(context, options) {
     await super._onRender(context, options);
     const nativeHtml = this.element;
-
-    // --- Listeners for non-click events (e.g., change) ---
-    // nativeHtml.querySelector(".tag-mode-toggle")?.addEventListener("change", this._onTagToggle.bind(this));
   }
 
   async _handleDrop(data, event) {
@@ -438,6 +455,26 @@ export class NPCSheet extends CampaignCodexBaseSheet {
       ${TemplateComponents.entityGrid(preparedShops, "shop")}
     `;
   }
+
+  async _generateFactionsTab(context) {
+    let defaultLabel = localize("names.factions");
+    const label = this._labelOverride(this.document, "factions") || defaultLabel ;
+    
+    const preparedTags = context.taggedNPCs;
+    let content = "";
+    let buttons = "";
+    if (context.isGM) {
+      buttons += `<i class="fas fa-people-group refresh-btn create-npc-button" data-action="createTag" title="${format("button.title", { type: localize("names.npc") })}"></i>`;
+    }
+    if (context.isGM && canvas.scene && preparedTags.length > 0) {
+      buttons += `<i class="refresh-btn fas fa-street-view members-to-map-button" data-action="membersToMapButton" title="${format("button.droptoscene", { type: localize("names.npc") })}"></i>`;
+    }
+      content += `${TemplateComponents.contentHeader("fas fa-people-group", label, buttons)}
+        ${TemplateComponents.entityGrid(preparedTags, "factions", true)}`;
+
+    return content;
+  }
+
 
   async _generateAssociatesTab(context) {
     let defaultLabel = localize("names.associates");

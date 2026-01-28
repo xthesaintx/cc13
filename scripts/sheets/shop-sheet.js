@@ -34,7 +34,6 @@ export class ShopSheet extends CampaignCodexBaseSheet {
         console.warn(`Campaign Codex | Linked scene not found: ${shopData.linkedScene}`);
       }
     }
-    // const [linkedNPCs, linkedLocation, inventory, canViewLocation, canViewScene] = await Promise.all([
     const [linkedNPCs, linkedLocation, canViewLocation, canViewScene,inventory] = await Promise.all([
         CampaignCodexLinkers.getLinkedNPCs(this.document, shopData.linkedNPCs || []),
         shopData.linkedLocation ? CampaignCodexLinkers.getLinkedLocation(shopData.linkedLocation) : null,
@@ -42,7 +41,6 @@ export class ShopSheet extends CampaignCodexBaseSheet {
         this.constructor.canUserView(shopData.linkedScene),
         CampaignCodexLinkers.getInventory(this.document, shopData.inventory)
     ]);
-    // return { shopData, linkedScene, linkedNPCs, linkedLocation, inventory, canViewLocation, canViewScene };
   
     return { shopData, linkedScene, linkedNPCs, linkedLocation, canViewLocation, canViewScene,inventory };
   }
@@ -95,6 +93,19 @@ export class ShopSheet extends CampaignCodexBaseSheet {
     this._processedData = await this._processShopData();
   }
   const { shopData, linkedScene, linkedNPCs, linkedLocation, canViewLocation, canViewScene, inventory } = this._processedData;
+
+
+    const hiddenAssociates = this.document.getFlag("campaign-codex", "data")?.hiddenAssociates || [];
+
+    [ linkedNPCs]
+      .flat()
+      .filter(Boolean) 
+      .forEach(item => {
+          if (hiddenAssociates.includes(item.uuid)) item.hidden = true;
+      });
+  
+
+
   
   const rawInventoryCount = (shopData.inventory || []).length;
   context.inventory = inventory;

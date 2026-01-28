@@ -486,7 +486,12 @@ export class CampaignCodexBaseSheet extends baseSheetApp {
    * @protected
    */
   _createContextMenus() {
-    this._createContextMenu(this._getEntityContextOptions, ".entity-card[data-uuid]", {
+    // this._createContextMenu(this._getEntityContextOptions, ".region-card[data-uuid],.location-card[data-uuid],.shop-card[data-uuid],.npc-card[data-uuid],.journal-card[data-uuid]", {
+    //   fixed: true,
+    //   hookName: `get${this.documentName}ContextOptions`,
+    //   parentClassHooks: false
+    // });
+    this._createContextMenu(this._getEntityContextOptions, ".journal-card[data-uuid]", {
       fixed: true,
       hookName: `get${this.documentName}ContextOptions`,
       parentClassHooks: false
@@ -510,6 +515,16 @@ export class CampaignCodexBaseSheet extends baseSheetApp {
         parentClassHooks: false
       });
     }    
+    // this._createContextMenu(this._getAssociateContextOptions, ".associate-card[data-uuid]", {
+    //   fixed: true,
+    //   hookName: `get${this.documentName}ContextOptions`,
+    //   parentClassHooks: false
+    // });
+    this._createContextMenu(this._getAssociateContextOptions, ".region-card[data-uuid],.location-card[data-uuid],.shop-card[data-uuid],.npc-card[data-uuid],.associate-card[data-uuid], .parentregion-card[data-uuid]", {
+      fixed: true,
+      hookName: `get${this.documentName}ContextOptions`,
+      parentClassHooks: false
+    });
     this._createContextMenu(this._getEntryContextOptions, ".scene-name[data-scene-uuid]", {
       fixed: true,
       hookName: `get${this.documentName}ContextOptions`,
@@ -539,6 +554,53 @@ export class CampaignCodexBaseSheet extends baseSheetApp {
     }
   }].concat();
   }
+
+  /** @inheritDoc */
+  _getAssociateContextOptions() {
+    return [{
+      name: localize("context.hideAssociate"),
+      icon: '<i class="fa-solid fa-eye-slash"></i>',
+      condition: span => game.user.isGM && !span.classList.contains("hidden-associate"),
+      callback: span => {
+        const syntheticEvent = {
+          currentTarget: span,
+          target: span,
+          preventDefault: () => { },
+          stopPropagation: () => { }
+        };
+        this.hideAssociate(syntheticEvent);
+      }
+    },
+    {
+      name: localize("context.showAssociate"),
+      icon: '<i class="fa-solid fa-eye"></i>',
+      condition: span => game.user.isGM && span.classList.contains("hidden-associate"),
+      callback: span => {
+        const syntheticEvent = {
+          currentTarget: span,
+          target: span,
+          preventDefault: () => { },
+          stopPropagation: () => { }
+        };
+        this.hideAssociate(syntheticEvent);
+      }
+    },
+    {
+      name: localize("context.removeLink"),
+      icon: '<i class="fa-solid fa-link-slash"></i>',
+      condition: span => game.user.isGM && span.dataset.uuid,
+      callback: span => {
+        const syntheticEvent = {
+          currentTarget: span,
+          target: span,
+          preventDefault: () => { },
+          stopPropagation: () => { }
+        };
+        this.removeLink(syntheticEvent);
+      }
+    }].concat();
+  }
+
 
   /** @inheritDoc */
   _getEntityContextOptions() {
@@ -1071,18 +1133,6 @@ static #_ontoggleWidgetPosition(event,target){
     });
   }
 
-  // _addClassToEditorContent(html) {
-  //   html.querySelectorAll("prose-mirror").forEach((editor) => {
-  //     editor.addEventListener("open", () => {
-  //       const containerDiv = editor.querySelector(".editor-container");
-  //       const journalClassString = journalSystemClass(game.system.id);
-  //       // const journalClassString = game.system.id === "dnd5e" ? "dnd5e2-journal journal-page-content" : "journal-page-content";
-  //       if (containerDiv && journalClassString) {
-  //         containerDiv.classList.add(...journalClassString.split(" "));
-  //       }
-  //     });
-  //   });
-  // }
 
   /**
    * Handle clicking an image to pop it out for fullscreen view.
@@ -1601,43 +1651,7 @@ _labelOverride(selectedDoc, sheetKey) {
     }
   }
 
-  // static async #_onAddWidget(event) {
-  //   event.preventDefault();
-  //   event.stopPropagation();
-  //   const widgetName = event.target.dataset.name;
-  //   if (!widgetName) return;
-  //   const sheetWidgets = this.document.getFlag("campaign-codex", "sheet-widgets") || [];
-  //   const existingCounters = sheetWidgets
-  //     .filter(w => w.widgetName === widgetName)
-  //     .map(w => w.counter || 0);
-  //   const maxCounter = existingCounters.length > 0 ? Math.max(...existingCounters) : 0;
-  //   const newCounter = maxCounter + 1;
-  //   const newWidget = {
-  //     id: foundry.utils.randomID(),
-  //     widgetName: widgetName,
-  //     counter: newCounter,  
-  //     active: true
-  //   };
-  //   if (sheetWidgets.some(w => w.id === newWidget.id)) {
-  //     return ui.notifications.warn("A random ID collision occurred. Please try again.");
-  //   }
 
-  //   await this.document.setFlag("campaign-codex", "sheet-widgets", [...sheetWidgets, newWidget]);
-  // }
-
-  // static async #_onActivateWidget(event) {
-  //   event.preventDefault();
-  //   const widgetId = event.target.dataset.id;
-  //   if (!widgetId) return;
-
-  //   const sheetWidgets = this.document.getFlag("campaign-codex", "sheet-widgets") || [];
-  //   const widget = sheetWidgets.find(w => w.id === widgetId);
-
-  //   if (widget) {
-  //     widget.active = true;
-  //     await this.document.setFlag("campaign-codex", "sheet-widgets", sheetWidgets);
-  //   }
-  // }
 
   static async #_onDeactivateWidget(event) {
     event.preventDefault();
@@ -1788,9 +1802,6 @@ _labelOverride(selectedDoc, sheetKey) {
       sourceDoc = await fromUuid(sourceUuid);
     }
 
-    // TemplateComponents.createPlayerSelectionDialog(item.name, async (targetActor) => {
-    //   await this._transferItemToActor(item, targetActor, sourceDoc, questId);
-    // });
 
 
   TemplateComponents.createPlayerSelectionDialog(item.name, async (targetActor, deductFunds) => {
@@ -2007,6 +2018,37 @@ async _handlePurchase(item, targetActor,  document) {
       }
     }
   }
+
+  // =========================================================================
+  // hide Cards
+  // =========================================================================
+
+
+
+  async hideAssociate(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    const target = event.target.closest('[data-uuid]');
+    const uuid = target.dataset.uuid;
+    if (!uuid) return;
+
+    const currentData = this.document.getFlag("campaign-codex", "data") || {};
+    const hiddenAssociates = currentData.hiddenAssociates || [];
+
+    if (hiddenAssociates.includes(uuid)) {
+      // Unhide
+      const newHidden = hiddenAssociates.filter(u => u !== uuid);
+      await this.document.setFlag("campaign-codex", "data.hiddenAssociates", newHidden);
+      ui.notifications.info("Associate visible to players.");
+    } else {
+      hiddenAssociates.push(uuid);
+      await this.document.setFlag("campaign-codex", "data.hiddenAssociates", hiddenAssociates);
+      ui.notifications.info("Associate hidden from players.");
+    }
+    this.render();
+  }
+
+
   // =========================================================================
   // Context remove forwarder
   // =========================================================================
@@ -2074,10 +2116,6 @@ async _handlePurchase(item, targetActor,  document) {
       ui.notifications.info("Unlinked journal.");
     }
   }
-
-  // static async #_onRemoveStandardJournal(event) {
-  //   this._removeJournal(event);
-  // }
 
 static async #_onRemoveLocation(event) {
     this._removeLocation(event);
