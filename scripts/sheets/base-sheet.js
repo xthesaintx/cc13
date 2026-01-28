@@ -2039,11 +2039,11 @@ async _handlePurchase(item, targetActor,  document) {
       // Unhide
       const newHidden = hiddenAssociates.filter(u => u !== uuid);
       await this.document.setFlag("campaign-codex", "data.hiddenAssociates", newHidden);
-      ui.notifications.info("Associate visible to players.");
+      // ui.notifications.info("Associate visible to players.");
     } else {
       hiddenAssociates.push(uuid);
       await this.document.setFlag("campaign-codex", "data.hiddenAssociates", hiddenAssociates);
-      ui.notifications.info("Associate hidden from players.");
+      // ui.notifications.info("Hidden from players.");
     }
     this.render();
   }
