@@ -469,7 +469,6 @@ export class CampaignCodexBaseSheet extends baseSheetApp {
    * @protected
    */
   _onConfigurePlugins(event) {
-    console.log(event);
     event.plugins.highlightDocumentMatches =
       ProseMirror.ProseMirrorHighlightMatchesPlugin.build(ProseMirror.defaultSchema);
   }

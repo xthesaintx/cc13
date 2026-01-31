@@ -11,96 +11,78 @@ export class MapNoteWidget extends CampaignCodexWidget {
 
     async _prepareContext() {
         const savedData = (await this.getData()) || {};
-        let notes = savedData.notes || [];
-        
-        const enrichedNotes = await Promise.all(notes.map(async (n) => {
-            return {
+        const notes = savedData.notes || [];
+        const isGM = game.user.isGM;
+
+        const enrichedNotes = notes
+            .filter(n => isGM || n.visible)
+            .map(n => ({
                 ...n,
                 title: n.title || "New Note",
                 mapId: n.mapId || "",
                 visible: n.visible ?? false,
                 visibilityIcon: n.visible ? "fa-eye" : "fa-eye-slash",
-                visibilityTitle: n.visible ? "Player Visible" : "Player Hidden"
-            };
-        }));
+                visibilityTitle: n.visible ? "Player Visible" : "Player Hidden",
+                isGM: isGM // Pass to individual note for template logic
+            }));
 
         return {
             id: this.widgetId,
             notes: enrichedNotes,
-            isGM: this.isGM
+            isGM: isGM,
+            entryId: this.document.id,
+            entryUuid: this.document.uuid
         };
     }
-
     async render() {
-        const data = await this._prepareContext();
-
-        const notesHtml = data.notes
-            .filter(note => data.isGM || note.visible) 
-            .map(note => `
-            <div class="note-card" 
-                 data-id="${note.id}"
-                 ${data.isGM ? `data-drag="true" 
-                  draggable="true"`:``} 
-                 data-entry-id="${this.document.id}"
-                 data-entry-uuid="${this.document.uuid}"
-                 data-action="view"
-                 data-title="${foundry.utils.escapeHTML(note.title || '')}"
-                 data-map-id="${foundry.utils.escapeHTML(note.mapId || '')}"
-                 >
-                 
-                <div class="note-header">
-                    ${data.isGM ? `
-                    <i class="fas fa-bars"></i>
-                        <input type="text" 
-                               class="note-title-input" 
-                               data-id="${note.id}" 
-                               value="${foundry.utils.escapeHTML(note.title)}" 
-                               placeholder="Note Title"
-                               onclick="event.stopPropagation()" 
-                        />
-                        <input type="text" 
-                               class="note-mapId-input" 
-                               data-id="${note.id}" 
-                               value="${foundry.utils.escapeHTML(note.mapId)}" 
-                               placeholder="-"
-                               maxlength="4" 
-                               onclick="event.stopPropagation()" 
-                        />
-                    ` : `
-                        <span class="note-title-display">${note.title}</span>
-                    `}
-                    
-                    ${data.isGM ? `
-                    <div class="note-actions">
-                        <i class="fas ${note.visibilityIcon} note-view" 
-                           data-action="toggle-visibility" 
-                           data-id="${note.id}" 
-                           title="${note.visibilityTitle}">
-                        </i>
-                        <i class="fas fa-edit note-edit" data-action="edit" data-id="${note.id}" title="Edit Content"></i>
-                        <i class="fas fa-trash note-delete" data-action="delete" data-id="${note.id}" title="Delete Note"></i>
-                    </div>
-                    ` : ''}
-                </div>
-            </div>
-        `).join("");
-
-        return `
-            <div class="cc-widget-map-notes" id="widget-${this.widgetId}">
-                <div class="note-grid">
-
-                ${data.isGM ? `
-                <div class="add-note-btn note-card" data-action="add">
-                    <div class="note-header"><span class="note-title-display"><i class="fas fa-circle-plus"></i></span>
-                    </div>
-                </div>
-                ` : ''}
-
-                    ${notesHtml || (data.isGM ? '' : '<div class="note-empty is-empty">No notes available.</div>')}
-                </div>
-            </div>
-        `;
+        const context = await this._prepareContext();
+        return await renderTemplate("modules/campaign-codex/templates/widgets/map-notes.hbs", context);
     }
+
+    async _updateNoteData(id, updates) {
+        if (updates.mapId) {
+            updates.mapId = updates.mapId.replace(/[^a-zA-Z0-9]/g, "").substring(0, 4);
+        }
+
+        const savedData = (await this.getData()) || {};
+        const notes = [...(savedData.notes || [])]; 
+        const index = notes.findIndex(n => n.id === id);
+        
+        if (index === -1) return;
+
+        notes[index] = { ...notes[index], ...updates };
+        await this.saveData({ notes });
+
+        if (canvas.ready && (updates.mapId !== undefined || updates.title !== undefined)) {
+            const noteUpdates = canvas.notes.placeables
+                .filter(n => n.document.getFlag("campaign-codex", "noteid") === id)
+                .map(n => ({
+                    _id: n.document.id,
+                    text: updates.title ?? n.document.text,
+                    "flags.campaign-codex.markerid": updates.mapId ?? n.document.getFlag("campaign-codex", "markerid")
+                }));
+
+            if (noteUpdates.length > 0) {
+                await canvas.scene.updateEmbeddedDocuments("Note", noteUpdates);
+            }
+        }
+    }
+
+    /**
+     * Efficient Refresh: Target the specific DOM node
+     */
+    async _refreshWidget() {
+        const htmlElement = document.getElementById(`widget-${this.widgetId}`);
+        if (!htmlElement) return;
+
+        const newHtml = await this.render();
+        const newNode = foundry.utils.elementCreateFromString(newHtml);
+        
+        // Swap only the content to preserve scroll position if possible
+        htmlElement.replaceWith(newNode);
+        this.activateListeners(newNode);
+    }
+
 
     async activateListeners(htmlElement) {
         htmlElement.querySelector('[data-action="add"]')?.addEventListener('click', (e) => {
@@ -246,47 +228,6 @@ async _toggleVisibility(id) {
         this._refreshWidget();
     }
 
-    async _updateNoteData(id, updates) {
-        if (typeof updates.mapId === 'string') {
-            updates.mapId = updates.mapId.replace(/[^a-zA-Z0-9]/g, "").substring(0, 4);
-        }
-
-        const savedData = (await this.getData()) || {};
-        const notes = savedData.notes || [];
-        const index = notes.findIndex(n => n.id === id);
-        
-        if (index !== -1) {
-            notes[index] = { ...notes[index], ...updates };
-            await this.saveData({ notes });
-
-            if (canvas.ready && (updates.mapId !== undefined || updates.title !== undefined)) {
-                const linkedNotes = canvas.notes.placeables.filter(n => 
-                    n.document.getFlag("campaign-codex", "noteid") === id
-                );
-
-                const noteUpdates = linkedNotes.map(n => {
-                    const noteUpdate = { _id: n.document.id };
-                    
-                    if (updates.mapId !== undefined) {
-                        noteUpdate["flags.campaign-codex.markerid"] = updates.mapId;
-                    }
-                    
-                    if (updates.title !== undefined) {
-                        noteUpdate["text"] = updates.title;
-                    }
-                    
-                    return noteUpdate;
-                });
-
-                if (noteUpdates.length > 0) {
-                    await canvas.scene.updateEmbeddedDocuments("Note", noteUpdates);
-                       for (const note of linkedNotes) {
-                            note.draw(); 
-                        }
-                }
-            }
-        }
-    }
 
     async _createNote() {
         const newId = foundry.utils.randomID();

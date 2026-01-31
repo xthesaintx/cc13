@@ -83,6 +83,17 @@ export class ActorDropperWidget extends CampaignCodexWidget {
                 await this._removeActor(uuid, htmlElement);
             });
         });
+        htmlElement.querySelectorAll('.actor-drop-individual').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+
+                const uuid = e.currentTarget.dataset.uuid;
+                await this._dropToIndividualToMap(uuid, htmlElement);
+            });
+        });
+
+
 
         htmlElement.querySelector('.ad-drop-map-btn')?.addEventListener('click', async (e) => {
             e.preventDefault();
@@ -169,6 +180,31 @@ export class ActorDropperWidget extends CampaignCodexWidget {
         await this.saveData({ ...savedData, actors: actors });
         this._refreshWidget(htmlElement);
     }
+
+async _dropToIndividualToMap(uuid, htmlElement){
+        const npcsToDrop = [];
+        const actor = await fromUuid(uuid);
+        if (actor) {
+            npcsToDrop.push(actor);
+        }
+
+        if (npcsToDrop.length === 0) {
+            return ui.notifications.warn("Could not find actor data.");
+        }
+
+        try {
+            if (game.campaignCodexNPCDropper) {
+                await game.campaignCodexNPCDropper.dropActorsToScene(npcsToDrop, { title: "Drop Actors to Map" });
+            } else {
+                console.error("Campaign Codex | game.campaignCodexNPCDropper not found.");
+                ui.notifications.error("Dropper utility not available.");
+            }
+        } catch (error) {
+            console.error("Campaign Codex | Error in ActorDropperWidget drop:", error);
+            ui.notifications.error("Failed to drop actors.");
+        }
+    }
+
 
     async _dropToMap() {
         const savedData = (await this.getData()) || {};

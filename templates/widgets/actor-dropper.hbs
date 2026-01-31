@@ -2,9 +2,9 @@
 
     <div class="add-actor-header">
         <input type="text" class="ad-title-input" value="{{title}}" placeholder="Widget Title">
-        <button class="ad-drop-map-btn">
-           {{#if actors}}     <i class="fas fa-street-view"></i>{{/if}}
-        </button>
+           {{#if actors}}         <button class="ad-drop-map-btn">
+    <i class="fas fa-street-view"></i>
+        </button>{{/if}}
     </div>
     {{#if actors}}
     {{#each actors}}
@@ -28,6 +28,7 @@
         </div>
 
         <div class="item-actions" style="text-align:center">
+            <i class="fas fa-street-view inventory-button actor-drop-individual" data-uuid="{{uuid}}" title="Drop" ></i>
             <i class="fas fa-trash inventory-button ad-remove-btn" data-uuid="{{uuid}}" title="Remove"></i>
         </div>
     </div>

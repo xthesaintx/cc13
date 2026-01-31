@@ -1,0 +1,39 @@
+<div class="cc-widget-map-notes" id="widget-{{id}}">
+    <div class="note-grid">
+        {{#each notes}}
+        <div class="note-card" 
+             data-id="{{this.id}}"
+             {{#if ../isGM}}data-drag="true" draggable="true"{{/if}} 
+             data-entry-id="{{../entryId}}"
+             data-entry-uuid="{{../entryUuid}}"
+             data-action="view"
+             data-title="{{this.title}}"
+             data-map-id="{{this.mapId}}">
+             
+            <div class="note-header">
+                {{#if ../isGM}}
+                    <i class="fas fa-bars"></i>
+                    <input type="text" class="note-title-input" data-id="{{this.id}}" value="{{this.title}}" placeholder="Note Title" />
+                    <input type="text" class="note-mapId-input" data-id="{{this.id}}" value="{{this.mapId}}" placeholder="-" maxlength="4" />
+                    
+                    <div class="note-actions">
+                        <i class="fas {{this.visibilityIcon}} note-view" data-action="toggle-visibility" data-id="{{this.id}}" title="{{this.visibilityTitle}}"></i>
+                        <i class="fas fa-edit note-edit" data-action="edit" data-id="{{this.id}}"></i>
+                        <i class="fas fa-trash note-delete" data-action="delete" data-id="{{this.id}}"></i>
+                    </div>
+                {{else}}
+                    <span class="note-title-display">{{this.title}}</span>
+                {{/if}}
+            </div>
+        </div>
+        {{else}}
+            {{#unless isGM}}<div class="note-empty is-empty">No notes available.</div>{{/unless}}
+        {{/each}}
+
+        {{#if isGM}}
+        <div class="add-note-btn note-card" data-action="add">
+            <div class="note-header"><span class="note-title-display"><i class="fas fa-circle-plus"></i></span></div>
+        </div>
+        {{/if}}
+    </div>
+</div>

@@ -1,3 +1,6 @@
+## 2.3.9
+- tweaks to some widgets
+
 ## 2.3.7
 - hide show context menu for entity cards, this will hide/show a card on a sheet from players
 - actor drop widget, create encounter groups

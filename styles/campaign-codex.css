@@ -25,6 +25,8 @@ form.application.campaign-codex:not(.minimized, .minimizing, .maximizing){
   border-radius: 0 !important;
   overflow: visible !important;
   background: var(--color-cool-5-90);
+    width: 960px;
+  height: 800px;
 }
 
 
@@ -108,6 +110,8 @@ body.theme-dark .campaign-codex {
 .cc-editor {
   outline: 0 solid transparent;
 }
+
+
 
 /*
  * ---------------------------------------------
@@ -7052,6 +7056,8 @@ cursor: grab;
     min-width: 0;
     text-overflow: ellipsis;
     margin: 8px 0px;
+    background: none;
+    box-shadow: none;
 }
 
 .cc-widget-map-notes .note-mapId-input {
@@ -7261,7 +7267,7 @@ body.system-gurps .application.sheet.campaign-codex .tab-item>span {
 /* ACTOR DROPPER IMAGE FIX */
 
 .campaign-codex .cc-widget-actor-dropper .item-image {
-background: var(--cc-accent80);
+/*background: var(--cc-accent30);*/
 }
 
 .campaign-codex .cc-widget-actor-dropper .ad-drop-map-btn i{
@@ -7284,20 +7290,47 @@ background: var(--cc-accent80);
   box-shadow: none;
 }
 
+.campaign-codex .cc-widget-actor-dropper.inventory-table.inventory{
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+}
+
 .campaign-codex .cc-widget-actor-dropper .add-actor-header input{
     flex: 1;
     margin-right: 10px;
     border: none;
-    background: var(--cc-card-bg);
+  background: no-repeat;
     font-weight: bold;
     color: var(--cc-main-text);
-    box-shadow: var(--cc-shadow);
-
+    box-shadow: none;
 }
+
+.campaign-codex .cc-widget-container[data-widget-type="Actor Dropper"]{
+    box-shadow: var(--cc-shadow);
+    background: var(--cc-card-bg);
+    border-radius: 8px;
+    padding: 10px;
+}
+
 .campaign-codex .cc-widget-actor-dropper .add-actor-header{
 display: flex;
 justify-content: space-between;
 align-items: center;
 margin-bottom: 10px;
+flex: 1 0 100%;
 }
 
+.campaign-codex .cc-widget-actor-dropper .inventory-item
+{
+  display: flex;
+  cursor: pointer;
+  gap: 12px;
+  padding: 6px 0px 6px 0px;
+  align-items: center;
+  border-bottom: 1px dotted var(--cc-accent80);
+  transition: background 0.2s ease;
+  font-size: 12px;
+  flex: 1 1 48%;
+  margin: 0% 1%;
+}
