@@ -3709,7 +3709,7 @@ color:var(--cc-slate);
     grid-template-columns: auto minmax(50px, 150px);
     align-items: flex-start;
     padding-top: 0px;
-    background-color: color-mix(in srgb, var(--cc-card-bg), transparent 10%);;
+    background: none;
     padding-left: 16px;
     padding-bottom: 0px;
     position: relative;
@@ -3717,6 +3717,7 @@ color:var(--cc-slate);
     gap: 16px;
     align-content: space-between;
     justify-content: space-between;
+    box-shadow: var(--cc-shadow);
 }
 
 

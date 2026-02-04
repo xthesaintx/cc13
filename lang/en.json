@@ -265,7 +265,7 @@
         }
       },
       "infinite":{
-        "item":"Toggle infinite ammount"
+        "item":"Toggle infinite amount"
       },
       "remove": {
         "item": "Remove Item",

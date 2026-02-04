@@ -1197,15 +1197,18 @@ async _generateSelectedGroupMembers(selectedDoc, selectedData) {
     const labelOverride = this._labelOverride(selectedDoc, "info") ||localize("names.information");
     const systemClass = gameSystemClass(game.system.id);
     const journalClass = journalSystemClass(game.system.id);
+    const widgetPosition = selectedDoc.getFlag("campaign-codex", "widgets-position") ?? false;
+    const widgetHTML = `${infoWidgets ? `<div class="info-widgets">${infoWidgets}</div>` : ""}`
 
     return `
     ${TemplateComponents.contentHeader("fas fa-info-circle", labelOverride)}
+    ${!widgetPosition ? widgetHTML :''}
     <article class="cc-enriched cc-hidden-secrets themed ${isThemed()} ${systemClass}">
         <section class="rich-text-content journal-entry-content ${journalClass}" name="cc.secret.content.notes">
         ${enrichedDescription || ""}
         </section>
     </article>
-      ${infoWidgets ? `<div class="info-widgets">${infoWidgets}</div>` : ""}
+    ${widgetPosition ? widgetHTML :''}
   `;
   }
 async _generateSelectedAssociatesContent(selectedDoc, selectedData) {
