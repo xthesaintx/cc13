@@ -1,3 +1,8 @@
+## 2.4.0
+- group sheet widget position fix
+- spelling error fix
+- group sheet header css tweak
+
 ## 2.3.9
 - tweaks to some widgets
 
