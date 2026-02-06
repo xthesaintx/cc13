@@ -1,0 +1,325 @@
+{
+  "CAMPAIGN_CODEX": 
+  {
+    "updateHTML":"<div> <p><strong>WAŻNE DZIAŁANIE WYMAGANE: Campaign Codex</strong></p><p>Jeśli właśnie zaktualizowałeś Campaign Codex z wersji 1.5.7 lub starszej, wykonaj makro 'Migrate Parent Region' z dołączonego kompendium</p></div>",
+    "welcomePageHTML" : "<div> <p><strong>Witamy w Campaign Codex</strong></p> <p>Zarządzanie folderami, lokalizacja ceny przedmiotu, lokalizacja waluty oraz inne konfiguracje można zmienić w ustawieniach.</p> <div><button data-campaign-codex-handler=\"campaign-codex|openMenu|core_settings\"><i class=\"fas fa-wrench\"></i>Ustawienia</button></div> <hr> <p><strong>Dołącz do społeczności Campaign Codex</strong></p> <p>Jeśli chcesz zasugerować funkcję, zgłosić błąd lub po prostu porozmawiać, zapraszamy na nasz Discord.</p> <div><button data-campaign-codex-handler=\"campaign-codex|openWindow|https://discord.gg/fycwH79s2y\"><i class=\"fab fa-discord\"></i> Dołącz do Discorda</button></div> <p><strong>Znalazłeś błąd?</strong></p> <p>Jeśli chcesz zgłosić błąd, a Discord nie jest dla Ciebie, zajrzyj na GitHub.</p> <div><button data-campaign-codex-handler=\"campaign-codex|openWindow|https://github.com/xthesaintx/cc13\"><i class=\"fas fa-bug\"></i> Zgłoś błąd</button></div> <p><strong>Wspieranie rozwoju</strong></p> <p>Jeśli chcesz wesprzeć rozwój, rozważ opcje członkostwa na Patreon.</p> <div><button data-campaign-codex-handler=\"campaign-codex|openWindow|https://patreon.com/wgtngm\"><i class=\"fa-brands fa-patreon\"></i> Zostań patronem</button></div><p>Jeśli wolisz, możesz nas wesprzeć przez Ko-fi.</p><div><button data-campaign-codex-handler=\"campaign-codex|openWindow|https://ko-fi.com/wgtngm\"><i class=\"fas fa-cup-togo\"></i> Postaw kawę</button></div><p><strong>Dokumentacja</strong></p> <p>Czujesz się zagubiony? Zajrzyj na naszą stronę dokumentacji po wskazówki lub wejdź na Discord i zadaj pytanie.</p> <div><button data-campaign-codex-handler=\"campaign-codex|openWindow|https://campaigncodex.wgtngm.com\"><i class=\"fas fa-book\"></i> Dokumentacja</button></div></div>",   
+    "tabs": {
+      "original-name": "Oryginalna nazwa",
+      "override-name": "Nadpisana nazwa",
+      "visible": "Włączone",
+      "hidden": "Ukryte",
+      "edit-title": "Konfiguruj zakładki",
+      "reset": "Przywróć domyślne"
+    },
+    "widgets":{
+      "available":"Dostępne",
+      "inactive":"Nieaktywne",
+      "active":"Aktywne"
+    },
+    "context":{
+      "hideAssociate": "Ukryj przed graczem",
+      "showAssociate": "Pokaż graczowi",
+      "export":"Eksportuj do standardowego dziennika",
+      "group":"Dodaj do {type}",
+      "changeImage": "Zmień obraz",
+      "removeImage": "Usuń obraz",
+      "showImage": "Pokaż obraz graczom",
+      "removeLink":"Odłącz",
+      "removeTag":"Usuń tag"
+    },
+    "toc":{
+      "filter":"Lewy przycisk: włącz, Prawy przycisk: wyklucz.",
+      "clear":"Wyczyść filtry"
+    },
+    "button":{
+        "title":"Utwórz nowy {type}",
+        "droptoscene" : "Upuść {type} na obecną scenę",
+        "tagmode": "Tryb tagów",
+        "dropactortoscene": "Upuść aktora na obecną scenę"
+    },
+    "info": {
+        "automatically":"{type} są automatycznie uzupełniane ze wszystkich {source}.",
+        "refresh":"Odśwież",
+        "linkfound":"Łączenie istniejącego {type}.",
+        "newlink":"Utworzono i połączono {type} ze sceny.",
+        "linked":"Połączono {type}"
+    },
+    "sheet":{
+      "journal": "Dziennik {type}"
+    },
+    "add":"Dodaj {type}",
+    "group": {
+      "notfound":"Nie znaleziono elementu, który próbujesz dodać.",
+      "self":"Grupa nie może zostać dodana do samej siebie.",
+      "expandAll": "Rozwiń wszystko",
+      "collapseAll": "Zwiń wszystko",
+      "toggleRegions": "Pokaż/Ukryj Regiony",
+      "toggleShops": "Pokaż/Ukryj Wpisy",
+      "toggleLocations": "Pokaż/Ukryj Lokalizacje",
+      "toggleGroups": "Pokaż/Ukryj Grupy",
+      "toggleItems": "Pokaż/Ukryj Przedmioty",
+      "toggleNPCs": "Pokaż/Ukryj BN",
+      "toggleNPCTags": "Pokaż/Ukryj Tagi BN",
+      "toggleTagMode": "Tryb drzewa tagów"
+    },
+    "member": {
+      "type":"Członek {type}"
+    },
+    "heading": {
+      "in":"{type} {in}"
+    },
+    "names": {
+
+      "regionlocation": "Region lub lokacja",
+      "location": "Lokacja",
+      "locations": "Lokacje",
+      "group": "Grupa",
+      "groups": "Grupy",
+      "shop": "Wpis",
+      "shops": "Wpisy",
+      "region": "Region",
+      "regions": "Regiony",
+      "parentregions": "Regiony nadrzędne",
+      "npc": "BN",
+      "npcs": "BN-y",
+      "items": "Przedmioty",
+      "journal": "Dziennik",
+      "journals": "Dzienniki",
+      "organisation": "Organizacja",
+      "organisations": "Organizacje",
+      "associate": "Sojusznik",
+      "associates": "Sojusznicy",
+      "members": "Członkowie",
+      "direct": "Bezpośredni",
+      "info": "Info",
+      "information": "Informacje",
+      "note": "Notatki",
+      "actor": "Aktor",
+      "player": "Gracz",
+      "tag": "Tag",
+      "tags": "Tagi",
+      "inventory":"Ekwipunek",
+      "loot": "Łup",
+      "scene":"Scena",
+      "standard": "Standardowy",
+      "quest":"Zadanie",
+      "quests":"Zadania",
+      "toc":"Spis treści",
+      "widgets": "Widżety",
+      "factions": "Frakcje"
+    },
+    "settings": {
+      "allowPlayerPurchasing":{
+        "name": "Pozwól graczom kupować z Ekwipunku",
+        "hint": "Jeśli włączone, gracze mogą przesyłać przedmioty do siebie z ekwipunku"
+      },
+      "mapMarkerOverride":{
+        "name": "Skala znacznika mapy",
+        "hint": "Rozmiar znacznika mapy Campaign Codex. Domyślnie 1"
+      },
+      "mapMarkerColor":{
+        "name": "Użyj koloru akcentu CC dla znaczników mapy",
+        "hint": "Jeśli włączone, znaczniki mapy CC będą używać koloru akcentu CC jako tła"
+      },
+      "mapMarkers":{
+        "name": "Włącz znaczniki mapy Campaign Codex",
+        "hint": "Jeśli włączone, arkusze CC o nazwie zaczynającej się od opcjonalnej litery, po której następuje do trzech cyfr i opcjonalna litera, utworzą niestandardowy znacznik mapy, np. A13"
+      },
+      "mapMarkersHover":{
+        "name": "Włącz podgląd po najechaniu na znaczniki mapy Campaign Codex",
+        "hint": "Jeśli włączone, znaczniki notatek mapy będą pokazywać treść po najechaniu"
+      },
+      "hideCCbutton": {
+        "name": "Ukryj przycisk sceny CC",
+        "hint": "Ukryj przycisk sceny CC dla użytkowników niebędących MG."
+      },
+      "useStyledTocButton": {
+        "name": "Stylizowany przycisk Spisu Treści",
+        "hint": "Włącz, aby używać motywu Campaign Codex dla przycisku Spisu Treści w kontrolkach sceny."
+      },
+      "colorPicker":{
+        "name": "Nadpisanie koloru akcentu",
+        "hint": "Nadpisz domyślny kolor akcentu motywu. Wpisz kod hex, np. #d4af37. Pozostaw puste, aby przywrócić domyślny."
+      },
+      "showOnlyPinned":{
+        "name": "Pokaż tylko przypięte zadania w spisie treści",
+        "hint": "Jeśli zaznaczone, Spis Treści pokaże tylko zadania oznaczone jako 'przypięte'."
+      },
+      "showStats":{
+        "name": "Pokaż statystyki w menu",
+        "hint": "Pokaże (#) obok pozycji menu w arkuszach, aby wskazać liczbę każdego rodzaju, widoczne tylko dla MG."
+      },
+      "roundFinalPrice":{
+        "name": "Zaokrąglij cenę końcową do liczby całkowitej",
+        "hint": "Zaokrągli cenę końcową przedmiotu do najbliższej liczby całkowitej."
+      },
+      "maxRegionDepth": {
+        "name": "Nadpisz głębokość zagnieżdżenia",
+        "hint": "Liczba warstw regionów, które możesz utworzyć. Domyślnie 5, wyższa wartość będzie bardziej obciążać system."
+      },
+      "itemPricePath": {
+        "name": "Nadpisz ścieżkę ceny przedmiotu",
+        "hint": "Ścieżka do wartości ceny przedmiotu (np. 'system.price.value' dla D&D5e). Pozostaw puste, aby użyć wykrytego systemu."
+      },
+      "enableThemes": {
+        "name": "Włącz własny motyw",
+        "hint": "Włącza własny kolor i krój pisma wybrane w Konfiguracji Kolorów."
+      },
+      "playerCurrencyPath": {
+        "name": "Nadpisz ścieżkę waluty gracza",
+        "hint": "Ścieżka do waluty gracza (np. 'system.currency' dla D&D5e). Pozostaw puste, aby użyć wykrytego systemu."
+      },
+      "itemDenominationPath": {
+        "name": "Nadpisz ścieżkę waluty przedmiotu",
+        "hint": "Ścieżka do nominału waluty przedmiotu (np. 'system.price.denomination' dla D&D5e). Pozostaw puste, aby użyć wykrytego systemu."
+      },
+      "itemDenominationOverride": {
+        "name": "Nadpisz nominał",
+        "hint": "Nominał waluty (np. kredyty, sz, szt). Pozostaw puste, aby użyć ścieżki waluty przedmiotu lub wykrytego systemu. Campaign Codex automatycznie wykryje wartość i nominał przedmiotów na podstawie aktywnego systemu gry."
+      },
+      "hideBaseCost": {
+        "name": "Ukryj kolumnę ceny bazowej",
+        "hint": "Jeśli nie chcesz widzieć ceny bazowej lub system nie ma ścieżki ceny, możesz to ustawić, aby ukryć kolumnę w zakładce ekwipunku. Zamknij i otwórz ponownie arkusze, aby zaktualizować."
+      },
+      "sortCardsAlpha": {
+        "name": "Automatycznie sortuj karty alfabetycznie",
+        "hint": "Jeśli włączone, karty będą wyświetlane A-Z"
+      },
+      "runonlyonce": {
+        "name": "Wiadomość powitalna - wyłączona",
+        "hint": "Jeśli włączone, nie zobaczysz wiadomości powitalnej"
+      },
+      "useOrganizedFolders": {
+        "name": "Organizuj w folderach",
+        "hint": "Automatycznie twórz i organizuj dzienniki Campaign Codex w folderach"
+      },
+      "hideByPermission": {
+        "name": "Ukryj według własności",
+        "hint": "Ukryj połączone arkusze, jeśli użytkownik nie ma uprawnień obserwatora lub wyższych do dziennika"
+      },
+      "hideInventoryByPermission":{
+        "name": "Ukryj przedmioty w ekwipunku według własności",
+        "hint": "Ukryj przedmioty w ekwipunku, jeśli użytkownik nie ma uprawnień obserwatora lub wyższych do przedmiotu"
+      },
+      "resetItemPathsButton": {
+        "name": "Przywróć domyślne",
+        "hint": "Włącz tę opcję i zapisz, aby przywrócić ustawienia domyślne"
+      }
+    },
+    "notifications": {
+      "itemPricePathsReset": "Ścieżki cen przedmiotów zresetowane do domyślnych dla D&D5e"
+    },
+    "dropzone": {
+      "region": "Przeciągnij {type}, aby je dodać",
+      "location": "Przeciągnij {type} lub sceny tutaj, aby je dodać",
+      "shop": "Przeciągnij dzienniki {type} tutaj, aby je dodać",
+      "npc": "Przeciągnij {type} lub aktorów tutaj, aby ich dodać",
+      "associate": "Przeciągnij {type} lub aktorów tutaj, aby utworzyć relacje",
+      "item": "Przeciągnij {type} tutaj, aby dodać do ekwipunku",
+      "generic": "Przeciągnij {type} tutaj",
+      "link": "Upuść {type}, aby połączyć",
+      "empty": "Puste {type}"
+    },
+    "dragToAdd": {
+      "item": "Przeciągnij przedmioty tutaj, aby dodać do ekwipunku",
+      "empty": "Puste"
+    },
+    "error": {
+      "faileditem": "Nie udało się przenieść przedmiotu"
+    },
+    "warn": {
+      "notEnoughCurrency":"Niewystarczające środki",
+      "directly": "Nie można usunąć {type} bezpośrednio",
+      "remove": "Usuń {type}",
+      "invaliddrop":"Nie znaleziono członków z połączonymi aktorami do upuszczenia!",
+      "nonpcfound":"Brak dostępnych BN do upuszczenia na mapę!",
+      "actornotfound":"Nie znaleziono połączonego aktora!",
+      "failedtodrop":"Nie udało się upuścić BN na mapę!",
+      "scenenotfound":"Nie znaleziono upuszczonej sceny."
+    },
+    "message": {
+      "open": "Otwórz {type}",
+      "unlink": "Odłącz {type}",
+      "droptomap":"Upuść członków {type} na scenę",
+      "drop":"Upuść na scenę."
+    },
+    "title": {
+      "all":"Wszystkie",
+      "open": {
+        "actor": "Otwórz arkusz aktora",
+        "sheet": "Otwórz arkusz"
+      },
+      "unlink": {
+        "actor": "Odłącz arkusz aktora"
+      },
+      "sort": {
+        "alphabetically": "Sortuj ekwipunek alfabetycznie"
+      },
+      "send": {
+        "player": "Wyślij do gracza",
+        "purchase": "Kup",
+        "item": {
+          "player": "Wyślij przedmiot do postaci gracza",
+          "typetoplayer":"Wysłano {type} do {player}."
+        }
+      },
+      "infinite":{
+        "item":"Przełącz nieskończoną ilość"
+      },
+      "remove": {
+        "item": "Usuń przedmiot",
+        "from": {
+          "group": "Usuń z grupy"
+        }
+      },
+      "focus": {
+        "in": {
+          "tab": "Skupienie w zakładce"
+        }
+      }
+    },
+    "inventory": {
+      "added":"Dodano {type} do ekwipunku",
+      "price": {
+        "name": "Cena",
+        "base": "Cena bazowa",
+        "final": "Cena końcowa"
+      },
+      "quantity": "Ilość",
+      "actions": "Akcje",
+      "item": {
+        "name": "Nazwa przedmiotu"
+      },
+      "global": {
+        "markup": "Globalny narzut cenowy"
+      },
+      "help": {
+        "markup": "Przedmioty bez niestandardowych cen użyją ceny bazowej × narzut"
+      }
+    },
+    "ui": {
+      "addedto":"Dodano {type} do {typeb}",
+      "drag": {
+        "link": {
+          "journal": {
+            "standard": "Dziennik: Przeciągnij standardowy dziennik, aby połączyć"
+          }
+        }
+      },
+      "warn": {
+        "notfound": {
+          "player": {
+            "character": "Nie znaleziono postaci graczy"
+          }
+        }
+      },
+      "send": {
+        "item": {
+          "player": "Wysłać <strong>{type}</strong> do której postaci gracza?"
+        }
+      },
+      "cancel": "Anuluj",
+      "Save": "Zapisz"
+    }
+  }
+}
