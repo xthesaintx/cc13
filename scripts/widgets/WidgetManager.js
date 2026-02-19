@@ -14,6 +14,7 @@ import { CalendarEventWidget } from "./CalendarEventWidget.js";
 import { CalendarTimelineWidget } from "./CalendarTimelineWidget.js";
 import { MapNoteWidget } from "./MapNoteWidget.js";
 import { ActorDropperWidget } from "./ActorDropperWidget.js";
+import { SceneWidget } from "./SceneWidget.js";
 
 class WidgetManager {
     constructor() {
@@ -40,6 +41,7 @@ class WidgetManager {
         this.registerWidget("Map Notes", MapNoteWidget);
         this.registerWidget("Roll Table", RollTableWidget);
         this.registerWidget("Merchant Counter", MerchantCounterWidget);
+        this.registerWidget("Scenes", SceneWidget);
         if (this._miniCalendar?.active) {
             this.registerWidget("Mini Calendar Forecast", CalendarForecastWidget);
             this.registerWidget("Mini Calendar Events", CalendarEventWidget);

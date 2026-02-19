@@ -1,4 +1,5 @@
 import { CampaignCodexTokenPlacement } from "./token-placement.js";
+import { localize, format } from "./helper.js";
 
 export class NPCDropper {
   /**
@@ -11,7 +12,7 @@ export class NPCDropper {
       ui.notifications.warn("No scene is currently active!");
       return;
     }
-    
+
     const expandedNpcs = await this._expandActorContainers(npcs);
     const npcsWithActors = [];
 
@@ -52,7 +53,7 @@ export class NPCDropper {
     }
 
     if (!actors || actors.length === 0) {
-      ui.notifications.warn("No actors to drop!");
+      ui.notifications.warn("No NPCs with linked actors found to drop!");
       return;
     }
 
@@ -123,20 +124,26 @@ export class NPCDropper {
     }
 
     if (expandedResults.length === 0) {
-      ui.notifications.warn("No valid actors found to drop!");
+      ui.notifications.warn("No actors found to drop!");
       return;
+    }
+
+    if (options.skipSelectionDialog) {
+      return this._startTokenPlacement(expandedResults, {
+        ...options,
+      });
     }
 
     return this._showDropToMapDialog(expandedResults, options);
   }
 
-/**
-   * Checks for Encounter or Group actors and returns their members as a flat list.
-   * Keeps regular actors as they are.
-   * Assigns a temporary _uniqueId to ensure duplicates can be selected individually.
-   * @param {Array} npcs - The initial list of NPCs
-   * @returns {Promise<Array>} Flattened list of actor objects
-   */
+  /**
+     * Checks for Encounter or Group actors and returns their members as a flat list.
+     * Keeps regular actors as they are.
+     * Assigns a temporary _uniqueId to ensure duplicates can be selected individually.
+     * @param {Array} npcs - The initial list of NPCs
+     * @returns {Promise<Array>} Flattened list of actor objects
+     */
   static async _expandActorContainers(npcs) {
     const results = [];
 
@@ -343,12 +350,13 @@ export class NPCDropper {
 
     const preparedActors = [];
     const droppedCount = { success: 0, failed: 0, imported: 0 };
+    const actorResolutionCache = new Map();
 
     ui.notifications.info(`Preparing ${npcData.length} NPCs for placement...`);
 
     for (const npcInfo of npcData) {
       try {
-        let actor = await this._prepareActorForDrop(npcInfo);
+        let actor = await this._prepareActorForDrop(npcInfo, actorResolutionCache);
 
         if (actor) {
           preparedActors.push(actor);
@@ -384,8 +392,15 @@ export class NPCDropper {
    * @param {Object} npcInfo - NPC info object with actor and journal references
    * @returns {Promise<Actor|null>} The prepared actor or null if failed
    */
-  static async _prepareActorForDrop(npcInfo) {
+  static async _prepareActorForDrop(npcInfo, actorResolutionCache = null) {
     const { actor: originalActor, journal } = npcInfo;
+    const cacheKey = originalActor?.pack
+      ? `compendium:${originalActor.uuid}`
+      : `world:${originalActor?.uuid}`;
+
+    if (cacheKey && actorResolutionCache?.has(cacheKey)) {
+      return actorResolutionCache.get(cacheKey);
+    }
 
     if (!originalActor) {
       console.warn(`Campaign Codex | NPC ${npcInfo.name} has no linked actor`);
@@ -393,6 +408,22 @@ export class NPCDropper {
     }
 
     if (originalActor.pack) {
+      const existingWorldActor = this._findExistingWorldActorFromSource(originalActor);
+      if (existingWorldActor) {
+        if (journal) {
+          await journal.setFlag(
+            "campaign-codex",
+            "droppedTokenUuid",
+            existingWorldActor.uuid,
+          );
+        }
+        console.log(
+          `Campaign Codex | Using existing world actor from source: ${existingWorldActor.name}`,
+        );
+        if (cacheKey && actorResolutionCache) actorResolutionCache.set(cacheKey, existingWorldActor);
+        return existingWorldActor;
+      }
+
       const droppedTokenUuid = journal?.getFlag?.(
         "campaign-codex",
         "droppedTokenUuid",
@@ -404,6 +435,7 @@ export class NPCDropper {
           console.log(
             `Campaign Codex | Using existing imported actor: ${existingActor.name}`,
           );
+          if (cacheKey && actorResolutionCache) actorResolutionCache.set(cacheKey, existingActor);
           return existingActor;
         } else {
           if (journal) {
@@ -415,8 +447,10 @@ export class NPCDropper {
       console.log(
         `Campaign Codex | Importing actor ${originalActor.name} from compendium`,
       );
+      const actorData = originalActor.toObject();
+      foundry.utils.setProperty(actorData, "flags.core.sourceId", originalActor.uuid);
       const importedActors = await Actor.createDocuments([
-        originalActor.toObject(),
+        actorData,
       ]);
       const importedActor = importedActors[0];
 
@@ -431,10 +465,31 @@ export class NPCDropper {
         );
       }
 
+      if (cacheKey && actorResolutionCache && importedActor) actorResolutionCache.set(cacheKey, importedActor);
       return importedActor;
     }
 
+    if (cacheKey && actorResolutionCache && originalActor) actorResolutionCache.set(cacheKey, originalActor);
     return originalActor;
+  }
+
+  static _findExistingWorldActorFromSource(compendiumActor) {
+    if (!compendiumActor?.pack) return null;
+
+    const sourceUuid = compendiumActor.uuid;
+    if (!sourceUuid) return null;
+
+    const matches = game.actors.filter((actor) => {
+      if (!actor || actor.pack) return false;
+      const sourceId = foundry.utils.getProperty(actor, "flags.core.sourceId");
+      const compendiumSource = foundry.utils.getProperty(
+        actor,
+        "_stats.compendiumSource",
+      );
+      return sourceId === sourceUuid || compendiumSource === sourceUuid;
+    });
+
+    return matches[0] || null;
   }
 
   /**

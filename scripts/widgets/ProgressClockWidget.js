@@ -81,7 +81,7 @@ const clockFace = htmlElement.querySelector('.clock-circle-container');
         if (clockFace) {
             clockFace.addEventListener('click', async (e) => {
                 e.preventDefault();
-                // GUARD CLAUSE: Do nothing if flipped
+                
                 const card = htmlElement.querySelector('.cc-widget-card');
                 if (card && card.classList.contains('flipped')) return;
 
@@ -89,7 +89,7 @@ const clockFace = htmlElement.querySelector('.clock-circle-container');
             });
             clockFace.addEventListener('contextmenu', async (e) => {
                 e.preventDefault();
-                // GUARD CLAUSE: Do nothing if flipped
+                
                 const card = htmlElement.querySelector('.cc-widget-card');
                 if (card && card.classList.contains('flipped')) return;
 

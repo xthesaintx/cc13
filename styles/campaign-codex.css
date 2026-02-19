@@ -18,6 +18,7 @@ form.application.campaign-codex:not(.minimized, .minimizing, .maximizing){
   min-width: 550px;
 }
 
+
 .application.sheet.campaign-codex,
 .app.window-app.sheet.journal-sheet.campaign-codex,
 .application.window-app.sheet.journal-sheet.campaign-codex {
@@ -25,8 +26,10 @@ form.application.campaign-codex:not(.minimized, .minimizing, .maximizing){
   border-radius: 0 !important;
   overflow: visible !important;
   background: var(--color-cool-5-90);
-    width: 960px;
+  width: 960px;
   height: 800px;
+      will-change: transform;
+    backface-visibility: hidden;
 }
 
 
@@ -7170,8 +7173,7 @@ overflow: scroll;
 
 
 
-.application.dialog.campaign-codex.note-popup {
-}
+
 
 .application.dialog.campaign-codex.note-popup:not(.minimized, .minimizing, .maximizing){
   min-width: 200px;

@@ -11,33 +11,35 @@ export class ActorDropperWidget extends CampaignCodexWidget {
         const savedData = (await this.getData()) || {};
         let actors = savedData.actors || [];
 
-        const resolvedActors = [];
-        for (const entry of actors) {
+        
+        
+        const resolvedActors = (await Promise.all(actors.map(async (entry) => {
             const actor = await fromUuid(entry.uuid);
-            if (actor) {
-                let cr = "";
-                if (game.system.id === "dnd5e") {
-                    const actorCr = actor.system.details?.cr;
-                    if (actorCr !== undefined && actorCr !== null) {
-                        cr = typeof actorCr === 'number' ? actorCr : actorCr;
-                    }
-                }
+            if (!actor) return null;
 
-                let quantity = entry.quantity || 1;
-                if (this._pendingUpdates[entry.uuid] !== undefined) {
-                    quantity = this._pendingUpdates[entry.uuid];
+            let cr = "";
+            if (game.system.id === "dnd5e") {
+                const actorCr = actor.system.details?.cr;
+                if (actorCr !== undefined && actorCr !== null) {
+                    cr = typeof actorCr === 'number' ? actorCr : actorCr;
                 }
-
-                resolvedActors.push({
-                    uuid: entry.uuid,
-                    name: actor.name,
-                    img: actor.img || "icons/svg/mystery-man.svg",
-                    quantity: quantity,
-                    cr: cr,
-                    showCr: game.system.id === "dnd5e"
-                });
             }
-        }
+
+            let quantity = entry.quantity || 1;
+            if (this._pendingUpdates[entry.uuid] !== undefined) {
+                quantity = this._pendingUpdates[entry.uuid];
+            }
+
+            return {
+                uuid: entry.uuid,
+                name: actor.name,
+                img: actor.img || "icons/svg/mystery-man.svg",
+                quantity: quantity,
+                cr: cr,
+                showCr: game.system.id === "dnd5e"
+            };
+        }))).filter(Boolean);
+        
 
         return {
             id: this.widgetId,
@@ -100,7 +102,7 @@ export class ActorDropperWidget extends CampaignCodexWidget {
             await this._dropToMap();
         });
 
-        // Drag and Drop
+        
         htmlElement.addEventListener('drop', async (event) => {
             event.preventDefault();
             event.stopPropagation();
@@ -181,30 +183,44 @@ export class ActorDropperWidget extends CampaignCodexWidget {
         this._refreshWidget(htmlElement);
     }
 
-async _dropToIndividualToMap(uuid, htmlElement){
-        const npcsToDrop = [];
+
+    async _dropToIndividualToMap(uuid, htmlElement) {
         const actor = await fromUuid(uuid);
-        if (actor) {
-            npcsToDrop.push(actor);
+        if (!actor) {
+            return ui.notifications.warn("Could not find actor data.");
         }
 
-        if (npcsToDrop.length === 0) {
-            return ui.notifications.warn("Could not find actor data.");
+        const savedData = (await this.getData()) || {};
+        const actorsData = savedData.actors || [];
+        const savedEntry = actorsData.find((entry) => entry.uuid === uuid);
+        const rowInput = htmlElement?.querySelector(`.ad-quantity-input[data-uuid="${uuid}"]`);
+
+        const inputQuantity = parseInt(rowInput?.value, 10);
+        const pendingQuantity = this._pendingUpdates[uuid];
+        const savedQuantity = savedEntry?.quantity;
+        const quantity = Math.max(
+            1,
+            Number.isFinite(inputQuantity) ? inputQuantity : (pendingQuantity ?? savedQuantity ?? 1)
+        );
+
+        const actorsToDrop = [];
+        for (let i = 0; i < quantity; i++) {
+            actorsToDrop.push(actor);
         }
 
         try {
             if (game.campaignCodexNPCDropper) {
-                await game.campaignCodexNPCDropper.dropActorsToScene(npcsToDrop, { title: "Drop Actors to Map" });
+                await game.campaignCodexNPCDropper.dropActorsToScene(actorsToDrop, {
+                    title: "Drop Actors to Map",
+                    skipSelectionDialog: true
+                });
             } else {
                 console.error("Campaign Codex | game.campaignCodexNPCDropper not found.");
-                ui.notifications.error("Dropper utility not available.");
             }
         } catch (error) {
             console.error("Campaign Codex | Error in ActorDropperWidget drop:", error);
-            ui.notifications.error("Failed to drop actors.");
         }
     }
-
 
     async _dropToMap() {
         const savedData = (await this.getData()) || {};

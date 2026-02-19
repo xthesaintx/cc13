@@ -5,7 +5,7 @@ export class NetworkGraphWidget extends CampaignCodexWidget {
         super(widgetId, initialData, document);
         this.currentDepth = 0; 
         this.network = null;
-        // Track the current "center" of the graph separately from the sheet document
+        
         this.rootDoc = document; 
     }
 
@@ -68,7 +68,7 @@ export class NetworkGraphWidget extends CampaignCodexWidget {
             if (savedData && typeof savedData.depth !== 'undefined') {
                 this.currentDepth = parseInt(savedData.depth);
                 
-                // Update UI controls to match saved data
+                
                 if (slider) slider.value = this.currentDepth;
                 if (valDisplay) valDisplay.textContent = this.currentDepth;
             }
@@ -124,21 +124,21 @@ export class NetworkGraphWidget extends CampaignCodexWidget {
 try {
             this.network = new vis.Network(container, data, options);
 
-            // --- EVENT: Double-Click to RECENTER ---
+            
             this.network.on("doubleClick", async (params) => {
                 if (params.nodes.length > 0) {
                     const selectedUuid = params.nodes[0];
                     
-                    // Don't reload if we clicked the current center
+                    
                     if (selectedUuid === this.rootDoc.uuid) return;
 
                     try {
                         const newRoot = await fromUuid(selectedUuid);
                         if (newRoot) {
-                            this.rootDoc = newRoot; // Update dynamic root
+                            this.rootDoc = newRoot; 
                             await this._updateGraph(this.currentDepth, loading);
                             
-                            // Animate focus to the new center
+                            
                             this.network.focus(selectedUuid, {
                                 scale: 1.0,
                                 animation: { duration: 1000, easingFunction: "easeInOutQuad" }
@@ -150,12 +150,12 @@ try {
                 }
             });
 
-            // --- EVENT: Right-Click (oncontext) to OPEN ---
+            
             this.network.on("oncontext", (params) => {
-                // Stop standard browser menu
+                
                 params.event.preventDefault();
 
-                // Get node at right-click position
+                
                 const selectedUuid = this.network.getNodeAt(params.pointer.DOM);
 
                 if (selectedUuid) {
@@ -163,19 +163,19 @@ try {
                 }
             });
 
-            // --- EVENT: Reset Button ---
+            
             if (resetButton) {
                 resetButton.addEventListener("click", async () => {
-                    this.rootDoc = this.document; // Reset to original doc
+                    this.rootDoc = this.document; 
                     await this._updateGraph(this.currentDepth, loading);
-                    this.network.fit({ animation: true }); // Fit all nodes
+                    this.network.fit({ animation: true }); 
                 });
             }
 
-            // --- Initial Load ---
+            
             await this._updateGraph(this.currentDepth, loading);
 
-            // --- Slider Control ---
+            
             if (slider) {
                 slider.addEventListener("change", async (ev) => {
                     const newDepth = parseInt(ev.target.value);
@@ -221,12 +221,12 @@ try {
         const edges = [];
         const hideByPermission = game.settings.get("campaign-codex", "hideByPermission");
 
-        // Use the dynamic rootDoc instead of the static this.document
+        
         const queue = [{ doc: this.rootDoc, depth: 0 }];
 
         visited.add(this.rootDoc.uuid);
         
-        // Create the root node (it will always be "isCenter = true")
+        
         nodes.push(this._createNode(this.rootDoc, true));
 
         while (queue.length > 0) {
@@ -276,7 +276,7 @@ try {
 _iconOverride(icon) {
         const ASSET_MAP = [
             { key: "fas fa-map-pin", label: "Default", icon: "\uf041" },
-            // --- Default Tags ---
+            
             { key: "fas fa-globe", label: "Region", icon: "\uf0ac" },
             { key: "fas fa-book-atlas", label: "Domain", icon: "\uf558" },
             { key: "fas fa-map-marker-alt", label: "Location", icon: "\uf3c5" },
@@ -285,7 +285,7 @@ _iconOverride(icon) {
             { key: "fas fa-box", label: "Item", icon: "\uf466" },
             { key: "fas fa-sitemap", label: "Group", icon: "\uf0e8" },
             { key: "fas fa-tag", label: "Tag", icon: "\uf02b" },
-            // --- Places & Structures ---
+            
             { key: "fas fa-campground", label: "Camp", icon: "\uf6bb" },
             { key: "fas fa-chess-rook", label: "Castle", icon: "\uf447" },
             { key: "fas fa-dungeon", label: "Dungeon", icon: "\uf6d9" },
@@ -297,18 +297,18 @@ _iconOverride(icon) {
             { key: "fas fa-beer", label: "Tavern", icon: "\uf0fc" },
             { key: "fas fa-place-of-worship", label: "Temple", icon: "\uf67f" },
             { key: "fas fa-tents", label: "Tents", icon: "\ue582" },
-            // --- Nature & Geography ---
+            
             { key: "fas fa-tree", label: "Forest", icon: "\uf1bb" },
             { key: "fas fa-mountain", label: "Mountain", icon: "\uf6fc" },
             { key: "fas fa-earth-africa", label: "World", icon: "\uf57c" },
-            // --- Creatures & People ---
+            
             { key: "fas fa-paw", label: "Animal", icon: "\uf1b0" },
             { key: "fas fa-user-shield", label: "Guard", icon: "\uf505" },
             { key: "fas fa-horse", label: "Horse", icon: "\uf6f0" },
             { key: "fas fa-shield-dog", label: "Pet", icon: "\ue573" },
             { key: "fas fa-spider", label: "Spider", icon: "\uf717" },
             { key: "fas fa-users-viewfinder", label: "Users", icon: "\ue595" },
-            // --- Items & Objects ---
+            
             { key: "fas fa-sailboat", label: "Boat", icon: "\ue448" },
             { key: "fas fa-coins", label: "Coins", icon: "\uf51e" },
             { key: "fas fa-crown", label: "Crown", icon: "\uf521" },
@@ -318,7 +318,7 @@ _iconOverride(icon) {
             { key: "fas fa-shield", label: "Shield", icon: "\uf132" },
             { key: "fas fa-gem", label: "Treasure", icon: "\uf3a5" },
             { key: "fas fa-bed", label: "Bed", icon: "\uf236" },
-            // --- Concepts & Symbols ---
+            
             { key: "fas fa-skull-crossbones", label: "Danger", icon: "\uf714" },
             { key: "fas fa-magic", label: "Magic", icon: "\uf0d0" },
             { key: "fas fa-puzzle-piece", label: "Puzzle", icon: "\uf12e" }
@@ -357,7 +357,7 @@ _iconOverride(icon) {
             config = isTag ? iconMap.tag : (iconMap[type] || iconMap.default);
         }   
         
-        const finalColor = isCenter ? "#2a2a2a" : config.color;
+        const finalColor = isCenter ? "#c70000" : config.color;
 
         return {
             id: doc.uuid,
@@ -367,7 +367,7 @@ _iconOverride(icon) {
                 face: "'Font Awesome 6 Pro'",
                 weight: 900,
                 code: config.code,
-                size: isCenter ? 50 : 30, // Make center node larger
+                size: isCenter ? 50 : 30, 
                 color: finalColor,
             }
         };
@@ -384,10 +384,14 @@ _iconOverride(icon) {
             }
         });
 
-        // if (data.parentRegion) links.add(data.parentRegion);
-        // if (data.linkedActor) links.add(data.linkedActor);
-        if (data.linkedLocation) links.add(data.linkedLocation);
-
+        
+        
+        const singularFields = ["parentRegion", "linkedLocation"];
+        singularFields.forEach((field) => {
+            if (typeof data[field] === "string" && data[field]) {
+                links.add(data[field]);
+            }
+        });
         return Array.from(links);
     }
 }

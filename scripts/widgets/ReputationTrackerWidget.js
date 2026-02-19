@@ -38,14 +38,14 @@ export class ReputationTrackerWidget extends CampaignCodexWidget {
       tooltip: "Neutral Reputation"
     };
 
-    // --- LOYALTY MODE ---
+    
     if (useLoyalty) {
       const actor = await this._getLinkedActor();
       if (actor) {
         const loyalty = foundry.utils.getProperty(actor, "system.attributes.loyalty.value");
         context.value = Number(loyalty) || 0; 
         
-        // 10+ Loyal (Heart), 1-9 Faithful (Face), <=0 Disloyal (Skull)
+        
         if (context.value >= 10) {
           context.icon = "fa-heart";
           context.statusClass = "good";
@@ -64,9 +64,9 @@ export class ReputationTrackerWidget extends CampaignCodexWidget {
         context.value = "-";
       }
     } 
-    // --- STANDARD MODE ---
+    
     else {
-      // >0 Good (Heart), 0 Neutral (Face), <0 Bad (Skull)
+      
       if (context.value > 0) {
         context.icon = "fa-heart";
         context.statusClass = "good";
@@ -151,7 +151,7 @@ export class ReputationTrackerWidget extends CampaignCodexWidget {
   }
 
   async _updateValue(delta, htmlElement) {
-    // We need to fetch the *saved* state (or defaults) to know which mode we are in
+    
     const savedData = (await this.getData()) || {};
     const useLoyalty = savedData.useLoyalty ?? this.defaultUseLoyalty;
 

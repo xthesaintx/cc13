@@ -14,7 +14,7 @@ export class CampaignCodexWidget {
         this.widgetId = widgetId;
         this.initialData = initialData;
         this.document = document;
-        this.widgetType = this.constructor.name.replace('Widget', '').toLowerCase(); // e.g., 'worldmap'
+        this.widgetType = this.constructor.name.replace('Widget', '').toLowerCase(); 
     }
 
     /**
@@ -32,7 +32,7 @@ export class CampaignCodexWidget {
      * @param {HTMLElement} htmlElement - The widget's container element in the DOM.
      */
     async activateListeners(htmlElement) {
-        // console.log(`Campaign Codex | Activating listeners for ${this.widgetType} widget (ID: ${this.widgetId})`);
+        
     }
 
     /**
@@ -74,7 +74,7 @@ export class CampaignCodexWidget {
     async saveData(data) {
         try {
             const flagPath = `data.widgets.${this.widgetType}.${this.widgetId}`;
-            // console.log(`Campaign Codex | Saving widget data (ID: ${this.widgetId}) using setFlag.`);
+            
             return await this.document.setFlag("campaign-codex", flagPath, data);
         } catch (error) {
             console.error(`Campaign Codex | Error saving data via setFlag for widget ${this.widgetType} (ID: ${this.widgetId}):`, error);
@@ -90,7 +90,7 @@ export class CampaignCodexWidget {
      async removeData() {
         try {
             const flagPath = `data.widgets.${this.widgetType}.${this.widgetId}`;
-            // console.log(`Campaign Codex | Removing widget data (ID: ${this.widgetId}) using unsetFlag.`);
+            
             return await this.document.unsetFlag("campaign-codex", flagPath);
         } catch (error) {
             console.error(`Campaign Codex | Error removing data via unsetFlag for widget ${this.widgetType} (ID: ${this.widgetId}):`, error);

@@ -28,7 +28,53 @@ class CodexMapNotePopup extends DialogV2 {
     
         return frame;
     }
+    
+  /** @inheritDoc */
+  async _onFirstRender(context, options) {
+    await super._onFirstRender(context, options);
+
+    this.element.addEventListener("click", (event) => {
+      const clickedImage = event.target.closest("img:not(.nopopout)");
+      if (!clickedImage) {
+        return;
+      }
+      const inEditor = clickedImage.closest("div.editor-content.ProseMirror");
+      if (inEditor) {
+        return;
+      }
+      event.stopPropagation();
+      this._onClickImage.call(this, event);
+    });
+  }
+  
+  /**
+   * Handle clicking an image to pop it out for fullscreen view.
+   * @param {PointerEvent} event  The triggering click event.
+   * @protected
+   */
+  _onClickImage(event) {
+    if (!event.target.matches("img:not(.nopopout)")) return;
+    if (this.id.startsWith("hover")) return;
+    const target = event.target;
+    console.log(this);
+    console.log(event);
+    console.log(this.journal);
+
+    const page = this.journal._id || "";
+    const title = this.journal.name || "";
+    const ip = new foundry.applications.apps.ImagePopout({
+      src: target.getAttribute("src"),
+      window: { title },
+    });
+
+    ip.render({ force: true });
+  }
+
+
+
+
 }
+
 
 export async function displayCodexNote(entryId, widgetId, noteId, origin = null) {
     const journal = game.journal.get(entryId);

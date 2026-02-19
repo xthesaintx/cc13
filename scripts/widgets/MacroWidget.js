@@ -12,18 +12,19 @@ export class MacroWidget extends CampaignCodexWidget {
         
         let rawMacros = savedData.macros || [];
         
-        const resolvedMacros = [];
-        for (const uuid of rawMacros) {
+        
+        
+        const resolvedMacros = (await Promise.all(rawMacros.map(async (uuid) => {
             const macro = await fromUuid(uuid);
-            if (macro) {
-                resolvedMacros.push({
-                    uuid: uuid,
-                    name: macro.name,
-                    img: macro.img || "icons/svg/dice-target.svg",
-                    command: macro.command 
-                });
-            }
-        }
+            if (!macro) return null;
+            return {
+                uuid: uuid,
+                name: macro.name,
+                img: macro.img || "icons/svg/dice-target.svg",
+                command: macro.command
+            };
+        }))).filter(Boolean);
+        
 
         return {
             id: this.widgetId,

@@ -15,17 +15,18 @@ export class RollTableWidget extends CampaignCodexWidget {
             rawTables.push(savedData.tableUuid);
         }
 
-        const resolvedTables = [];
-        for (const uuid of rawTables) {
+        
+        
+        const resolvedTables = (await Promise.all(rawTables.map(async (uuid) => {
             const table = await fromUuid(uuid);
-            if (table) {
-                resolvedTables.push({
-                    uuid: uuid,
-                    name: table.name,
-                    img: table.img || "icons/svg/d20.svg"
-                });
-            }
-        }
+            if (!table) return null;
+            return {
+                uuid: uuid,
+                name: table.name,
+                img: table.img || "icons/svg/d20.svg"
+            };
+        }))).filter(Boolean);
+        
 
         return {
             id: this.widgetId,

@@ -1,7 +1,18 @@
 import { EconomyHelper } from "../economy-helper.js";
 import { CampaignCodexLinkers } from "./linkers.js";
 import { TemplateComponents } from "./template-components.js";
-import { localize, format, promptForName, confirmationDialog, renderTemplate, targetedRefresh, getDefaultSheetTabs, getDefaultSheetHidden, journalSystemClass, isThemed } from "../helper.js";
+import {
+  localize,
+  format,
+  promptForName,
+  confirmationDialog,
+  renderTemplate,
+  targetedRefresh,
+  getDefaultSheetTabs,
+  getDefaultSheetHidden,
+  journalSystemClass,
+  isThemed,
+} from "../helper.js";
 import { widgetManager } from "../widgets/WidgetManager.js";
 import { tabPicker } from "../tab-picker.js";
 var SearchFilter = foundry.applications.ux.SearchFilter;
@@ -11,7 +22,6 @@ const DragDrop = foundry.applications.ux.DragDrop.implementation;
 // BASE CLASS SETUP
 // =========================================================================
 const { DocumentSheetV2 } = foundry.applications.api;
-// var DocumentSheetV2 = foundry.applications.api.DocumentSheetV2;
 const { HandlebarsApplicationMixin } = foundry.applications.api;
 const baseSheetApp = HandlebarsApplicationMixin(DocumentSheetV2);
 
@@ -20,27 +30,26 @@ const baseSheetApp = HandlebarsApplicationMixin(DocumentSheetV2);
 // =========================================================================
 
 export class CampaignCodexBaseSheet extends baseSheetApp {
-  
   // =========================================================================
   // STATIC CONFIGURATION
   // =========================================================================
 
   static DEFAULT_OPTIONS = {
     classes: ["campaign-codex", "sheet", "journal-sheet", "base-sheet"],
-    dragDrop: [{ dragSelector: '[data-drag], .draggable', dropSelector: null }],
+    dragDrop: [{ dragSelector: "[data-drag], .draggable", dropSelector: null }],
     window: {
       frame: true,
-      title: 'Campaign Codex',
-      icon: 'fas fa-closed-captioning',
+      title: "Campaign Codex",
+      icon: "fas fa-closed-captioning",
       minimizable: true,
       resizable: true,
     },
     position: {
       width: 960,
-      height: 800
+      height: 800,
     },
     actions: {
-      showPlayers:this.#_onShowPlayers,
+      showPlayers: this.#_onShowPlayers,
       toggleQuicklinks: this.#_onToggleQuicklinks,
       toggleTags: this.#_onToggleTags,
       toggleWidgets: this.#_onToggleWidgets,
@@ -84,32 +93,46 @@ export class CampaignCodexBaseSheet extends baseSheetApp {
       removeQuestItem: this.#_onRemoveQuestItem,
       removeImage: this.#_onRemoveImage,
       removeScene: this.#_onRemoveScene,
-      removeLocationFromRegion:this.#_onRemoveLocation,
+      removeLocationFromRegion: this.#_onRemoveLocation,
       removeLocation: this.#_onRemoveLocation,
       removeShop: this.#_onRemoveShop,
       removeAssociate: this.#_onRemoveNPC,
       removeNPC: this.#_onRemoveNPC,
       removeNpc: this.#_onRemoveNPC,
       removeRegion: this.#_onRemoveRegion,
-      // removeJournal:this.#_onRemoveStandardJournal,
+      
       // Quests
       questToggle: this.#_questToggle,
       objectiveToggle: this.#_objectiveToggle,
       // toggle collapse
-      toggleSidebar:this.#toggleSidebar,
+      toggleSidebar: this.#toggleSidebar,
       toggleWidgetTray: this.#_onToggleWidgetTray,
       toggleInfoWidgetTray: this.#_onToggleInfoWidgetTray,
-      toggleWidgetPosition:this.#_ontoggleWidgetPosition,
-      infiniteToggle:this.#_infiniteToggle
-    }
+      toggleWidgetPosition: this.#_ontoggleWidgetPosition,
+      infiniteToggle: this.#_infiniteToggle,
+    },
   };
 
   static PARTS = {
     main: {
       template: "modules/campaign-codex/templates/base-sheet.html",
-      scrollable: ["",".scrollable", ".tab-panel.info", ".tab-panel.locations", ".tab-panel.shops", ".tab-panel.associates",".tab-panel.inventory",".tab-panel.widgets", ".tab-panel.quests", ".tab-panel.journals", ".tab-panel.notes", ".tab-panel.npcs", ".tab-panel.regions"]
-    }
-  }
+      scrollable: [
+        "",
+        ".scrollable",
+        ".tab-panel.info",
+        ".tab-panel.locations",
+        ".tab-panel.shops",
+        ".tab-panel.associates",
+        ".tab-panel.inventory",
+        ".tab-panel.widgets",
+        ".tab-panel.quests",
+        ".tab-panel.journals",
+        ".tab-panel.notes",
+        ".tab-panel.npcs",
+        ".tab-panel.regions",
+      ],
+    },
+  };
 
   // =========================================================================
   // INSTANCE PROPERTIES
@@ -170,8 +193,8 @@ export class CampaignCodexBaseSheet extends baseSheetApp {
     super(document, options);
     this._currentTab = "info";
     this._processedData = null;
-    this._isWidgetTrayOpen = false; 
-    this._isWidgetInfoTrayOpen = false; 
+    this._isWidgetTrayOpen = false;
+    this._isWidgetInfoTrayOpen = false;
     this._widgetPostion = false;
     this.#dragDrop = this.#createDragDropHandlers();
   }
@@ -181,29 +204,27 @@ export class CampaignCodexBaseSheet extends baseSheetApp {
   }
 
   _canDragStart(selector) {
-    return game.user.isGM; 
+    return game.user.isGM;
   }
 
   _canDragDrop(selector) {
     return game.user.isGM;
   }
 
-  // _onDragStart(event) {
-  // }
+  
+  
 
- async _onDragStart(event) {
+  async _onDragStart(event) {
     const el = event.currentTarget;
-    if ('link' in event.target.dataset) return;
+    if ("link" in event.target.dataset) return;
     let journalID = event.target.dataset.entryId;
     let journalData = game.journal.get(journalID);
-
 
     if (!journalData) return;
     let dragDataB = journalData.toDragData();
     if (!dragDataB) return;
-    event.dataTransfer.setData('text/plain', JSON.stringify(dragDataB));
+    event.dataTransfer.setData("text/plain", JSON.stringify(dragDataB));
   }
-
 
   #createDragDropHandlers() {
     return this.options.dragDrop.map((d) => {
@@ -233,23 +254,24 @@ export class CampaignCodexBaseSheet extends baseSheetApp {
       icon: "fas fa-eye",
       label: "JOURNAL.ActionShow",
       visible: game.user.isGM,
-      action: "showPlayers"
+      action: "showPlayers",
     });
     return controls;
   }
-
 
   async _prepareContext(options) {
     const context = await super._prepareContext(options);
     if (options.force) {
       this._processedData = null;
     }
-    foundry.utils.mergeObject(context, {
-      document: this.document,
-      showTags: this.#showTags,
-      showWidgets: this.#showWidgets,
-      showQuicklinks: this.#showQuicklinks,
-    });
+    
+    
+    
+    context.showTags = this.#showTags;
+    context.showWidgets = this.#showWidgets;
+    context.showQuicklinks = this.#showQuicklinks;
+    
+    
 
     const sheetData = this.document.getFlag("campaign-codex", "data") || {};
     context.isGM = game.user.isGM;
@@ -266,31 +288,32 @@ export class CampaignCodexBaseSheet extends baseSheetApp {
 
     // IMAGE CONFIGURATION
     const allOverrides = this.document.getFlag("campaign-codex", "tab-overrides") || [];
-    const mapMarkerOverride = allOverrides.find(override => override.key === "mapMarker");
-    context.mapMarkerOverride = (!game.user.isGM && mapMarkerOverride?.hidden) 
-        ? false 
-        : (mapMarkerOverride?.visible ?? true);
+    const mapMarkerOverride = allOverrides.find((override) => override.key === "mapMarker");
+    context.mapMarkerOverride =
+      !game.user.isGM && mapMarkerOverride?.hidden ? false : (mapMarkerOverride?.visible ?? true);
 
-    const imageAreaOverride = allOverrides.find(override => override.key === "imageArea");
-    context.showImage = (!game.user.isGM && imageAreaOverride?.hidden)
-        ? false
-        : (imageAreaOverride?.visible ?? true);
+    const imageAreaOverride = allOverrides.find((override) => override.key === "imageArea");
+    context.showImage = !game.user.isGM && imageAreaOverride?.hidden ? false : (imageAreaOverride?.visible ?? true);
 
     const imagePath = this.document.getFlag("campaign-codex", "image") || null;
     context.userImage = !!imagePath && typeof imagePath === "string" && imagePath.trim() !== "";
-    
+
     // TAGS CONFIGURATION
     let allTags = [];
     if (typeof game.campaignCodex?.getTagCache === "function") {
       allTags = await game.campaignCodex.getTagCache();
     } else {
-      console.warn("Campaign Codex | getTagCache() was not available during _prepareContext. Proceeding with empty tags.");
+      console.warn(
+        "Campaign Codex | getTagCache() was not available during _prepareContext. Proceeding with empty tags.",
+      );
     }
     const linkedTagUuids =
       this.document.getFlag("campaign-codex", "data")?.associates ||
       this.document.getFlag("campaign-codex", "data")?.linkedNPCs ||
       [];
-    const isThisDocATag = this.document.getFlag("campaign-codex", "data")?.tagMode || this.document.getFlag("campaign-codex", "type") === "tag";
+    const isThisDocATag =
+      this.document.getFlag("campaign-codex", "data")?.tagMode ||
+      this.document.getFlag("campaign-codex", "type") === "tag";
     context.existingTags = allTags.filter((tag) => {
       if (linkedTagUuids.includes(tag.uuid)) return false;
       if (isThisDocATag && tag.uuid === this.document.uuid) return false;
@@ -301,49 +324,50 @@ export class CampaignCodexBaseSheet extends baseSheetApp {
     this._widgetPostion = this.document.getFlag("campaign-codex", "widgets-position");
     context.widgetsPosition = this._widgetPostion;
 
-    
     const sheetWidgets = this.document.getFlag("campaign-codex", "sheet-widgets") || [];
     const allAvailable = Array.from(widgetManager.widgetRegistry.keys());
-    context.availableWidgets = allAvailable.map(name => ({ name: name }));
+    context.availableWidgets = allAvailable.map((name) => ({ name: name }));
 
-    const widgetsTabWidgets = sheetWidgets.filter(w => !w.tab || w.tab === "widgets");
-    const infoTabWidgets = sheetWidgets.filter(w => w.tab === "info");
+    const widgetsTabWidgets = sheetWidgets.filter((w) => !w.tab || w.tab === "widgets");
+    const infoTabWidgets = sheetWidgets.filter((w) => w.tab === "info");
 
-    context.activewidget = widgetsTabWidgets.filter(w => w.active);
-    context.inactivewidgets = widgetsTabWidgets.filter(w => !w.active);
-    context.addedWidgetNames = widgetsTabWidgets.map(w => w.widgetName);
+    context.activewidget = widgetsTabWidgets.filter((w) => w.active);
+    context.inactivewidgets = widgetsTabWidgets.filter((w) => !w.active);
+    context.addedWidgetNames = widgetsTabWidgets.map((w) => w.widgetName);
 
-    context.activewidgetInfo = infoTabWidgets.filter(w => w.active);
-    context.inactivewidgetsInfo = infoTabWidgets.filter(w => !w.active);
-    context.addedWidgetNamesInfo = infoTabWidgets.map(w => w.widgetName);
+    context.activewidgetInfo = infoTabWidgets.filter((w) => w.active);
+    context.inactivewidgetsInfo = infoTabWidgets.filter((w) => !w.active);
+    context.addedWidgetNamesInfo = infoTabWidgets.map((w) => w.widgetName);
 
     if (this._currentTab === "widgets") {
-        context.widgetsToRender = await widgetManager.instantiateActiveWidgets(this.document, "widgets");
+      context.widgetsToRender = await widgetManager.instantiateActiveWidgets(this.document, "widgets");
     } else if (this._currentTab === "info") {
-        context.infoWidgetsToRender = await widgetManager.instantiateActiveWidgets(this.document, "info");
+      context.infoWidgetsToRender = await widgetManager.instantiateActiveWidgets(this.document, "info");
     } else {
-        context.widgetsToRender = [];
-        context.infoWidgetsToRender = "";
+      context.widgetsToRender = [];
+      context.infoWidgetsToRender = "";
     }
+
     
-    // SHEET DATA PREPARATION
     context.sheetData = {
       description: sheetData.description || "",
       notes: sheetData.notes || "",
       quests: sheetData.quests || [],
     };
 
-    // ENRICH QUEST DESCRIPTIONS
+    
     if (context.sheetData.quests.length > 0) {
-      for (const quest of context.sheetData.quests) {
-        quest.enrichedDescription = await foundry.applications.ux.TextEditor.implementation.enrichHTML(
-          quest.description || "",
-          { async: true, secrets: this.document.isOwner },
-        );
-      }
+      await Promise.all(
+        context.sheetData.quests.map(async (quest) => {
+          quest.enrichedDescription = await foundry.applications.ux.TextEditor.implementation.enrichHTML(
+            quest.description || "",
+            { async: true, secrets: this.document.isOwner },
+          );
+        }),
+      );
     }
 
-    // ENRICH MAIN DESCRIPTION
+    
     let description = context.sheetData.description;
     if (Array.isArray(description)) {
       description = description[0] || "";
@@ -354,39 +378,34 @@ export class CampaignCodexBaseSheet extends baseSheetApp {
     );
 
     if (this._currentTab === "notes") {
-        let notes = context.sheetData.notes;
-        if (Array.isArray(notes)) {
-          notes = notes[0] || "";
-        }
-        context.sheetData.enrichedNotes = await foundry.applications.ux.TextEditor.implementation.enrichHTML(notes, {
-          async: true,
-          secrets: this.document.isOwner,
-        });
+      let notes = context.sheetData.notes;
+      if (Array.isArray(notes)) {
+        notes = notes[0] || "";
+      }
+      context.sheetData.enrichedNotes = await foundry.applications.ux.TextEditor.implementation.enrichHTML(notes, {
+        async: true,
+        secrets: this.document.isOwner,
+      });
     } else {
-        context.sheetData.enrichedNotes = "";
+      context.sheetData.enrichedNotes = "";
     }
 
     context.canEdit = this.document.canUserModify(game.user, "update");
     context.currentTab = this._currentTab;
 
-    // STANDARD JOURNALS PREPARATION
-    context.linkedStandardJournals = []; 
+    
+    context.linkedStandardJournals = [];
+    const missingUuids = new Set();
+
     if (sheetData.linkedStandardJournals && Array.isArray(sheetData.linkedStandardJournals)) {
       const journalPromises = sheetData.linkedStandardJournals.map(async (uuid) => {
         try {
           const document = await fromUuid(uuid);
           if (!document) {
-
-          if (sheetData.linkedStandardJournals && Array.isArray(sheetData.linkedStandardJournals)) {
-            sheetData.linkedStandardJournals = sheetData.linkedStandardJournals.filter(u => u !== uuid);
-            await this.document.setFlag("campaign-codex", "data", sheetData);
+            missingUuids.add(uuid);
             console.warn(`Campaign Codex | Linked standard journal not found: ${uuid}`);
-            console.warn("Unlinked journal.");
-          }
-
             return null;
           }
-
           let journal;
           let displayName;
 
@@ -394,7 +413,7 @@ export class CampaignCodexBaseSheet extends baseSheetApp {
             journal = document.parent;
             displayName = `${journal.name}: ${document.name}`;
           } else {
-            journal = document; 
+            journal = document;
             displayName = journal.name;
           }
 
@@ -415,8 +434,12 @@ export class CampaignCodexBaseSheet extends baseSheetApp {
 
       const resolvedJournals = await Promise.all(journalPromises);
       context.linkedStandardJournals = resolvedJournals.filter((j) => j && j.canView);
+      if (missingUuids.size) {
+        const cleaned = (sheetData.linkedStandardJournals || []).filter((u) => !missingUuids.has(u));
+        await this.document.setFlag("campaign-codex", "data.linkedStandardJournals", cleaned);
+      }
     }
-    context.allowPlayerPurchasing = game.settings.get("campaign-codex","allowPlayerPurchasing")||false;
+    context.allowPlayerPurchasing = game.settings.get("campaign-codex", "allowPlayerPurchasing") || false;
 
     return context;
   }
@@ -429,9 +452,9 @@ export class CampaignCodexBaseSheet extends baseSheetApp {
     const documentExists = this.document && game.journal.get(this.document.id);
 
     if (documentExists && !this.document._pendingDeletion) {
-      // this._saveFormData();
+      
     }
-    
+
     try {
       const widgetInstances = Array.from(widgetManager.widgetInstances.keys());
       for (const widgetId of widgetInstances) {
@@ -447,20 +470,20 @@ export class CampaignCodexBaseSheet extends baseSheetApp {
   /** @inheritDoc */
   async _onFirstRender(context, options) {
     await super._onFirstRender(context, options);
-      this._createContextMenus();
+    this._createContextMenus();
 
     this.element.addEventListener("click", (event) => {
       const clickedImage = event.target.closest("img:not(.nopopout)");
       if (!clickedImage) {
-      return; 
-    }
-    const inEditor = clickedImage.closest("div.editor-content.ProseMirror");
-    if (inEditor) {
-      return;
-    }
-    event.stopPropagation();
-    this._onClickImage.call(this, event);
-  });
+        return;
+      }
+      const inEditor = clickedImage.closest("div.editor-content.ProseMirror");
+      if (inEditor) {
+        return;
+      }
+      event.stopPropagation();
+      this._onClickImage.call(this, event);
+    });
   }
 
   /**
@@ -469,263 +492,283 @@ export class CampaignCodexBaseSheet extends baseSheetApp {
    * @protected
    */
   _onConfigurePlugins(event) {
-    event.plugins.highlightDocumentMatches =
-      ProseMirror.ProseMirrorHighlightMatchesPlugin.build(ProseMirror.defaultSchema);
+    event.plugins.highlightDocumentMatches = ProseMirror.ProseMirrorHighlightMatchesPlugin.build(
+      ProseMirror.defaultSchema,
+    );
   }
 
-    /** @inheritDoc */
-    _attachFrameListeners() {
-      super._attachFrameListeners();
-      this.element.addEventListener("plugins", this._onConfigurePlugins.bind(this));
-    }
-  
+  /** @inheritDoc */
+  _attachFrameListeners() {
+    super._attachFrameListeners();
+    this.element.addEventListener("plugins", this._onConfigurePlugins.bind(this));
+  }
 
   /**
    * Register context menu entries and fire hooks.
    * @protected
    */
   _createContextMenus() {
-    // this._createContextMenu(this._getEntityContextOptions, ".region-card[data-uuid],.location-card[data-uuid],.shop-card[data-uuid],.npc-card[data-uuid],.journal-card[data-uuid]", {
-    //   fixed: true,
-    //   hookName: `get${this.documentName}ContextOptions`,
-    //   parentClassHooks: false
-    // });
+    
+    
+
     this._createContextMenu(this._getEntityContextOptions, ".journal-card[data-uuid]", {
       fixed: true,
       hookName: `get${this.documentName}ContextOptions`,
-      parentClassHooks: false
+      parentClassHooks: false,
     });
     this._createContextMenu(this._getImageContextOptions, ".sheet-image", {
       fixed: true,
       hookName: `get${this.documentName}ContextOptions`,
-      parentClassHooks: false
+      parentClassHooks: false,
     });
-    if (this.getSheetType() === "npc"){
+    if (this.getSheetType() === "npc") {
       this._createContextMenu(this._getActorContextOptions, ".linked-actor", {
         fixed: true,
         hookName: `get${this.documentName}ContextOptions`,
-        parentClassHooks: false
+        parentClassHooks: false,
       });
     }
-    if (this.getSheetType() === "tag"){
+    if (this.getSheetType() === "tag") {
       this._createContextMenu(this._getTagSheetContextOptions, ".tree-node", {
         fixed: true,
         hookName: `get${this.documentName}ContextOptions`,
-        parentClassHooks: false
+        parentClassHooks: false,
       });
-    }    
-    // this._createContextMenu(this._getAssociateContextOptions, ".associate-card[data-uuid]", {
-    //   fixed: true,
-    //   hookName: `get${this.documentName}ContextOptions`,
-    //   parentClassHooks: false
-    // });
-    this._createContextMenu(this._getAssociateContextOptions, ".region-card[data-uuid],.location-card[data-uuid],.shop-card[data-uuid],.npc-card[data-uuid],.associate-card[data-uuid], .parentregion-card[data-uuid]", {
-      fixed: true,
-      hookName: `get${this.documentName}ContextOptions`,
-      parentClassHooks: false
-    });
+    }
+
+    this._createContextMenu(
+      this._getAssociateContextOptions,
+      ".region-card[data-uuid],.location-card[data-uuid],.shop-card[data-uuid],.npc-card[data-uuid],.associate-card[data-uuid], .parentregion-card[data-uuid]",
+      {
+        fixed: true,
+        hookName: `get${this.documentName}ContextOptions`,
+        parentClassHooks: false,
+      },
+    );
     this._createContextMenu(this._getEntryContextOptions, ".scene-name[data-scene-uuid]", {
       fixed: true,
       hookName: `get${this.documentName}ContextOptions`,
-      parentClassHooks: false
+      parentClassHooks: false,
     });
     this._createContextMenu(this._getTagContextOptions, ".tag-card[data-uuid]", {
       fixed: true,
       hookName: `get${this.documentName}ContextOptions`,
-      parentClassHooks: false
+      parentClassHooks: false,
     });
   }
 
   /** @inheritDoc */
   _getTagSheetContextOptions() {
-    return [{
-      name:localize("context.removeLink") ,
-      icon: '<i class="fa-solid fa-link-slash"></i>',
-      condition: span => game.user.isGM && span.dataset.uuid && this.getSheetType() === "tag" && span.dataset.context,
-      callback: span => {
-        const syntheticEvent = {
-        currentTarget: span,
-        target: span,
-        preventDefault: () => {},
-        stopPropagation: () => {}
-      };
-      this.removeLink(syntheticEvent);
-    }
-  }].concat();
+    return [
+      {
+        name: localize("context.removeLink"),
+        icon: '<i class="fa-solid fa-link-slash"></i>',
+        condition: (span) =>
+          game.user.isGM && span.dataset.uuid && this.getSheetType() === "tag" && span.dataset.context,
+        callback: (span) => {
+          const syntheticEvent = {
+            currentTarget: span,
+            target: span,
+            preventDefault: () => {},
+            stopPropagation: () => {},
+          };
+          this.removeLink(syntheticEvent);
+        },
+      },
+    ].concat();
   }
 
   /** @inheritDoc */
   _getAssociateContextOptions() {
-    return [{
-      name: localize("context.hideAssociate"),
-      icon: '<i class="fa-solid fa-eye-slash"></i>',
-      condition: span => game.user.isGM && !span.classList.contains("hidden-associate"),
-      callback: span => {
-        const syntheticEvent = {
-          currentTarget: span,
-          target: span,
-          preventDefault: () => { },
-          stopPropagation: () => { }
-        };
-        this.hideAssociate(syntheticEvent);
-      }
-    },
-    {
-      name: localize("context.showAssociate"),
-      icon: '<i class="fa-solid fa-eye"></i>',
-      condition: span => game.user.isGM && span.classList.contains("hidden-associate"),
-      callback: span => {
-        const syntheticEvent = {
-          currentTarget: span,
-          target: span,
-          preventDefault: () => { },
-          stopPropagation: () => { }
-        };
-        this.hideAssociate(syntheticEvent);
-      }
-    },
-    {
-      name: localize("context.removeLink"),
-      icon: '<i class="fa-solid fa-link-slash"></i>',
-      condition: span => game.user.isGM && span.dataset.uuid,
-      callback: span => {
-        const syntheticEvent = {
-          currentTarget: span,
-          target: span,
-          preventDefault: () => { },
-          stopPropagation: () => { }
-        };
-        this.removeLink(syntheticEvent);
-      }
-    }].concat();
+    return [
+      {
+        name: localize("context.hideAssociate"),
+        icon: '<i class="fa-solid fa-eye-slash"></i>',
+        condition: (span) => game.user.isGM && !span.classList.contains("hidden-associate"),
+        callback: (span) => {
+          const syntheticEvent = {
+            currentTarget: span,
+            target: span,
+            preventDefault: () => {},
+            stopPropagation: () => {},
+          };
+          this.hideAssociate(syntheticEvent);
+        },
+      },
+      {
+        name: localize("context.showAssociate"),
+        icon: '<i class="fa-solid fa-eye"></i>',
+        condition: (span) => game.user.isGM && span.classList.contains("hidden-associate"),
+        callback: (span) => {
+          const syntheticEvent = {
+            currentTarget: span,
+            target: span,
+            preventDefault: () => {},
+            stopPropagation: () => {},
+          };
+          this.hideAssociate(syntheticEvent);
+        },
+      },
+      {
+        name: localize("context.removeLink"),
+        icon: '<i class="fa-solid fa-link-slash"></i>',
+        condition: (span) => game.user.isGM && span.dataset.uuid,
+        callback: (span) => {
+          const syntheticEvent = {
+            currentTarget: span,
+            target: span,
+            preventDefault: () => {},
+            stopPropagation: () => {},
+          };
+          this.removeLink(syntheticEvent);
+        },
+      },
+    ].concat();
   }
-
 
   /** @inheritDoc */
   _getEntityContextOptions() {
-    return [{
-      name:localize("context.removeLink") ,
-      icon: '<i class="fa-solid fa-link-slash"></i>',
-      condition: span => game.user.isGM && span.dataset.uuid && ((this.getSheetType() !== "group" && this.getSheetType() !== "tag") || span.dataset.removable),
-      callback: span => {
-        const syntheticEvent = {
-        currentTarget: span,
-        target: span,
-        preventDefault: () => {},
-        stopPropagation: () => {}
-      };
-      this.removeLink(syntheticEvent);
-    }
-  }].concat();
+    return [
+      {
+        name: localize("context.removeLink"),
+        icon: '<i class="fa-solid fa-link-slash"></i>',
+        condition: (span) =>
+          game.user.isGM &&
+          span.dataset.uuid &&
+          ((this.getSheetType() !== "group" && this.getSheetType() !== "tag") || span.dataset.removable),
+        callback: (span) => {
+          const syntheticEvent = {
+            currentTarget: span,
+            target: span,
+            preventDefault: () => {},
+            stopPropagation: () => {},
+          };
+          this.removeLink(syntheticEvent);
+        },
+      },
+    ].concat();
   }
 
   /** @inheritDoc */
   _getTagContextOptions() {
-    return [{
-      name:localize("context.removeTag") ,
-      icon: '<i class="fa-solid fa-link-slash"></i>',
-      condition: span => game.user.isGM && span.dataset.uuid,
-      callback: span => {
-        const syntheticEvent = {
-        currentTarget: span,
-        target: span,
-        preventDefault: () => {},
-        stopPropagation: () => {}
-      };
-      this.removeTag(syntheticEvent);
-    }
-  }].concat();
+    return [
+      {
+        name: localize("context.removeTag"),
+        icon: '<i class="fa-solid fa-link-slash"></i>',
+        condition: (span) => game.user.isGM && span.dataset.uuid,
+        callback: (span) => {
+          const syntheticEvent = {
+            currentTarget: span,
+            target: span,
+            preventDefault: () => {},
+            stopPropagation: () => {},
+          };
+          this.removeTag(syntheticEvent);
+        },
+      },
+    ].concat();
   }
-
 
   /** @inheritDoc */
   _getImageContextOptions() {
-    return [{
-      name: localize("context.changeImage"),
-      icon: '<i class="fa-solid fa-image"></i>',
-      condition: span => game.user.isGM,
-      callback: span => this.changeImage()
-    }, {
-      name:localize("context.removeImage") ,
-      icon: '<i class="fa-solid fa-circle-xmark"></i>',
-      condition: span => game.user.isGM && this.document.getFlag("campaign-codex", "image"),
-      callback: span => this.removeImage()
-    }, {
-      name:localize("context.showImage") ,
-      icon: '<i class="fa-solid fa-eye"></i>',
-      condition: span => game.user.isGM && this.document.getFlag("campaign-codex", "image"),
-      callback: span => {
-        const src = this.document.getFlag("campaign-codex", "image");
-        const ip = new ImagePopout(src, {
-           title: "Context Image",
-           uuid: this.document.uuid
-        });
-        ip.render(true);
-        ip.shareImage();
-    }
-  }].concat();
+    return [
+      {
+        name: localize("context.changeImage"),
+        icon: '<i class="fa-solid fa-image"></i>',
+        condition: (span) => game.user.isGM,
+        callback: (span) => this.changeImage(),
+      },
+      {
+        name: localize("context.removeImage"),
+        icon: '<i class="fa-solid fa-circle-xmark"></i>',
+        condition: (span) => game.user.isGM && this.document.getFlag("campaign-codex", "image"),
+        callback: (span) => this.removeImage(),
+      },
+      {
+        name: localize("context.showImage"),
+        icon: '<i class="fa-solid fa-eye"></i>',
+        condition: (span) => game.user.isGM && this.document.getFlag("campaign-codex", "image"),
+        callback: (span) => {
+          const src = this.document.getFlag("campaign-codex", "image");
+          const ip = new ImagePopout(src, {
+            title: "Context Image",
+            uuid: this.document.uuid,
+          });
+          ip.render(true);
+          ip.shareImage();
+        },
+      },
+    ].concat();
   }
 
   /** @inheritDoc */
   _getActorContextOptions() {
-    return [{
-      name:localize("context.removeLink") ,
-      icon: '<i class="fa-solid fa-circle-xmark"></i>',
-      condition: span => game.user.isGM && this.document.getFlag("campaign-codex", "data.linkedActor"),
-      callback: span => this._onRemoveActor()
-    }, {
-      name:localize("message.drop") ,
-      icon: '<i class="fa-solid fa-street-view"></i>',
-      condition: span => canvas.scene && game.user.isGM && this.document.getFlag("campaign-codex", "data.linkedActor"),
-      callback: span => {
-        const syntheticEvent = {
-        currentTarget: span,
-        target: span,
-        preventDefault: () => {},
-        stopPropagation: () => {}
-      };
-      this._onDropNPCsToMapNPCSheet(syntheticEvent)
-    }
-  }].concat();
+    return [
+      {
+        name: localize("context.removeLink"),
+        icon: '<i class="fa-solid fa-circle-xmark"></i>',
+        condition: (span) => game.user.isGM && this.document.getFlag("campaign-codex", "data.linkedActor"),
+        callback: (span) => this._onRemoveActor(),
+      },
+      {
+        name: localize("message.drop"),
+        icon: '<i class="fa-solid fa-street-view"></i>',
+        condition: (span) =>
+          canvas.scene && game.user.isGM && this.document.getFlag("campaign-codex", "data.linkedActor"),
+        callback: (span) => {
+          const syntheticEvent = {
+            currentTarget: span,
+            target: span,
+            preventDefault: () => {},
+            stopPropagation: () => {},
+          };
+          this._onDropNPCsToMapNPCSheet(syntheticEvent);
+        },
+      },
+    ].concat();
   }
-
 
   /** @inheritDoc */
   _getEntryContextOptions() {
-    return [{
-      name: "SCENE.View",
-      icon: '<i class="fa-solid fa-eye"></i>',
-      condition: span => !canvas.ready || (span.dataset.sceneUuid !== canvas.scene.uuid),
-      callback: span => game.scenes.get(foundry.utils.parseUuid(span.dataset.sceneUuid).id)?.view()
-    }, {
-      name: "SCENE.Activate",
-      icon: '<i class="fa-solid fa-bullseye"></i>',
-      condition: span => game.user.isGM && !game.scenes.get(span.dataset.sceneUuid)?.active,
-      callback: span => game.scenes.get(foundry.utils.parseUuid(span.dataset.sceneUuid).id)?.activate()
-    }, {
-      name: "SCENE.Configure",
-      icon: '<i class="fa-solid fa-gears"></i>',
-      callback: span => game.scenes.get(foundry.utils.parseUuid(span.dataset.sceneUuid).id)?.sheet.render({ force: true })
-    },
-    {
-      name: "SCENE.ToggleNav",
-      icon: '<i class="fa-solid fa-compass"></i>',
-      condition: span => game.user.isGM && !game.scenes.get(foundry.utils.parseUuid(span.dataset.sceneUuid).id)?.active,
-      callback: span => {
-        const scene = game.scenes.get(foundry.utils.parseUuid(span.dataset.sceneUuid).id);
-        scene?.update({ navigation: !scene.navigation });
-      }
-    }].concat();
+    return [
+      {
+        name: "SCENE.View",
+        icon: '<i class="fa-solid fa-eye"></i>',
+        condition: (span) => !canvas.ready || span.dataset.sceneUuid !== canvas.scene.uuid,
+        callback: (span) => game.scenes.get(foundry.utils.parseUuid(span.dataset.sceneUuid).id)?.view(),
+      },
+      {
+        name: "SCENE.Activate",
+        icon: '<i class="fa-solid fa-bullseye"></i>',
+        condition: (span) => game.user.isGM && !game.scenes.get(span.dataset.sceneUuid)?.active,
+        callback: (span) => game.scenes.get(foundry.utils.parseUuid(span.dataset.sceneUuid).id)?.activate(),
+      },
+      {
+        name: "SCENE.Configure",
+        icon: '<i class="fa-solid fa-gears"></i>',
+        callback: (span) =>
+          game.scenes.get(foundry.utils.parseUuid(span.dataset.sceneUuid).id)?.sheet.render({ force: true }),
+      },
+      {
+        name: "SCENE.ToggleNav",
+        icon: '<i class="fa-solid fa-compass"></i>',
+        condition: (span) =>
+          game.user.isGM && !game.scenes.get(foundry.utils.parseUuid(span.dataset.sceneUuid).id)?.active,
+        callback: (span) => {
+          const scene = game.scenes.get(foundry.utils.parseUuid(span.dataset.sceneUuid).id);
+          scene?.update({ navigation: !scene.navigation });
+        },
+      },
+    ].concat();
   }
-
 
   #filterableItems = [];
   #search = new SearchFilter({
     inputSelector: "input[name=filter]",
     contentSelector: "section",
-    callback: this._onSearchFilter.bind(this)
+    callback: this._onSearchFilter.bind(this),
   });
-  
+
   _onSearchFilter(event, query, rgx) {
     for (const item of this.#filterableItems) {
       const match = rgx.test(item.name);
@@ -733,73 +776,76 @@ export class CampaignCodexBaseSheet extends baseSheetApp {
     }
   }
 
-
   async _onRender(context, options) {
     await super._onRender(context, options);
     if (isThemed()) {
-      this.element.classList.add('themed', isThemed());
+      this.element.classList.add("themed", isThemed());
       this.element.classList.add(isThemed(), isThemed());
     }
-    
+
     const nativeHtml = this.element;
     if (this.dragDrop && Array.isArray(this.dragDrop)) {
-        this.dragDrop.forEach((d) => d.bind(this.element));
+      this.dragDrop.forEach((d) => d.bind(this.element));
     }
 
     const isCollapsed = game.user.getFlag("campaign-codex", "sidebarCollapsed") || false;
     if (this.element) {
-        this.element.classList.toggle("sidebar-collapsed", isCollapsed);
-        const icon = this.element.querySelector(".sidebar-collapser i");
-        if (icon) {
-            icon.classList.remove("fa-caret-left", "fa-caret-right");
-            icon.classList.add(`fa-caret-${isCollapsed ? "right" : "left"}`);
-        }
+      this.element.classList.toggle("sidebar-collapsed", isCollapsed);
+      const icon = this.element.querySelector(".sidebar-collapser i");
+      if (icon) {
+        icon.classList.remove("fa-caret-left", "fa-caret-right");
+        icon.classList.add(`fa-caret-${isCollapsed ? "right" : "left"}`);
+      }
     }
     const content = nativeHtml.querySelector(".inventory");
     if (content) {
-      this.#filterableItems = []; 
+      this.#filterableItems = [];
       for (const element of content.querySelectorAll(".inventory-item")) {
         const name = element.dataset.itemName;
         if (name) {
           this.#filterableItems.push({
             element: element,
-            name: SearchFilter.cleanQuery(name)
+            name: SearchFilter.cleanQuery(name),
           });
         }
       }
 
-    this.#search.bind(content);
+      this.#search.bind(content);
     }
 
-    // BIND ALL LISTENERS
     this._activateQuestListeners(nativeHtml);
     this._activateObjectiveListeners(nativeHtml);
     this._setupNameEditing(nativeHtml);
     this._activateEditorListeners(nativeHtml);
-    // this._addClassToEditorContent(nativeHtml);
-    this._activateSheetSpecificListeners(nativeHtml); 
-    this._setupTypeEditing(nativeHtml); 
+
+    this._activateSheetSpecificListeners(nativeHtml);
+    this._setupTypeEditing(nativeHtml);
     this._setupMarkerEditing(nativeHtml);
     this._showTab(this._currentTab, nativeHtml);
-    
-    // INVENTORY & QUEST INVENTORY LISTENERS
+
     nativeHtml.querySelector(".shop-loot-toggle")?.addEventListener("change", this._onLootToggle.bind(this));
     nativeHtml.querySelector(".cash-input")?.addEventListener("change", this._onCashChange.bind(this));
     nativeHtml.querySelector(".markup-input")?.addEventListener("change", this._onMarkupChange.bind(this));
-    nativeHtml.querySelectorAll(".quantity-input")?.forEach((el) => el.addEventListener("change", this._onQuantityChange.bind(this)));
-    nativeHtml.querySelectorAll(".price-input")?.forEach((el) => el.addEventListener("change", this._onPriceChange.bind(this)));
-    nativeHtml.querySelectorAll(".price-input")?.forEach((el) => el.addEventListener("click", (e) => e.stopPropagation()));
-    nativeHtml.querySelectorAll(".quantity-input")?.forEach((el) => el.addEventListener("click", (e) => e.stopPropagation()));
+    nativeHtml
+      .querySelectorAll(".quantity-input")
+      ?.forEach((el) => el.addEventListener("change", this._onQuantityChange.bind(this)));
+    nativeHtml
+      .querySelectorAll(".price-input")
+      ?.forEach((el) => el.addEventListener("change", this._onPriceChange.bind(this)));
+    nativeHtml
+      .querySelectorAll(".price-input")
+      ?.forEach((el) => el.addEventListener("click", (e) => e.stopPropagation()));
+    nativeHtml
+      .querySelectorAll(".quantity-input")
+      ?.forEach((el) => el.addEventListener("click", (e) => e.stopPropagation()));
     nativeHtml.querySelectorAll(".inventory-item")?.forEach((el) => {
       el.addEventListener("dragstart", this._onItemDragStart.bind(this));
       el.addEventListener("dragend", this._onItemDragEnd.bind(this));
     });
 
-
-    // MULTI ACTION LISTENERS
     const multiActionMap = {
       ".quantity-decrease": this._onQuantityDecrease,
-      ".quantity-increase": this._onQuantityIncrease,      
+      ".quantity-increase": this._onQuantityIncrease,
     };
 
     for (const [selector, handler] of Object.entries(multiActionMap)) {
@@ -811,29 +857,35 @@ export class CampaignCodexBaseSheet extends baseSheetApp {
       });
     }
 
-    // WIDGET LISTENERS
     const widgetPromises = [];
 
-    nativeHtml.querySelectorAll('.cc-widget-container').forEach(container => {
+    nativeHtml.querySelectorAll(".cc-widget-container").forEach((container) => {
       widgetPromises.push(widgetManager.renderAndActivateWidget(container));
     });
 
-    await Promise.all(widgetPromises);
-
-    if (this._pendingScrollRestorations) {
-      this.element.querySelectorAll('[data-preserve-scroll]').forEach((el, i) => {
-        const state = this._pendingScrollRestorations[i];
-        if (state) {
-          el.scrollTop = state.top;
-          el.scrollLeft = state.left;
-        }
-      });
-      this._pendingScrollRestorations = null; // Cleanup
+const pendingRestorations = this._pendingScrollRestorations;
+    if (pendingRestorations) {
+      this._applyPreservedScroll(pendingRestorations);
+      this._pendingScrollRestorations = null;
     }
 
-    // MARK BUTTONS AS SAFE FOR NON-GM USERS
+    // Re-apply after widgets finish hydrating; top-positioned widget height changes can shift scroll.
+    void Promise.allSettled(widgetPromises)
+      .then(() => {
+        if (!pendingRestorations || !this.element?.isConnected) return;
+        requestAnimationFrame(() => {
+          if (!this.element?.isConnected) return;
+          this._applyPreservedScroll(pendingRestorations);
+        });
+      })
+      .catch((error) => {
+        console.warn("Campaign Codex | Widget render task failed:", error);
+      });
+
     if (!game.user.isGM) {
-      const safeButtons = nativeHtml.querySelectorAll('[class*="open-"], .btn-expand-all, .btn-collapse-all, [class*="toggle-tree-"], .filter-btn');
+      const safeButtons = nativeHtml.querySelectorAll(
+        '[class*="open-"], .btn-expand-all, .btn-collapse-all, [class*="toggle-tree-"], .filter-btn',
+      );
       safeButtons.forEach((button) => {
         button.disabled = false;
       });
@@ -843,17 +895,59 @@ export class CampaignCodexBaseSheet extends baseSheetApp {
     }
   }
 
-
   /** @inheritdoc */
   _replaceHTML(result, content, options) {
-    this._pendingScrollRestorations = Array.from(
-      content.querySelectorAll('[data-preserve-scroll]'),
-      el => ({ top: el.scrollTop, left: el.scrollLeft })
-    );
-  
+    const restorationsByKey = {};
+    content.querySelectorAll("[data-preserve-scroll]").forEach((el) => {
+      const key = this._getPreserveScrollKey(el);
+      if (!restorationsByKey[key]) restorationsByKey[key] = [];
+      const maxTop = Math.max(0, el.scrollHeight - el.clientHeight);
+      const fromBottom = Math.max(0, maxTop - el.scrollTop);
+      restorationsByKey[key].push({
+        top: el.scrollTop,
+        left: el.scrollLeft,
+        fromBottom,
+        anchorBottom: fromBottom <= 4,
+      });
+    });
+    this._pendingScrollRestorations = restorationsByKey;
+
     super._replaceHTML(result, content, options);
   }
 
+  _getPreserveScrollKey(el) {
+    if (!el) return "unknown";
+    const tab = el.dataset?.tab || "";
+    const panelType = el.classList.contains("group-tab-panel-selected-sheet")
+      ? "group-selected"
+      : el.classList.contains("group-tab-panel")
+        ? "group"
+        : el.classList.contains("tab-panel")
+          ? "base"
+          : "other";
+    return `${panelType}:${tab}`;
+  }
+
+  _applyPreservedScroll(restorationsByKey) {
+    if (!this.element || !restorationsByKey) return;
+
+    const seenByKey = {};
+    this.element.querySelectorAll("[data-preserve-scroll]").forEach((el) => {
+      const key = this._getPreserveScrollKey(el);
+      const index = seenByKey[key] || 0;
+      seenByKey[key] = index + 1;
+      const state = restorationsByKey[key]?.[index];
+      if (!state) return;
+
+      const maxTop = Math.max(0, el.scrollHeight - el.clientHeight);
+      const desiredTop = state.anchorBottom
+        ? Math.max(0, maxTop - state.fromBottom)
+        : Math.min(Math.max(0, state.top), maxTop);
+
+      el.scrollTop = desiredTop;
+      el.scrollLeft = state.left;
+    });
+  }
 
   // =========================================================================
   // STATIC TAB GENERATION METHODS
@@ -865,15 +959,20 @@ export class CampaignCodexBaseSheet extends baseSheetApp {
    * @param {object} data - The sheet's prepared data.
    * @returns {string}
    */
-  static async generateNotesTab(doc, context, labelOverride=null) {
+  static async generateNotesTab(doc, context, labelOverride = null) {
     const templateData = {
-      labelOverride:labelOverride,
-      richTextDescription: TemplateComponents.richTextSection(doc, context.sheetData.enrichedNotes, "notes", context.isOwnerOrHigher)
+      labelOverride: labelOverride,
+      richTextDescription: TemplateComponents.richTextSection(
+        doc,
+        context.sheetData.enrichedNotes,
+        "notes",
+        context.isOwnerOrHigher,
+      ),
     };
     return await renderTemplate("modules/campaign-codex/templates/partials/base-notes.hbs", templateData);
   }
 
-  async generateWidgetsTab(doc, context, labelOverride=null) {
+  async generateWidgetsTab(doc, context, labelOverride = null) {
     const templateData = {
       labelOverride: labelOverride,
       widgetsToRender: context.widgetsToRender,
@@ -882,11 +981,11 @@ export class CampaignCodexBaseSheet extends baseSheetApp {
       addedWidgetNames: context.addedWidgetNames,
       availableWidgets: context.availableWidgets,
       isGM: context.isGM,
-      isWidgetTrayOpen:this._isWidgetTrayOpen,
+      isWidgetTrayOpen: this._isWidgetTrayOpen,
     };
     return await renderTemplate("modules/campaign-codex/templates/partials/base-widgets.hbs", templateData);
   }
-  
+
   // =========================================================================
   // Widget Tabw
   // =========================================================================
@@ -894,7 +993,7 @@ export class CampaignCodexBaseSheet extends baseSheetApp {
   static #_onToggleWidgetTray(event) {
     event.preventDefault();
     const widgetTarget = event.target;
-    const container = widgetTarget.closest('[data-tab="widgets"]'); 
+    const container = widgetTarget.closest('[data-tab="widgets"]');
     const tray = container?.querySelector(".widget-tray");
     this._isWidgetTrayOpen = !this._isWidgetTrayOpen;
 
@@ -906,7 +1005,7 @@ export class CampaignCodexBaseSheet extends baseSheetApp {
   static #_onToggleInfoWidgetTray(event) {
     event.preventDefault();
     const widgetTarget = event.target;
-    const container = widgetTarget.closest('[data-tab="info"]'); 
+    const container = widgetTarget.closest('[data-tab="info"]');
     const tray = container?.querySelector(".widget-tray");
     this._isWidgetInfoTrayOpen = !this._isWidgetInfoTrayOpen;
 
@@ -915,26 +1014,24 @@ export class CampaignCodexBaseSheet extends baseSheetApp {
     }
   }
 
-static #_ontoggleWidgetPosition(event,target){
-  this._widgetPostion = !this._widgetPostion;
-   this.document.setFlag("campaign-codex", "widgets-position", this._widgetPostion);
-   this.render();  
-}
-
+  static #_ontoggleWidgetPosition(event, target) {
+    this._widgetPostion = !this._widgetPostion;
+    this.document.setFlag("campaign-codex", "widgets-position", this._widgetPostion);
+    this.render();
+  }
 
   // =========================================================================
   // SIDE BAR
   // =========================================================================
 
-
- static #toggleSidebar(event, target) {
+  static #toggleSidebar(event, target) {
     const collapsed = this._toggleSidebar();
-   game.user.setFlag("campaign-codex", "sidebarCollapsed", collapsed);  
- }
+    game.user.setFlag("campaign-codex", "sidebarCollapsed", collapsed);
+  }
 
   /* -------------------------------------------- */
 
-/**
+  /**
    * Toggle the sidebar collapsed state.
    * @param {boolean} [collapsed]  Force a particular collapsed state.
    * @returns {boolean}            The new collapsed state.
@@ -945,13 +1042,12 @@ static #_ontoggleWidgetPosition(event,target){
     const isCollapsed = this.element.classList.contains("sidebar-collapsed");
     const icon = this.element.querySelector(".sidebar-collapser i");
     if (icon) {
-        icon.classList.remove("fa-caret-left", "fa-caret-right");
-        icon.classList.add(`fa-caret-${isCollapsed ? "right" : "left"}`);
+      icon.classList.remove("fa-caret-left", "fa-caret-right");
+      icon.classList.add(`fa-caret-${isCollapsed ? "right" : "left"}`);
     }
 
     return isCollapsed;
   }
-
 
   // =========================================================================
   // TAB MANAGEMENT
@@ -962,28 +1058,26 @@ static #_ontoggleWidgetPosition(event,target){
     html.querySelectorAll(".sidebar-tabs .tab-item").forEach((tab) => tab.classList.remove("active"));
     html.querySelectorAll(".tab-panel").forEach((panel) => panel.classList.remove("active"));
     html.querySelector(`.sidebar-tabs .tab-item[data-tab="${tabName}"]`)?.classList.add("active");
-  
+
     const activePanel = html.querySelector(`.tab-panel[data-tab="${tabName}"]`);
     activePanel?.classList.add("active");
 
     if (activePanel && activePanel.innerHTML.trim() === "") {
-        this.render(false);
+      this.render(false);
     }
   }
-
-
 
   static async #_onChangeTab(event) {
     event.preventDefault();
     const target = event.target;
-    const tabElement = target.closest('[data-tab]');
+    const tabElement = target.closest("[data-tab]");
     if (!tabElement) return;
     const tabName = tabElement.dataset.tab;
     if (!tabName) return;
     this._currentTab = tabName;
     if ((this.getSheetType() === "group" || this.getSheetType() === "tag") && this._selectedSheet) {
       this._selectedSheet = null;
-      this.render(); 
+      this.render();
     } else {
       this._showTab(tabName, this.element);
     }
@@ -1001,7 +1095,7 @@ static #_ontoggleWidgetPosition(event,target){
         key: "info",
         label: localize("names.info") || "Info",
         icon: "fas fa-info-circle",
-      }
+      },
     ];
 
     if (this.constructor.isOwnerOrHigher(this.document)) {
@@ -1017,7 +1111,6 @@ static #_ontoggleWidgetPosition(event,target){
   // =========================================================================
   // LISTENER ACTIVATION & SETUP
   // =========================================================================
-
 
   _setupNameEditing(html) {
     if (game.user.isGM) {
@@ -1053,61 +1146,68 @@ static #_ontoggleWidgetPosition(event,target){
   _activateObjectiveListeners(html) {
     if (!game.user.isGM) return;
 
-    html.querySelectorAll('.add-objective, .add-sub-objective').forEach(el => {
-      el.addEventListener('click', this._onAddObjective.bind(this));
+    html.querySelectorAll(".add-objective, .add-sub-objective").forEach((el) => {
+      el.addEventListener("click", this._onAddObjective.bind(this));
     });
 
-    html.querySelectorAll('.remove-objective').forEach(el => {
-      el.addEventListener('click', this._onRemoveObjective.bind(this));
+    html.querySelectorAll(".remove-objective").forEach((el) => {
+      el.addEventListener("click", this._onRemoveObjective.bind(this));
     });
 
-    
-    html.querySelectorAll('.objective-text.editable').forEach(el => {
-      el.addEventListener('click', this._onObjectiveTextEdit.bind(this));
+    html.querySelectorAll(".objective-text.editable").forEach((el) => {
+      el.addEventListener("click", this._onObjectiveTextEdit.bind(this));
     });
 
-    html.querySelectorAll('.objective-list').forEach(list => {
-      list.addEventListener('blur', this._onObjectiveTextSave.bind(this), true);
-      list.addEventListener('keypress', this._onObjectiveTextSave.bind(this), true);
+    html.querySelectorAll(".objective-list").forEach((list) => {
+      list.addEventListener("blur", this._onObjectiveTextSave.bind(this), true);
+      list.addEventListener("keypress", this._onObjectiveTextSave.bind(this), true);
     });
 
-    html.querySelectorAll('.objective-item').forEach(el => {
-      el.setAttribute('draggable', true);
-      el.addEventListener('dragstart', this._onObjectiveDragStart.bind(this));
-      el.addEventListener('dragenter', this._onObjectiveDragEnter.bind(this));
-      el.addEventListener('dragleave', this._onObjectiveDragLeave.bind(this));
-      el.addEventListener('dragover', this._onObjectiveDragOver.bind(this));
-      el.addEventListener('drop', this._onObjectiveDrop.bind(this));
-      el.addEventListener('dragend', this._onObjectiveDragEnd.bind(this));
+    html.querySelectorAll(".objective-item").forEach((el) => {
+      el.setAttribute("draggable", true);
+      el.addEventListener("dragstart", this._onObjectiveDragStart.bind(this));
+      el.addEventListener("dragenter", this._onObjectiveDragEnter.bind(this));
+      el.addEventListener("dragleave", this._onObjectiveDragLeave.bind(this));
+      el.addEventListener("dragover", this._onObjectiveDragOver.bind(this));
+      el.addEventListener("drop", this._onObjectiveDrop.bind(this));
+      el.addEventListener("dragend", this._onObjectiveDragEnd.bind(this));
     });
   }
 
   _activateQuestListeners(html) {
     if (game.user.isGM) {
-      // html.querySelectorAll('.quest-toggle-icon').forEach(el => el.addEventListener('click', this._onUpdateQuest.bind(this)));
-      html.querySelector('.add-quest')?.addEventListener('click', this._onAddQuest.bind(this));
-      html.querySelectorAll('.remove-quest').forEach(el => el.addEventListener('click', this._onRemoveQuest.bind(this)));
-      html.querySelectorAll('.quest-input-title').forEach(el => el.addEventListener('change', this._onUpdateQuest.bind(this)));
-      html.querySelectorAll('prose-mirror.quest-description-editor').forEach(editor => {
+      html.querySelector(".add-quest")?.addEventListener("click", this._onAddQuest.bind(this));
+      html
+        .querySelectorAll(".remove-quest")
+        .forEach((el) => el.addEventListener("click", this._onRemoveQuest.bind(this)));
+      html
+        .querySelectorAll(".quest-input-title")
+        .forEach((el) => el.addEventListener("change", this._onUpdateQuest.bind(this)));
+      html.querySelectorAll("prose-mirror.quest-description-editor").forEach((editor) => {
         if (editor.dataset.listenerAttached) return;
         editor.dataset.listenerAttached = "true";
-        editor.addEventListener('save', this._onUpdateQuest.bind(this));
+        editor.addEventListener("save", this._onUpdateQuest.bind(this));
       });
-      html.querySelectorAll('.quest-input-title').forEach(el => el.addEventListener('pointerup', event => event.stopPropagation()));
+      html
+        .querySelectorAll(".quest-input-title")
+        .forEach((el) => el.addEventListener("pointerup", (event) => event.stopPropagation()));
 
-      html.querySelectorAll('.quest-input-title[data-editable="true"]').forEach(el => {
-        el.addEventListener('click', this._onQuestTitleEdit.bind(this));
+      html.querySelectorAll('.quest-input-title[data-editable="true"]').forEach((el) => {
+        el.addEventListener("click", this._onQuestTitleEdit.bind(this));
       });
-      html.querySelectorAll('.quest-list')?.forEach(el => el.addEventListener('blur', this._onQuestTitleSave.bind(this), true));
-      html.querySelectorAll('.quest-list')?.forEach(el => el.addEventListener('keypress', (event) => {
-        if (event.key === "Enter") {
-          event.preventDefault();
-          event.target.blur();
-        }
-      }));
+      html
+        .querySelectorAll(".quest-list")
+        ?.forEach((el) => el.addEventListener("blur", this._onQuestTitleSave.bind(this), true));
+      html.querySelectorAll(".quest-list")?.forEach((el) =>
+        el.addEventListener("keypress", (event) => {
+          if (event.key === "Enter") {
+            event.preventDefault();
+            event.target.blur();
+          }
+        }),
+      );
     }
   }
-
 
   _activateEditorListeners(html) {
     html.querySelectorAll("prose-mirror").forEach((editor) => {
@@ -1132,54 +1232,52 @@ static #_ontoggleWidgetPosition(event,target){
     });
   }
 
-
   /**
    * Handle clicking an image to pop it out for fullscreen view.
    * @param {PointerEvent} event  The triggering click event.
    * @protected
    */
   _onClickImage(event) {
-    if ( !event.target.matches("img:not(.nopopout)") ) return;
+    if (!event.target.matches("img:not(.nopopout)")) return;
     const target = event.target;
     const page = this.document._id;
     const title = this.document.name;
     const ip = new foundry.applications.apps.ImagePopout({
       src: target.getAttribute("src"),
-      window: { title }
+      window: { title },
     });
-    // if ( page ) ip.shareImage = () => console.log(this.document);
-    // if ( page ) ip.shareImage = () => foundry.documents.collections.Journal.showDialog(page);
+
     ip.render({ force: true });
   }
 
-_labelOverride(selectedDoc, sheetKey) {
-  if (!selectedDoc || !sheetKey) {
-    return false;
+  _labelOverride(selectedDoc, sheetKey) {
+    if (!selectedDoc || !sheetKey) {
+      return false;
+    }
+    const tabOverrides = selectedDoc.getFlag("campaign-codex", "tab-overrides");
+    if (!Array.isArray(tabOverrides)) {
+      return false;
+    }
+    const override = tabOverrides.find((tab) => tab.key === sheetKey);
+    return override && override.label ? override.label : false;
   }
-  const tabOverrides = selectedDoc.getFlag("campaign-codex", "tab-overrides");
-  if (!Array.isArray(tabOverrides)) {
-    return false;
-  }
-  const override = tabOverrides.find(tab => tab.key === sheetKey);
-  return (override && override.label) ? override.label : false;
-}
 
   // =========================================================================
   // STATIC ACTION HANDLERS - IMAGE MANAGEMENT
   // =========================================================================
 
-  async removeImage(){
+  async removeImage() {
     const proceed = await confirmationDialog("Are you sure you want to remove this image?");
-      if (proceed) {
-        await this.document.setFlag("campaign-codex", "image", null);
-      }
-      this.render();
+    if (proceed) {
+      await this.document.setFlag("campaign-codex", "image", null);
+    }
+    this.render();
   }
 
   static async #_onRemoveImage(event) {
     this.removeImage();
   }
-  async changeImage(){
+  async changeImage() {
     const current = this.document.getFlag("campaign-codex", "image") || this.document.img;
     const fp = new foundry.applications.apps.FilePicker.implementation({
       type: "image",
@@ -1205,7 +1303,7 @@ _labelOverride(selectedDoc, sheetKey) {
     this.changeImage();
   }
 
-/**
+  /**
    * Opens a dialog to select an override icon for the document using a radio button grid.
    * This can be bound as a static action 'editIcon'.
    * @param {Event} event The triggering event.
@@ -1261,7 +1359,7 @@ _labelOverride(selectedDoc, sheetKey) {
       // --- Concepts & Symbols ---
       { key: "danger", label: "Danger", icon: "fas fa-skull-crossbones" },
       { key: "magic", label: "Magic", icon: "fas fa-magic" },
-      { key: "puzzle", label: "Puzzle", icon: "fas fa-puzzle-piece" }
+      { key: "puzzle", label: "Puzzle", icon: "fas fa-puzzle-piece" },
     ];
 
     const currentIcon = this.document.getFlag("campaign-codex", "icon-override");
@@ -1283,7 +1381,7 @@ _labelOverride(selectedDoc, sheetKey) {
     `;
 
     // --- HTML for the icon grid radio buttons ---
-    const iconGridHtml = ASSET_MAP.map(item => {
+    const iconGridHtml = ASSET_MAP.map((item) => {
       const isChecked = currentIcon === item.icon;
       return `
         <div class="cc-icon-radio">
@@ -1310,26 +1408,26 @@ _labelOverride(selectedDoc, sheetKey) {
 
     const dialog = foundry.applications.api.DialogV2.wait({
       window: { title: "Choose Icon Override" },
-      id: this.document.id+"_iconPicker",
+      id: this.document.id + "_iconPicker",
       classes: ["cc-icon-picker-dialog campaign-codex"],
       content,
       form: {
-        closeOnSubmit: false 
+        closeOnSubmit: false,
       },
       buttons: [
         {
           action: "cancel",
           label: "Cancel",
           type: "button",
-          default: false
+          default: false,
         },
         {
           action: "save",
           label: "Save",
           type: "submit",
           default: true,
-          callback: (event, button) => Object.fromEntries(new FormData(button.form))
-        }
+          callback: (event, button) => Object.fromEntries(new FormData(button.form)),
+        },
       ],
       submit: async (result, dialog) => {
         const selectedValue = result["icon-override"];
@@ -1339,20 +1437,20 @@ _labelOverride(selectedDoc, sheetKey) {
         } else if (selectedValue) {
           await this.document.setFlag("campaign-codex", "icon-override", selectedValue);
         }
-        
+
         dialog.close();
       },
       close: () => {
         this.render();
-      }
-    })
+      },
+    });
   }
 
   // =========================================================================
   // STATIC ACTION HANDLERS - TAB CONFIGURATION
   // =========================================================================
 
-/**
+  /**
    * Opens a dialog to configure tab visibility and labels.
    * This is bound as a static action 'editTabs'.
    * @param {Event} event The triggering event.
@@ -1360,22 +1458,25 @@ _labelOverride(selectedDoc, sheetKey) {
    */
   static async #_onEditTabs(event) {
     event.preventDefault();
-    const defaultTabVis = getDefaultSheetTabs(this.getSheetType()); 
+    const defaultTabVis = getDefaultSheetTabs(this.getSheetType());
     const defaultTabHidden = getDefaultSheetHidden(this.getSheetType());
 
-    if (["npc", "tag"].includes(this.getSheetType()) && defaultTabVis.hasOwnProperty('npcs') && !defaultTabVis.hasOwnProperty('associates')) {
+    if (
+      ["npc", "tag"].includes(this.getSheetType()) &&
+      defaultTabVis.hasOwnProperty("npcs") &&
+      !defaultTabVis.hasOwnProperty("associates")
+    ) {
       defaultTabVis.associates = defaultTabVis.npcs;
-      if (defaultTabHidden.hasOwnProperty('npcs')) {
-          defaultTabHidden.associates = defaultTabHidden.npcs;
+      if (defaultTabHidden.hasOwnProperty("npcs")) {
+        defaultTabHidden.associates = defaultTabHidden.npcs;
       }
       delete defaultTabVis.npcs;
     }
     const defaultTabs = this._getTabDefinitions();
     const currentOverrides = this.document.getFlag("campaign-codex", "tab-overrides") || [];
 
-    // Create data for the dialog, merging defaults with overrides
-    const dialogTabs = defaultTabs.map(defaultTab => {
-      const override = currentOverrides.find(o => o.key === defaultTab.key);
+    const dialogTabs = defaultTabs.map((defaultTab) => {
+      const override = currentOverrides.find((o) => o.key === defaultTab.key);
       const defaultVisibility = defaultTabVis[defaultTab.key] ?? true;
       const defaultHidden = defaultTabHidden[defaultTab.key] ?? false;
       return {
@@ -1385,55 +1486,54 @@ _labelOverride(selectedDoc, sheetKey) {
         visible: override?.visible ?? defaultVisibility,
         hidden: override?.hidden ?? defaultHidden,
         defaultVisibility: defaultVisibility,
-        defaultHidden: defaultHidden
+        defaultHidden: defaultHidden,
       };
     });
 
-    const imageAreaOverride = currentOverrides.find(o => o.key === "imageArea");
+    const imageAreaOverride = currentOverrides.find((o) => o.key === "imageArea");
     dialogTabs.push({
       key: "imageArea",
       originalLabel: "Sidebar Image",
       overrideLabel: "",
       hideLabel: true,
-      hidden: imageAreaOverride?.hidden || false, 
+      hidden: imageAreaOverride?.hidden || false,
       visible: imageAreaOverride?.visible ?? true,
-      defaultVisibility: true
+      defaultVisibility: true,
     });
-    const mapMarkerOverride = currentOverrides.find(o => o.key === "mapMarker");
+    const mapMarkerOverride = currentOverrides.find((o) => o.key === "mapMarker");
     dialogTabs.push({
       key: "mapMarker",
       originalLabel: "Map Marker",
       overrideLabel: "",
       hideLabel: true,
-      hidden: mapMarkerOverride?.hidden || false, 
+      hidden: mapMarkerOverride?.hidden || false,
       visible: mapMarkerOverride?.visible ?? true,
-      defaultVisibility: true
+      defaultVisibility: true,
     });
 
-    const content = await renderTemplate(
-      "modules/campaign-codex/templates/partials/tab-config-dialog.hbs", 
-      { tabs: dialogTabs } 
-    );
-    
+    const content = await renderTemplate("modules/campaign-codex/templates/partials/tab-config-dialog.hbs", {
+      tabs: dialogTabs,
+    });
+
     new foundry.applications.api.DialogV2({
       window: { title: "Configure Tabs" },
       classes: ["cc-tab-config"],
       content,
       form: {
-        closeOnSubmit: false 
+        closeOnSubmit: false,
       },
       buttons: [
         {
           action: "edit",
           label: "Edit Defaults",
-          type: "button", 
+          type: "button",
           default: false,
           callback: () => "configure",
         },
         {
           label: "Reset",
           action: "reset",
-          type: "button", 
+          type: "button",
           default: false,
           icon: "fas fa-undo",
           callback: () => "reset",
@@ -1441,12 +1541,12 @@ _labelOverride(selectedDoc, sheetKey) {
         {
           action: "save",
           label: "Save",
-          type: "submit", 
+          type: "submit",
           default: true,
           callback: (event, button) => Object.fromEntries(new FormData(button.form)),
         },
       ],
-      
+
       submit: async (result, dialog) => {
         if (result === "configure") {
           const tb = new tabPicker();
@@ -1456,22 +1556,22 @@ _labelOverride(selectedDoc, sheetKey) {
           tb.render(true);
           await tabPickerClosed;
           await dialog.close();
-          CampaignCodexBaseSheet.#_onEditTabs.call(this, event); 
-          
+          CampaignCodexBaseSheet.#_onEditTabs.call(this, event);
+
           return;
         }
         if (result === "reset") {
           const proceed = await confirmationDialog("Are you sure you want to reset?");
           if (proceed) {
             this.document.unsetFlag("campaign-codex", "tab-overrides");
-            dialog.close(); 
+            dialog.close();
           }
           return;
         }
 
-        const updates = result; 
+        const updates = result;
         const newOverrides = [];
-        
+
         for (const tab of dialogTabs) {
           const key = tab.key;
           const labelKey = `${key}.label`;
@@ -1484,12 +1584,12 @@ _labelOverride(selectedDoc, sheetKey) {
             key: key,
             label: label,
             visible: visible,
-            hidden: hidden 
+            hidden: hidden,
           });
         }
-        const filteredOverrides = newOverrides.filter(o => {
-          const originalTab = dialogTabs.find(d => d.key === o.key); 
-          if (!originalTab) return false; 
+        const filteredOverrides = newOverrides.filter((o) => {
+          const originalTab = dialogTabs.find((d) => d.key === o.key);
+          if (!originalTab) return false;
           const isLabelOverridden = o.label && o.label !== originalTab.originalLabel;
           const isVisibilityOverridden = o.visible !== originalTab.defaultVisibility;
           const isHiddenOverridden = o.hidden !== originalTab.defaultHidden;
@@ -1501,13 +1601,14 @@ _labelOverride(selectedDoc, sheetKey) {
         } else {
           this.document.unsetFlag("campaign-codex", "tab-overrides");
         }
-        
-        dialog.close(); 
+
+        dialog.close();
       },
-      
-      close: () => { this.render(); }
-      
-    }).render(true); 
+
+      close: () => {
+        this.render();
+      },
+    }).render(true);
   }
   // =========================================================================
   // STATIC ACTION HANDLERS - UI TOGGLES
@@ -1516,13 +1617,13 @@ _labelOverride(selectedDoc, sheetKey) {
   static #_onToggleQuicklinks(event) {
     event.preventDefault();
     this.#showQuicklinks = !this.#showQuicklinks;
-    this.render(); 
+    this.render();
   }
 
   static #_onToggleWidgets(event) {
     event.preventDefault();
     this.#showWidgets = !this.#showWidgets;
-    this.render(); 
+    this.render();
   }
 
   static #_onToggleTags(event) {
@@ -1531,58 +1632,53 @@ _labelOverride(selectedDoc, sheetKey) {
     this.render();
   }
 
-
-
   // =========================================================================
   // STATIC ACTION HANDLERS - WIDGET MANAGEMENT
   // =========================================================================
-  
 
   static async #_onRemoveShop(event) {
-    await this._onRemoveFromList(event,"linkedShops");
-  }  
+    await this._onRemoveFromList(event, "linkedShops");
+  }
 
   static async #_onRemoveNPC(event) {
     const myType = this.getSheetType();
-    if (myType && ["npc", "tag"].includes(myType)){
-      await this._onRemoveFromList(event,"associates");
+    if (myType && ["npc", "tag"].includes(myType)) {
+      await this._onRemoveFromList(event, "associates");
     } else {
-      await this._onRemoveFromList(event,"linkedNPCs");
+      await this._onRemoveFromList(event, "linkedNPCs");
     }
-  }  
+  }
 
   static async #_onRemoveAssociate(event) {
-    await this._onRemoveFromList(event,"associates");
-  }  
+    await this._onRemoveFromList(event, "associates");
+  }
 
   static async #_onRemoveParentRegion(event) {
-    await this._onRemoveFromList(event,"parentRegions");
-  }  
-
+    await this._onRemoveFromList(event, "parentRegions");
+  }
 
   static async #_onRemoveRegion(event) {
-    await this._onRemoveFromList(event,"linkedRegions");
-  }  
-
+    await this._onRemoveFromList(event, "linkedRegions");
+  }
 
   static async #_openActor(event) {
-    await this._onOpenDocument(event,"actor");
+    await this._onOpenDocument(event, "actor");
   }
 
   static async #_openAssociate(event) {
-    await this._onOpenDocument(event,"associate");
+    await this._onOpenDocument(event, "associate");
   }
 
   static async #_openGroup(event) {
-    await this._onOpenDocument(event,"group");
+    await this._onOpenDocument(event, "group");
   }
 
   static async #_openRegion(event) {
-    await this._onOpenDocument(event,"region");
+    await this._onOpenDocument(event, "region");
   }
 
   static async #_openShop(event) {
-    await this._onOpenDocument(event,"shop");
+    await this._onOpenDocument(event, "shop");
   }
 
   static async #_openLocation(event) {
@@ -1590,15 +1686,15 @@ _labelOverride(selectedDoc, sheetKey) {
   }
 
   static async #_openNPC(event) {
-    await this._onOpenDocument(event,"npc");
+    await this._onOpenDocument(event, "npc");
   }
 
   static async #_openTag(event) {
-    await this._onOpenDocument(event,"tag");
+    await this._onOpenDocument(event, "tag");
   }
 
   static async #_openJournal(event) {
-    await this._onOpenDocument(event,"journal");
+    await this._onOpenDocument(event, "journal");
   }
 
   static async #_onAddWidget(event) {
@@ -1607,24 +1703,24 @@ _labelOverride(selectedDoc, sheetKey) {
     const widgetName = event.target.dataset.name;
     if (!widgetName) return;
 
-    // Detect Tab Context
-    const tabContainer = event.target.closest(".tab-panel") || event.target.closest(".group-tab-panel") || event.target.closest('[data-tab]');
+    const tabContainer =
+      event.target.closest(".tab-panel") ||
+      event.target.closest(".group-tab-panel") ||
+      event.target.closest("[data-tab]");
     const targetTab = tabContainer?.dataset?.tab || "widgets";
 
     const sheetWidgets = this.document.getFlag("campaign-codex", "sheet-widgets") || [];
-    const existingCounters = sheetWidgets
-      .filter(w => w.widgetName === widgetName)
-      .map(w => w.counter || 0);
+    const existingCounters = sheetWidgets.filter((w) => w.widgetName === widgetName).map((w) => w.counter || 0);
     const maxCounter = existingCounters.length > 0 ? Math.max(...existingCounters) : 0;
     const newCounter = maxCounter + 1;
     const newWidget = {
       id: foundry.utils.randomID(),
       widgetName: widgetName,
-      counter: newCounter,  
+      counter: newCounter,
       active: true,
-      tab: targetTab 
+      tab: targetTab,
     };
-    if (sheetWidgets.some(w => w.id === newWidget.id)) {
+    if (sheetWidgets.some((w) => w.id === newWidget.id)) {
       return ui.notifications.warn("A random ID collision occurred. Please try again.");
     }
 
@@ -1636,21 +1732,21 @@ _labelOverride(selectedDoc, sheetKey) {
     const widgetId = event.target.dataset.id;
     if (!widgetId) return;
 
-    // Detect Tab Context (allows moving inactive widgets to the current tab)
-    const tabContainer = event.target.closest(".tab-panel") || event.target.closest(".group-tab-panel") || event.target.closest('[data-tab]');
+    const tabContainer =
+      event.target.closest(".tab-panel") ||
+      event.target.closest(".group-tab-panel") ||
+      event.target.closest("[data-tab]");
     const targetTab = tabContainer?.dataset?.tab || "widgets";
 
     const sheetWidgets = this.document.getFlag("campaign-codex", "sheet-widgets") || [];
-    const widget = sheetWidgets.find(w => w.id === widgetId);
+    const widget = sheetWidgets.find((w) => w.id === widgetId);
 
     if (widget) {
       widget.active = true;
-      widget.tab = targetTab; // Update the tab to the current location
+      widget.tab = targetTab;
       await this.document.setFlag("campaign-codex", "sheet-widgets", sheetWidgets);
     }
   }
-
-
 
   static async #_onDeactivateWidget(event) {
     event.preventDefault();
@@ -1658,7 +1754,7 @@ _labelOverride(selectedDoc, sheetKey) {
     if (!widgetId) return;
 
     const sheetWidgets = this.document.getFlag("campaign-codex", "sheet-widgets") || [];
-    const widget = sheetWidgets.find(w => w.id === widgetId);
+    const widget = sheetWidgets.find((w) => w.id === widgetId);
 
     if (widget) {
       widget.active = false;
@@ -1669,7 +1765,7 @@ _labelOverride(selectedDoc, sheetKey) {
   static async #_onDeleteWidget(event) {
     event.preventDefault();
     const widgetId = event.target.dataset.id;
-    const widgetType = event.target.dataset.type; 
+    const widgetType = event.target.dataset.type;
     if (!widgetId || !widgetType) return;
 
     const proceed = await confirmationDialog("Are you sure you want to delete this widget?");
@@ -1678,18 +1774,17 @@ _labelOverride(selectedDoc, sheetKey) {
     try {
       const currentWidgets = this.document.getFlag("campaign-codex", "sheet-widgets") || [];
 
-      const newWidgets = currentWidgets.filter(w => w.id !== widgetId);
+      const newWidgets = currentWidgets.filter((w) => w.id !== widgetId);
 
       const parentPath = `flags.campaign-codex.data.widgets.${widgetType.toLowerCase()}`;
       console.log(`Campaign Codex | Removing widget ${widgetId} and its data.`);
 
       return await this.document.update({
-        "flags.campaign-codex.sheet-widgets": newWidgets, // Set the new array
+        "flags.campaign-codex.sheet-widgets": newWidgets,
         [parentPath]: {
-          [`-=${widgetId}`]: null
-        }
+          [`-=${widgetId}`]: null,
+        },
       });
-
     } catch (error) {
       console.error(`Campaign Codex | Error deleting widget ${widgetType} (ID: ${widgetId}):`, error);
       return undefined;
@@ -1702,11 +1797,10 @@ _labelOverride(selectedDoc, sheetKey) {
 
   static async #_onClickTag(event) {
     event.preventDefault();
-     const uuid = event.target.closest('[data-uuid]').dataset.uuid;
-     if (!uuid) return;
-     await this._linkTagToSheet(event, uuid);
-    }
-  
+    const uuid = event.target.closest("[data-uuid]").dataset.uuid;
+    if (!uuid) return;
+    await this._linkTagToSheet(event, uuid);
+  }
 
   static async #_onCreateTag(event) {
     event.stopPropagation();
@@ -1722,7 +1816,7 @@ _labelOverride(selectedDoc, sheetKey) {
 
   static async #_onRemoveScene(event) {
     event.preventDefault();
-    // await this._saveFormData();
+
     const currentData = this.document.getFlag("campaign-codex", "data") || {};
     currentData.linkedScene = null;
     await this.document.setFlag("campaign-codex", "data", currentData);
@@ -1741,7 +1835,7 @@ _labelOverride(selectedDoc, sheetKey) {
 
   static async #_onOpenItem(event) {
     event.stopPropagation();
-    const itemUuid = event.target.closest('[data-uuid]').dataset.uuid;
+    const itemUuid = event.target.closest("[data-uuid]").dataset.uuid;
     const item = (await fromUuid(itemUuid)) || game.items.get(itemUuid);
     if (item) {
       item.sheet.render(true);
@@ -1754,19 +1848,18 @@ _labelOverride(selectedDoc, sheetKey) {
     event.stopPropagation();
     const playerCharacter = game.user?.character;
     if (!playerCharacter) return;
-    
+
     let sourceDoc = this.document;
-    if (["group", "tag"].includes(this.document.getFlag("campaign-codex", "type")))
-    {
-      const sourceUuid = event.target.closest('[data-doc-uuid]')?.dataset.docUuid;
+    if (["group", "tag"].includes(this.document.getFlag("campaign-codex", "type"))) {
+      const sourceUuid = event.target.closest("[data-doc-uuid]")?.dataset.docUuid;
       if (!sourceUuid) {
         ui.notifications.warn("No source document set");
-      return;
+        return;
       }
       sourceDoc = await fromUuid(sourceUuid);
     }
 
-    const target = event.target.closest('[data-uuid]');
+    const target = event.target.closest("[data-uuid]");
     const itemUuid = target.dataset.uuid;
     const item = (await fromUuid(itemUuid)) || game.items.get(itemUuid);
     if (!item) {
@@ -1776,13 +1869,10 @@ _labelOverride(selectedDoc, sheetKey) {
     await this._handlePurchase(item, playerCharacter, sourceDoc);
   }
 
-
   static async #_onSendToPlayer(event) {
     event.stopPropagation();
-    const target = event.target.closest('[data-uuid]');
-    const questId = (target.dataset?.type === "quest" && target.dataset.questId)
-      ? target.dataset.questId
-      : null;
+    const target = event.target.closest("[data-uuid]");
+    const questId = target.dataset?.type === "quest" && target.dataset.questId ? target.dataset.questId : null;
     const itemUuid = target.dataset.uuid;
     const item = (await fromUuid(itemUuid)) || game.items.get(itemUuid);
 
@@ -1791,35 +1881,31 @@ _labelOverride(selectedDoc, sheetKey) {
       return;
     }
     let sourceDoc = this.document;
-    if (["group", "tag"].includes(this.document.getFlag("campaign-codex", "type")))
-    {
-      const sourceUuid = event.target.closest('[data-doc-uuid]')?.dataset.docUuid;
+    if (["group", "tag"].includes(this.document.getFlag("campaign-codex", "type"))) {
+      const sourceUuid = event.target.closest("[data-doc-uuid]")?.dataset.docUuid;
       if (!sourceUuid) {
         ui.notifications.warn("No source document set");
-      return;
+        return;
       }
       sourceDoc = await fromUuid(sourceUuid);
     }
 
-
-
-  TemplateComponents.createPlayerSelectionDialog(item.name, async (targetActor, deductFunds) => {
+    TemplateComponents.createPlayerSelectionDialog(item.name, async (targetActor, deductFunds) => {
       if (deductFunds) {
-          await this._handlePurchase(item, targetActor, sourceDoc);
+        await this._handlePurchase(item, targetActor, sourceDoc);
       } else {
-          await this._transferItemToActor(item, targetActor, sourceDoc, questId);
+        await this._transferItemToActor(item, targetActor, sourceDoc, questId);
       }
-  });
-
+    });
   }
 
   static async #_onRemoveQuestItem(event) {
     event.stopPropagation();
-    const target = event.target.closest('[data-uuid]');
+    const target = event.target.closest("[data-uuid]");
     const { questId, uuid } = target.dataset;
     const currentData = this.document.getFlag("campaign-codex", "data") || {};
     const quests = foundry.utils.deepClone(currentData.quests || []);
-    const quest = quests.find(q => q.id === questId);
+    const quest = quests.find((q) => q.id === questId);
 
     if (quest) {
       quest.inventory = (quest.inventory || []).filter((i) => i.itemUuid !== uuid);
@@ -1828,22 +1914,18 @@ _labelOverride(selectedDoc, sheetKey) {
     }
   }
 
-
   // =========================================================================
   // Player Purchasing
   // =========================================================================
 
-
-async _handlePurchase(item, targetActor,  document) {
+async _handlePurchase(item, targetActor, document) {
     try {
-
       const currentData = document.getFlag("campaign-codex", "data") || {};
       const inventory = currentData.inventory || [];
       const shopItem = inventory.find((i) => i.itemUuid === item.uuid);
       const markup = currentData.markup || 1;
       const currentQty = shopItem ? shopItem.quantity : 0;
       const infinite = shopItem ? shopItem?.infinite : false;
-
 
       if (currentQty <= 0 && !infinite) {
         ui.notifications.warn("Item is out of stock.");
@@ -1855,11 +1937,22 @@ async _handlePurchase(item, targetActor,  document) {
       const itemData = item.toObject();
       delete itemData._id;
 
-      await targetActor.createEmbeddedDocuments("Item", [itemData]);
+      const existingItem = targetActor.items.find(
+        (i) =>
+          i.getFlag("core", "_stats.compendiumSource") === item.uuid ||
+          (i.name === item.name && i.type === item.type && i.img === item.img)
+      );
 
-      if (!infinite){
-        const newQuantity = currentQty - 1;
+      if (existingItem) {
+        const currentActorQty = existingItem.system.quantity || 0;
+        await existingItem.update({ "system.quantity": currentActorQty + 1 });
+      } else {
         itemData.system.quantity = 1;
+        await targetActor.createEmbeddedDocuments("Item", [itemData]);
+      }
+
+      if (!infinite) {
+        const newQuantity = currentQty - 1;
 
         if (shopItem) {
           if (game.user.isGM) {
@@ -1870,13 +1963,13 @@ async _handlePurchase(item, targetActor,  document) {
               data: {
                 docUuid: document.uuid,
                 itemUuid: item.uuid,
-                updates: { quantity: newQuantity }
-              }
+                updates: { quantity: newQuantity },
+              },
             });
           }
-          if (["group", "tag"].includes(this.document.getFlag("campaign-codex", "type")) && game.user.isGM) document.render();
-
-        } 
+          if (["group", "tag"].includes(this.document.getFlag("campaign-codex", "type")) && game.user.isGM)
+            document.render();
+        }
       }
 
       ui.notifications.info(format("title.send.item.typetoplayer", { type: item.name, player: targetActor.name }));
@@ -1885,15 +1978,14 @@ async _handlePurchase(item, targetActor,  document) {
       if (targetUser && targetUser.active) {
         ChatMessage.create({
           content: `<p><strong>${game.user.name}</strong> purchased <strong>${item.name}</strong> from ${this.document.name}!</p>`,
-          whisper: game.users.activeGM?.id
+          whisper: game.users.activeGM?.id,
         });
-      }      
+      }
     } catch (error) {
       console.error("Error transferring item:", error);
       ui.notifications.error(localize("error.faileditem"));
     }
   }
-
 
   // =========================================================================
   // STATIC ACTION HANDLERS - CREATION
@@ -1908,16 +2000,16 @@ async _handlePurchase(item, targetActor,  document) {
       const npcJournal = await game.campaignCodex.createNPCJournal(null, name);
       if (npcJournal) {
         switch (myType) {
-          case 'npc':
+          case "npc":
             await game.campaignCodex.linkNPCToNPC(this.document, npcJournal);
             break;
-          case 'location':
+          case "location":
             await game.campaignCodex.linkLocationToNPC(this.document, npcJournal);
             break;
-          case 'region':
+          case "region":
             await game.campaignCodex.linkRegionToNPC(this.document, npcJournal);
             break;
-          case 'shop':
+          case "shop":
             await game.campaignCodex.linkShopToNPC(this.document, npcJournal);
             break;
           default:
@@ -1929,7 +2021,7 @@ async _handlePurchase(item, targetActor,  document) {
     }
   }
 
-    static async #_onCreateShopJournal(event) {
+  static async #_onCreateShopJournal(event) {
     event.preventDefault();
     const myDoc = this.document;
     const name = await promptForName(localize("names.shop"));
@@ -1938,13 +2030,13 @@ async _handlePurchase(item, targetActor,  document) {
       const shopJournal = await game.campaignCodex.createShopJournal(name);
       if (shopJournal) {
         switch (myType) {
-          case 'npc':
+          case "npc":
             await game.campaignCodex.linkShopToNPC(shopJournal, this.document);
             break;
-          case 'location':
+          case "location":
             await game.campaignCodex.linkLocationToShop(this.document, shopJournal);
             break;
-          case 'region':
+          case "region":
             await game.campaignCodex.linkRegionToShop(this.document, shopJournal);
             break;
           default:
@@ -1956,8 +2048,6 @@ async _handlePurchase(item, targetActor,  document) {
     }
   }
 
-
-
   static async #_onCreateRegionJournal(event) {
     event.preventDefault();
     const name = await promptForName(localize("names.region"));
@@ -1967,18 +2057,14 @@ async _handlePurchase(item, targetActor,  document) {
       const regionJournal = await game.campaignCodex.createRegionJournal(name);
       if (regionJournal) {
         switch (myType) {
-          case 'npc':
-             await game.campaignCodex.linkRegionToNPC(regionJournal, this.document);
-             break;
-          // case 'location':
-          //   await game.campaignCodex.linkLocationToNPC(this.document, npcJournal);
-          //   break;
-          case 'region':
+          case "npc":
+            await game.campaignCodex.linkRegionToNPC(regionJournal, this.document);
+            break;
+
+          case "region":
             await game.campaignCodex.linkRegionToRegion(this.document, regionJournal);
             break;
-          // case 'shop':
-          //   await game.campaignCodex.linkShopToNPC(this.document, npcJournal);
-          //   break;
+
           default:
             return;
         }
@@ -1988,7 +2074,7 @@ async _handlePurchase(item, targetActor,  document) {
     }
   }
 
-    static async #_onCreateLocationJournal(event) {
+  static async #_onCreateLocationJournal(event) {
     event.preventDefault();
     const name = await promptForName(localize("names.location"));
     const myDoc = this.document;
@@ -1997,18 +2083,13 @@ async _handlePurchase(item, targetActor,  document) {
       const locationJournal = await game.campaignCodex.createLocationJournal(name);
       if (locationJournal) {
         switch (myType) {
-          case 'npc':
-             await game.campaignCodex.linkLocationToNPC(locationJournal, this.document);
-          //   break;
-          // case 'location':
-          //   await game.campaignCodex.linkLocationToNPC(this.document, npcJournal);
-          //   break;
-          case 'region':
+          case "npc":
+            await game.campaignCodex.linkLocationToNPC(locationJournal, this.document);
+
+          case "region":
             await game.campaignCodex.linkRegionToLocation(this.document, locationJournal);
             break;
-          // case 'shop':
-          //   await game.campaignCodex.linkShopToNPC(this.document, npcJournal);
-          //   break;
+
           default:
             return;
         }
@@ -2022,12 +2103,10 @@ async _handlePurchase(item, targetActor,  document) {
   // hide Cards
   // =========================================================================
 
-
-
   async hideAssociate(event) {
     event.preventDefault();
     event.stopPropagation();
-    const target = event.target.closest('[data-uuid]');
+    const target = event.target.closest("[data-uuid]");
     const uuid = target.dataset.uuid;
     if (!uuid) return;
 
@@ -2035,102 +2114,95 @@ async _handlePurchase(item, targetActor,  document) {
     const hiddenAssociates = currentData.hiddenAssociates || [];
 
     if (hiddenAssociates.includes(uuid)) {
-      // Unhide
-      const newHidden = hiddenAssociates.filter(u => u !== uuid);
+      const newHidden = hiddenAssociates.filter((u) => u !== uuid);
       await this.document.setFlag("campaign-codex", "data.hiddenAssociates", newHidden);
-      // ui.notifications.info("Associate visible to players.");
     } else {
       hiddenAssociates.push(uuid);
       await this.document.setFlag("campaign-codex", "data.hiddenAssociates", hiddenAssociates);
-      // ui.notifications.info("Hidden from players.");
     }
     this.render();
   }
 
-
   // =========================================================================
   // Context remove forwarder
   // =========================================================================
-  
-  async removeLink(event){
+
+  async removeLink(event) {
     if (!event && !event.target?.dataset?.type) return;
-    const type = event.target.dataset.type
-    if (type === "location"){
+    const type = event.target.dataset.type;
+    if (type === "location") {
       this._removeLocation(event);
-    } else if (type === "shop"){
-        await this._onRemoveFromList(event,"linkedShops");
-    } else if (type === "associate"){
-        await this._onRemoveFromList(event,"associates");
-    } else if (["npc", "tag"].includes(type)){
-        await this._onRemoveFromList(event,"linkedNPCs");
-    } else if (type === "shop"){
-        await this._onRemoveFromList(event,"linkedShops");
-    } else if (type === "region"){
-        if (this.getSheetType() ==="tag"){this._removeLocation(event);}
-        else {await this._onRemoveFromList(event,"linkedRegions");}
-    } else if (type === "group"){
-        await this._onRemoveFromList(event,"linkedGroups");
-    } else if (type === "parentregion"){
-        await this._onRemoveFromList(event,"parentRegions");
-    } else if (type === "journal"){
-        await this._removeJournal(event);
-    }
-}
-
-
-  async removeTag(event) {
-    const myType = this.getSheetType();
-    if (myType && ["npc", "tag"].includes(myType)){
-      await this._onRemoveFromList(event,"associates");
-    } else {
-      await this._onRemoveFromList(event,"linkedNPCs");
+    } else if (type === "shop") {
+      await this._onRemoveFromList(event, "linkedShops");
+    } else if (type === "associate") {
+      await this._onRemoveFromList(event, "associates");
+    } else if (["npc", "tag"].includes(type)) {
+      await this._onRemoveFromList(event, "linkedNPCs");
+    } else if (type === "shop") {
+      await this._onRemoveFromList(event, "linkedShops");
+    } else if (type === "region") {
+      if (this.getSheetType() === "tag") {
+        this._removeLocation(event);
+      } else {
+        await this._onRemoveFromList(event, "linkedRegions");
+      }
+    } else if (type === "group") {
+      await this._onRemoveFromList(event, "linkedGroups");
+    } else if (type === "parentregion") {
+      await this._onRemoveFromList(event, "parentRegions");
+    } else if (type === "journal") {
+      await this._removeJournal(event);
     }
   }
 
+  async removeTag(event) {
+    const myType = this.getSheetType();
+    if (myType && ["npc", "tag"].includes(myType)) {
+      await this._onRemoveFromList(event, "associates");
+    } else {
+      await this._onRemoveFromList(event, "linkedNPCs");
+    }
+  }
 
-
- 
   // =========================================================================
   // STATIC ACTION HANDLERS - REMOVE OBJECTS
   // =========================================================================
-
 
   async _onRemoveActor(event) {
     await this.document.setFlag("campaign-codex", "data.linkedActor", null);
     this.render(true);
   }
 
-
-  async _removeJournal(event){
+  async _removeJournal(event) {
     event.preventDefault();
-    event.stopPropagation(); 
+    event.stopPropagation();
     const journalUuid = event.target.dataset.uuid;
     if (!journalUuid) return;
 
     const currentData = this.document.getFlag("campaign-codex", "data") || {};
     if (currentData.linkedStandardJournals && Array.isArray(currentData.linkedStandardJournals)) {
-      currentData.linkedStandardJournals = currentData.linkedStandardJournals.filter(uuid => uuid !== journalUuid);
+      currentData.linkedStandardJournals = currentData.linkedStandardJournals.filter((uuid) => uuid !== journalUuid);
       await this.document.setFlag("campaign-codex", "data", currentData);
       this.render();
       ui.notifications.info("Unlinked journal.");
     }
   }
 
-static async #_onRemoveLocation(event) {
+  static async #_onRemoveLocation(event) {
     this._removeLocation(event);
   }
 
-async _removeLocation(event){
-   const docType = this.document.getFlag("campaign-codex", "type");
-    if (docType){
-      if (docType === "region" || docType === "location" ){
+  async _removeLocation(event) {
+    const docType = this.document.getFlag("campaign-codex", "type");
+    if (docType) {
+      if (docType === "region" || docType === "location") {
         this._onRemoveFromRegion(event);
       }
     }
 
-    event.stopPropagation();      
+    event.stopPropagation();
     const myType = this.getSheetType();
-    if (myType && ["npc", "tag"].includes(myType)){
+    if (myType && ["npc", "tag"].includes(myType)) {
       const locationCard = event.target.closest(".entity-card");
       if (locationCard?.getAttribute("data-source") === "shop") {
         ui.notifications.warn(format("warn.directly", { type: localize("names.location") }));
@@ -2175,13 +2247,11 @@ async _removeLocation(event){
     } finally {
       this.render(true);
     }
-}
-
+  }
 
   async _onRemoveFromRegion(event) {
     event.preventDefault();
     event.stopPropagation();
-    // await this._saveFormData();
 
     const myType = this.getSheetType();
     let locationDoc, regionDoc;
@@ -2192,7 +2262,7 @@ async _removeLocation(event){
       if (regionUuid) regionDoc = await fromUuid(regionUuid);
     } else if (myType === "region") {
       regionDoc = this.document;
-      const locationUuid = event.target.closest('[data-uuid]').dataset.uuid;
+      const locationUuid = event.target.closest("[data-uuid]").dataset.uuid;
       if (locationUuid) locationDoc = await fromUuid(locationUuid);
     }
 
@@ -2211,9 +2281,6 @@ async _removeLocation(event){
     ui.notifications.info(`Removed "${locationDoc.name}" from region "${regionDoc.name}"`);
     targetedRefresh([regionDoc.uuid, locationDoc.uuid], this.document.uuid);
   }
-
-
-
 
   // =========================================================================
   // STATIC ACTION HANDLERS - DROP TO MAP
@@ -2394,15 +2461,14 @@ async _removeLocation(event){
     await this._updateInventoryItem(itemUuid, { customPrice: price });
   }
 
-  static async #_infiniteToggle(event){
+  static async #_infiniteToggle(event) {
     const itemUuid = event.target.dataset.uuid;
     const currentData = this.document.getFlag("campaign-codex", "data") || {};
     const inventory = currentData.inventory || [];
     const item = inventory.find((i) => i.itemUuid === itemUuid);
     const isInfinite = item?.infinite || false;
-    event.target.classList.toggle ("enabled", !isInfinite)
+    event.target.classList.toggle("enabled", !isInfinite);
     await this._updateInventoryItem(itemUuid, { infinite: !isInfinite });
-
   }
 
   static async #_onRemoveItem(event) {
@@ -2424,7 +2490,7 @@ async _removeLocation(event){
       customPrice: item.customPrice,
       itemUuid: item.itemUuid,
       quantity: item.quantity,
-      infinite: item.infinite
+      infinite: item.infinite,
     }));
 
     await this.document.setFlag("campaign-codex", "data", {
@@ -2437,7 +2503,7 @@ async _removeLocation(event){
 
   _onItemDragStart(event) {
     const el = event.currentTarget;
-    if ('link' in event.target.dataset) return;
+    if ("link" in event.target.dataset) return;
     let itemUuid = event.target.dataset.uuid;
     if (!itemUuid) return;
     const dragData = {
@@ -2447,7 +2513,7 @@ async _removeLocation(event){
       shopId: this.document.id,
     };
 
-    event.dataTransfer.setData('text/plain', JSON.stringify(dragData));
+    event.dataTransfer.setData("text/plain", JSON.stringify(dragData));
     event.currentTarget.style.opacity = "0.5";
   }
 
@@ -2470,28 +2536,27 @@ async _removeLocation(event){
     }
 
     switch (myType) {
-      case 'tag':
+      case "tag":
         await game.campaignCodex.linkNPCToNPC(myDoc, tagDoc);
         break;
-      case 'npc':
+      case "npc":
         await game.campaignCodex.linkNPCToNPC(myDoc, tagDoc);
         break;
-      case 'location':
+      case "location":
         await game.campaignCodex.linkLocationToNPC(myDoc, tagDoc);
         break;
-      case 'region':
+      case "region":
         await game.campaignCodex.linkRegionToNPC(myDoc, tagDoc);
         break;
-      case 'shop':
+      case "shop":
         await game.campaignCodex.linkShopToNPC(myDoc, tagDoc);
         break;
-      case 'group':
+      case "group":
         await game.campaignCodex.linkGroupToTag(myDoc, tagDoc);
         break;
       default:
         return;
     }
-    // targetedRefresh([tagDoc.uuid, myDoc.uuid], this.document.uuid);
   }
 
   // =========================================================================
@@ -2502,10 +2567,10 @@ async _removeLocation(event){
     event.preventDefault();
     event.stopPropagation();
     const questId = event.currentTarget.dataset.questId;
-    const parentId = event.currentTarget.dataset.parentId; // Will be undefined for top-level objectives
+    const parentId = event.currentTarget.dataset.parentId;
     const currentData = this.document.getFlag("campaign-codex", "data") || {};
     const quests = foundry.utils.deepClone(currentData.quests || []);
-    const quest = quests.find(q => q.id === questId);
+    const quest = quests.find((q) => q.id === questId);
     if (!quest) return;
 
     const newObjective = {
@@ -2513,11 +2578,10 @@ async _removeLocation(event){
       text: "New Objective",
       completed: false,
       visible: false,
-      objectives: [] // For sub-objectives
+      objectives: [],
     };
 
     if (parentId) {
-      // This is a sub-objective
       const findParent = (objectives) => {
         for (const obj of objectives) {
           if (obj.id === parentId) return obj;
@@ -2532,7 +2596,6 @@ async _removeLocation(event){
         parentObjective.objectives.push(newObjective);
       }
     } else {
-      // This is a top-level objective
       quest.objectives = quest.objectives || [];
       quest.objectives.push(newObjective);
     }
@@ -2551,7 +2614,7 @@ async _removeLocation(event){
     const { questId, objectiveId } = event.currentTarget.dataset;
     const currentData = this.document.getFlag("campaign-codex", "data") || {};
     const quests = foundry.utils.deepClone(currentData.quests || []);
-    const quest = quests.find(q => q.id === questId);
+    const quest = quests.find((q) => q.id === questId);
     if (!quest || !quest.objectives) return;
 
     const findAndRemove = (objectives) => {
@@ -2571,31 +2634,25 @@ async _removeLocation(event){
     this.render();
   }
 
-
-
-
-static async #_objectiveToggle (event, target) {
+  static async #_objectiveToggle(event, target) {
     event.preventDefault();
     const { questId, objectiveId, field, uuid } = target.dataset;
-    // console.log(field);
+
     let currentData;
     let currentDoc;
 
     if (!uuid) return;
-    if (uuid === this.document.uuid){
+    if (uuid === this.document.uuid) {
       currentDoc = this.document;
-    }
-    else
-    {
+    } else {
       currentDoc = await fromUuid(uuid);
-
     }
     if (!currentDoc) return;
-    // console.log(currentDoc);
+
     currentData = currentDoc.getFlag("campaign-codex", "data") || {};
 
     const quests = foundry.utils.deepClone(currentData.quests || []);
-    const quest = quests.find(q => q.id === questId);
+    const quest = quests.find((q) => q.id === questId);
     if (!quest || !quest.objectives) return;
 
     const findAndUpdate = (objectives) => {
@@ -2605,8 +2662,6 @@ static async #_objectiveToggle (event, target) {
           return true;
         }
         if (findAndUpdate(obj.objectives || [])) return true;
-        // target.classList.toggle('fa-circle', !obj[field]);
-        // target.classList.toggle('fa-circle-check', obj[field]);
       }
       return false;
     };
@@ -2614,8 +2669,7 @@ static async #_objectiveToggle (event, target) {
     findAndUpdate(quest.objectives);
 
     await currentDoc.setFlag("campaign-codex", "data.quests", quests);
-}
-
+  }
 
   /**
    * Handle clicking on an objective's text to make it editable.
@@ -2642,16 +2696,16 @@ static async #_objectiveToggle (event, target) {
    * @param {FocusEvent|KeyboardEvent} event The triggering event.
    */
   async _onObjectiveTextSave(event) {
-    if (event.type === 'keypress' && event.key !== 'Enter') return;
+    if (event.type === "keypress" && event.key !== "Enter") return;
     if (!event.target.classList.contains("objective-text-input")) return;
-    
+
     const input = event.target;
     const { questId, objectiveId } = input.dataset;
     const newText = input.value.trim();
 
     const currentData = this.document.getFlag("campaign-codex", "data") || {};
     const quests = foundry.utils.deepClone(currentData.quests || []);
-    const quest = quests.find(q => q.id === questId);
+    const quest = quests.find((q) => q.id === questId);
     if (!quest) return;
 
     const findAndUpdate = (objectives) => {
@@ -2678,7 +2732,7 @@ static async #_objectiveToggle (event, target) {
   // =========================================================================
 
   _onObjectiveDragStart(event) {
-    event.stopPropagation(); 
+    event.stopPropagation();
     const questId = event.currentTarget.dataset.questId;
     const objectiveId = event.currentTarget.dataset.objectiveId;
     event.dataTransfer.setData("text/plain", JSON.stringify({ questId, objectiveId }));
@@ -2689,7 +2743,7 @@ static async #_objectiveToggle (event, target) {
     event.preventDefault();
     const target = event.currentTarget;
     const rect = target.getBoundingClientRect();
-    const midY = rect.top + (rect.height / 2);
+    const midY = rect.top + rect.height / 2;
     if (event.clientY < midY) {
       target.classList.add("drag-over-top");
     } else {
@@ -2708,7 +2762,7 @@ static async #_objectiveToggle (event, target) {
     const target = event.currentTarget;
     target.classList.remove("drag-over-top", "drag-over-bottom");
     const rect = target.getBoundingClientRect();
-    const midY = rect.top + (rect.height / 2);
+    const midY = rect.top + rect.height / 2;
     if (event.clientY < midY) {
       target.classList.add("drag-over-top");
     } else {
@@ -2731,7 +2785,7 @@ static async #_objectiveToggle (event, target) {
 
     const currentData = this.document.getFlag("campaign-codex", "data") || {};
     const quests = foundry.utils.deepClone(currentData.quests || []);
-    const quest = quests.find(q => q.id === questId);
+    const quest = quests.find((q) => q.id === questId);
     if (!quest) return;
 
     let draggedObjective = null;
@@ -2771,14 +2825,16 @@ static async #_objectiveToggle (event, target) {
 
   _onObjectiveDragEnd(event) {
     event.currentTarget.classList.remove("dragging");
-    document.querySelectorAll('.objective-item').forEach(el => el.classList.remove('drag-over-top', 'drag-over-bottom'));
+    document
+      .querySelectorAll(".objective-item")
+      .forEach((el) => el.classList.remove("drag-over-top", "drag-over-bottom"));
   }
 
   // =========================================================================
   // INSTANCE EVENT HANDLERS - QUEST MANAGEMENT
   // =========================================================================
 
-  static async #_questToggle(event, target){
+  static async #_questToggle(event, target) {
     if (!game.user.isGM) return;
 
     const field = target.dataset.field;
@@ -2786,45 +2842,38 @@ static async #_objectiveToggle (event, target) {
     if (!fields.includes(field)) return;
 
     const docUuid = target.dataset.uuid;
-    
+
     let currentData;
     let currentDoc;
     let value;
-    
-    if (!docUuid) return;
-    if (docUuid === this.document.uuid){
-      currentDoc = this.document;
-    }
-    else
-    {
-      currentDoc = await fromUuid(docUuid);
 
+    if (!docUuid) return;
+    if (docUuid === this.document.uuid) {
+      currentDoc = this.document;
+    } else {
+      currentDoc = await fromUuid(docUuid);
     }
     if (!currentDoc) return;
     currentData = currentDoc.getFlag("campaign-codex", "data") || {};
     const questId = target.dataset.questId;
     const quests = foundry.utils.deepClone(currentData.quests || []);
-    const quest = quests.find(q => q.id === questId);
+    const quest = quests.find((q) => q.id === questId);
     if (!quest) return;
-    
-    value = !quest[field]; 
+
+    value = !quest[field];
     quest[field] = value;
     await currentDoc.setFlag("campaign-codex", "data.quests", quests);
-    if (field === "completed"){
-      target.classList.toggle('fa-circle-xmark', !quest[field]);
-      target.classList.toggle('fa-circle-check', quest[field]);
-    } else if (field === "visible"){
-      target.classList.toggle('fa-eye-slash', !quest[field]);
-      target.classList.toggle('fa-eye', quest[field]);
-    } else if (field === "pinned"){
-      target.classList.toggle('fa-thumbtack-slash', quest[field]);
-      target.classList.toggle('fa-thumbtack', !quest[field]);
+    if (field === "completed") {
+      target.classList.toggle("fa-circle-xmark", !quest[field]);
+      target.classList.toggle("fa-circle-check", quest[field]);
+    } else if (field === "visible") {
+      target.classList.toggle("fa-eye-slash", !quest[field]);
+      target.classList.toggle("fa-eye", quest[field]);
+    } else if (field === "pinned") {
+      target.classList.toggle("fa-thumbtack-slash", quest[field]);
+      target.classList.toggle("fa-thumbtack", !quest[field]);
     }
-  }    
-
-  
-
-
+  }
 
   async _onAddQuest(event) {
     event.preventDefault();
@@ -2851,7 +2900,7 @@ static async #_objectiveToggle (event, target) {
     const proceed = await confirmationDialog("Are you sure you want to delete this quest?");
     if (proceed) {
       let quests = currentData.quests || [];
-      quests = quests.filter(q => q.id !== questId);
+      quests = quests.filter((q) => q.id !== questId);
       await this.document.setFlag("campaign-codex", "data.quests", quests);
       this.render();
     }
@@ -2861,38 +2910,38 @@ static async #_objectiveToggle (event, target) {
     event.preventDefault();
     const element = event.currentTarget;
     const questId = element.dataset.questId;
-    const isProseMirror = element.tagName === 'PROSE-MIRROR';
-    const isIconToggle = element.classList.contains('quest-toggle-icon');
-    const field = isProseMirror ? 'description' : element.dataset.field;
+    const isProseMirror = element.tagName === "PROSE-MIRROR";
+    const isIconToggle = element.classList.contains("quest-toggle-icon");
+    const field = isProseMirror ? "description" : element.dataset.field;
     const currentData = this.document.getFlag("campaign-codex", "data") || {};
     const quests = foundry.utils.deepClone(currentData.quests || []);
-    const quest = quests.find(q => q.id === questId);
+    const quest = quests.find((q) => q.id === questId);
     if (!quest) return;
     let value;
     if (isProseMirror) {
-      value = (Array.isArray(element.value) ? element.value[0] : element.value);
-    } else { 
+      value = Array.isArray(element.value) ? element.value[0] : element.value;
+    } else {
       value = element.value;
     }
     quest[field] = value;
     await this.document.setFlag("campaign-codex", "data.quests", quests);
-    this.render(); 
+    this.render();
   }
 
   _onQuestTitleEdit(event) {
     const titleElement = event.currentTarget;
     const input = document.createElement("input");
-    input.addEventListener('blur', this._onQuestTitleSave.bind(this));
-    input.addEventListener('keypress', event => {
+    input.addEventListener("blur", this._onQuestTitleSave.bind(this));
+    input.addEventListener("keypress", (event) => {
       if (event.key === "Enter") {
         event.preventDefault();
-        event.target.blur(); 
+        event.target.blur();
       }
     });
     input.type = "text";
-    input.className = "quest-title-input"; 
+    input.className = "quest-title-input";
     input.value = titleElement.textContent.trim();
-    input.dataset.questId = titleElement.dataset.questId; 
+    input.dataset.questId = titleElement.dataset.questId;
 
     titleElement.replaceWith(input);
     input.focus();
@@ -2908,21 +2957,21 @@ static async #_objectiveToggle (event, target) {
 
     const currentData = this.document.getFlag("campaign-codex", "data") || {};
     const quests = foundry.utils.deepClone(currentData.quests || []);
-    const quest = quests.find(q => q.id === questId);
+    const quest = quests.find((q) => q.id === questId);
 
     if (quest && newTitle && quest.title !== newTitle) {
       quest.title = newTitle;
       await this.document.setFlag("campaign-codex", "data.quests", quests);
     }
-    
+
     const titleElement = document.createElement("h4");
     titleElement.className = "quest-title quest-input-title";
     titleElement.dataset.questId = questId;
     titleElement.dataset.editable = "true";
-    titleElement.textContent = quest ? quest.title : 'New Quest'; 
+    titleElement.textContent = quest ? quest.title : "New Quest";
 
     input.replaceWith(titleElement);
-    titleElement.addEventListener('click', this._onQuestTitleEdit.bind(this));
+    titleElement.addEventListener("click", this._onQuestTitleEdit.bind(this));
   }
 
   // =========================================================================
@@ -2948,7 +2997,6 @@ static async #_objectiveToggle (event, target) {
     }
     try {
       await this._handleDrop(data, event);
-
     } catch (error) {
       console.error("Campaign Codex | Error handling drop:", error);
     } finally {
@@ -2972,13 +3020,12 @@ static async #_objectiveToggle (event, target) {
       return;
     }
     const currentData = this.document.getFlag("campaign-codex", "data") || {};
-    
-    // QUEST DROP
-    const dropOnQuest = event.target.closest('.quest-item');
+
+    const dropOnQuest = event.target.closest(".quest-item");
     if (dropOnQuest) {
       const questId = dropOnQuest.dataset.questId;
       const quests = foundry.utils.deepClone(currentData.quests || []);
-      const quest = quests.find(q => q.id === questId);
+      const quest = quests.find((q) => q.id === questId);
       if (quest) {
         quest.inventory = quest.inventory || [];
         const existingItem = quest.inventory.find((i) => i.itemUuid === item.uuid);
@@ -2992,12 +3039,8 @@ static async #_objectiveToggle (event, target) {
         ui.notifications.info(`Added "${item.name}" to quest "${quest.title}"`);
       }
     } else {
-      // INVENTORY DROP
       const inventory = currentData.inventory || [];
-      // if (inventory.find((i) => i.itemUuid === item.uuid)) {
-      //   ui.notifications.warn("Item already exists in inventory!");
-      //   return;
-      // }
+
       await game.campaignCodex.addItemToShop(this.document, item, 1);
       this.render();
       ui.notifications.info(format("inventory.added", { type: item.name }));
@@ -3008,7 +3051,6 @@ static async #_objectiveToggle (event, target) {
     const actor = await fromUuid(context.uuid);
     if (!actor) return ui.notifications.warn("Could not find the dropped actor.");
 
-    // await this._saveFormData();
     const sheetType = this.getSheetType();
 
     switch (sheetType) {
@@ -3065,17 +3107,15 @@ static async #_objectiveToggle (event, target) {
   // INSTANCE EVENT HANDLERS - NAME & TYPE EDITING
   // =========================================================================
 
-
-
-_onMarkerEdit(event) {
+  _onMarkerEdit(event) {
     const typeElement = event.currentTarget;
     const input = document.createElement("input");
     input.type = "text";
-    input.className = "marker-input"; 
-    input.maxLength = 4; // Limits input to 4 characters
+    input.className = "marker-input";
+    input.maxLength = 4;
     input.value = typeElement.textContent;
 
-    input.addEventListener("input", function() {
+    input.addEventListener("input", function () {
       this.value = this.value.replace(/[^a-zA-Z0-9]/g, "");
     });
 
@@ -3103,7 +3143,7 @@ _onMarkerEdit(event) {
     const typeElement = event.currentTarget;
     const input = document.createElement("input");
     input.type = "text";
-    input.className = "type-input"; 
+    input.className = "type-input";
     input.value = typeElement.textContent;
     typeElement.replaceWith(input);
     input.focus();
@@ -3152,7 +3192,10 @@ _onMarkerEdit(event) {
     nameElement.textContent = this.document.name;
     input.replaceWith(nameElement);
     nameElement.addEventListener("click", this._onNameEdit.bind(this));
-    if (this.document.getFlag("campaign-codex", "data")?.tagMode || this.document.getFlag("campaign-codex", "type") === "tag") {
+    if (
+      this.document.getFlag("campaign-codex", "data")?.tagMode ||
+      this.document.getFlag("campaign-codex", "type") === "tag"
+    ) {
       game.campaignCodex.updateTagInCache(this.document);
     }
   }
@@ -3168,15 +3211,13 @@ _onMarkerEdit(event) {
   // INSTANCE EVENT HANDLERS - DOCUMENT MANAGEMENT
   // =========================================================================
 
-
-
   async _onOpenDocument(event, type) {
     if (event.target.closest(".entity-image, .shop-icon, .card-image-clickable")) {
-      return; 
+      return;
     }
     event.stopPropagation();
 
-    const uuid = event.target.closest('[data-uuid]').dataset.uuid;
+    const uuid = event.target.closest("[data-uuid]").dataset.uuid;
     if (!uuid) return console.warn(`Campaign Codex | No UUID found for ${type}`);
 
     try {
@@ -3196,15 +3237,13 @@ _onMarkerEdit(event) {
     }
   }
 
-
   async _onRemoveFromList(event, listName) {
     event.stopPropagation();
-    const itemUuid = event.target.closest('[data-uuid]').dataset.uuid;
+    const itemUuid = event.target.closest("[data-uuid]").dataset.uuid;
 
     const myDoc = this.document;
     const myData = myDoc.getFlag("campaign-codex", "data") || {};
     const myType = myDoc.getFlag("campaign-codex", "type");
-
 
     if (!myData[listName]) return;
 
@@ -3215,15 +3254,12 @@ _onMarkerEdit(event) {
       myData[listName] = null;
     }
 
-
     const newLength = Array.isArray(myData[listName]) ? myData[listName].length : myData[listName] ? 1 : 0;
     if (originalLength === newLength) {
       this.render();
       return;
     }
     await myDoc.setFlag("campaign-codex", "data", myData);
-
-
 
     let targetDoc;
     try {
@@ -3235,7 +3271,11 @@ _onMarkerEdit(event) {
       let reverseField = null;
       let isArray = false;
       let needsUpdate = false;
-      if (["npc", "tag"].includes(myType) && listName === "linkedLocations" && (targetType === "location" || targetType === "region")) {
+      if (
+        ["npc", "tag"].includes(myType) &&
+        listName === "linkedLocations" &&
+        (targetType === "location" || targetType === "region")
+      ) {
         reverseField = "linkedNPCs";
         isArray = true;
       } else {
@@ -3253,7 +3293,6 @@ _onMarkerEdit(event) {
           "shop:linkedNPCs": { targetType: "npc", reverseField: "linkedShops", isArray: true },
           "tag:linkedGroups": { targetType: "group", reverseField: "linkedNPCs", isArray: true },
           "group:linkedNPCs": { targetType: "tag", reverseField: "linkedGroups", isArray: true },
-
         };
         const relationship = relationshipMap[`${myType}:${listName}`];
         if (relationship && relationship.targetType === targetType) {
@@ -3261,7 +3300,6 @@ _onMarkerEdit(event) {
           isArray = relationship.isArray;
         }
       }
-
 
       if (reverseField) {
         if (isArray) {
@@ -3284,13 +3322,9 @@ _onMarkerEdit(event) {
     } catch (error) {
       console.error("Campaign Codex | Error in bidirectional cleanup:", error);
     }
-    // console.log("remove targeted");
+
     targetedRefresh([targetDoc.uuid, myDoc.uuid], this.document.uuid);
   }
-
-
-
-
 
   // =========================================================================
   // DATA MANAGEMENT UTILITIES
@@ -3311,37 +3345,35 @@ _onMarkerEdit(event) {
       }
     }
   }
-/**
- * Updates an inventory item's data in the specified document's flag.
- * @param {string} itemUuid - The UUID of the item to update.
- * @param {object} updates - The key/value pairs to update on the item.
- * @param {Document|null} [doc=null] - The document to update. If null, defaults to this.document.
- */
-async _updateInventoryItem(itemUuid, updates, doc = null) {
-  let currentDoc;
-  if (doc instanceof foundry.abstract.Document) {
-    currentDoc = doc;
-  } else {
-    currentDoc = this.document;
+  /**
+   * Updates an inventory item's data in the specified document's flag.
+   * @param {string} itemUuid - The UUID of the item to update.
+   * @param {object} updates - The key/value pairs to update on the item.
+   * @param {Document|null} [doc=null] - The document to update. If null, defaults to this.document.
+   */
+  async _updateInventoryItem(itemUuid, updates, doc = null) {
+    let currentDoc;
+    if (doc instanceof foundry.abstract.Document) {
+      currentDoc = doc;
+    } else {
+      currentDoc = this.document;
+    }
+    if (!currentDoc || typeof currentDoc.getFlag !== "function") {
+      console.error("Campaign Codex | _updateInventoryItem called with no valid document.");
+      return;
+    }
+    const currentData = currentDoc.getFlag("campaign-codex", "data") || {};
+    const inventory = foundry.utils.deepClone(currentData.inventory || []);
+
+    const itemIndex = inventory.findIndex((i) => i.itemUuid === itemUuid);
+
+    if (itemIndex !== -1) {
+      inventory[itemIndex] = { ...inventory[itemIndex], ...updates };
+
+      await currentDoc.setFlag("campaign-codex", "data.inventory", inventory);
+    }
   }
-  if (!currentDoc || typeof currentDoc.getFlag !== 'function') {
-    console.error("Campaign Codex | _updateInventoryItem called with no valid document.");
-    return;
-  }
-  const currentData = currentDoc.getFlag("campaign-codex", "data") || {};
-  const inventory = foundry.utils.deepClone(currentData.inventory || []);
-  
-  const itemIndex = inventory.findIndex((i) => i.itemUuid === itemUuid);
 
-  if (itemIndex !== -1) {
-    inventory[itemIndex] = { ...inventory[itemIndex], ...updates };
-
-    await currentDoc.setFlag("campaign-codex", "data.inventory", inventory);
-
-  }
-}
-
-// ... existing code ...
   async _transferItemToActor(item, targetActor, document, questId = "") {
     try {
       const itemData = item.toObject();
@@ -3350,41 +3382,47 @@ async _updateInventoryItem(itemUuid, updates, doc = null) {
 
       if (questId) {
         const quests = foundry.utils.deepClone(currentData.quests || []);
-        const quest = quests.find(q => q.id === questId);
+        const quest = quests.find((q) => q.id === questId);
         quest.inventory = quest.inventory || [];
         const existingItem = quest.inventory.find((i) => i.itemUuid === item.uuid);
         if (existingItem) {
           if (existingItem.quantity > 0) {
-            existingItem.quantity -= 1; 
+            existingItem.quantity -= 1;
             await document.setFlag("campaign-codex", "data.quests", quests);
           }
         }
       } else {
         const inventory = currentData.inventory || [];
         const shopItem = inventory.find((i) => i.itemUuid === item.uuid);
-        
+
         const quantityAvailable = shopItem ? shopItem.quantity : 1;
         const addQty = Math.min(quantityAvailable, 1);
+      
 
-        if (addQty > 0) {
-          const existingItem = targetActor.items.find(i => 
-            i.getFlag("core", "_stats.compendiumSource") === item.uuid || 
-            (i.name === item.name && i.type === item.type && i.img === item.img)
-           );
+        if (addQty > 0 || shopItem.infinite) {
+          const existingItem = targetActor.items.find(
+            (i) =>
+              i.getFlag("core", "_stats.compendiumSource") === item.uuid ||
+              (i.name === item.name && i.type === item.type && i.img === item.img),
+          );
 
           if (existingItem) {
             const currentQty = existingItem.system.quantity || 0;
-            await existingItem.update({ "system.quantity": currentQty + addQty });
+            await existingItem.update({ "system.quantity": currentQty + 1 });
           } else {
-            itemData.system.quantity = addQty;
+            itemData.system.quantity = 1;
             await targetActor.createEmbeddedDocuments("Item", [itemData]);
           }
         }
 
         if (shopItem && shopItem.quantity > 0 && !shopItem.infinite) {
-          await this._updateInventoryItem(item.uuid, {
-            quantity: shopItem.quantity - 1,
-          }, document);
+          await this._updateInventoryItem(
+            item.uuid,
+            {
+              quantity: shopItem.quantity - 1,
+            },
+            document,
+          );
         }
       }
       ui.notifications.info(format("title.send.item.typetoplayer", { type: item.name, player: targetActor.name }));
@@ -3402,51 +3440,6 @@ async _updateInventoryItem(itemUuid, updates, doc = null) {
     }
   }
 
-  // async _transferItemToActor(item, targetActor, document, questId = "") {
-  //   try {
-  //     const itemData = item.toObject();
-  //     delete itemData._id;
-  //     const currentData = document.getFlag("campaign-codex", "data") || {};
-
-  //     if (questId) {
-  //       const quests = foundry.utils.deepClone(currentData.quests || []);
-  //       const quest = quests.find(q => q.id === questId);
-  //       quest.inventory = quest.inventory || [];
-  //       const existingItem = quest.inventory.find((i) => i.itemUuid === item.uuid);
-  //       if (existingItem) {
-  //         if (existingItem.quantity > 0) {
-  //           existingItem.quantity -= 1; 
-  //           await document.setFlag("campaign-codex", "data.quests", quests);
-  //         }
-  //       }
-  //     } else {
-  //       const inventory = currentData.inventory || [];
-  //       const shopItem = inventory.find((i) => i.itemUuid === item.uuid);
-  //       const quantity = shopItem ? shopItem.quantity : 1;
-  //       itemData.system.quantity = Math.min(quantity, 1);
-  //       await targetActor.createEmbeddedDocuments("Item", [itemData]);
-  //       if (shopItem && shopItem.quantity > 0 && !shopItem.infinite) {
-  //         await this._updateInventoryItem(item.uuid, {
-  //           quantity: shopItem.quantity - 1,
-  //         }, document);
-  //       }
-  //     }
-  //     ui.notifications.info(format("title.send.item.typetoplayer", { type: item.name, player: targetActor.name }));
-
-  //     const targetUser = game.users.find((u) => u.character?.id === targetActor.id);
-  //     if (targetUser && targetUser.active) {
-  //       ChatMessage.create({
-  //         content: `<p><strong>${game.user.name}</strong> sent you <strong>${item.name}</strong> from ${document.name}!</p>`,
-  //         whisper: [targetUser.id],
-  //       });
-  //     }
-  //   } catch (error) {
-  //     console.error("Error transferring item:", error);
-  //     ui.notifications.error(localize("error.faileditem"));
-  //   }
-  // }
-
-
   async _isRelatedDocument(changedDocUuid) {
     if (!this.document.getFlag) return false;
     const data = this.document.getFlag("campaign-codex", "data") || {};
@@ -3457,7 +3450,7 @@ async _updateInventoryItem(itemUuid, updates, doc = null) {
       ...(data.linkedNPCs || []),
       ...(data.linkedShops || []),
       ...(data.linkedLocations || []),
-      ...(data.linkedRegions || []), 
+      ...(data.linkedRegions || []),
       ...(data.associates || []),
       data.linkedLocation,
       data.linkedActor,
@@ -3480,7 +3473,7 @@ async _updateInventoryItem(itemUuid, updates, doc = null) {
           ...(changedData.associates || []),
           ...(changedData.parentRegions || []),
           changedData.linkedLocation,
-          changedData.parentRegion, 
+          changedData.parentRegion,
           changedData.linkedActor,
         ].filter(Boolean);
 
@@ -3542,32 +3535,30 @@ async _updateInventoryItem(itemUuid, updates, doc = null) {
     }, {});
 
     const sortedKeys = Object.keys(groups).sort((a, b) => a.localeCompare(b));
-    const sections = sortedKeys.map(key => {
+    const sections = sortedKeys.map((key) => {
       return {
         label: key,
-        items: groups[key].sort((a, b) => a.name.localeCompare(b.name))
+        items: groups[key].sort((a, b) => a.name.localeCompare(b.name)),
       };
     });
     CampaignCodexLinkers.getInventory(data.inventory);
     const showHeaders = sections.length > 1;
     const templateData = {
-      labelOverride:label,
-      allowPlayerPurchasing:data.allowPlayerPurchasing,
-      currency:currency,
+      labelOverride: label,
+      allowPlayerPurchasing: data.allowPlayerPurchasing,
+      currency: currency,
       hideByPermission: hideByPermission,
-      isLoot:data.isLoot,
-      markup:data.markup,
-      inventoryCash:data.inventoryCash,
-      inventory:data.inventory,
+      isLoot: data.isLoot,
+      markup: data.markup,
+      inventoryCash: data.inventoryCash,
+      inventory: data.inventory,
       isGM: game.user.isGM,
-      inventorySections: sections, 
+      inventorySections: sections,
       showHeaders: showHeaders,
-      sourceDoc:this.document.uuid,
-
+      sourceDoc: this.document.uuid,
     };
     return await renderTemplate("modules/campaign-codex/templates/partials/base-inventory.hbs", templateData);
   }
-
 
   // =========================================================================
   // SUBCLASS OVERRIDE METHODS
@@ -3593,11 +3584,4 @@ async _updateInventoryItem(itemUuid, updates, doc = null) {
   getSheetType() {
     return "base";
   }
-
-
 }
-
-
-
-
-

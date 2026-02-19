@@ -20,45 +20,49 @@ export class RelationshipTrackerScaleWidget extends CampaignCodexWidget {
             availableActors: []
         };
 
-        const trackedUuids = new Set();
         
-        for (const entry of this.relationships) {
-            trackedUuids.add(entry.uuid);
+        
+        const trackedUuids = new Set();
+        this.relationships.forEach((entry) => trackedUuids.add(entry.uuid));
+
+        const trackedEntries = (await Promise.all(this.relationships.map(async (entry) => {
             const actor = await fromUuid(entry.uuid);
+            if (!actor) return null;
+
+            const rawValue = entry.value || 0;
+            const value = Math.max(-10, Math.min(10, rawValue));
+
             
-            if (actor) {
-                const rawValue = entry.value || 0;
-                const value = Math.max(-10, Math.min(10, rawValue));
+            const widthPercentage = Math.abs(value) * 5;
+            let leftPercentage = 50;
 
-                // Positioning Logic (Center Out)
-                const widthPercentage = Math.abs(value) * 5; 
-                let leftPercentage = 50;
-
-                if (value < 0) {
-                    leftPercentage = 50 - widthPercentage;
-                }
-
-                const intensity = Math.abs(value) * 10;
-                let colorStyle;
-
-                if (value > 0) {
-                    colorStyle = `background-color: color-mix(in srgb, var(--cc-success) ${intensity}%, var(--cc-accent));`;
-                } else if (value < 0) {
-                    colorStyle = `background-color: color-mix(in srgb, var(--cc-primary) ${intensity}%, var(--cc-accent));`;
-                } else {
-                    colorStyle = `background-color: var(--cc-accent);`;
-                }
-
-                context.tracked.push({
-                    uuid: entry.uuid,
-                    name: actor.name,
-                    img: actor.img,
-                    value: value,
-                    barStyle: `left: ${leftPercentage}%; width: ${widthPercentage}%; ${colorStyle}`,
-                    barClass: "custom" // Used for generic styling if needed
-                });
+            if (value < 0) {
+                leftPercentage = 50 - widthPercentage;
             }
-        }
+
+            const intensity = Math.abs(value) * 10;
+            let colorStyle;
+
+            if (value > 0) {
+                colorStyle = `background-color: color-mix(in srgb, var(--cc-success) ${intensity}%, var(--cc-accent));`;
+            } else if (value < 0) {
+                colorStyle = `background-color: color-mix(in srgb, var(--cc-primary) ${intensity}%, var(--cc-accent));`;
+            } else {
+                colorStyle = `background-color: var(--cc-accent);`;
+            }
+
+            return {
+                uuid: entry.uuid,
+                name: actor.name,
+                img: actor.img,
+                value: value,
+                barStyle: `left: ${leftPercentage}%; width: ${widthPercentage}%; ${colorStyle}`,
+                barClass: "custom" 
+            };
+        }))).filter(Boolean);
+
+        context.tracked = trackedEntries;
+        
 
         if (this.isGM) {
 

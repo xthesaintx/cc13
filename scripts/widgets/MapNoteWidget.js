@@ -2,6 +2,22 @@ import { CampaignCodexWidget } from "./CampaignCodexWidget.js";
 import { gameSystemClass } from "../helper.js";
 import { localize, format, renderTemplate, isThemed, journalSystemClass } from "../helper.js";
 
+
+const { DialogV2 } = foundry.applications.api;
+
+class CodexMapNoteEditorDialog extends DialogV2 {
+    _onConfigurePlugins(event) {
+        event.plugins.highlightDocumentMatches = ProseMirror.ProseMirrorHighlightMatchesPlugin.build(
+            ProseMirror.defaultSchema
+        );
+    }
+
+    _attachFrameListeners() {
+        super._attachFrameListeners();
+        this.element.addEventListener("plugins", this._onConfigurePlugins.bind(this));
+    }
+}
+
 export class MapNoteWidget extends CampaignCodexWidget {
 
     constructor(widgetId, widgetData, document) {
@@ -23,7 +39,7 @@ export class MapNoteWidget extends CampaignCodexWidget {
                 visible: n.visible ?? false,
                 visibilityIcon: n.visible ? "fa-eye" : "fa-eye-slash",
                 visibilityTitle: n.visible ? "Player Visible" : "Player Hidden",
-                isGM: isGM // Pass to individual note for template logic
+                isGM: isGM 
             }));
 
         return {
@@ -52,6 +68,7 @@ export class MapNoteWidget extends CampaignCodexWidget {
 
         notes[index] = { ...notes[index], ...updates };
         await this.saveData({ notes });
+        this._updateNoteCardMeta(id, notes[index]);
 
         if (canvas.ready && (updates.mapId !== undefined || updates.title !== undefined)) {
             const noteUpdates = canvas.notes.placeables
@@ -68,105 +85,84 @@ export class MapNoteWidget extends CampaignCodexWidget {
         }
     }
 
-    /**
-     * Efficient Refresh: Target the specific DOM node
-     */
-    async _refreshWidget() {
-        const htmlElement = document.getElementById(`widget-${this.widgetId}`);
-        if (!htmlElement) return;
-
-        const newHtml = await this.render();
-        const newNode = foundry.utils.elementCreateFromString(newHtml);
-        
-        // Swap only the content to preserve scroll position if possible
-        htmlElement.replaceWith(newNode);
-        this.activateListeners(newNode);
-    }
-
-
     async activateListeners(htmlElement) {
-        htmlElement.querySelector('[data-action="add"]')?.addEventListener('click', (e) => {
+        if (htmlElement.dataset.ccBound === "true") return;
+        htmlElement.dataset.ccBound = "true";
+
+        htmlElement.addEventListener('click', async (e) => {
+            const addBtn = e.target.closest('[data-action="add"]');
+            if (addBtn) {
+                e.preventDefault();
+                this._createNote();
+                return;
+            }
+
+            const deleteBtn = e.target.closest('[data-action="delete"]');
+            if (deleteBtn) {
+                e.preventDefault();
+                e.stopPropagation();
+                await this._deleteNote(deleteBtn.dataset.id);
+                return;
+            }
+
+            const editBtn = e.target.closest('[data-action="edit"]');
+            if (editBtn) {
+                e.preventDefault();
+                e.stopPropagation();
+                this._viewNote(editBtn.dataset.id, true);
+                return;
+            }
+
+            const visibilityBtn = e.target.closest('[data-action="toggle-visibility"]');
+            if (visibilityBtn) {
+                e.preventDefault();
+                e.stopPropagation();
+                await this._toggleVisibility(visibilityBtn.dataset.id);
+                return;
+            }
+
+            const noteCard = e.target.closest('.note-card[data-action="view"]');
+            if (!noteCard) return;
+            if (e.target.closest('.note-actions')) return;
+            if (e.target.closest('input')) return;
+            if (noteCard.classList.contains('dragging')) return;
+
             e.preventDefault();
-            this._createNote();
+            this._viewNote(noteCard.dataset.id, false);
         });
 
-        htmlElement.querySelectorAll('[data-action="delete"]').forEach(btn => {
-            btn.addEventListener('click', async (e) => {
+        htmlElement.addEventListener('input', (e) => {
+            const mapInput = e.target.closest('.note-mapId-input');
+            if (!mapInput) return;
+            mapInput.value = mapInput.value.replace(/[^a-zA-Z0-9]/g, "");
+        });
+
+        htmlElement.addEventListener('change', async (e) => {
+            const titleInput = e.target.closest('.note-title-input');
+            if (titleInput) {
                 e.preventDefault();
                 e.stopPropagation();
-                const id = e.currentTarget.dataset.id;
-                await this._deleteNote(id);
-            });
-        });
+                await this._updateNoteData(titleInput.dataset.id, { title: titleInput.value });
+                return;
+            }
 
-        htmlElement.querySelectorAll('[data-action="edit"]').forEach(btn => {
-            btn.addEventListener('click', async (e) => {
+            const mapInput = e.target.closest('.note-mapId-input');
+            if (mapInput) {
                 e.preventDefault();
                 e.stopPropagation();
-                const id = e.currentTarget.dataset.id;
-                this._viewNote(id, true); // editMode = true
-            });
+                await this._updateNoteData(mapInput.dataset.id, { mapId: mapInput.value });
+            }
         });
 
-        htmlElement.querySelectorAll('.note-card[data-action="view"]').forEach(div => {
-            div.addEventListener('click', (e) => {
-                if (e.target.closest('.note-actions')) return;
-                if (e.target.closest('input')) return; 
-                if (e.currentTarget.closest('.note-card').classList.contains('dragging')) return;
-                
-                e.preventDefault();
-                const id = e.currentTarget.dataset.id;
-                this._viewNote(id, false); // editMode = false
-            });
+        htmlElement.addEventListener('keydown', (e) => {
+            const input = e.target.closest('.note-title-input, .note-mapId-input');
+            if (!input) return;
+            if (e.key === 'Enter') input.blur();
         });
 
-        htmlElement.querySelectorAll('.note-title-input').forEach(input => {
-            input.addEventListener('click', (e) => e.stopPropagation());
-            
-            input.addEventListener('change', async (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                const id = e.currentTarget.dataset.id;
-                const newTitle = e.currentTarget.value;
-                await this._updateNoteData(id, { title: newTitle });
-            });
-            
-            input.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') e.currentTarget.blur();
-            });
-        });
-
-
-
-        htmlElement.querySelectorAll('.note-mapId-input').forEach(input => {
-            input.addEventListener('click', (e) => e.stopPropagation());
-            input.addEventListener('input', function() {
-                this.value = this.value.replace(/[^a-zA-Z0-9]/g, "");
-            });
-            input.addEventListener('change', async (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                const id = e.currentTarget.dataset.id;
-                const newMapId = e.currentTarget.value;
-                await this._updateNoteData(id, { mapId: newMapId });
-            });
-            
-            input.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') e.currentTarget.blur();
-            });
-        });     
-
-        htmlElement.querySelectorAll('[data-action="toggle-visibility"]').forEach(btn => {
-            btn.addEventListener('click', async (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                const id = e.currentTarget.dataset.id;
-                await this._toggleVisibility(id);
-            });
-        });
-
-        htmlElement.querySelectorAll('.note-card[data-drag="true"]').forEach(card => {
-             card.addEventListener('dragstart', (e) => this._onDragStart(e));
+        htmlElement.addEventListener('dragstart', (e) => {
+            if (!e.target.closest('.note-card[data-drag="true"]')) return;
+            this._onDragStart(e);
         });
     }
 
@@ -181,13 +177,17 @@ async _toggleVisibility(id) {
             notes[index] = { ...notes[index], visible: !currentState };
             
             await this.saveData({ notes });
+            this._updateNoteCardVisibility(id, notes[index].visible);
         }
     }
 
     async _onDragStart(event) {
-        const el = event.currentTarget;
+        const el = event.currentTarget?.classList?.contains('note-card')
+            ? event.currentTarget
+            : event.target.closest('.note-card[data-drag="true"]');
+        if (!el) return;
         if ('link' in event.target.dataset) return;
-        let journalID = event.target.dataset.entryId;
+        let journalID = el.dataset.entryId || event.target.dataset.entryId;
         let journalData = game.journal.get(journalID);
         if (!journalData) return;
         let dragDataB = journalData.toDragData();
@@ -241,6 +241,21 @@ async _toggleVisibility(id) {
         await this._viewNote(newId, true, newNote);
     }
 
+
+      _onClickImage(event) {
+        if (!event.target.matches("img:not(.nopopout)")) return;
+        const target = event.target;
+        const page = this.document._id;
+        const title = this.document.name;
+        const ip = new foundry.applications.apps.ImagePopout({
+          src: target.getAttribute("src"),
+          window: { title },
+        });
+
+        ip.render({ force: true });
+      }
+
+
 /**
      * Opens the note editor.
      * @param {string} noteId 
@@ -248,8 +263,8 @@ async _toggleVisibility(id) {
      * @param {object|null} newNoteData - If present, this is a new unsaved note from _createNote.
      */
     async _viewNote(noteId, editMode = false, newNoteData = null) {
-        // 1. Determine Source of Truth
-        // If newNoteData exists, use it. Otherwise try to find it in DB.
+        
+        
         let note = newNoteData;
 
         if (!note) {
@@ -258,7 +273,7 @@ async _toggleVisibility(id) {
             note = notes.find(n => n.id === noteId);
         }
         
-        // If it's not in DB and not passed as new, we can't show it.
+        
         if (!note) return;
 
         const isOwner = this.document.isOwner;
@@ -300,12 +315,13 @@ async _toggleVisibility(id) {
         const baseTitle = note.title || "Note";
         const windowTitle = `${baseTitle}${note.mapId ? ` [${note.mapId}]` : ""}`;
 
-        const dialog = new DialogV2({
+        const dialog = new CodexMapNoteEditorDialog({
             window: { title: windowTitle || "Note", resizable: true },
             id: noteId,
             modal: false,
             classes: ["cc-map-widget", "campaign-codex", "note-dialog", ccEditMode, themeOverride, "themed"],
             content: contentHtml,
+            onClose: (dialog) => {dialog.element.style.display = "none";},
             buttons: [
                 {
                     action: "close",
@@ -318,6 +334,18 @@ async _toggleVisibility(id) {
 
         const rendered = await dialog.render(true);
         const html = rendered.element;
+        html.addEventListener("click", (event) => {
+          const clickedImage = event.target.closest("img:not(.nopopout)");
+          if (!clickedImage) {
+            return;
+          }
+          const inEditor = clickedImage.closest("div.editor-content.ProseMirror");
+          if (inEditor) {
+            return;
+          }
+          event.stopPropagation();
+          this._onClickImage.call(this, event);
+        });
 
         if (canEdit) {
             const proseMirror = html.querySelector('prose-mirror');
@@ -373,6 +401,42 @@ async _toggleVisibility(id) {
             const newHtml = await this.render();
             container.innerHTML = newHtml;
             this.activateListeners(container);
+        }
+    }
+
+    _updateNoteCardVisibility(id, visible) {
+        const card = document.querySelector(`#widget-${this.widgetId} .note-card[data-id="${id}"]`);
+        if (!card) return;
+
+        const icon = card.querySelector('[data-action="toggle-visibility"] i');
+        if (icon) {
+            icon.classList.toggle("fa-eye", visible);
+            icon.classList.toggle("fa-eye-slash", !visible);
+        }
+
+        const btn = card.querySelector('[data-action="toggle-visibility"]');
+        if (btn) {
+            btn.title = visible ? "Player Visible" : "Player Hidden";
+        }
+    }
+
+    _updateNoteCardMeta(id, note) {
+        const card = document.querySelector(`#widget-${this.widgetId} .note-card[data-id="${id}"]`);
+        if (!card) return;
+
+        const title = note.title || "New Note";
+        const mapId = note.mapId || "";
+        card.dataset.title = title;
+        card.dataset.mapId = mapId;
+
+        const titleInput = card.querySelector('.note-title-input');
+        if (titleInput && titleInput.value !== title) {
+            titleInput.value = title;
+        }
+
+        const mapIdInput = card.querySelector('.note-mapId-input');
+        if (mapIdInput && mapIdInput.value !== mapId) {
+            mapIdInput.value = mapId;
         }
     }
 }

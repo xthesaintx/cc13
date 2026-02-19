@@ -6,14 +6,14 @@ export class CalendarTimelineWidget extends CampaignCodexWidget {
         this.moduleId = "wgtgm-mini-calendar";
         this.journalName = "Calendar Events - Mini Calendar";
         
-        // Settings
+        
         this.pxPerDay = 20; 
         this.minZoom = 0.5;
         this.maxZoom = 45;
         this.offset = 50;
         this.initialOffset = 30;
 
-        // State
+        
         this._cachedEvents = null;
         this._lastWorldTime = 0;
         this.panOffset = null;
@@ -138,7 +138,7 @@ export class CalendarTimelineWidget extends CampaignCodexWidget {
     }
 
     async _fetchRawEvents(calendar) {
-        // 1. Get Mini Calendar Instance
+        
         const miniCal = game.wgtngmMiniCalender?.calendarInstance || game.wgtngmMiniCalender;
         if (!miniCal) return { error: "Mini Calendar not active.", events: [] };
 
@@ -706,7 +706,7 @@ export class CalendarTimelineWidget extends CampaignCodexWidget {
 _generateAxisLabels(minTs, maxTs, todayTs, secondsPerDay, calendar, originX, renderMinX, renderMaxX) {
         const labels = [];
         const showMonths = (this.pxPerDay * 30) > 40; 
-        const showDays = this.pxPerDay > 15; // Threshold: Show days if zoom is > 15px per day
+        const showDays = this.pxPerDay > 15; 
 
         const startDiffDays = (renderMinX - originX) / this.pxPerDay;
         const endDiffDays = (renderMaxX - originX) / this.pxPerDay;
@@ -736,7 +736,7 @@ _generateAxisLabels(minTs, maxTs, todayTs, secondsPerDay, calendar, originX, ren
                 for (let m = 0; m < calendar.months.values.length; m++) {
                     const monthTs = this._getTimestamp({year: y, month: m, day: 0}, calendar);
                     
-                    // Gather Month Data
+                    
                     const monthData = calendar.months.values[m];
                     const isLeap = calendar.isLeapYear(y);
                     const daysInMonth = (isLeap && monthData.leapDays !== undefined) ? monthData.leapDays : monthData.days;

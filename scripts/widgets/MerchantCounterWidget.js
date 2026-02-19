@@ -28,18 +28,19 @@ export class MerchantCounterWidget extends CampaignCodexWidget {
             return data;
         });
 
-        const resolvedTables = [];
-        for (const entry of normalizedTables) {
+        
+        
+        const resolvedTables = (await Promise.all(normalizedTables.map(async (entry) => {
             const table = await fromUuid(entry.uuid);
-            if (table) {
-                resolvedTables.push({
-                    uuid: entry.uuid,
-                    name: table.name,
-                    img: table.img || "icons/svg/d20.svg",
-                    multiplier: entry.multiplier
-                });
-            }
-        }
+            if (!table) return null;
+            return {
+                uuid: entry.uuid,
+                name: table.name,
+                img: table.img || "icons/svg/d20.svg",
+                multiplier: entry.multiplier
+            };
+        }))).filter(Boolean);
+        
 
         return {
             id: this.widgetId,
@@ -146,7 +147,7 @@ export class MerchantCounterWidget extends CampaignCodexWidget {
 
         htmlElement.querySelector('button[data-action="restockAll"]')?.addEventListener('click', async (e) => {
             e.preventDefault();
-            await this._restockShop(htmlElement, null); // null = all
+            await this._restockShop(htmlElement, null); 
         });
 
         htmlElement.addEventListener('drop', async (event) => {

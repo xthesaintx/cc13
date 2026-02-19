@@ -85,7 +85,7 @@ export class OrgChartWidget extends CampaignCodexWidget {
                     node.name = doc.name;
                     node.className = `standard-node ${canView}`
                     node.title = this._getTitle(doc);
-                    // node.img = doc.img; 
+                    
                 }
             } catch (e) { 
                 console.warn("OrgChart: Missing doc", uuid); 
@@ -104,7 +104,7 @@ export class OrgChartWidget extends CampaignCodexWidget {
         const rootId = this.document.uuid;
         const canView = this.document?.testUserPermission(game.user, CONST.DOCUMENT_OWNERSHIP_LEVELS.OBSERVER);
 
-        // const permissionNodes = allNodes.filter(node => node.permission);
+        
         const visibleNodes = allNodes.filter(node => !node.hidden);
         const buildTree = (parentId) => {
             return visibleNodes
@@ -135,11 +135,11 @@ export class OrgChartWidget extends CampaignCodexWidget {
     }
 
     async render() {
-        // We fetch the nodes during render to populate the Removed List
+        
         const allNodes = await this._syncAndGetNodes();
         const removedNodes = allNodes.filter(n => n.hidden);
         
-        // Generate HTML for removed items
+        
         const removedHtml = removedNodes.map(n => `
             <div class="removed-node" data-uuid="${n.id}" title="Click to restore">
                 <i class="fas fa-plus-circle"></i> ${n.name}
@@ -167,7 +167,7 @@ export class OrgChartWidget extends CampaignCodexWidget {
             el.addEventListener('click', async (e) => {
                 e.preventDefault();
                 const uuid = el.dataset.uuid;
-                await this._toggleNodeVisibility(uuid, false); // Unhide
+                await this._toggleNodeVisibility(uuid, false); 
             });
         });
 
@@ -187,13 +187,13 @@ export class OrgChartWidget extends CampaignCodexWidget {
                 'pan': true,
                 'zoom': true,
                 'createNode': (node, data) => {
-                    // Click to Open
+                    
                     node.addEventListener('click', (e) => {
                         if (node.classList.contains('dragging')) return;
                         this._onOpenDocument(data.id);
                     });
 
-                    // Right Click to Remove (GM Only)
+                    
                     if (this.isGM) {
                         node.addEventListener('contextmenu', async (e) => {
                             e.preventDefault();
@@ -262,7 +262,7 @@ export class OrgChartWidget extends CampaignCodexWidget {
                 const doc = await fromUuid(uuid);
                 const canView = doc?.testUserPermission(game.user, CONST.DOCUMENT_OWNERSHIP_LEVELS.OBSERVER);
                 if (doc) {
-                    // It was auto-synced, so its parent was the Root
+                    
                     hierarchy.push({
                         id: uuid,
                         parentId: this.document.uuid, 

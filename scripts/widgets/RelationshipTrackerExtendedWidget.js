@@ -20,38 +20,42 @@ export class RelationshipTrackerExtendedWidget extends CampaignCodexWidget {
             availableActors: []
         };
 
-        const trackedUuids = new Set();
         
-        for (const entry of this.relationships) {
-            trackedUuids.add(entry.uuid);
+        
+        const trackedUuids = new Set();
+        this.relationships.forEach((entry) => trackedUuids.add(entry.uuid));
+
+        const trackedEntries = (await Promise.all(this.relationships.map(async (entry) => {
             const actor = await fromUuid(entry.uuid);
-            
-            if (actor) {
-                let status = "neutral";
-                let icon = "fa-meh";
-                let tooltip = "Neutral";
+            if (!actor) return null;
 
-                if (entry.value > 0) {
-                    status = "good";
-                    icon = "fa-heart";
-                    tooltip = "Good Relationship";
-                } else if (entry.value < 0) {
-                    status = "bad";
-                    icon = "fa-skull";
-                    tooltip = "Bad Relationship";
-                }
+            let status = "neutral";
+            let icon = "fa-meh";
+            let tooltip = "Neutral";
 
-                context.tracked.push({
-                    uuid: entry.uuid,
-                    name: actor.name,
-                    img: actor.img,
-                    value: entry.value,
-                    status,
-                    icon,
-                    tooltip
-                });
+            if (entry.value > 0) {
+                status = "good";
+                icon = "fa-heart";
+                tooltip = "Good Relationship";
+            } else if (entry.value < 0) {
+                status = "bad";
+                icon = "fa-skull";
+                tooltip = "Bad Relationship";
             }
-        }
+
+            return {
+                uuid: entry.uuid,
+                name: actor.name,
+                img: actor.img,
+                value: entry.value,
+                status,
+                icon,
+                tooltip
+            };
+        }))).filter(Boolean);
+
+        context.tracked = trackedEntries;
+        
 
         if (this.isGM) {
             const allowedTypes = ["character", "player", "group"];
@@ -154,7 +158,7 @@ htmlElement.querySelector('.rel-toggle-vis')?.addEventListener('click', async (e
             if (uuid) await this._addCharacter(uuid, htmlElement);
         });
 
-        // Remove Character
+        
         htmlElement.querySelectorAll('.rel-btn.remove').forEach(btn => {
             btn.addEventListener('click', async (e) => {
                 e.preventDefault();
@@ -163,7 +167,7 @@ htmlElement.querySelector('.rel-toggle-vis')?.addEventListener('click', async (e
             });
         });
 
-        // Adjust Score (+ / -)
+        
         htmlElement.querySelectorAll('.rel-btn[data-action="adjust"]').forEach(btn => {
             btn.addEventListener('click', async (e) => {
                 e.preventDefault();
