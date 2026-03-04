@@ -59,13 +59,22 @@
       }
     }
   ],
+  
   "packFolders": [
+    {
+    "name": "WgtnGM",
+    "sorting": "m",
+    "color": "#205d9e",
+    "packs": [],
+    "folders": [
   {
     "name": "CampaignCodex",
     "sorting": "m",
     "color": "#205d9e",
     "packs": ["macros"]
   }
+      ]
+    }
   ]
-  
+
 }
