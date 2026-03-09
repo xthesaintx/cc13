@@ -1,39 +1,64 @@
-<section class="campaign-codex-toc-app scrollable tab{{#if tab.active}} active{{/if}}" {{#if tab.active}} active{{/if}} data-group="{{tab.group}}" data-tab="{{tab.id}}">
+<section class="campaign-codex-toc-app scrollable">
+  <div class="cc-toc-layout">
+    <aside class="cc-toc-folders">
+      <div class="cc-toc-view-toggle">
+        <button type="button" data-action="setViewMode" data-view-mode="list" class="clear-filters {{#if (eq viewMode 'list')}}active{{/if}}" title="List View" aria-label="List View">
+          <i class="fas fa-list"></i> List
+        </button>
+        <button type="button" data-action="setViewMode" data-view-mode="tile" class="clear-filters {{#if (eq viewMode 'tile')}}active{{/if}}" title="Tile View" aria-label="Tile View">
+          <i class="fas fa-table-cells-large"></i> Tiles
+        </button>
+      </div>
+      
+      {{{treeHtml}}}
+    </aside>
 
-    {{#if sections.length}}
-        {{#each sections}}
-            {{#if this.title}}
-                <ul class="cc-toc-header-list">
-                    <li class="document entry journalentry directory-header" data-action="toggleCollapse" data-folder="{{this.title}}" data-section-id="{{this.sectionId}}"> 
-                        <i class="fas {{#if this.isCollapsed}}fa-folder{{else}}fa-folder-open{{/if}} collapse-icon"></i> <span class="cc-header-title">{{this.title}}</span>
-                    </li>
-                </ul>
-            {{/if}}
+    <main class="cc-toc-results">
+      <div class="form-fields search">
+        <input type="search" id="toc-filter" name="filter" value="{{searchQuery}}"
+            placeholder="{{ccLocalize 'toc.filterPlaceholder'}}">
+        <button type="button" data-action="toggleSearchScope" class="clear-filters" title="{{searchScopeTitle}}" aria-label="{{searchScopeTitle}}"><i class="fas {{searchScopeLabel}}"></i></button>
+    </div>
+      {{#if items.length}}
+        <ul class="cc-toc-journal-list {{#if (eq viewMode 'tile')}}is-tile{{else}}is-list{{/if}}">
+          {{#each items}}
+            <li class="document entry journalentry directory-item" draggable="true" data-drag="true" data-entry-id="{{this.id}}" data-uuid="{{this.uuid}}">
+              <i class="{{this.displayIcon}}"></i>
+              <a data-action="openDocument" data-uuid="{{this.uuid}}">{{this.name}}</a>
+              <span></span>
+              {{#if ../isGM}}
+                <i class="fa {{this.ownershipIcon}}" data-action="changeDefaultOwnership" data-uuid="{{this.uuid}}" data-ownership="{{this.ownershipLevel}}"></i>
+              {{else}}
+                <span></span>
+              {{/if}}
+            </li>
+          {{/each}}
+        </ul>
+      {{else}}
+        <p class="notes">{{#if hasContent}}{{ccLocalize "toc.filter"}}{{else}}No Campaign Codex sheets found.{{/if}}</p>
+      {{/if}}
+    </main>
 
-            {{!-- The list of items for this section --}}
-            <ul class="cc-toc-journal-list {{#if this.title}}toc-collapsable {{/if}}{{#if this.isCollapsed}}is-collapsed{{/if}}" data-folder="{{this.title}}" data-section-id="{{this.sectionId}}">
-                {{#each this.items}}
-                    {{#if this.canView}}
-                        <li class="document entry journalentry directory-item" draggable="true" data-drag="true" data-entry-id="{{this.id}}" data-name="{{this.name}}" >
-                            <i class="{{#if iconOverride}}{{iconOverride}}{{else}}{{getAsset 'icon' ../../tab.type}}{{/if}}"></i> 
-                            <a data-action="openDocument" data-uuid="{{this.uuid}}">{{this.name}}</a>
+    <aside class="cc-toc-tag-panel">
+      <div class="form-fields search">
+        <input type="search" id="toc-tag-filter" name="tag-filter"
+            placeholder="{{ccLocalize 'toc.filterPlaceholder'}}">
+    </div>
 
-                            {{#if (and this.quests this.questsvisible)}}
-                                <i class="fas fa-scroll"></i>
-                            {{else}}
-                                <span></span>
-                            {{/if}}
-                            
-                            {{#if ../../isGM}}
-                                <i class="fa {{this.ownershipIcon}}" data-action="changeDefaultOwnership" data-uuid="{{this.uuid}}" data-ownership="{{this.ownershipLevel}}"></i>
-                            {{/if}} 
-                        </li>
-                    {{/if}}
-                {{/each}}
-            </ul>
+      <div class="cc-toc-filter-controls">
+        <button type="button" data-action="clearTagFilters" class="clear-filters">{{ccLocalize "toc.clear"}}</button>
+        <button type="button" data-action="toggleFilterMode" class="clear-filters">Mode: {{includeModeLabel}}</button>
+      </div>
+      <div class="tag-cloud">
+        {{#each cloudTags}}
+          <div class="tag-pill {{this.state}}" data-action="toggleTagFilter" data-tag-id="{{this.id}}" title="{{this.name}}">
+            <i class="{{#if this.icon}}{{this.icon}}{{else}}fas fa-tag{{/if}}"></i>
+            <span class="tag-name">{{this.name}}</span>
+            {{#if (eq this.state "excluded")}}<i class="fas fa-ban tag-mode-icon" title="Excluded"></i>{{/if}}
+            <span class="tag-count">{{this.count}}</span>
+          </div>
         {{/each}}
-    {{else}}
-         {{!-- Empty State --}}
-    {{/if}}
-
+      </div>
+    </aside>
+  </div>
 </section>

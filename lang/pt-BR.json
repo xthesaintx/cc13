@@ -1,0 +1,578 @@
+{
+  "CAMPAIGN_CODEX": {
+    "updateHTML": "<div> <p><strong>AÇÃO IMPORTANTE REQUERIDA: Códice de Campanha Campaign </strong></p><p>Se você acabou de atualizar o Códice de Campanha a partir da versão 1.5.7, ou de uma versão mais antiga, EXECUTE a macro 'Migrar Região Pai (Migrate Parent Region)', inclusa no Compêndio.</p></div>",
+    "welcomePageHTML": "<div> <p><strong>Bem vindo ao Códice de Campanha</strong></p> <p>Gerenciamento de pastas, localização dos preços e moeda de acordo com o sistema, e outras configurações podem ser alteradas em Configurações.</p> <div><button data-campaign-codex-handler=\"campaign-codex|openMenu|core_settings\"><i class=\"fas fa-wrench\"></i>Settings</button></div> <hr> <p><strong>Venha fazer parte da Comunidade do Códice de Campanha</strong></p> <p>Se você quer sugerir uma funcionalidade, reportar um bug, ou apenas bater um papo, sinta-se convidado à juntar-se a nós no Discord.</p> <div><button data-campaign-codex-handler=\"campaign-codex|openWindow|https://discord.gg/fycwH79s2y\"><i class=\"fab fa-discord\"></i> Junte-se ao Discord</button></div> <p><strong>Encontrou um bug?</strong></p> <p>Se você quer de reportar um bug e não curte muito o Discord, acesse nosso Github.</p> <div><button data-campaign-codex-handler=\"campaign-codex|openWindow|https://github.com/xthesaintx/cc13\"><i class=\"fas fa-bug\"></i> Reportar um Bug</button></div> <p><strong>Apoiando o desenvolvimento</strong></p> <p>Se você quer apoiar o desenvolvimento, considere dar uma olhadinha nas nossas opções assinatura no Patreon.</p> <div><button data-campaign-codex-handler=\"campaign-codex|openWindow|https://patreon.com/wgtngm\"><i class=\"fa-brands fa-patreon\"></i> Torne-se um membro</button></div><p>Se você preferir, você pode nos apoiar através do Ko-fi.</p><div><button data-campaign-codex-handler=\"campaign-codex|openWindow|https://ko-fi.com/wgtngm\"><i class=\"fas fa-cup-togo\"></i> Comprar um café</button></div><p><strong>Documentation</strong></p> <p>Está se sentindo um pouco perdido? Venha até a nossa página de documentação para alguma orientação, ou dê um pulinho em nosso Discord e faça sua pergunta.</a>.</p> <div><button data-campaign-codex-handler=\"campaign-codex|openWindow|https://campaigncodex.wgtngm.com\"><i class=\"fas fa-book\"></i> Documentation</button></div></div>",
+    "tabs": {
+      "original-name": "Nome Original",
+      "override-name": "Sobrepor Nome",
+      "visible": "Habilitado",
+      "hidden": "Oculto",
+      "edit-title": "Configurar Abas",
+      "reset": "Restaurar Configurações Padrão"
+    },
+    "widgets": {
+      "available": "Disponível",
+      "inactive": "Inativo",
+      "active": "Ativo"
+    },
+    "context": {
+      "hideAssociate": "Ocultar do Jogador",
+      "showAssociate": "Mostrar ao Jogador",
+      "export": "Exportar para o Jornal Padrão",
+      "group": "Adicionar ao {type}",
+      "changeImage": "Trocar Imagem",
+      "removeImage": "Remover Imagem",
+      "showImage": "Mostrar Imagem aos Jogadores",
+      "removeLink": "Desvincular",
+      "removeTag": "Remover Etiqueta"
+    },
+    "toc": {
+      "filter": "Clique Esquerdo para Incluir, Clique Direito para Excluir.",
+      "clear": "Limpar Filtros",
+      "filterPlaceholder": "Filtrar {title}..."
+    },
+    "button": {
+      "title": "Criar novo {type}",
+      "droptoscene": "Arrastar {type} para a cena atual",
+      "tagmode": "Modo de Etiquetas",
+      "dropactortoscene": "Arrastar o Ator para a cena atual"
+    },
+    "info": {
+      "automatically": "{type} são automaticamente populados a partir de todos os {source}.",
+      "refresh": "Atualizar",
+      "linkfound": "Vincular {type} existente.",
+      "newlink": "Criar e vincular {type} da cena.",
+      "linked": "{type} vinculado"
+    },
+    "sheet": {
+      "journal": "{type} Jornal"
+    },
+    "add": "Adicionar {type}",
+    "group": {
+      "notfound": "O item que você está tentando adicionar não pôde ser encontrado.",
+      "self": "Um grupo não pode ser adicionado a si mesmo.",
+      "expandAll": "Expandir Todos",
+      "collapseAll": "Colapsar Todos",
+      "toggleRegions": "Ocultar/Mostrar Regiões",
+      "toggleShops": "Ocultar/Mostrar Registros",
+      "toggleLocations": "Ocultar/Mostrar Locais",
+      "toggleGroups": "Ocultar/Mostrar Grupos",
+      "toggleItems": "Ocultar/Mostrar Itens do Inventário",
+      "toggleNPCs": "Ocultar/Mostrar PNJs",
+      "toggleNPCTags": "Ocultar/Mostrar Etiquetas nos PJNs",
+      "toggleTagMode": "Modo de Árvore de Etiquetas"
+    },
+    "member": {
+      "type": "Membro {type}"
+    },
+    "heading": {
+      "in": "{type} {in}"
+    },
+    "names": {
+      "widgets": "Aplicações",
+      "regionlocation": "Região ou Local",
+      "location": "Local",
+      "locations": "Locais",
+      "group": "Grupo",
+      "groups": "Grupos",
+      "shop": "Registro",
+      "shops": "Registros",
+      "region": "Região",
+      "regions": "Regiões",
+      "parentregions": "Pai",
+      "npc": "PNJ",
+      "npcs": "PNJs",
+      "items": "Itens",
+      "journal": "Jornal",
+      "journals": "Jornais",
+      "organisation": "Organização",
+      "organisations": "Organizações",
+      "associate": "Associado",
+      "associates": "Associados",
+      "members": "Membros",
+      "direct": "Direto",
+      "info": "Info",
+      "information": "Informação",
+      "note": "Notas",
+      "actor": "Ator",
+      "player": "Jogador",
+      "faction": "Facção",
+      "tag": "Etiqueta",
+      "tags": "Etiquetas",
+      "inventory": "Inventário",
+      "loot": "Saque",
+      "scene": "Cena",
+      "standard": "Padrão",
+      "quest": "Missão",
+      "quests": "Missões",
+      "toc": "Índice de Conteúdo",
+      "factions": "Facções"
+    },
+    "settings": {
+      "allowPlayerPurchasing": {
+        "name": "Permitir aos jogadores efetuar compras a partir de Inventários",
+        "hint": "Se habilitado, os jogadores podem enviar itens para si mesmos a partir de um inventário."
+      },
+      "mapMarkerOverride": {
+        "name": "Escala do Marcador de Mapas",
+        "hint": "Tamanho do Marcador de Mapa do Códice de Campanha. Padrão 1"
+      },
+      "mapMarkerColor": {
+        "name": "Usar cor de Destaque do CC para os marcadores de mapa",
+        "hint": "Se habilitado, os marcadores de mapa irão usar as cores de Destaque do CC na tela de fundo."
+      },
+      "mapMarkers": {
+        "name": "Habilitar Marcadores de Mapa do Códice de Campanha",
+        "hint": "Se habilitado, as fichas do CC cujo o nome inicie com uma Letra opcional, ou inicie por uma letra opcional seguida de até três digitos, irão criar um marcador de mapa customizado. Ex: A13"
+      },
+      "mapMarkersHover": {
+        "name": "Habilitar Sobrepor Mouse nos Marcadores de Mapa do Códice de Campanha",
+        "hint": "Se habilitado, a aplicação de Marcadores de Mapa irá mostrar seu conteúdo ao sobrer o mouse sobre ele."
+      },
+      "hideCCbutton": {
+        "name": "Ocultar Botão de Cena do CC",
+        "hint": "Esconde o botão de cena do CC para os usuário NÃO MESTRES."
+      },
+      "useStyledTocButton": {
+        "name": "Botão de Sumário Estilizado",
+        "hint": "Habilita o uso do tema do Códice de Campanha no botão de Sumário nos controles de cena."
+      },
+      "colorPicker": {
+        "name": "Sobrepor Cor de Destaque",
+        "hint": "Sobrepõe a cor de destaque do tema padrão. Insira um código hexadecimal como #d4af37. Deixe em branco para restaurar a cor padrão."
+      },
+      "showOnlyPinned": {
+        "name": "Mostrar apenas Missões Fixadas no Sumário",
+        "hint": "Se marcado, o Sumário só mostrará missões que foram marcadas como 'fixadas'."
+      },
+      "showStats": {
+        "name": "Mostrar estatísticas no Menu",
+        "hint": "Irá mostrar (#) ao lado de um item do menu nas fichas para indicar o número de cada tipo, visível apenas pelo Mestre."
+      },
+      "roundFinalPrice": {
+        "name": "Arredondar o preço final para um número inteiro.",
+        "hint": "Irá arredondar o valor do preço final de um item para o número inteiro mais próximo."
+      },
+      "maxRegionDepth": {
+        "name": "Sobrepor profundidade de subordinação",
+        "hint": "O número de camadas de regiões que você pode criar. Padão 5, um valor maior irá ser mais intensivo no uso do sistema."
+      },
+      "itemPricePath": {
+        "name": "Sobrepor Diretório do Valor de Preço de Item",
+        "hint": "Diretório para o valor de preço de item (exemplo., 'system.price.value' para D&D5e). Deixe em branco para utilizar a detecção de sistema."
+      },
+      "enableThemes": {
+        "name": "Habilitar tema customizado",
+        "hint": "Habilita a customização de cor e tipo de fonte selecionada em Configurar Cores."
+      },
+      "playerCurrencyPath": {
+        "name": "Sobrepor Diretório de Moeda do Jogador",
+        "hint": "Caminho para a moeda do jogador (exemplo., 'system.currency' para D&D5e). Deixe em branco para utilizar a detecção de sistema."
+      },
+      "itemDenominationPath": {
+        "name": "Sobrepor Diretório de Sistema Monetário",
+        "hint": "Diretório para a denominação de sistema monetário (exemplo., 'system.price.denomination' para D&D5e). Deixe em branco para utilizar a detecção de sistema."
+      },
+      "itemDenominationOverride": {
+        "name": "Sobrepor Denominação",
+        "hint": "Denominação de Moeda (exemplo., créditos, po. unidades). Deixe em branco para utilizar o Caminho do Sistema Monetário ou detecção do sistema. Códice de Campanha irá automáticamente detectar o valor e denominação de itens baseados no sistema de jogo ativo.(exemplo, Dungeons and Dragons 5e, Pathfinder 2e, Starfinder, Savage Worlds Adventure Edition, Pathfinder 1e, Old-School Essentials and Daggerheart)."
+      },
+      "hideBaseCost": {
+        "name": "Ocultar a coluna de Custo Base.",
+        "hint": "Se você não deseja que o valor de custo seja visível, ou o sistema não possui um diretório de valores, você pode ativar esta opção para esconder a coluna na aba de inventário. Feche e reabra as fichas para atualizar."
+      },
+      "sortCardsAlpha": {
+        "name": "Automáticamente organizar cartões em ordem alfabética",
+        "hint": "Se habilitado, cartões irão ser automaticamente organizados em ordem alfabética (A-Z)."
+      },
+      "runonlyonce": {
+        "name": "Mensagem de Boas Vindas - Desabilitada",
+        "hint": "Se habilitado, você não irá ver a mensagem de Boas Vindas"
+      },
+      "useOrganizedFolders": {
+        "name": "Organizar em Pastas",
+        "hint": "Automáticamente cria e organiza os jornais do Códice de Campanha em pastas."
+      },
+      "hideByPermission": {
+        "name": "Esconder por permissão.",
+        "hint": "Esconde fichas vinculadas se o usuário não tiver permissão de observador ou superior no diário."
+      },
+      "hideInventoryByPermission": {
+        "name": "Esconder Itens do Inventário por permissão",
+        "hint": "Esconde itens que estejam no inventário caso o usuário não tenha permissão de observador ou superior no item."
+      },
+      "resetItemPathsButton": {
+        "name": "Restaurar ao Padrão",
+        "hint": "Habilite esta opção e salve para restaurar as configurações ao padrão."
+      }
+    },
+    "notifications": {
+      "itemPricePathsReset": "Diretório de Preço de Item resetado para o padrão do D&D5e"
+    },
+    "dropzone": {
+      "region": "Arraste {type} para adiciona-lo(s)",
+      "location": "Arraste {type} ou cenas aqui para adiciona-lo(s)",
+      "shop": "Arraste jornais {type} aqui para adiciona-los",
+      "npc": "Arraste {type} ou Atores aqui para adiciona-los",
+      "associate": "Arraste {type} ou Atores aqui para criar relacionamentos",
+      "item": "Arraste {type} aqui para adiciona-lo ao inventário",
+      "generic": "Arraste {type} aqui",
+      "link": "Arraste {type} para vincular",
+      "empty": "{type} vazio"
+    },
+    "dragToAdd": {
+      "item": "Arraste itens aqui para adiciona-los ao inventário",
+      "empty": "Vazio"
+    },
+    "error": {
+      "faileditem": "Falha ao transferir o item"
+    },
+    "warn": {
+      "notEnoughCurrency": "Não há fundos o suficiente.",
+      "directly": "Não é possível remover {type} diretamente",
+      "remove": "Remover {type}",
+      "invaliddrop": "Nenhum membro com atores vinculados encontrado para pôr!",
+      "nonpcfound": "Nenhum PNJ disponível para ser colocado no mapa!",
+      "actornotfound": "Ator vinculado não encontrado!",
+      "failedtodrop": "Falha ao colocar PNJ no mapa!",
+      "scenenotfound": "Não foi possível encontrar a cena colocada."
+    },
+    "message": {
+      "open": "Abrir {type}",
+      "unlink": "Desvincular {type}",
+      "droptomap": "Arrastar membros de {type} para a cena",
+      "drop": "Arrastar para a cena."
+    },
+    "title": {
+      "all": "Tudo",
+      "open": {
+        "actor": "Abrir Ficha de Ator",
+        "sheet": "Abrir Ficha"
+      },
+      "unlink": {
+        "actor": "Desvincular Ficha de Ator"
+      },
+      "sort": {
+        "alphabetically": "Organizar Inventário em Ordem Alfabética"
+      },
+      "send": {
+        "player": "Enviar ao Jogador",
+        "purchase": "Comprar",
+        "item": {
+          "player": "Enviar Item ao Personagem do Jogador",
+          "typetoplayer": "Enviado {type} para {player}."
+        }
+      },
+      "infinite": {
+        "item": "Alternar quantidade infinita"
+      },
+      "remove": {
+        "item": "Remover Item",
+        "from": {
+          "group": "Remover do Grupo"
+        }
+      },
+      "focus": {
+        "in": {
+          "tab": "Focar na Aba"
+        }
+      }
+    },
+    "inventory": {
+      "added": "{type} adicionado ao inventário",
+      "price": {
+        "name": "Preço",
+        "base": "Preço Base",
+        "final": "Preço Final"
+      },
+      "quantity": "Quantidade",
+      "actions": "Ações",
+      "item": {
+        "name": "Nome do Item"
+      },
+      "global": {
+        "markup": "Preço Global de Margem de Lucro"
+      },
+      "help": {
+        "markup": "Itens sem preços customizados itão utilizar o preço base × margem de lucro."
+      }
+    },
+    "ui": {
+      "addedto": "{type} adicionado a {typeb}",
+      "drag": {
+        "link": {
+          "journal": {
+            "standard": "Journal: Arraste um Journal Padrão para vincular"
+          }
+        }
+      },
+      "warn": {
+        "notfound": {
+          "player": {
+            "character": "Nenhum personagem do jogador encontrado"
+          }
+        }
+      },
+      "send": {
+        "item": {
+          "player": "Envie <strong>{type}</strong> ao personagem do jogador?"
+        }
+      },
+      "cancel": "Cancelar",
+      "Save": "Salvar",
+      "quicklinks": "Atalhos",
+      "toggleQuicklinks": "Habilitar/Desabilitar Atalhos",
+      "customiseTabs": "Customizar Abas",
+      "createNewTag": "Criar uma nova Etiqueta",
+      "toggleExistingTags": "Habilitar/Desabilitar Etiquetas Existentes",
+      "themeConfigDescription": "Configure as cores do tema da Interface do Códice de Campanha. Mudanças serão aplicadas após salvar.",
+      "tabName": "Nome da Aba",
+      "defaultVisible": "Visibilidade Padrão",
+      "hiddenFromPlayer": "Oculto para o Jogador",
+      "tabPickerDescription": "Selecione quais abas são visíveis por padrão <i class=\"fas fa-power-off\"></i> e quais serão ocultadas dos jogadores <i class=\"fas fa-eye-slash\"></i> para cada tipo de ficha. Essa configuração se aplica a todos os usuários. Mestres podem sobrepor essa configuração para fichas individualmente utilizando o botão \"Configurar Abas\" <i class=\"fas fa-cog\"></i> no rodapé esquerdo.",
+      "lootMode": "Modo de Saque",
+      "filter": "Filtrar...",
+      "tagsPlaceholder": "Adicionar etiqueta...",
+      "removeTag": "Remover etiqueta",
+      "noAssociatesLinked": "Nenhum vínculo de associados.",
+      "moveWidgets": "Mover Aplicações",
+      "dropActorsHere": "Arraste Atores para cá",
+      "widgetTitle": "Título da Aplicação",
+      "noteTitle": "Título da Nota",
+      "noNotesAvailable": "Nenhuma nota disponível.",
+      "noQuestsFound": "Nenhuma missão encontrada em documentos do Códice de Campanha.",
+      "drop": "Soltar",
+      "remove": "Remover",
+      "cr": "CR"
+    },
+    "quest": {
+      "rewards": "Recompensas",
+      "objectives": "Objetivos",
+      "addObjective": "Adicionar Objetivo",
+      "addSubObjective": "Adicionar Sub-Objetivo",
+      "toggleCompletion": "Alternar Conclusão",
+      "togglePlayerVisibility": "Alternar Visibilidade para Jogadores",
+      "deleteObjective": "Excluir Objetivo",
+      "markAsIncomplete": "Marcar como Imcompleta",
+      "markAsComplete": "Marcar como Completa",
+      "removeFromQuestBoard": "Remover do Quadro de Missões",
+      "pinToQuestBoard": "Fixar no Quadro de Missões",
+      "hideFromPlayers": "Ocultar dos Jogadores",
+      "showToPlayers": "Mostrar aos Jogadores",
+      "removeQuest": "Remover Missão",
+      "removeItem": "Remover Item",
+      "pinned": "Fixado",
+      "notPinned": "Não Fixado",
+      "completed": "Completo",
+      "openSourceJournal": "Jornal de Código Aberto: {name}"
+    },
+    "dialog": {
+      "create": "Criar",
+      "cancel": "Cancelar",
+      "save": "Salvar",
+      "close": "Fechar",
+      "confirm": "Confirmar",
+      "yes": "Sim",
+      "no": "Não",
+      "createNew": "Criar Novo {type}",
+      "nameLabel": "Nome:",
+      "enterName": "Digite o nome do {type}...",
+      "defaultName": "Novo {type}",
+      "areYouSure": "Você tem certeza?",
+      "importContent": "Você quer importar o conteúdo de texto existente de \"{name}\" para a descrição do Códice de Campanha?",
+      "defaultTabVisibility": "Visibilidade Padrão de Aba",
+      "themeColors": "Cores de Tema do Códice de Campanha",
+      "templatePath": "Diretório de Modelos para Códice de Campanha",
+      "editPin": "Editar Marcador",
+      "newNote": "Nova Nota",
+      "exportCampaignCodex": "Exportar Códice de Campanha",
+      "importCampaignCodex": "Importar Códice de Campanha",
+      "confirmExport": "Confirmar Exportação",
+      "confirmImport": "Confirmar Importação",
+      "overwriteCompendiums": "Sobrepor Compendios dos Módulos?",
+      "overwriteCompendium": "Sobrepor Compendio?",
+      "exportToStandardJournal": "Exportar para Jornal Padrão",
+      "sendItemToPlayer": "Enviar Item para Personagem do Jogador",
+      "dropActorsToMap": "Arrastar Atores para o Mapa",
+      "dropToMap": "Arrastar {name} para o Mapa",
+      "dropNpcsToMap": "Arrastar PNJs {name} para o Mapa",
+      "contextImage": "Imagem de Contexto",
+      "templates": "Modelos",
+      "dropNpcsToScene": "Arrastar PNJs para a Cena",
+      "selectNpcsToPlace": "Selecionar PNJs para colocar na cena atual:",
+      "startTokensHidden": "Iniciar com tokens ocultos",
+      "startPlacing": "Iniciar posicionamento",
+      "rotateHelp": "Rotacionar:",
+      "rotateHelpDetail": "Usar roda do mouse para girar tokens",
+      "gridSnapHelp": "Alinhar à Grade:",
+      "gridSnapHelpDetail": "Segure shift para desabilitar alinhamento.",
+      "skipTokensHelp": "Ignorar Tokens:",
+      "skipTokensHelpDetail": "Clique Direito para pular PNJs indesejados",
+      "deleteNote": "Você tem certeza que deseja excluir esta nota?",
+      "playerVisible": "Visível ao Jogador",
+      "playerHidden": "Oculto para Jogadores",
+      "exportToModule": "Exportar para Módulo",
+      "exportToObsidian": "Exportar para Obsidian",
+      "selectExportTarget": "Selecionar Destino de Exportação",
+      "selectImportTarget": "Selecionar Destino de Importação",
+      "exportCleanup": "Executar limpeza antes de exportar",
+      "sendToPlayer": "Enviar <strong>{item}</strong> para qual personagem do jogador?",
+      "filterCharacters": "Filtrar Personagens...",
+      "deductFunds": "Deduzir fundos do ator",
+      "sendToPlayerTitle": "Enviar Item para Personagem do Jogador"
+    },
+    "notify": {
+      "journalNotFound": "Códice de Campanha | Jornal de Registro não encontrado.",
+      "widgetDataMissing": "Códice de Campanha | Dados da Aplicação faltando.",
+      "noteContentNotFound": "Códice de Campanha | Nota e conteúdo do Jornal não encontrados.",
+      "dragDropToLink": "Arraste e solte um Jornal de Registro no marcador para vinculá-lo.",
+      "journalUnlinked": "Jornal desvinculado do marcador.",
+      "invalidDropType": "Apenas Jornal de Registro and Páginas do Jornal de Registro podem ser colocadas no mapa.",
+      "documentNotFound": "Não foi possível localizar o documento solto.",
+      "addedPin": "Adicionar marcador para \"{name}\".",
+      "mergingFolders": "Mesclar \"{name}\" pastas duplicadas...",
+      "folderCleanupComplete": "Limpéza do Códice de Campanha concluída.",
+      "cannotCreateType": "Não é possível criar documento de tipo desconhecido: \"{type}\"",
+      "couldNotFindJournal": "Códice de Campanha | Não foi possível encontrar Jornal de Registro com UUID: {uuid}",
+      "invalidConversionType": "Códice de Campanha | Tipo de conversão inválido \"{type}\".",
+      "noTextPages": "Jornal \"{name}\" não possui páginas de texto com conteúdo para converter.",
+      "createdSheets": " {count} nova(s) folha(s) de {type} a partir das páginas do \"{name}\".",
+      "createdSheet": "Folha de {type} criada com sucesso a partir do \"{name}\".",
+      "dropRollTable": "Por favor arraste e solte um documento de Tabela de Rolagem.",
+      "rollTableNotFound": "Vínculo de Tabela de Rolagem não encontrado.",
+      "documentTypeNotFound": "Documento {type} não encontrado",
+      "failedToOpen": "Falha ao abrir {type}",
+      "noLinkedActor": "Códice de Campanha | Nenhum Vínculo de Ator foi encontrado no ratreio de Lealdade.",
+      "dropMacro": "Por favor arraste e solte um documento de Macro.",
+      "macroExecuted": "Executado: {name}",
+      "macroNotFound": "Macro não encontrada.",
+      "dropActor": "Por favor arraste e solte um documento de Ator.",
+      "actorDataNotFound": "Não foi possível encontrar os dados do ator.",
+      "dropperNotAvailable": "Ferramenta de Distribuição não disponível.",
+      "failedToDropActors": "Falha ao soltar Atores.",
+      "noActorsToDrop": "Nenhum Ator para soltar.",
+      "noRestockTables": "Nenhuma tabela de reposição vinculada.",
+      "noValidItems": "Nenhum item válido encontrado nos resultados de rolagem.",
+      "restocked": "{count} items reestocados.",
+      "tabVisibilitySaved": "Visibilidade de Aba Padrão do Códice de Campanha salva!",
+      "tabVisibilityReset": "Visibilidade de Aba Padrão do Códice de Campanha foi redefinida.",
+      "invalidTemplate": "Definição de modelo inválida.",
+      "failedTemplate": "Falha ao carregar modelo: {name}",
+      "themeApplied": "Configurações de tema do Códice de Campanha aplicadas!",
+      "themeExported": "Códice de Campanha: Tema exportado com sucesso.",
+      "themeImported": "Tema importado com sucesso.",
+      "themeImportFailed": "Falha ao analisar o arquivo JSON.",
+      "themeReset": "Códice de Campanha theme colors have been reset to default.",
+      "noLinkedActorForDrop": "Códice de Campanha | Nenhum Vínculo de Ator foi encontrado no ratreio de Lealdade.",
+      "noSceneActive": "Nenhuma cena está ativa!",
+      "noNpcsWithActors": "Nenhum PNJ com ator vinculador foi encontrado para soltar!",
+      "noActorsToDropNpc": "Nenhum ator para soltar!",
+      "noValidActors": "Nenhum ator válido encontrado para soltar!",
+      "noNpcsSelected": "Nenhum PNJ selecionado!",
+      "preparingNpcs": "Preparando {count} PNJs para posicionamento...",
+      "noActorsPrepared": "Nenhum ator pôde ser preparado para posicionamento!",
+      "placementInstructions": "Clique na área de cena para colocar {count} PNJs. Arraste para posicionar, utilize a roda do mouse para rotacionar, clique para confirmar, e clique com botão direito para pular.",
+      "placementCancelled": "Posicionamento de Token cancelado.",
+      "tokenPlacementFailed": "Falha ao posicionar Token. Verifique o console para detalhes.",
+      "droppedResults": "PNJs colocados com {success} na scene",
+      "droppedImported": " (importado {imported} de compendios)",
+      "droppedFailed": ". {failed} falhou.",
+      "noNpcsDropped": "Nenhum PNJ foi colocado com sucesso na cena.",
+      "exportCleaningUp": "Executando limpeza antes da exportação...",
+      "cleanupNotAvailable": "Funcionalidade de limpeza não disponível, continuando com exportação...",
+      "cleanupComplete": "Limpeza concluída com sucesso.",
+      "cleanupErrors": "Limpeza encontrou erros, mas a exportação continuará...",
+      "collectingDocuments": "Coletando todos os documentos vinculados...",
+      "noDocumentsToExport": "Nenhum documento do Códice de Campanha encontrado para exportar!",
+      "exportComplete": "Exportação Completa! Documentos exportados para \"{name}\".",
+      "exportFailed": "Exportação falhou: {message}",
+      "moduleNotFound": "Módulo \"{name}\" não encontrado ou não possui compêndios desbloqueados necessários!",
+      "pruningEmptyFolders": "Expurgo de pastas vazias...",
+      "pruningFolders": "Expurgo de {count} pasta(s) vazia(s) de \"{label}\".",
+      "failedToCreateCompendium": "Falha ao criar um conjunto de compêndio.",
+      "recreatingCompendium": "Recriando compêndio: {name}",
+      "creatingCompendium": "Criando novo compêndio: {name}",
+      "jsZipNotAvailable": "Biblioteca JSZip não está disponível. Por favor, certifique-se de que ela esteja carregada.",
+      "generatingObsidianFiles": "Gerando {count} arquivos para exportação para Obsidian...",
+      "obsidianExportSuccess": "Exportação de jornais bem-sucedida para {name}",
+      "obsidianExportFailed": "Falha ao gerar o arquivo zip. Veja o console para detalhes.",
+      "importCollecting": "Coletando documentos de compêndios...",
+      "noDocumentsToImport": "Nenhum documento do Códice de Campanha encontrado para importar!",
+      "importingFrom": "Importando documentos de \"{name}\"...",
+      "importFailed": "Importação falhou: {message}",
+      "noCompendiumsFound": "Nenhum compêndio do Códice de Campanha encontrado!",
+      "importingFolders": "Importando estruturas de pastas...",
+      "relinkingDocuments": "Revinculando documentos importados...",
+      "relinkingScenes": "Revinculando cenas importadas...",
+      "templatePathUpdated": "Caminho do diretório de Modelos do Códice de Campanha atualziado!",
+      "usingExistingScene": "Usando cena existente \"{name}\" do mundo",
+      "importedScene": "Cena \"{name}\" importada do compêndio para o mundo",
+      "importComplete": "Importação completa!",
+      "importedCount": "Importados: {count}",
+      "skippedCount": "Ignorados/Usados existentes: {count}",
+      "replacedCount": "Substituídos: {count}",
+      "failedCount": "Falharam: {count}",
+      "notCampaignCodexDocument": "Este jornal não é um documento do Códice de Campanha",
+      "exportedToStandard": "\"{name}\" exportado para o jornal padrão",
+      "exportJournalFailed": "Falha ao exportar o jornal",
+      "noJournalsSelected": "Nenhum jornal do Códice de Campanha selecionado",
+      "exportingJournals": "Exportando {count} jornais do Códice de Campanha...",
+      "exportedJournals": "Exportados com sucesso {count} jornais",
+      "exportedWithErrors": "Exportados {count} jornais com {errors} erros",
+      "sceneImportFailed": "Falha ao importar cena \"{name}\": {message}",
+      "noSceneLinked": "Nenhuma cena vinculada a este documento",
+      "linkedSceneNotFound": "Cena vinculada não encontrada",
+      "compendiumSceneNotSupported": "Abrir cenas de compêndios não é suportado. Por favor, importe a cena para o seu mundo e vincule-a novamente.",
+      "openLinkedSceneFailed": "Falha ao abrir cena vinculada",
+      "createdNpcJournal": "Criado jornal de NPC para \"{name}\"",
+      "resetItemPathsFailed": "Falha ao redefinir caminhos dos itens",
+      "movedRegion": "\"{child}\" movido para dentro de \"{parent}\".",
+      "regionCannotBeSelfParent": "Uma região não pode ser sua própria região pai.",
+      "circularDependency": "Você não pode mover \"{child}\" para dentro de \"{parent}\" pois ela é uma região ancestral.",
+      "maxNestingDepth": "Essa ação excederia a profundidade máxima de subordinamento de {depth}.",
+      "locationRefreshed": "Lacalização de dados atualizada!",
+      "linkedScene": "Cena \"{name}\" vinculada a {doc}",
+      "linkedJournal": "Jornal \"{name}\" vinculado.",
+      "journalAlreadyLinked": "Jornal \"{name}\" já está vinculado.",
+      "removedBrokenRefs": "Removidas {count} referências quebradas de {field} de {name}",
+      "removedBrokenParent": "Removida ligação de região pai quebrada de {name}.",
+      "removedBrokenInventory": "Removidos {count} itens quebrados do inventário de {name}",
+      "sheetNotFound": "Ficha selecionada não encontrada",
+      "npcNoLinkedActor": "Esse PNJ não tem um ator vinculado para ser solto!",
+      "sourceDocNotFound": "Não foi possível encontrar o documento de origem.",
+      "removedMember": "Membro removido do grupo",
+      "circularGroupDependency": "Não é possível adicionar \"{name}\" pois isso criaria uma dependência circular.",
+      "alreadyInGroup": "\"{name}\" já está incluído neste grupo.",
+      "failedToUpdateImage": "Falha ao atualizar imagem",
+      "idCollision": "Ocorreu uma colisão de ID aleatória. Por favor, tente novamente.",
+      "unlinkedScene": "Cena desvinculada",
+      "itemNotFound": "Item não encontrado",
+      "noSourceDocument": "Nenhum documento de origem definido",
+      "outOfStock": "Item fora de estoque.",
+      "unlinkedJournal": "Jornal desvinculado.",
+      "failedToRemoveLocationLink": "Falha ao remover link de localização.",
+      "linkedRegionOrLocationNotFound": "Não foi possível encontrar a região ou localização vinculada.",
+      "removedFromRegion": "\"{location}\" removido da região \"{region}\"",
+      "dropToMapNotImplemented": "Soltar em mapa não implementado para fichas de tipo {type}",
+      "noNPCsWithActors": "Nenhum PNJ com atores vinculados encontrado para ser solto!",
+      "tagNotFound": "Não foi possível encontrar a etiqueta para vincular.",
+      "itemNotFoundToAdd": "Não foi possível encontrar o item para adicionar à entrada",
+      "addedToQuest": "Adicionado \"{item}\" à missão \"{quest}\"",
+      "actorNotFound": "Não foi possível encontrar o ator solto.",
+      "linkedActorToDocument": " \"{actor}\" vinculado ao documento \"{document}\"",
+      "linkedActorToJournal": " Ator \"{name}\" vinculado a este jornal.",
+      "linkedAsAssociate": " \"{name}\" vinculado como associado.",
+      "cannotLinkSelf": "Não é possível vincular um PNJ a si mesmo como associado.",
+      "actorDropNotConfigured": "Soltar ator não configurado para fichas de tipo \"{type}\".",
+      "documentNotFoundType": "{type} documento não encontrado",
+      "failedToOpenType": "Falha ao abrir {type}",
+      "noPlayerCharacters": "Nenhum personagem jogador encontrado"
+    },
+    "export": {
+      "exportButton": "Exportar Códice de Campanha",
+      "exportTooltip": "Exportar todo o conteúdo do Códice de Campanha para o compêndio",
+      "importButton": "Importar Códice de Campanha",
+      "importTooltip": "Importar conteúdo do Códice de Campanha do compêndio"
+    }
+  }
+}

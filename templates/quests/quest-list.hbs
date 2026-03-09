@@ -1,12 +1,12 @@
 
 <!-- <div class="quest-container"> -->
-{{#if (not isGroupSheet)}}{{{header}}} {{/if}}
+{{#if (and showHeader (not isGroupSheet))}}{{{header}}} {{/if}}
 {{#unless hide}}
 {{#if quests}}
 <div class="quest-list">
-      {{#each quests}}
-        {{> "modules/campaign-codex/templates/partials/quest-card.hbs" quest=. isGM=../isGM isGroupSheet=../isGroupSheet themed=../themed doc=../doc systemClass=../systemClass journalClass=../journalClass}}
-      {{/each}}
+	      {{#each quests}}
+	          {{> "modules/campaign-codex/templates/partials/quest-linked-card.hbs" quest=. isGM=../isGM isGroupSheet=../isGroupSheet doc=../doc}}
+	      {{/each}}
     {{else}}
       {{#unless isGM}}
       {{/unless}}

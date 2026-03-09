@@ -1,33 +1,39 @@
 <div class="tree-node {{#if node.isSelected}}selected{{/if}}" data-type="{{node.type}}" data-sheet-uuid="{{node.uuid}}">
   <div class="tree-node-header {{#if node.hasChildren}}expandable{{/if}}">
-    
+
     {{#if node.hasChildren}}
-      <i class="fas {{#if node.isExpanded}}fa-chevron-down{{else}}fa-chevron-right{{/if}} expand-icon expand-toggle" data-action="expantToggle"></i>
+    <i class="fas {{#if node.isExpanded}}fa-chevron-down{{else}}fa-chevron-right{{/if}} expand-icon expand-toggle"
+      data-action="expantToggle"></i>
     {{else}}
-      <i class="tree-spacer"></i>
+    <i class="tree-spacer"></i>
     {{/if}}
 
     <i class="{{node.displayIcon}} node-icon" alt="{{node.name}}">&nbsp;</i>
-    <span class="tree-label {{#if node.isClickable}}clickable{{/if}}{{#if (eq node.type 'item')}}clickable{{/if}}" data-type="{{node.type}}" {{#if (eq node.type 'item')}}data-uuid="{{node.uuid}}" data-action="openItem"{{else}}data-sheet-uuid="{{node.uuid}}" data-action="selectSheet"{{/if}} data-name="{{node.name}}" draggable="true" data-drag="true" data-entry-id="{{node.id}}" >
+    <span class="tree-label {{#if node.isClickable}}clickable{{/if}}{{#if (eq node.type 'item')}}clickable{{/if}}"
+      data-type="{{node.type}}" {{#if (eq node.type 'item' )}}data-uuid="{{node.uuid}}" data-action="openItem"
+      {{else}}data-sheet-uuid="{{node.uuid}}" data-action="selectSheet" {{/if}} data-name="{{node.name}}"
+      draggable="true" data-drag="true" data-entry-id="{{node.id}}">
       {{node.name}}
       {{#if node.quests}}&nbsp;<i class="fas fa-scroll node-icon" style="font-size:10px">&nbsp;</i>{{/if}}
     </span>
-    
+
     <div class="tree-actions">
       {{#if isGM}}
-        <i class="fas fa-times btn-remove-member" data-uuid="{{node.uuid}}" data-action="removeMember" title="Remove from Group"></i>
+      <i class="fas fa-times btn-remove-member" data-uuid="{{node.uuid}}" data-action="removeMember"
+        title="{{ccLocalize 'title.removeFromGroup'}}"></i>
       {{/if}}
     </div>
     <div class="tree-actions">
-      <i class="fas fa-external-link-alt btn-open-sheet" data-action="open{{capitalize node.type}}" data-uuid="{{node.uuid}}" title="Open Sheet"></i>
+      <i class="fas fa-external-link-alt btn-open-sheet" data-action="open{{capitalize node.type}}"
+        data-uuid="{{node.uuid}}" title="{{ccLocalize 'title.open.sheet'}}"></i>
     </div>
   </div>
 
   {{#if node.hasChildren}}
-    <div class="tree-children" style="display: {{#if node.isExpanded}}block{{else}}none{{/if}};">
-      {{#each node.children}}
-        {{> "modules/campaign-codex/templates/partials/group-tree-node.hbs" node=this isGM=../isGM}}
-      {{/each}}
-    </div>
+  <div class="tree-children" style="display: {{#if node.isExpanded}}block{{else}}none{{/if}};">
+    {{#each node.children}}
+    {{> "modules/campaign-codex/templates/partials/group-tree-node.hbs" node=this isGM=../isGM}}
+    {{/each}}
+  </div>
   {{/if}}
 </div>

@@ -56,12 +56,49 @@ const CURRENCY_CONFIG = {
 
 export class EconomyHelper {
 
-  static async removeCost(item, targetActor, shopItemData, markup = 1.0) {
+  static canAddCurrency() {
+    const customCurrencyPath = game.settings.get("campaign-codex", "playerCurrencyPath");
+    if (customCurrencyPath) return true;
+    return Boolean(CURRENCY_CONFIG[game.system.id]);
+  }
+
+  static async addCurrency(targetActor, amount = 0, currency = null) {
+    const addAmount = Number(amount || 0);
+    if (!Number.isFinite(addAmount) || addAmount <= 0) return false;
+
+    const customCurrencyPath = game.settings.get("campaign-codex", "playerCurrencyPath");
+    if (customCurrencyPath) {
+      return this._addCustomPath(targetActor, addAmount, customCurrencyPath);
+    }
+
+    const systemId = game.system.id;
+    const config = CURRENCY_CONFIG[systemId];
+    if (!config) return false;
+
+    if (systemId === "pf2e") {
+      return this._addPF2e(targetActor, addAmount, currency, config);
+    }
+    if (systemId === "wfrp4e") {
+      return this._addWFRP4e(targetActor, addAmount, currency);
+    }
+
+    const wantedCurrency = String(currency ?? "").toLowerCase();
+    const def = config.find((c) => String(c.key).toLowerCase() === wantedCurrency)
+      || config.find((c) => c.rate === 1)
+      || config[0];
+    if (!def?.path || def.path === "transaction") return false;
+
+    const currentVal = Number(foundry.utils.getProperty(targetActor, def.path) || 0);
+    await targetActor.update({ [def.path]: currentVal + addAmount });
+    return true;
+  }
+
+  static async removeCost(item, targetActor, shopItemData, markup = 1.0, quantity = 1) {
     const customCurrencyPath = game.settings.get("campaign-codex", "playerCurrencyPath");
     
     if (customCurrencyPath) {
     console.log(customCurrencyPath);
-      const priceDetails = this._calculateFinalPrice(item, shopItemData, markup);
+      const priceDetails = this._calculateFinalPrice(item, shopItemData, markup, quantity);
           console.log(priceDetails);
 
       if (!priceDetails || priceDetails.cost <= 0) return true;
@@ -77,7 +114,7 @@ export class EconomyHelper {
       return true;
     }
 
-    const priceDetails = this._calculateFinalPrice(item, shopItemData, markup);
+    const priceDetails = this._calculateFinalPrice(item, shopItemData, markup, quantity);
     if (!priceDetails || priceDetails.cost <= 0) return true; 
 
     const { cost, currency } = priceDetails;
@@ -195,6 +232,84 @@ static async _paySimple(actor, cost, path) {
     return false;
 }
 
+static async _addCustomPath(actor, amount, path) {
+    const currentVal = Number(foundry.utils.getProperty(actor, path) || 0);
+    await actor.update({ [path]: currentVal + amount });
+    return true;
+}
+
+static async _addPF2e(actor, amount, currency, config) {
+    const wantedCurrency = String(currency ?? "").toLowerCase();
+    const currencyInfo = config.find(c => String(c.key).toLowerCase() === wantedCurrency) || config.find(c => c.key === "gp");
+    const rate = Number(currencyInfo?.rate || 1);
+    const copperTotal = Math.round(amount * rate * 100);
+    let remaining = copperTotal;
+    const pp = Math.floor(remaining / 1000); remaining %= 1000;
+    const gp = Math.floor(remaining / 100); remaining %= 100;
+    const sp = Math.floor(remaining / 10); remaining %= 10;
+    const cp = remaining;
+    const addCoins = { pp, gp, sp, cp };
+
+    if (actor?.inventory?.addCurrency) {
+      const result = await actor.inventory.addCurrency(addCoins);
+      if (result === false || result?.ok === false || result?.success === false) return false;
+      return true;
+    }
+
+    const updates = {};
+    for (const [k, v] of Object.entries(addCoins)) {
+      if (!v) continue;
+      const basePath = `system.currency.${k}`;
+      const currentRaw = foundry.utils.getProperty(actor, basePath);
+      if (currentRaw && typeof currentRaw === "object" && "value" in currentRaw) {
+        updates[`${basePath}.value`] = Number(currentRaw.value || 0) + v;
+      } else {
+        updates[basePath] = Number(currentRaw || 0) + v;
+      }
+    }
+    if (Object.keys(updates).length > 0) {
+      await actor.update(updates);
+    }
+    return true;
+}
+
+static async _addWFRP4e(actor, amount, currency) {
+    const currencyKey = String(currency ?? "gc").toLowerCase();
+    let addBP = 0;
+    if (currencyKey === "gc") addBP = Math.round(amount * 240);
+    else if (currencyKey === "ss") addBP = Math.round(amount * 12);
+    else addBP = Math.round(amount);
+
+    const moneyItems = actor.itemTags?.money;
+    if (!moneyItems || moneyItems.length === 0) return false;
+
+    let totalActorBP = 0;
+    let gcItem; let ssItem; let bpItem;
+    for (const item of moneyItems) {
+      const val = Number(item.system.coinValue?.value || 0);
+      const quantity = Number(item.system.quantity?.value || 0);
+      totalActorBP += val * quantity;
+      if (val === 240) gcItem = item;
+      else if (val === 12) ssItem = item;
+      else if (val === 1) bpItem = item;
+    }
+
+    let remainingBP = totalActorBP + addBP;
+    const newGC = Math.floor(remainingBP / 240);
+    remainingBP %= 240;
+    const newSS = Math.floor(remainingBP / 12);
+    const newBP = remainingBP % 12;
+
+    const updates = [];
+    if (gcItem) updates.push({ _id: gcItem.id, "system.quantity.value": newGC });
+    if (ssItem) updates.push({ _id: ssItem.id, "system.quantity.value": newSS });
+    if (bpItem) updates.push({ _id: bpItem.id, "system.quantity.value": newBP });
+    if (!updates.length) return false;
+
+    await actor.updateEmbeddedDocuments("Item", updates);
+    return true;
+}
+
 static async _payCustomPath(actor, cost, path) {
     try {
       const currentVal = foundry.utils.getProperty(actor, path);
@@ -278,8 +393,9 @@ static async _payPF2e(actor, cost, currency, config) {
     const currencyInfo = config.find(c => c.key === currency) || config.find(c => c.key === "gp");
     const rate = currencyInfo.rate; 
 
-    let totalCopper = Math.round(cost * (rate * 100));
+    const requiredCopper = Math.round(cost * (rate * 100));
 
+    let totalCopper = requiredCopper;
     const pp = Math.floor(totalCopper / 1000);
     totalCopper %= 1000;
     const gp = Math.floor(totalCopper / 100);
@@ -288,8 +404,26 @@ static async _payPF2e(actor, cost, currency, config) {
     totalCopper %= 10;
     const cp = totalCopper;
     const costObject = { pp, gp, sp, cp };
+
+    const toNum = (v) => Number(v?.value ?? v ?? 0) || 0;
+    const coins = actor?.inventory?.coins || {};
+    const actorPP = toNum(coins.pp ?? foundry.utils.getProperty(actor, "system.currency.pp"));
+    const actorGP = toNum(coins.gp ?? foundry.utils.getProperty(actor, "system.currency.gp"));
+    const actorSP = toNum(coins.sp ?? foundry.utils.getProperty(actor, "system.currency.sp"));
+    const actorCP = toNum(coins.cp ?? foundry.utils.getProperty(actor, "system.currency.cp"));
+    const availableCopper = (actorPP * 1000) + (actorGP * 100) + (actorSP * 10) + actorCP;
+
+    if (availableCopper < requiredCopper) {
+      ui.notifications.warn(localize("warn.notEnoughCurrency") || "Not enough funds.");
+      return false;
+    }
+
     try {
-        await actor.inventory.removeCurrency(costObject);
+        const result = await actor.inventory.removeCurrency(costObject);
+        if (result === false || result?.ok === false || result?.success === false) {
+          ui.notifications.warn(localize("warn.notEnoughCurrency") || "Not enough funds.");
+          return false;
+        }
         return true;
     } catch (e) {
         ui.notifications.warn(localize("warn.notEnoughCurrency") || `Not enough funds.`);
@@ -298,9 +432,10 @@ static async _payPF2e(actor, cost, currency, config) {
   }
 
 
-  static _calculateFinalPrice(item, shopItemData, markup) {
+  static _calculateFinalPrice(item, shopItemData, markup, quantity = 1) {
     let finalPrice = 0;
     let currency = "gp"; 
+    const qty = Math.max(1, Number(quantity || 1));
 
     if (shopItemData?.customPrice !== null && shopItemData?.customPrice !== undefined) {
         finalPrice = Number(shopItemData.customPrice);
@@ -313,6 +448,7 @@ static async _payPF2e(actor, cost, currency, config) {
         const roundSetting = game.settings.get("campaign-codex", "roundFinalPrice");
         finalPrice = roundSetting ? Math.round(finalPrice) : (Math.round(finalPrice * 100) / 100);
     }
+    finalPrice *= qty;
     if (finalPrice <= 0) return null;
     return { cost: finalPrice, currency };
   }

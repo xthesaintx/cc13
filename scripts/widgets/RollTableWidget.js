@@ -1,4 +1,5 @@
 import { CampaignCodexWidget } from "./CampaignCodexWidget.js";
+import { localize } from "../helper.js";
 
 export class RollTableWidget extends CampaignCodexWidget {
 
@@ -9,14 +10,14 @@ export class RollTableWidget extends CampaignCodexWidget {
 
     async _prepareContext() {
         const savedData = (await this.getData()) || {};
-        
+
         let rawTables = savedData.tables || [];
         if (savedData.tableUuid && rawTables.length === 0) {
             rawTables.push(savedData.tableUuid);
         }
 
-        
-        
+
+
         const resolvedTables = (await Promise.all(rawTables.map(async (uuid) => {
             const table = await fromUuid(uuid);
             if (!table) return null;
@@ -26,7 +27,7 @@ export class RollTableWidget extends CampaignCodexWidget {
                 img: table.img || "icons/svg/d20.svg"
             };
         }))).filter(Boolean);
-        
+
 
         return {
             id: this.widgetId,
@@ -63,7 +64,7 @@ export class RollTableWidget extends CampaignCodexWidget {
                 <div class="rt-list">
                     ${tablesHtml}
                 </div>
-                ${data.tables.length > 0 ? ``: dropZoneHtml}
+                ${data.tables.length > 0 ? `` : dropZoneHtml}
                 ${!data.isGM && data.tables.length === 0 ? `<div class="rt-empty">No tables linked.</div>` : ''}
             </div>
         `;
@@ -74,14 +75,14 @@ export class RollTableWidget extends CampaignCodexWidget {
             htmlElement.addEventListener('drop', async (event) => {
                 event.preventDefault();
                 event.stopPropagation();
-                
+
                 let data;
                 try {
                     data = JSON.parse(event.dataTransfer.getData('text/plain'));
                 } catch (err) { return; }
 
                 if (data.type !== "RollTable" || !data.uuid) {
-                    return ui.notifications.warn("Please drop a RollTable document.");
+                    return ui.notifications.warn(localize('notify.dropRollTable'));
                 }
 
                 await this._addTable(data.uuid, htmlElement);
@@ -94,11 +95,11 @@ export class RollTableWidget extends CampaignCodexWidget {
                 e.stopPropagation();
                 const uuid = e.currentTarget.dataset.uuid;
                 const table = await fromUuid(uuid);
-                
+
                 if (table) {
                     await table.draw();
                 } else {
-                    ui.notifications.error("Linked RollTable not found.");
+                    ui.notifications.error(localize('notify.rollTableNotFound'));
                 }
             });
         });
@@ -106,7 +107,7 @@ export class RollTableWidget extends CampaignCodexWidget {
         htmlElement.querySelectorAll('[data-action="remove"]').forEach(btn => {
             btn.addEventListener('click', async (e) => {
                 e.preventDefault();
-                e.stopPropagation(); 
+                e.stopPropagation();
                 const uuid = e.currentTarget.closest('.rt-card').dataset.uuid;
                 await this._removeTable(uuid, htmlElement);
             });
@@ -128,7 +129,7 @@ export class RollTableWidget extends CampaignCodexWidget {
     async _removeTable(uuid, htmlElement) {
         const savedData = (await this.getData()) || {};
         let tables = savedData.tables || [];
-        
+
         if (savedData.tableUuid === uuid) {
             await this.saveData({ tableUuid: null, tables: [] });
         } else {

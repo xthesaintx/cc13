@@ -1,4 +1,5 @@
 import { templateManager } from "./journal-template-manager.js";
+import { buildMapNoteToken } from "./map-note-links.js";
 
 
 export class DetailsNodeView {
@@ -8,8 +9,8 @@ export class DetailsNodeView {
         this.dom = document.createElement("details");
         this.summary = document.createElement("summary");
 
-        this.dom.appendChild(this.summary); 
-        this.contentDOM =  this.dom;
+        this.dom.appendChild(this.summary);
+        this.contentDOM = this.dom;
 
         const applyAttributes = (attrsObject) => {
             if (!attrsObject) return;
@@ -23,7 +24,7 @@ export class DetailsNodeView {
         applyAttributes(node.attrs);
 
         if (node.attrs._preserve && typeof node.attrs._preserve === 'object') {
-             applyAttributes(node.attrs._preserve);
+            applyAttributes(node.attrs._preserve);
         }
 
         this.dom.open = true;
@@ -34,7 +35,7 @@ export class DetailsNodeView {
         if (!this.dom.open) {
             this.dom.open = true;
         }
-        this.node = node; 
+        this.node = node;
         return false;
     }
 
@@ -48,6 +49,40 @@ export default class DetailsExpanderPlugin extends ProseMirror.ProseMirrorPlugin
                 nodeViews: {
                     details(node) {
                         return new DetailsNodeView(node);
+                    }
+                }
+            }
+        });
+    }
+}
+
+class MapNoteDropPlugin extends ProseMirror.ProseMirrorPlugin {
+    static build() {
+        return new ProseMirror.Plugin({
+            key: new ProseMirror.PluginKey("campaignCodexMapNoteDrop"),
+            props: {
+                handleDOMEvents: {
+                    drop(view, event) {
+                        const payload = event.dataTransfer?.getData("application/x-campaign-codex-map-note");
+                        if (!payload) return false;
+
+                        let data;
+                        try {
+                            data = JSON.parse(payload);
+                        } catch (_error) {
+                            return false;
+                        }
+
+                        const token = buildMapNoteToken(data);
+                        if (!token) return false;
+
+                        const coords = view.posAtCoords({ left: event.clientX, top: event.clientY });
+                        const from = coords?.pos ?? view.state.selection.from;
+                        const to = coords?.pos ?? view.state.selection.to;
+                        const tr = view.state.tr.insertText(token, from, to).scrollIntoView();
+                        view.dispatch(tr);
+                        event.preventDefault();
+                        return true;
                     }
                 }
             }
@@ -69,7 +104,7 @@ Hooks.on("getProseMirrorMenuDropDowns", (proseMirrorMenu, dropdowns) => {
                 contentHTML = await foundry.applications.handlebars.renderTemplate(template.filePath);
             } else {
                 console.error("Campaign Codex | Invalid template object", template);
-                ui.notifications.error("Invalid template definition.");
+                ui.notifications.error(localize('notify.invalidTemplate'));
                 return;
             }
 
@@ -88,7 +123,7 @@ Hooks.on("getProseMirrorMenuDropDowns", (proseMirrorMenu, dropdowns) => {
 
         } catch (error) {
             console.error(`Campaign Codex | Failed to load or insert template: ${template.title}`, error);
-            ui.notifications.error(`Failed to load template: ${template.title}`);
+            ui.notifications.error(format('notify.failedTemplate', { name: template.title }));
         }
     };
 
@@ -100,7 +135,7 @@ Hooks.on("getProseMirrorMenuDropDowns", (proseMirrorMenu, dropdowns) => {
 
     dropdowns.campaignCodexTemplates = {
         title: 'Templates',
-        icon: '<i class="fas fa-closed-captioning"></i>', 
+        icon: '<i class="fas fa-closed-captioning"></i>',
         cssClass: "cc-templates",
         title: "Templates", // The name of the dropdown in the UI
         entries: entries
@@ -108,8 +143,8 @@ Hooks.on("getProseMirrorMenuDropDowns", (proseMirrorMenu, dropdowns) => {
 });
 
 Hooks.on("createProseMirrorEditor", (uuid, plugins, options) => {
-    plugins.detailsExpander = DetailsExpanderPlugin.build(ProseMirror.defaultSchema);  
+    plugins.detailsExpander = DetailsExpanderPlugin.build(ProseMirror.defaultSchema);
+    plugins.mapNoteDrop = MapNoteDropPlugin.build();
 });
-
 
 

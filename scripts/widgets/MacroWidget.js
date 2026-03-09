@@ -1,4 +1,5 @@
 import { CampaignCodexWidget } from "./CampaignCodexWidget.js";
+import { localize, format } from "../helper.js";
 
 export class MacroWidget extends CampaignCodexWidget {
 
@@ -9,11 +10,11 @@ export class MacroWidget extends CampaignCodexWidget {
 
     async _prepareContext() {
         const savedData = (await this.getData()) || {};
-        
+
         let rawMacros = savedData.macros || [];
-        
-        
-        
+
+
+
         const resolvedMacros = (await Promise.all(rawMacros.map(async (uuid) => {
             const macro = await fromUuid(uuid);
             if (!macro) return null;
@@ -24,7 +25,7 @@ export class MacroWidget extends CampaignCodexWidget {
                 command: macro.command
             };
         }))).filter(Boolean);
-        
+
 
         return {
             id: this.widgetId,
@@ -57,14 +58,14 @@ export class MacroWidget extends CampaignCodexWidget {
                 <i class="fas fa-terminal"></i>
                 <span>Drop Macros Here</span>
             </div>
-        ` : '';        
+        ` : '';
 
         return `
             <div class="cc-widget-rolltable" id="widget-${this.widgetId}">
                 <div class="rt-list">
                     ${macrosHtml}
                 </div>
-                ${macrosHtml.length > 0 ? ``: dropZoneHtml}
+                ${macrosHtml.length > 0 ? `` : dropZoneHtml}
                 ${!data.isGM && macrosHtml.length === 0 ? `<div class="rt-empty">No macros linked.</div>` : ''}
             </div>
         `;
@@ -75,14 +76,14 @@ export class MacroWidget extends CampaignCodexWidget {
             htmlElement.addEventListener('drop', async (event) => {
                 event.preventDefault();
                 event.stopPropagation();
-                
+
                 let data;
                 try {
                     data = JSON.parse(event.dataTransfer.getData('text/plain'));
                 } catch (err) { return; }
 
                 if (data.type !== "Macro" || !data.uuid) {
-                    return ui.notifications.warn("Please drop a Macro document.");
+                    return ui.notifications.warn(localize('notify.dropMacro'));
                 }
 
                 await this._addMacro(data.uuid, htmlElement);
@@ -92,14 +93,14 @@ export class MacroWidget extends CampaignCodexWidget {
         htmlElement.querySelectorAll('.macro-card').forEach(card => {
             card.addEventListener('click', async (e) => {
                 if (e.target.closest('[data-action="remove"]')) return;
-                
+
                 const uuid = card.dataset.uuid;
                 const macro = await fromUuid(uuid);
                 if (macro) {
                     macro.execute();
-                    ui.notifications.info(`Executed: ${macro.name}`);
+                    ui.notifications.info(format('notify.macroExecuted', { name: macro.name }));
                 } else {
-                    ui.notifications.warn("Macro not found.");
+                    ui.notifications.warn(localize('notify.macroNotFound'));
                 }
             });
         });
@@ -107,7 +108,7 @@ export class MacroWidget extends CampaignCodexWidget {
         htmlElement.querySelectorAll('[data-action="remove"]').forEach(btn => {
             btn.addEventListener('click', async (e) => {
                 e.preventDefault();
-                e.stopPropagation(); 
+                e.stopPropagation();
                 const uuid = e.currentTarget.closest('.macro-card').dataset.uuid;
                 await this._removeMacro(uuid, htmlElement);
             });
@@ -132,10 +133,10 @@ export class MacroWidget extends CampaignCodexWidget {
     async _removeMacro(uuid, htmlElement) {
         const savedData = (await this.getData()) || {};
         let macros = savedData.macros || [];
-        
+
         macros = macros.filter(m => m !== uuid);
         await this.saveData({ macros: macros });
-        
+
         this._refreshWidget(htmlElement);
     }
 

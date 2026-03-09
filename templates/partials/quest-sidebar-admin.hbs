@@ -1,0 +1,78 @@
+<div class="sidebar-links cc-quest-admin">
+  {{#if isGM}}
+    <div class="cc-quest-sheet-chips">
+                <span class="cc-status-group">
+
+      {{#if quest.isBlocked}}
+      <span class="cc-quest-status-chip failed cc-statuses"><i class="fas fa-block-brick"></i> {{ccLocalize "quest.blocked"}}</span>
+      {{/if}}
+      {{#if quest.hasUnlockRequirements}}
+      <span class="cc-quest-status-chip {{#if quest.isLocked}}failed{{else}}completed{{/if}} cc-statuses">
+        {{#if quest.isLocked}}<i class="fas fa-lock"></i> {{ccLocalize "quest.locked"}}{{else}}<i class="fas fa-unlock"></i> {{ccLocalize "quest.unlocked"}}{{/if}}
+      </span>
+      {{/if}}
+</span>
+      <span class="cc-status-group">
+      <span class="cc-quest-status-chip {{quest.activityClass}} is-clickable cc-statuses"
+        data-action="toggleQuestActive"
+        title="Toggle active/inactive">
+        <i class="fas {{#if quest.inactive}}fa-toggle-off{{else}}fa-toggle-on{{/if}}"></i>
+        {{#if quest.inactive}}{{ccLocalize 'quest.inactive'}}{{else}}{{ccLocalize 'quest.active'}}{{/if}}
+      </span>
+      <span class="cc-quest-status-chip {{#if quest.completed}}completed{{/if}} is-clickable cc-statuses"
+        data-action="toggleQuestCompleted"
+        title="Toggle completed">
+        <i class="fas fa-circle-check"></i>
+        {{ccLocalize 'quest.completed'}}
+      </span>
+      <span class="cc-quest-status-chip {{#if quest.failed}}failed{{/if}} is-clickable cc-statuses"
+        data-action="toggleQuestFailed"
+        title="Toggle failed">
+        <i class="fas fa-circle-xmark"></i>
+        {{ccLocalize 'quest.failed'}}
+      </span>
+    </span>
+    <span class="cc-status-group">
+      <span class="cc-quest-status-chip is-clickable {{#if quest.pinned}}active{{/if}} cc-statuses" title="Pinned to board" data-action="questToggle" data-uuid="{{doc.uuid}}" data-quest-id="{{quest.id}}" data-field="pinned">
+        <i class="fas {{#if quest.pinned}}fa-thumbtack{{else}}fa-thumbtack-slash{{/if}} quest-toggle-icon pinned-toggle"></i>
+        {{#if quest.pinned}}{{ccLocalize 'quest.pinned'}}{{else}}{{ccLocalize 'quest.notPinned'}}{{/if}}
+      </span>
+      <span class="cc-quest-status-chip is-clickable {{#if quest.visible}}active{{/if}} cc-statuses" title="Visible to players" data-action="questToggle" data-uuid="{{doc.uuid}}" data-quest-id="{{quest.id}}" data-field="visible">
+        <i class="fas {{#if quest.visible}}fa-eye{{else}}fa-eye-slash{{/if}} quest-toggle-icon visible-toggle"></i>{{ccLocalize 'quest.visible'}}
+      </span>
+      <span class="cc-quest-status-chip urgency-{{quest.urgency}} is-clickable cc-statuses" data-action="cycleQuestUrgency" title="Click to cycle urgency"><i class="fas fa-circle-exclamation"></i> {{quest.urgency}}</span>
+    </span>
+        <span class="cc-status-group">
+      <span class="cc-quest-status-chip is-clickable {{#if quest.hideRewards}}active{{/if}} cc-statuses" title="Hide rewards from players" data-action="questToggle" data-uuid="{{doc.uuid}}" data-quest-id="{{quest.id}}" data-field="hideRewards">
+        <i class="fas fa-gift"></i>{{ccLocalize "quest.hideRewardsSideBar"}}
+      </span>
+      <span class="cc-quest-status-chip is-clickable {{#if quest.notifyPlayers}}active{{/if}}  cc-statuses" title="Auto notify players on changes" data-action="questToggle" data-uuid="{{doc.uuid}}" data-quest-id="{{quest.id}}" data-field="notifyPlayers">
+        <i class="fas fa-bullhorn"></i>{{ccLocalize "quest.notifyPlayersSideBar"}}
+      </span>
+    </span>
+      <span class="cc-quest-status-chip is-clickable {{#if quest.messageOnCompleted}}active{{/if}} cc-statuses" title="Post to chat when completed" data-action="questToggle" data-uuid="{{doc.uuid}}" data-quest-id="{{quest.id}}" data-field="messageOnCompleted">
+        <i class="fas fa-comments"></i>{{ccLocalize "quest.messageOnCompletedSideBar"}}
+      </span>
+
+
+    </div>
+    <div class="cc-quest-meta-grid cc-quest-sidebar-grid">
+      <label><input class="quest-field" type="number" data-doc-uuid="{{doc.uuid}}" data-quest-id="{{quest.id}}" data-field="rewardXP" value="{{quest.rewardXP}}">XP</label>
+      <label><input class="quest-field" type="number" data-doc-uuid="{{doc.uuid}}" data-quest-id="{{quest.id}}" data-field="rewardCurrency" value="{{quest.rewardCurrency}}">{{currencyLabel}}</label>
+      <label><input class="quest-field" type="number" data-doc-uuid="{{doc.uuid}}" data-quest-id="{{quest.id}}" data-field="rewardReputation" value="{{quest.rewardReputation}}">Reputation</label>
+    {{#if canDistributeAwards}}
+      <button type="button" class="cc-quest-award-btn" data-action="distributeAwards" data-quest-id="{{quest.id}}">
+        <i class="fas fa-gift"></i> {{ccLocalize "quest.distributeAwards"}}
+      </button>
+    {{/if}}      
+      <label class="cc-quest-inline-check cc-quest-pill-toggle">
+        <input class="quest-field" type="checkbox" data-doc-uuid="{{doc.uuid}}" data-quest-id="{{quest.id}}" data-field="rewardClaimed" {{#if quest.rewardClaimed}}checked{{/if}}>
+        <span class="cc-quest-pill-label cc-quest-pill-label-unclaimed">Unclaimed</span>
+        <span class="cc-quest-pill-label cc-quest-pill-label-claimed">Claimed</span>
+      </label>
+    </div>
+
+  {{/if}}
+
+
+</div>

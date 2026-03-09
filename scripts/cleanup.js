@@ -35,6 +35,10 @@ export class CleanUp {
     if (tocSheet) {
       tocSheet.render();
     }
+    const questBoard = foundry.applications.instances.get("campaign-codex-quest-board");
+    if (questBoard && type === "quest") {
+      questBoard.render(true);
+    }
 
     for (const app of foundry.applications.instances.values()) {
         if (app.document && app.document.id === document.id) {
@@ -117,6 +121,14 @@ export class CleanUp {
       case "group":
         updatePromises.push(
           ...(await this.cleanupGroupRelationships(
+            deletedUuid,
+            allCCDocuments,
+          )),
+        );
+        break;
+      case "quest":
+        updatePromises.push(
+          ...(await this.cleanupQuestRelationships(
             deletedUuid,
             allCCDocuments,
           )),
@@ -456,6 +468,60 @@ export class CleanUp {
       `Campaign Codex | No bidirectional cleanup needed for group deletion`,
     );
     return [];
+  }
+
+  async cleanupQuestRelationships(deletedUuid, allDocuments) {
+    const updatePromises = [];
+    const deletedQuestPrefix = `${deletedUuid}::`;
+
+    for (const doc of allDocuments) {
+      if (doc.uuid === deletedUuid) continue;
+      const docData = doc.getFlag("campaign-codex", "data") || {};
+      const docType = doc.getFlag("campaign-codex", "type");
+      let needsUpdate = false;
+      const updatedData = foundry.utils.deepClone(docData);
+
+      if (Array.isArray(updatedData.linkedQuests) && updatedData.linkedQuests.includes(deletedUuid)) {
+        updatedData.linkedQuests = updatedData.linkedQuests.filter((uuid) => uuid !== deletedUuid);
+        needsUpdate = true;
+      }
+
+      if (docType === "quest" && Array.isArray(updatedData.quests) && updatedData.quests.length > 0) {
+        const quest = updatedData.quests[0];
+        if (quest.questGiverUuid === deletedUuid) {
+          quest.questGiverUuid = "";
+          needsUpdate = true;
+        }
+        if (Array.isArray(quest.relatedUuids) && quest.relatedUuids.includes(deletedUuid)) {
+          quest.relatedUuids = quest.relatedUuids.filter((uuid) => uuid !== deletedUuid);
+          needsUpdate = true;
+        }
+        if (Array.isArray(quest.dependencies)) {
+          const next = quest.dependencies.filter((key) => !String(key).startsWith(deletedQuestPrefix));
+          if (next.length !== quest.dependencies.length) {
+            quest.dependencies = next;
+            needsUpdate = true;
+          }
+        }
+        if (Array.isArray(quest.unlocks)) {
+          const next = quest.unlocks.filter((key) => !String(key).startsWith(deletedQuestPrefix));
+          if (next.length !== quest.unlocks.length) {
+            quest.unlocks = next;
+            needsUpdate = true;
+          }
+        }
+      }
+
+      if (needsUpdate) {
+        updatePromises.push(
+          doc
+            .setFlag("campaign-codex", "data", updatedData)
+            .catch((err) => console.warn(`Failed to update ${doc.name}:`, err)),
+        );
+      }
+    }
+
+    return updatePromises;
   }
 
   /**

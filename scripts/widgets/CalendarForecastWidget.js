@@ -9,16 +9,10 @@ export class CalendarForecastWidget extends CampaignCodexWidget {
     }
 
     async _prepareContext() {
-        const journal = game.journal.getName(this.journalName);
-        if (!journal) return { error: "Calendar Journal not found." };
-
-        const weatherPage = journal.pages.getName("Weather History");
-        if (!weatherPage) return { error: "Weather History not initialized." };
-
-        const history = weatherPage.getFlag(this.moduleId, "history") || {};
         const calendar = game.time.calendar; 
 
         if (!calendar) return { error: "Calendar system not ready." };
+        const history = this._getWeatherHistory();
 
         const now = calendar.timeToComponents(game.time.worldTime);
         const forecast = [];
@@ -60,6 +54,19 @@ export class CalendarForecastWidget extends CampaignCodexWidget {
             season: this._getCurrentSeason(calendar, now.month),
             isGM: this.isGM
         };
+    }
+
+    _getWeatherHistory() {
+        // New weather model: world setting store.
+        const settingHistory = game.settings.get(this.moduleId, "weatherHistoryStore");
+        if (settingHistory && typeof settingHistory === "object" && Object.keys(settingHistory).length) {
+            return settingHistory;
+        }
+
+        // Backward compatibility: legacy journal-based history.
+        const journal = game.journal.getName(this.journalName);
+        const weatherPage = journal?.pages?.getName("Weather History");
+        return weatherPage?.getFlag(this.moduleId, "history") || {};
     }
 
     _formatTemp(temp) {

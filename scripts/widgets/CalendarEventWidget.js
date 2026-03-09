@@ -43,13 +43,16 @@ export class CalendarEventWidget extends CampaignCodexWidget {
                 const visibleNotes = this.isGM ? notes : notes.filter(n => n.playerVisible);
                 
                 visibleNotes.forEach(note => {
+                    const monthLabelRaw = calendar.months.values[dateObj.month]?.abbreviation || calendar.months.values[dateObj.month]?.name || "";
+                    const monthLabelLocalized = monthLabelRaw ? game.i18n.localize(monthLabelRaw) : "";
+                    const monthLabel = (monthLabelLocalized && monthLabelLocalized !== monthLabelRaw) ? monthLabelLocalized : monthLabelRaw;
                     upcomingEvents.push({
                         title: note.title,
                         hour: note.hour || "",
                         minute: note.minute || "",
                         icon: note.icon || "fas fa-book",
                         content: note.content,
-                        displayDate: i === 0 ? "Today" : `${calendar.months.values[dateObj.month].abbreviation} ${dateObj.day + 1}`,
+                        displayDate: i === 0 ? game.i18n.localize("Today") : `${monthLabel} ${dateObj.day + 1}`,
                         isRecurring: !!note.isRecurringInstance,
                         isToday: i === 0
                     });

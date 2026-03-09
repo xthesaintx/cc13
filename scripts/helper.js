@@ -22,20 +22,20 @@ export const renderTemplate = foundry.applications.handlebars.renderTemplate;
 // export const gameSystemClass = (id) => (id === "dnd5e" ? " dnd5e2-journal" : "");
 // export const journalSystemClass = (id) => (id === "dnd5e" ? "dnd5e2-journal journal-page-content" : "journal-page-content"); 
 export const gameSystemClass = (id) => {
-  switch (id) {
-    case "dnd5e": return " dnd5e2-journal";
-    case "pf2e":  return " journal-entry-page"; 
-    default:      return " journal-entry-page";
-  }
+    switch (id) {
+        case "dnd5e": return " dnd5e2-journal";
+        case "pf2e": return " journal-entry-page";
+        default: return " journal-entry-page";
+    }
 };
 
 export const journalSystemClass = (id) => {
-  const base = "journal-page-content";
-  switch (id) {
-    case "dnd5e": return `dnd5e2`;
-    case "pf2e":  return ``;
-    default:      return base;
-  }
+    const base = "journal-page-content";
+    switch (id) {
+        case "dnd5e": return `dnd5e2`;
+        case "pf2e": return ``;
+        default: return base;
+    }
 };
 
 
@@ -58,29 +58,35 @@ export const isThemed = () => {
  */
 export const getButtonGrouphead = () => `
     <div class="campaign-codex campaign-codex-toc-buttons" >
-        <button class="cc-open-toc-btn cc-create-toc-buttons" type="button" title="${format('message.open', {type: localize('names.toc')})}" >
-            <i class="fas fa-closed-captioning"></i> ${format('message.open', {type: localize('names.toc')})}
+        <button class="cc-open-toc-btn cc-create-toc-buttons" type="button" title="${format('message.open', { type: localize('names.toc') })}" >
+            <i class="fas fa-closed-captioning"></i> ${format('message.open', { type: localize('names.toc') })}
+        </button>
+        <button class="cc-open-quest-board-btn cc-create-toc-buttons" type="button" title="${format('message.open', { type: localize('names.quests') })}" >
+            <i class="fas fa-scroll"></i> ${format('message.open', { type: localize('names.quests') })}
         </button>
     </div>
     <div class="campaign-codex campaign-codex-buttons" >
-        <button class="create-group-btn cc-create-buttons" type="button" title="${format('button.title', {type: localize('names.group')})}" >
+        <button class="create-group-btn cc-create-buttons" type="button" title="${format('button.title', { type: localize('names.group') })}" >
             <i class="fas fa-folder-tree"></i>
         </button>
-        <button class="create-region-btn cc-create-buttons" type="button" title="${format('button.title', {type: localize('names.region')})}" >
+        <button class="create-region-btn cc-create-buttons" type="button" title="${format('button.title', { type: localize('names.region') })}" >
             <i class="fas fa-map"></i>
         </button>
-        <button class="create-location-btn cc-create-buttons" type="button" title="${format('button.title', {type: localize('names.location')})}" >
+        <button class="create-location-btn cc-create-buttons" type="button" title="${format('button.title', { type: localize('names.location') })}" >
             <i class="fas fa-map-marker-alt"></i>
         </button>
-        <button class="create-shop-btn cc-create-buttons" type="button" title="${format('button.title', {type: localize('names.shop')})}" >
+        <button class="create-shop-btn cc-create-buttons" type="button" title="${format('button.title', { type: localize('names.shop') })}" >
             <i class="fas fa-book-open"></i>
         </button>
-        <button class="create-npc-btn cc-create-buttons" type="button" title="${format('button.title', {type: localize('names.npc')})}" >
+        <button class="create-npc-btn cc-create-buttons" type="button" title="${format('button.title', { type: localize('names.npc') })}" >
             <i class="fas fa-user"></i>
         </button>
-        <button class="create-tag-btn cc-create-buttons" type="button" title="${format('button.title', {type: localize('names.tag')})}" >
-            <i class="fas fa-tag"></i>
-        </button>    
+        <button class="create-tag-btn cc-create-buttons" type="button" title="${format('button.title', { type: localize('names.faction') || localize('names.tag') })}" >
+            <i class="fas fa-people-group"></i>
+        </button>
+        <button class="create-quest-btn cc-create-buttons" type="button" title="${format('button.title', { type: localize('names.quest') })}" >
+            <i class="fas fa-scroll"></i>
+        </button>
     </div>
 `;
 
@@ -98,7 +104,7 @@ export async function handleJournalConversion(journal, changed) {
         const originalType = foundry.utils.getProperty(journal, "flags.campaign-codex.type");
         const changeType = foundry.utils.getProperty(changed, "flags.campaign-codex.type");
         if (originalType && changeType) {
-            
+
             await sheetConversion.updateRelationshipsOnTypeChange(journal, originalType, changeType);
         }
         return;
@@ -112,7 +118,7 @@ export async function handleJournalConversion(journal, changed) {
         return;
     }
     const proceed = await confirmationDialog(
-        `Do you want to import the existing text content from "${journal.name}" into the Campaign Codex description?`
+        format('dialog.importContent', { name: journal.name })
     );
     if (proceed) {
         const combinedContent = textPages.map(p => `<h2>${p.name}</h2>\n${p.text.content}`).join('\n<hr>\n');
@@ -129,7 +135,7 @@ export async function handleJournalConversion(journal, changed) {
 
 
 
-export async function confirmationDialog(message = "Are you sure?"){
+export async function confirmationDialog(message = localize('dialog.areYouSure')) {
     const proceed = await foundry.applications.api.DialogV2.confirm({
         content: message,
         rejectClose: false,
@@ -143,7 +149,7 @@ export async function confirmationDialog(message = "Are you sure?"){
  * Parses the attribute value to determine the action and arguments.
  * @param {Event} event - The click event.
  */
-export function handleCampaignCodexClick(event) {
+export async function handleCampaignCodexClick(event) {
     const target = event.currentTarget;
     const handler = target.dataset.campaignCodexHandler;
 
@@ -174,6 +180,18 @@ export function handleCampaignCodexClick(event) {
                 window.open(args[0], "_blank");
             }
             break;
+        case "executeMacro": {
+            const macroUuid = args[0];
+            if (!macroUuid) break;
+            const macro = await fromUuid(macroUuid).catch(() => null);
+            if (!macro || macro.documentName !== "Macro") {
+                ui.notifications.warn(localize("notify.macroNotFound"));
+                break;
+            }
+            await macro.execute();
+            ui.notifications.info(format("notify.macroExecuted", { name: macro.name }));
+            break;
+        }
         default:
             console.warn(
                 `Campaign Codex | Unknown action for handler: ${action}`,
@@ -190,17 +208,16 @@ export function handleCampaignCodexClick(event) {
 export function getExportImportButtonsHtml(hasCampaignCodex) {
     return `
         <div class="campaign-codex-export-buttons" style="margin: 8px;display: flex;gap: 4px;flex-direction: column;">
-            ${
-                hasCampaignCodex
-                    ? `
-                <button class="campaign-codex cc-export-btn" type="button" title="Export all Campaign Codex content to compendium" >
-                    <i class="fas fa-download"></i> Export Campaign Codex
+            ${hasCampaignCodex
+            ? `
+                <button class="campaign-codex cc-export-btn" type="button" title="${localize('export.exportTooltip')}" >
+                    <i class="fas fa-download"></i> ${localize('export.exportButton')}
                 </button>
             `
-                    : ""
-            }
-            <button class="campaign-codex cc-import-btn" type="button" title="Import Campaign Codex content from compendium">
-                <i class="fas fa-upload"></i> Import Campaign Codex
+            : ""
+        }
+            <button class="campaign-codex cc-import-btn" type="button" title="${localize('export.importTooltip')}">
+                <i class="fas fa-upload"></i> ${localize('export.importButton')}
             </button>
         </div>
     `;
@@ -216,30 +233,30 @@ export async function promptForName(type) {
     // console.log(type);
     try {
         const name = await foundry.applications.api.DialogV2.prompt({
-            window: { title: `Create New ${type}` },
+            window: { title: format('dialog.createNew', { type }) },
             content: `
                 <div class="form-group">
-                    <label>Name:</label>
-                    <input type="text" name="name" placeholder="Enter ${type.toLowerCase()} name..." autofocus style="width: 100%;" />
+                    <label>${localize('dialog.nameLabel')}</label>
+                    <input type="text" name="name" placeholder="${format('dialog.enterName', { type: type.toLowerCase() })}" autofocus style="width: 100%;" />
                 </div>
             `,
             ok: {
                 icon: '<i class="fas fa-check"></i>',
-                label: "Create",
+                label: localize('dialog.create'),
                 callback: (event, button) => {
                     const enteredName = button.form.elements.name.value.trim();
-                    return enteredName || `New ${type}`; // Provide a default name if input is empty
+                    return enteredName || format('dialog.defaultName', { type }); // Provide a default name if input is empty
                 }
             },
             cancel: {
                 icon: '<i class="fas fa-times"></i>',
-                label: "Cancel"
+                label: localize('dialog.cancel')
             },
             rejectClose: false,
         });
         return name;
     } catch (e) {
-     // console.log(e);
+        // console.log(e);
 
         return null;
     }
@@ -257,7 +274,8 @@ export async function ensureCampaignCodexFolders() {
         "Campaign Codex - NPCs": "npc",
         "Campaign Codex - Regions": "region",
         "Campaign Codex - Groups": "group",
-        "Campaign Codex - Tags": "tag",
+        "Campaign Codex - Factions": "tag",
+        "Campaign Codex - Quests": "quest",
     };
 
     for (const [folderName, type] of Object.entries(folderNames)) {
@@ -296,7 +314,7 @@ export function getFolderColor(type) {
  * @param {string} type - The type of the Campaign Codex entry.
  * @returns {Folder|null} The Foundry Folder object or null if not found/disabled.
  */
-export function getCampaignCodexFolder(type, currentFolder =[]) {
+export function getCampaignCodexFolder(type, currentFolder = []) {
     if (!game.settings.get("campaign-codex", "useOrganizedFolders"))
         return null;
 
@@ -306,17 +324,18 @@ export function getCampaignCodexFolder(type, currentFolder =[]) {
         npc: "Campaign Codex - NPCs",
         region: "Campaign Codex - Regions",
         group: "Campaign Codex - Groups",
-        tag: "Campaign Codex - Tags",
+        tag: "Campaign Codex - Factions",
+        quest: "Campaign Codex - Quests",
     };
 
     const folderName = folderNames[type];
     if (!folderName) return null;
-        if (currentFolder) {
-            const isSelf = currentFolder.name === folderName;
-            const isAncestor = currentFolder.ancestors.some(a => a.name === folderName);
-            if (isSelf || isAncestor) {
+    if (currentFolder) {
+        const isSelf = currentFolder.name === folderName;
+        const isAncestor = currentFolder.ancestors.some(a => a.name === folderName);
+        if (isSelf || isAncestor) {
             return null;
-            }
+        }
     }
 
     return game.folders.find(
@@ -332,13 +351,52 @@ export function getCampaignCodexFolder(type, currentFolder =[]) {
 export function addJournalDirectoryUI(html) {
     const nativeHtml = html instanceof jQuery ? html[0] : html;
 
-    if (!game.user.isGM) return;
-
     const existingExportButtons = nativeHtml.querySelector(
         ".campaign-codex-export-buttons",
     );
     if (existingExportButtons) {
         existingExportButtons.remove();
+    }
+
+    const existingHeaderButtons = nativeHtml.querySelectorAll(".campaign-codex-toc-buttons, .campaign-codex-buttons");
+    existingHeaderButtons.forEach((el) => el.remove());
+
+    const directoryHeader = nativeHtml.querySelector(".directory-header");
+    if (directoryHeader) {
+        if (game.user.isGM) {
+            directoryHeader.insertAdjacentHTML("beforeend", getButtonGrouphead());
+        } else {
+            directoryHeader.insertAdjacentHTML("beforeend", `
+                <div class="campaign-codex campaign-codex-toc-buttons">
+                    <button class="cc-open-toc-btn cc-create-toc-buttons" type="button" title="${format('message.open', { type: localize('names.toc') })}">
+                        <i class="fas fa-closed-captioning"></i> ${format('message.open', { type: localize('names.toc') })}
+                    </button>
+                    <button class="cc-open-quest-board-btn cc-create-toc-buttons" type="button" title="${format('message.open', { type: localize('names.quests') })}">
+                        <i class="fas fa-scroll"></i> ${format('message.open', { type: localize('names.quests') })}
+                    </button>
+                </div>
+            `);
+        }
+    }
+
+    if (!game.user.isGM) {
+        nativeHtml
+            .querySelector(".cc-open-toc-btn")
+            ?.addEventListener("click", async () => {
+                if (game.campaignCodex.tocSheetInstance && game.campaignCodex.tocSheetInstance.rendered) {
+                    game.campaignCodex.tocSheetInstance.close();
+                    return;
+                }
+                let savedDimensions = game.settings.get("campaign-codex", "tocSheetDimensions");
+                game.campaignCodex.tocSheetInstance = new CampaignCodexTOCSheet({ position: { width: savedDimensions.width, height: savedDimensions.height } });
+                game.campaignCodex.tocSheetInstance.render(true);
+            });
+        nativeHtml
+            .querySelector(".cc-open-quest-board-btn")
+            ?.addEventListener("click", async () => {
+                await game.campaignCodex.openQuestBoard();
+            });
+        return;
     }
 
     const hasCampaignCodex = game.journal.some((j) =>
@@ -371,21 +429,21 @@ export function addJournalDirectoryUI(html) {
         });
     }
 
-    const directoryHeader = nativeHtml.querySelector(".directory-header");
-    if (directoryHeader) {
-        directoryHeader.insertAdjacentHTML("beforeend", getButtonGrouphead());
-    }
-
     nativeHtml
         .querySelector(".cc-open-toc-btn")
         ?.addEventListener("click", async () => {
             if (game.campaignCodex.tocSheetInstance && game.campaignCodex.tocSheetInstance.rendered) {
                 game.campaignCodex.tocSheetInstance.close();
-            return;
+                return;
             }
             let savedDimensions = game.settings.get("campaign-codex", "tocSheetDimensions");
             game.campaignCodex.tocSheetInstance = new CampaignCodexTOCSheet({ position: { width: savedDimensions.width, height: savedDimensions.height } });
             game.campaignCodex.tocSheetInstance.render(true);
+        });
+    nativeHtml
+        .querySelector(".cc-open-quest-board-btn")
+        ?.addEventListener("click", async () => {
+            await game.campaignCodex.openQuestBoard();
         });
 
     nativeHtml
@@ -412,7 +470,7 @@ export function addJournalDirectoryUI(html) {
     nativeHtml
         .querySelector(".create-tag-btn")
         ?.addEventListener("click", async () => {
-            const name = await promptForName("Tag Journal");
+            const name = await promptForName("Faction");
             if (name) {
                 const doc = await game.campaignCodex.createTagJournal(
                     null,
@@ -456,6 +514,16 @@ export function addJournalDirectoryUI(html) {
                 doc?.sheet.render(true);
             }
         });
+
+    nativeHtml
+        .querySelector(".create-quest-btn")
+        ?.addEventListener("click", async () => {
+            const name = await promptForName("Quest");
+            if (name) {
+                const doc = await game.campaignCodex.createQuestJournal(name);
+                doc?.sheet.render(true);
+            }
+        });
 }
 
 
@@ -469,7 +537,8 @@ export async function mergeDuplicateCodexFolders() {
         "Campaign Codex - NPCs",
         "Campaign Codex - Regions",
         "Campaign Codex - Groups",
-        "Campaign Codex - Tags"
+        "Campaign Codex - Factions",
+        "Campaign Codex - Quests",
     ];
 
     const foldersToDelete = [];
@@ -479,7 +548,7 @@ export async function mergeDuplicateCodexFolders() {
 
         if (matchingFolders.length <= 1) continue;
 
-        ui.notifications.info(`Merging duplicate "${folderName}" folders...`);
+        ui.notifications.info(format('notify.mergingFolders', { name: folderName }));
         let primaryFolder = matchingFolders.find(f => f.getFlag("campaign-codex", "autoOrganize")) || matchingFolders[0];
         const duplicateFolders = matchingFolders.filter(f => f.id !== primaryFolder.id);
 
@@ -494,7 +563,7 @@ export async function mergeDuplicateCodexFolders() {
 
     if (foldersToDelete.length > 0) {
         await Folder.deleteDocuments(foldersToDelete);
-        ui.notifications.info("Campaign Codex folder cleanup complete.");
+        ui.notifications.info(localize('notify.folderCleanupComplete'));
     }
 }
 
@@ -502,30 +571,34 @@ export async function mergeDuplicateCodexFolders() {
  * A configuration object mapping document types to their creation logic.
  */
 const creationConfig = {
-  group: {
-    prompt: "Group Overview",
-    create: (name) => game.campaignCodex.createGroupJournal(name),
-  },
-  location: {
-    prompt: "Location",
-    create: (name) => game.campaignCodex.createLocationJournal(name),
-  },
-  region: {
-    prompt: "Region",
-    create: (name) => game.campaignCodex.createRegionJournal(name),
-  },
-  shop: {
-    prompt: "Entry",
-    create: (name) => game.campaignCodex.createShopJournal(name),
-  },
-  npc: {
-    prompt: "NPC Journal",
-    create: (name) => game.campaignCodex.createNPCJournal(null, name, false),
-  },
-  tag: {
-    prompt: "Tag Journal",
-    create: (name) => game.campaignCodex.createTagJournal(null, name),
-  },
+    group: {
+        prompt: "Group Overview",
+        create: (name) => game.campaignCodex.createGroupJournal(name),
+    },
+    location: {
+        prompt: "Location",
+        create: (name) => game.campaignCodex.createLocationJournal(name),
+    },
+    region: {
+        prompt: "Region",
+        create: (name) => game.campaignCodex.createRegionJournal(name),
+    },
+    shop: {
+        prompt: "Entry",
+        create: (name) => game.campaignCodex.createShopJournal(name),
+    },
+    npc: {
+        prompt: "NPC Journal",
+        create: (name) => game.campaignCodex.createNPCJournal(null, name, false),
+    },
+    tag: {
+        prompt: "Faction",
+        create: (name) => game.campaignCodex.createTagJournal(null, name),
+    },
+    quest: {
+        prompt: "Quest",
+        create: (name) => game.campaignCodex.createQuestJournal(name),
+    },
 };
 
 /**
@@ -533,23 +606,23 @@ const creationConfig = {
  * @param {string} type - The type of document to create (e.g., 'group', 'location', 'npc').
  */
 export async function createFromScene(type) {
-  const config = creationConfig[type];
-  if (!config) {
-    const errorMessage = `Cannot create document of unknown type: "${type}"`;
-    console.error(`Campaign Codex | ${errorMessage}`);
-    ui.notifications.error(errorMessage);
-    return;
-  }
-  const name = await promptForName(config.prompt);
-  if (name) {
-    const doc = await config.create(name);
-    doc?.sheet.render(true);
-  }
+    const config = creationConfig[type];
+    if (!config) {
+        const errorMessage = `Cannot create document of unknown type: "${type}"`;
+        console.error(`Campaign Codex | ${errorMessage}`);
+        ui.notifications.error(format('notify.cannotCreateType', { type }));
+        return;
+    }
+    const name = await promptForName(config.prompt);
+    if (name) {
+        const doc = await config.create(name);
+        doc?.sheet.render(true);
+    }
 }
 export function removeThemeColors() {
     const styleId = 'cc-theme-override-style';
     const styleElement = document.getElementById(styleId);
-    
+
     if (styleElement) {
         styleElement.remove();
     }
@@ -557,12 +630,12 @@ export function removeThemeColors() {
 
 export function applyThemeColors() {
     if (!game.settings.get("campaign-codex", "themeEnabled")) {
-        if (game.user.isGM) removeThemeColors(); 
+        if (game.user.isGM) removeThemeColors();
         return;
     }
     const backgroundImageTile = game.settings.get("campaign-codex", "color-backgroundImageTile") ? "auto" : "cover";
     const imageOpacity = game.settings.get("campaign-codex", "color-backgroundOpacity") || 100;
-    const bgImage = game.settings.get("campaign-codex", "color-backgroundImage") ? `linear-gradient(color-mix(in srgb, var(--cc-main-bg), transparent ${imageOpacity}%), color-mix(in srgb, var(--cc-main-bg), transparent ${imageOpacity}%)), url("../../../${game.settings.get("campaign-codex", "color-backgroundImage")}")`: "";
+    const bgImage = game.settings.get("campaign-codex", "color-backgroundImage") ? `linear-gradient(color-mix(in srgb, var(--cc-main-bg), transparent ${imageOpacity}%), color-mix(in srgb, var(--cc-main-bg), transparent ${imageOpacity}%)), url("../../../${game.settings.get("campaign-codex", "color-backgroundImage")}")` : "";
     const anchorImage = game.settings.get("campaign-codex", "color-anchorImage") ? "100% 100%" : "0% 50%";
 
     const colorSettings = {
@@ -585,13 +658,13 @@ export function applyThemeColors() {
         '--cc-font-body': game.settings.get("campaign-codex", "color-fontBody"),
         '--cc-background-image': bgImage,
         '--cc-background-fit': backgroundImageTile,
-        '--cc-image-position':anchorImage,
+        '--cc-image-position': anchorImage,
     };
 
     const cssOverrides = Object.entries(colorSettings)
         .map(([variable, value]) => `${variable}: ${value} !important;`)
         .join("\n");
-    
+
     const styleId = 'cc-theme-override-style';
     let styleElement = document.getElementById(styleId);
     if (!styleElement) {
@@ -639,20 +712,20 @@ export function applyTocButtonStyle() {
  * @param {string[]} uuidsToRefresh - An array of document UUIDs to refresh.
  */
 export function targetedRefresh(uuidsToRefresh = [], activeUuid = "") {
-  //   const activeWindow = ui.activeWindow;
-  //     if (!uuidsToRefresh || uuidsToRefresh.length === 0) {
-  //       return;
-  //     }
-  //     const uuidSet = new Set(uuidsToRefresh);
-  //     for (const app of foundry.applications.instances.values()) {
-  //       if (app.document && uuidSet.has(app.document.uuid)) {
-  //         app.render();
-  //       }
-  //     }
-  // if (activeWindow.document && uuidSet.has(activeWindow.document.uuid)) {
-  //   activeWindow.render();
-  // }
-  // console.log("targeted");
+    //   const activeWindow = ui.activeWindow;
+    //     if (!uuidsToRefresh || uuidsToRefresh.length === 0) {
+    //       return;
+    //     }
+    //     const uuidSet = new Set(uuidsToRefresh);
+    //     for (const app of foundry.applications.instances.values()) {
+    //       if (app.document && uuidSet.has(app.document.uuid)) {
+    //         app.render();
+    //       }
+    //     }
+    // if (activeWindow.document && uuidSet.has(activeWindow.document.uuid)) {
+    //   activeWindow.render();
+    // }
+    // console.log("targeted");
 }
 
 
@@ -666,35 +739,35 @@ export function targetedRefresh(uuidsToRefresh = [], activeUuid = "") {
  * @param {Document} document The document to migrate.
  */
 export async function migrateLegacyWidgets(document) {
-  if (!document) return;
-  const legacyData = document.getFlag("campaign-codex", "data") || {};
+    if (!document) return;
+    const legacyData = document.getFlag("campaign-codex", "data") || {};
 
-  const legacyWidgets = legacyData.widgets;
-  if (!legacyWidgets || typeof legacyWidgets !== "object") {
-    return;
-  }
-
-  const currentSheetWidgets = document.getFlag("campaign-codex", "sheet-widgets") || [];
-  const existingWidgetIds = new Set(currentSheetWidgets.map(w => w.id));
-  let widgetsWereAdded = false;
-  for (const [widgetName, widgetsById] of Object.entries(legacyWidgets)) {
-    for (const id of Object.keys(widgetsById)) {
-      if (!existingWidgetIds.has(id)) {
-        const newWidget = {
-          id: id,
-          widgetName: widgetName,
-          counter: 0,
-          active: false 
-        };
-        currentSheetWidgets.push(newWidget);
-        widgetsWereAdded = true;
-      }
+    const legacyWidgets = legacyData.widgets;
+    if (!legacyWidgets || typeof legacyWidgets !== "object") {
+        return;
     }
-  }
-  if (widgetsWereAdded) {
-    await document.setFlag("campaign-codex", "sheet-widgets", currentSheetWidgets);
-    console.log(`Campaign Codex | Migrated ${currentSheetWidgets.length - existingWidgetIds.size} widgets for document: ${document.name}`);
-  }
+
+    const currentSheetWidgets = document.getFlag("campaign-codex", "sheet-widgets") || [];
+    const existingWidgetIds = new Set(currentSheetWidgets.map(w => w.id));
+    let widgetsWereAdded = false;
+    for (const [widgetName, widgetsById] of Object.entries(legacyWidgets)) {
+        for (const id of Object.keys(widgetsById)) {
+            if (!existingWidgetIds.has(id)) {
+                const newWidget = {
+                    id: id,
+                    widgetName: widgetName,
+                    counter: 0,
+                    active: false
+                };
+                currentSheetWidgets.push(newWidget);
+                widgetsWereAdded = true;
+            }
+        }
+    }
+    if (widgetsWereAdded) {
+        await document.setFlag("campaign-codex", "sheet-widgets", currentSheetWidgets);
+        console.log(`Campaign Codex | Migrated ${currentSheetWidgets.length - existingWidgetIds.size} widgets for document: ${document.name}`);
+    }
 }
 
 /**
@@ -709,14 +782,14 @@ export async function convertJournalToCCSheet(uuid, type, pagesToSeparateSheets 
     const journal = await fromUuid(uuid);
 
     if (!journal) {
-        ui.notifications.error(`Campaign Codex | Could not find Journal Entry with UUID: ${uuid}`);
+        ui.notifications.error(format('notify.couldNotFindJournal', { uuid }));
         console.error(`Campaign Codex | Could not find Journal Entry with UUID: ${uuid}`);
         return null;
     }
 
     const validTypes = ["location", "npc", "region", "shop", "group"];
     if (!validTypes.includes(type)) {
-        ui.notifications.error(`Campaign Codex | Invalid conversion type "${type}".`);
+        ui.notifications.error(format('notify.invalidConversionType', { type }));
         console.error(`Campaign Codex | Invalid conversion type "${type}".`);
         return null;
     }
@@ -744,7 +817,7 @@ export async function convertJournalToCCSheet(uuid, type, pagesToSeparateSheets 
 
     if (pagesToSeparateSheets) {
         if (textPages.length === 0) {
-            ui.notifications.warn(`Journal "${journal.name}" has no text pages with content to convert.`);
+            ui.notifications.warn(format('notify.noTextPages', { name: journal.name }));
             return [];
         }
 
@@ -756,7 +829,7 @@ export async function convertJournalToCCSheet(uuid, type, pagesToSeparateSheets 
                 createdJournals.push(newJournal);
             }
         }
-        ui.notifications.info(`Created ${createdJournals.length} new ${type} sheet(s) from the pages of "${journal.name}".`);
+        ui.notifications.info(format('notify.createdSheets', { count: createdJournals.length, type, name: journal.name }));
         return createdJournals;
     }
 
@@ -766,7 +839,7 @@ export async function convertJournalToCCSheet(uuid, type, pagesToSeparateSheets 
 
         if (newJournal) {
             await newJournal.setFlag("campaign-codex", "data", { description: combinedContent });
-            ui.notifications.info(`Successfully created a new ${type} sheet from "${journal.name}".`);
+            ui.notifications.info(format('notify.createdSheet', { type, name: journal.name }));
             newJournal.sheet.render(true);
             return newJournal;
         }
@@ -781,25 +854,25 @@ export async function convertJournalToCCSheet(uuid, type, pagesToSeparateSheets 
  * @returns {object} An object with tab keys and their boolean visibility (e.g., {info: true, locations: false}).
  */
 export function getDefaultSheetTabs(sheetType) {
-  const allSettings = game.settings.get("campaign-codex", "defaultTabVisibility") || {};
-  const sheetSettings = {};
-  
-  if (allSettings[sheetType]) {
-    for (const [key, value] of Object.entries(allSettings[sheetType])) {
-        sheetSettings[key] = (typeof value === 'object') ? (value.visible ?? true) : value;
-    }
-  } else {
-    // Fallback to iterating keys if stored flat like "sheetType.tabKey" (Legacy support)
-    const prefix = `${sheetType}.`;
-    for (const key in allSettings) {
-        if (key.startsWith(prefix)) {
-            const tabKey = key.substring(prefix.length);
-            const value = allSettings[key];
-            sheetSettings[tabKey] = (typeof value === 'object') ? (value.visible ?? true) : value;
+    const allSettings = game.settings.get("campaign-codex", "defaultTabVisibility") || {};
+    const sheetSettings = {};
+
+    if (allSettings[sheetType]) {
+        for (const [key, value] of Object.entries(allSettings[sheetType])) {
+            sheetSettings[key] = (typeof value === 'object') ? (value.visible ?? true) : value;
+        }
+    } else {
+        // Fallback to iterating keys if stored flat like "sheetType.tabKey" (Legacy support)
+        const prefix = `${sheetType}.`;
+        for (const key in allSettings) {
+            if (key.startsWith(prefix)) {
+                const tabKey = key.substring(prefix.length);
+                const value = allSettings[key];
+                sheetSettings[tabKey] = (typeof value === 'object') ? (value.visible ?? true) : value;
+            }
         }
     }
-  }
-  return sheetSettings;
+    return sheetSettings;
 }
 
 /**
@@ -808,49 +881,28 @@ export function getDefaultSheetTabs(sheetType) {
  * @returns {object} An object with tab keys and their boolean hidden status.
  */
 export function getDefaultSheetHidden(sheetType) {
-  const allSettings = game.settings.get("campaign-codex", "defaultTabVisibility") || {};
-  const sheetSettings = {};
-  
-  if (allSettings[sheetType]) {
-    for (const [key, value] of Object.entries(allSettings[sheetType])) {
-        sheetSettings[key] = (typeof value === 'object') ? (value.hidden ?? false) : false;
+    const allSettings = game.settings.get("campaign-codex", "defaultTabVisibility") || {};
+    const sheetSettings = {};
+
+    if (allSettings[sheetType]) {
+        for (const [key, value] of Object.entries(allSettings[sheetType])) {
+            sheetSettings[key] = (typeof value === 'object') ? (value.hidden ?? false) : false;
+        }
     }
-  }
-  return sheetSettings;
+    return sheetSettings;
 }
-// /**
-//  * Retrieves the default tab visibility settings for a specific sheet type.
-//  * @param {string} sheetType - The sheet type (e.g., "npc", "location").
-//  * @returns {object} An object with tab keys and their boolean visibility (e.g., {info: true, locations: false}).
-//  */
-// export function getDefaultSheetTabs(sheetType) {
-//   const allSettings = game.settings.get("campaign-codex", "defaultTabVisibility");
-//   const sheetSettings = {};
-//   const prefix = `${sheetType}.`;
-//   for (const key in allSettings) {
-//     if (key.startsWith(prefix)) {
-//       const tabKey = key.substring(prefix.length);
-//       sheetSettings[tabKey] = allSettings[key];
-//     }
-//   }
-//   return sheetSettings;
-// }
 
 
 export class ExtraFunctions {
-  /**
-  * @param{string} type            "warning", "info", "error" are supported strings.
-  * @param{string} message         content of the noticiation.
-  * @param{[array|string]} push    array of ids to push the notification to, if excluded notification is only shown to caller. ["all"] sends to all clients
-  */
-  static notification(type, message, push=[]){
-    if ( push.length ) {
-      game.socket.emit(`module.campaign-codex`, { action: "notification", data: {type, message, push} });
+    /**
+    * @param{string} type            "warning", "info", "error" are supported strings.
+    * @param{string} message         content of the noticiation.
+    * @param{[array|string]} push    array of ids to push the notification to, if excluded notification is only shown to caller. ["all"] sends to all clients
+    */
+    static notification(type, message, push = []) {
+        if (push.length) {
+            game.socket.emit(`module.campaign-codex`, { action: "notification", data: { type, message, push } });
+        }
+        ui.notifications.notify(message, type);
     }
-    ui.notifications.notify(message,type);
-  }
 }
-
-
-
-

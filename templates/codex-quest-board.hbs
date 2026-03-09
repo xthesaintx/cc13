@@ -1,0 +1,278 @@
+<section class="campaign-codex-toc-app scrollable quest-board">
+  {{#if hasContent}}
+    <div class="cc-quest-board-layout {{#unless isGM}}player-view{{/unless}}">
+      {{#if isGM}}
+        <aside class="cc-quest-board-sources">
+        <div class="form-fields search refresh">
+          <input type="search" id="quest-board-filter" name="filter" placeholder="{{ccLocalize 'toc.filterPlaceholder' title=(ccLocalize 'names.quests')}}">
+          <i class="fas fa-rotate-right refresh-btn" data-action="refreshBoard" title="Refresh quest board"></i>
+        </div>
+          <div class="cc-quest-source-list">
+            {{#each questGroups}}
+              <div class="cc-quest-source-group" draggable="true" data-doc-uuid="{{this.quest.journalUuid}}" data-quest-id="{{this.quest.id}}">
+                <div class="cc-quest-source-header">
+                  <span class="cc-quest-source-title">{{this.name}}</span>
+                                      <i class="{{this.quest.activityIcon}} cc-quest-status-icon {{this.quest.activityClass}}" data-action="toggleQuestActive" data-doc-uuid="{{this.quest.journalUuid}}" data-quest-id="{{this.quest.id}}" title="{{this.quest.activityLabel}}"></i>
+                </div>
+                <div class="cc-quest-source-quests">
+                  <div class="cc-quest-source-item" data-doc-uuid="{{this.quest.journalUuid}}" data-quest-id="{{this.quest.id}}">
+                  <i class="fas fa-book" data-action="openDocument" data-uuid="{{this.uuid}}" title="{{ccLocalize 'quest.openSourceJournal' name=this.name}}"></i>
+                    <i class="fas {{#if this.quest.pinned}}fa-thumbtack{{else}}fa-thumbtack-slash{{/if}} cc-quest-pin"
+                       data-action="togglePinned"
+                       data-doc-uuid="{{this.quest.journalUuid}}"
+                       data-quest-id="{{this.quest.id}}"
+                       title="{{#if this.quest.pinned}}{{ccLocalize 'quest.removeFromQuestBoard'}}{{else}}{{ccLocalize 'quest.pinToQuestBoard'}}{{/if}}"></i>
+                    <i class="fas {{#if this.quest.visible}}fa-eye{{else}}fa-eye-slash{{/if}} cc-quest-pin"
+                       data-action="toggleVisible"
+                       data-doc-uuid="{{this.quest.journalUuid}}"
+                       data-quest-id="{{this.quest.id}}"
+                       title="{{#if this.quest.visible}}{{ccLocalize 'quest.hideFromPlayers'}}{{else}}{{ccLocalize 'quest.showToPlayers'}}{{/if}}"></i>
+
+                  </div>
+                </div>
+              </div>
+            {{/each}}
+          </div>
+          <div class="directory-header">{{ccLocalize "quest.recentUpdates"}}</div>
+          {{#if recentUpdates.length}}
+            <ul class="cc-quest-updates-list">
+              {{#each recentUpdates}}
+                <li class="{{this.statusClass}}">
+                  <strong>{{this.title}}</strong>
+                  <span>{{this.journalName}}</span>
+                  <small>{{this.updatedLabel}}</small>
+                </li>
+              {{/each}}
+            </ul>
+          {{else}}
+            <p class="notes">{{ccLocalize "quest.noRecentUpdates"}}</p>
+          {{/if}}
+        </aside>
+      {{/if}}
+
+      <main class="cc-quest-board-main">
+        {{#if hasBoardQuests}}
+          <div class="cc-quest-card-grid">
+            {{#each boardQuests}}
+              <article class="cc-quest-card {{this.statusClass}} {{#if this.isCollapsed}}is-collapsed{{/if}}" data-ref-key="{{this.refKey}}">
+                <header class="cc-quest-card-header">
+                  <div class="cc-quest-header">
+                  <h3>
+                    <i class="fas {{#if this.isCollapsed}}fa-square-plus{{else}}fa-square-minus{{/if}} collaspable-quicklinks"
+                      data-action="toggleCardCollapse" data-ref-key="{{this.refKey}}"></i>
+                    {{this.title}}
+                  </h3>
+                  <div class="cc-quest-card-controls">
+                    {{#if ../isGM}}                    
+                      <span class="cc-quest-status-chip {{this.activityClass}} is-clickable" data-action="toggleQuestActive" data-doc-uuid="{{this.journalUuid}}" data-quest-id="{{this.id}}">
+                        <i class="{{this.activityIcon}}"></i>{{this.activityLabel}}
+                      </span>
+                      <span class="cc-quest-status-chip {{#if this.completedOn}}completed{{/if}} is-clickable" data-action="toggleQuestCompleted" data-doc-uuid="{{this.journalUuid}}" data-quest-id="{{this.id}}">
+                        <i class="fas fa-circle-check"></i>{{ccLocalize "quest.completed"}}
+                      </span>
+                      <span class="cc-quest-status-chip {{#if this.failedOn}}failed{{/if}} is-clickable" data-action="toggleQuestFailed" data-doc-uuid="{{this.journalUuid}}" data-quest-id="{{this.id}}">
+                        <i class="fas fa-circle-xmark"></i>{{ccLocalize "quest.failed"}}
+                      </span>
+                      <span class="cc-quest-status-chip urgency-{{this.urgency}} is-clickable" data-action="cycleUrgency" data-doc-uuid="{{this.journalUuid}}" data-quest-id="{{this.id}}"><i class="fas fa-circle-exclamation"></i> {{this.urgency}}</span>
+                        <span class="cc-quest-status-chip is-clickable" data-action="togglePinned" data-doc-uuid="{{this.journalUuid}}" data-quest-id="{{this.id}}"><i class="fas {{#if this.pinned}}fa-thumbtack{{else}}fa-thumbtack-slash{{/if}}"></i>{{ccLocalize "quest.pinned"}}</span>
+                        <span class="cc-quest-status-chip is-clickable" data-action="toggleVisible" data-doc-uuid="{{this.journalUuid}}" data-quest-id="{{this.id}}"><i class="fas {{#if this.visible}}fa-eye{{else}}fa-eye-slash{{/if}}"></i>{{ccLocalize "quest.visible"}}</span>
+                    <span class="cc-quest-status-chip">{{ccLocalize "quest.progress"}} {{this.progressPct}}% ({{this.progressLabel}})</span>
+                    {{#if this.isBlocked}}<span class="cc-quest-status-chip failed">{{ccLocalize "quest.blocked"}}</span>{{/if}}
+                      <span class="cc-quest-status-chip is-clickable" data-action="addCheckIn" data-doc-uuid="{{this.journalUuid}}" data-quest-id="{{this.id}}"><i class="fas fa-pen"></i>{{ccLocalize "quest.addCheckIn"}}</span>
+                      <span class="cc-quest-status-chip is-clickable" data-action="postQuestUpdate" data-doc-uuid="{{this.journalUuid}}" data-quest-title="{{this.title}}"><i class="fas fa-bullhorn"></i>{{ccLocalize "quest.notifyPlayersNow"}}</span>
+                    {{else}}
+                      {{#unless (or this.completedOn this.failedOn)}}
+                      <span class="cc-quest-status-chip {{this.activityClass}}" >
+                        <i class="{{this.activityIcon}}"></i>{{this.activityLabel}}
+                      </span>
+                      {{/unless}}
+                      {{#if this.completedOn}}
+                      <span class="cc-quest-status-chip {{#if this.completedOn}}completed{{/if}}">
+                        <i class="fas fa-circle-check"></i>{{ccLocalize "quest.completed"}}
+                      </span>
+                      {{/if}}
+                      {{#if this.failedOn}}
+                      <span class="cc-quest-status-chip {{#if this.failedOn}}failed{{/if}}">
+                        <i class="fas fa-circle-xmark"></i>{{ccLocalize "quest.failed"}}
+                      </span>
+                      {{/if}}
+                    <span class="cc-quest-status-chip">{{ccLocalize "quest.progress"}} {{this.progressPct}}% ({{this.progressLabel}})</span>
+                    {{#unless (or this.completedOn this.failedOn)}}
+                    {{#if this.isBlocked}}<span class="cc-quest-status-chip failed">{{ccLocalize "quest.blocked"}}</span>{{/if}}
+                    {{/unless}}
+                    {{/if}}
+                    {{#if this.canViewSource}}
+                      <span class="cc-quest-status-chip is-clickable" data-action="openDocument" data-uuid="{{this.journalUuid}}" title="{{ccLocalize 'quest.openSource'}}"><i class="fas fa-book"></i>{{ccLocalize "quest.openSource"}}</span>
+                    {{/if}}
+                  </div>
+                    </div>
+                  {{#if (and this.showImage this.img)}}
+                      <span class="cc-quest-header-image">
+                        <img src="{{this.img}}" alt="{{this.title}}">
+                      </span>
+                    {{/if}}
+                </header>
+
+                <div class="cc-quest-card-body collapsible-content">
+                  {{#if ../isGM}}
+                    <div class="cc-quest-card-section cc-quest-meta-grid">
+                      <label class="cc-quest-inline-check"><input class="cc-quest-field" type="checkbox" data-doc-uuid="{{this.journalUuid}}" data-quest-id="{{this.id}}" data-field="hideRewards" {{#if this.hideRewards}}checked{{/if}}> {{ccLocalize "quest.hideRewards"}}</label>
+                      <label class="cc-quest-inline-check"><input class="cc-quest-field" type="checkbox" data-doc-uuid="{{this.journalUuid}}" data-quest-id="{{this.id}}" data-field="notifyPlayers" {{#if this.notifyPlayers}}checked{{/if}}> {{ccLocalize "quest.notifyPlayers"}}</label>
+                      <label class="cc-quest-inline-check"><input class="cc-quest-field" type="checkbox" data-doc-uuid="{{this.journalUuid}}" data-quest-id="{{this.id}}" data-field="messageOnCompleted" {{#if this.messageOnCompleted}}checked{{/if}}> {{ccLocalize "quest.messageOnCompleted"}}</label>
+                    </div>
+                  {{/if}}
+
+                  <div class="cc-quest-card-section">
+                    <h4>{{ccLocalize "names.information"}}</h4>
+                    <div class="cc-quest-description">{{{this.enrichedDescription}}}</div>
+                  </div>
+
+                  {{#if (or ../isGM this.showRewardsToPlayer)}}
+                    <div class="cc-quest-card-section cc-quest-reward-dropzone" data-doc-uuid="{{this.journalUuid}}" data-quest-id="{{this.id}}" data-quest-title="{{this.title}}">
+                      <h4>{{ccLocalize "quest.rewards"}}</h4>
+                      {{#if ../isGM}}
+                        <div class="cc-quest-meta-grid">
+                          <label>XP<input class="cc-quest-field" type="number" data-doc-uuid="{{this.journalUuid}}" data-quest-id="{{this.id}}" data-field="rewardXP" value="{{this.rewardXP}}"></label>
+                          <label>{{../currencyLabel}}<input class="cc-quest-field" type="number" data-doc-uuid="{{this.journalUuid}}" data-quest-id="{{this.id}}" data-field="rewardCurrency" value="{{this.rewardCurrency}}"></label>
+                          <label>{{ccLocalize "quest.reputation"}}<input class="cc-quest-field" type="number" data-doc-uuid="{{this.journalUuid}}" data-quest-id="{{this.id}}" data-field="rewardReputation" value="{{this.rewardReputation}}"></label>
+                        </div>
+                      {{/if}}
+                      <ul class="quest-objectives cc-quest-rewards">
+                      {{#if ../isGM}}
+                          {{#if this.canDistributeAwards}}
+                            <button type="button" class="cc-quest-award-btn" data-action="distributeAwards" data-doc-uuid="{{this.journalUuid}}" data-quest-id="{{this.id}}">
+                              <i class="fas fa-gift"></i> {{ccLocalize "quest.distributeAwards"}}
+                            </button>
+                          {{/if}}
+                          <label class="cc-quest-inline-check cc-quest-pill-toggle">
+                            <input class="cc-quest-field" type="checkbox" data-doc-uuid="{{this.journalUuid}}" data-quest-id="{{this.id}}" data-field="rewardClaimed" {{#if this.rewardClaimed}}checked{{/if}}>
+                            <span class="cc-quest-pill-label cc-quest-pill-label-unclaimed">Unclaimed</span>
+                            <span class="cc-quest-pill-label cc-quest-pill-label-claimed">Claimed</span>
+                            </label>                          
+                          {{/if}}
+                        {{#if this.rewardXP}}<li><span>XP</span><span>{{this.rewardXP}}</span></li>{{/if}}
+                        {{#if this.rewardCurrency}}<li><span>{{../currencyLabel}}</span><span>{{this.rewardCurrency}}</span></li>{{/if}}
+                        {{#if this.rewardReputation}}<li><span>{{ccLocalize "quest.reputation"}}</span><span>{{this.rewardReputation}}</span></li>{{/if}}
+                        {{#each this.inventory as |item|}}
+                          <li class="cc-quest-reward-item" data-item-uuid="{{item.itemUuid}}">
+                            <span>{{item.name}} (x{{item.quantity}})</span>
+                            {{#if ../../isGM}}
+                              <i class="fas fa-paper-plane" data-action="sendToPlayer" data-uuid="{{item.itemUuid}}" title="{{ccLocalize 'title.send.player'}}"></i>
+                            {{/if}}
+                          </li>
+                        {{/each}}
+                      </ul>
+                    </div>
+                  {{/if}}
+
+                  {{#if (or ../isGM this.hasLinkedMacros)}}
+                    <div class="cc-quest-card-section cc-quest-link-dropzone" data-link-role="macro" data-doc-uuid="{{this.journalUuid}}" data-quest-id="{{this.id}}">
+                      <h4>{{ccLocalize "quest.macros"}}</h4>
+                      <div class="cc-quest-link-list">
+                        {{#each this.macroItems}}
+                          <div class="cc-quest-link-pill">
+                            <span class="cc-quest-link-target" data-action="executeQuestMacro" data-macro-uuid="{{this.uuid}}"><i class="fas fa-play"></i> {{this.name}}</span>
+                            {{#if ../../isGM}}<i class="fas fa-times" data-action="removeQuestLink" data-doc-uuid="{{../journalUuid}}" data-quest-id="{{../id}}" data-field="linkedMacros" data-value="{{this.uuid}}"></i>{{/if}}
+                          </div>
+                        {{/each}}
+                      </div>
+                      {{#if ../isGM}}{{#unless this.hasLinkedMacros}}{{ccLocalize "quest.dropMacro"}}{{/unless}}{{/if}}
+                    </div>
+                  {{/if}}
+
+                  {{#if (or ../isGM this.hasVisibleQuestLinks)}}
+                    {{#if (or ../isGM this.hasQuestGiver)}}
+                      <div class="cc-quest-card-section cc-quest-link-dropzone" data-link-role="giver" data-doc-uuid="{{this.journalUuid}}" data-quest-id="{{this.id}}">
+                        <h4>{{ccLocalize "quest.questGiver"}}</h4>
+                        <div class="cc-quest-link-list">
+                          {{#if this.questGiver}}
+                            <div class="cc-quest-link-pill">
+                              <span data-action="openDocument" data-uuid="{{this.questGiver.uuid}}">{{this.questGiver.name}}</span>
+                              {{#if ../isGM}}<i class="fas fa-times" data-action="clearQuestGiver" data-doc-uuid="{{this.journalUuid}}" data-quest-id="{{this.id}}"></i>{{/if}}
+                            </div>
+                          {{/if}}
+                        </div>
+                        {{#if ../isGM}}{{#unless questGiver}}{{ccLocalize "quest.dropQuestGiver"}}{{/unless}}{{/if}}
+                      </div>
+                    {{/if}}
+
+                    {{#if (or ../isGM this.hasRelatedDocs)}}
+                      <div class="cc-quest-card-section cc-quest-link-dropzone" data-link-role="related" data-doc-uuid="{{this.journalUuid}}" data-quest-id="{{this.id}}">
+                        <h4>{{ccLocalize "quest.related"}}</h4>
+                        <div class="cc-quest-link-list">
+                          {{#each this.relatedDocs}}
+                            {{#if this}}
+                              <div class="cc-quest-link-pill">
+                                <span data-action="openDocument" data-uuid="{{this.uuid}}">{{this.name}}</span>
+                                {{#if ../../isGM}}<i class="fas fa-times" data-action="removeQuestLink" data-doc-uuid="{{../journalUuid}}" data-quest-id="{{../id}}" data-field="relatedUuids" data-value="{{this.uuid}}"></i>{{/if}}
+                              </div>
+                            {{/if}}
+                          {{/each}}
+                        </div>
+                        {{#if ../isGM}}{{#unless relatedDocs}}{{ccLocalize "quest.dropRelated"}}{{/unless}}{{/if}}
+                      </div>
+                    {{/if}}
+                  {{/if}}
+
+                  {{#if ../isGM}}
+                    <div class="cc-quest-card-section cc-quest-link-dropzone" data-link-role="dependency" data-doc-uuid="{{this.journalUuid}}" data-quest-id="{{this.id}}">
+                      <h4>{{ccLocalize "quest.dependencies"}}</h4>
+                      <div class="cc-quest-link-list">
+                        {{#each this.dependencyItems}}
+                          <div class="cc-quest-link-pill {{this.statusClass}}">
+                            <span class="cc-quest-link-target" data-action="focusQuestRef" data-ref-key="{{this.key}}">{{this.title}}</span>
+                            <i class="fas fa-times" data-action="removeQuestLink" data-doc-uuid="{{../journalUuid}}" data-quest-id="{{../id}}" data-field="dependencies" data-value="{{this.key}}"></i>
+                          </div>
+                        {{/each}}
+                      </div>
+                      {{#if ../isGM}}{{#unless dependencyItems}}{{ccLocalize "quest.dropDependency"}}{{/unless}}{{/if}}
+                    </div>
+
+                    <div class="cc-quest-card-section cc-quest-link-dropzone" data-link-role="unlock" data-doc-uuid="{{this.journalUuid}}" data-quest-id="{{this.id}}">
+                      <h4>{{ccLocalize "quest.unlocks"}}</h4>
+                      <div class="cc-quest-link-list">
+                        {{#each this.unlockItems}}
+                          <div class="cc-quest-link-pill {{this.statusClass}}">
+                            <span class="cc-quest-link-target" data-action="focusQuestRef" data-ref-key="{{this.key}}">{{this.title}}</span>
+                            <i class="fas fa-times" data-action="removeQuestLink" data-doc-uuid="{{../journalUuid}}" data-quest-id="{{../id}}" data-field="unlocks" data-value="{{this.key}}"></i>
+                          </div>
+                        {{/each}}
+                      </div>
+                     {{#if ../isGM}} {{#unless unlockItems}}{{ccLocalize "quest.dropUnlock"}}{{/unless}}{{/if}}
+                    </div>
+                  {{/if}}
+
+                  {{#if this.visibleObjectives.length}}
+                    <div class="cc-quest-card-section">
+                      <h4>{{ccLocalize "quest.objectives"}}</h4>
+                      <ul class="quest-objectives">
+                        {{> "modules/campaign-codex/templates/partials/toc-quest-objective.hbs" objectives=this.visibleObjectives isGM=../isGM questId=this.id docUuid=this.journalUuid}}
+                      </ul>
+                    </div>
+                  {{/if}}
+
+                  {{#if this.checkIns.length}}
+                    <div class="cc-quest-card-section">
+                      <h4>{{ccLocalize "quest.checkIns"}}</h4>
+                      <ul class="cc-quest-checkins">
+                        {{#each this.checkIns}}
+                          <li>{{this.note}} <span>{{this.atLabel}}</span></li>
+                        {{/each}}
+                      </ul>
+                    </div>
+                  {{/if}}
+                </div>
+              </article>
+            {{/each}}
+          </div>
+        {{else}}
+          <p class="notes">{{ccLocalize "quest.noPinnedQuests"}}</p>
+        {{/if}}
+      </main>
+
+
+    </div>
+  {{else}}
+    <p class="notes">{{ccLocalize "ui.noQuestsFound"}}</p>
+  {{/if}}
+</section>

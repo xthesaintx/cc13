@@ -1,4 +1,5 @@
 import { CampaignCodexLinkers } from "./sheets/linkers.js";
+import { localize, format } from "./helper.js";
 
 export class CampaignCodexJournalConverter {
   /**
@@ -7,11 +8,11 @@ export class CampaignCodexJournalConverter {
    * @param {Object} options - Export options
    * @returns {Promise<JournalEntry>} The created standard journal
    */
-static async exportToStandardJournal(sourceJournal, options = {}) {
+  static async exportToStandardJournal(sourceJournal, options = {}) {
     try {
       const ccType = sourceJournal.getFlag("campaign-codex", "type");
       if (!ccType) {
-        ui.notifications.warn("This journal is not a Campaign Codex document");
+        ui.notifications.warn(localize('notify.notCampaignCodexDocument'));
         return null;
       }
 
@@ -51,7 +52,7 @@ static async exportToStandardJournal(sourceJournal, options = {}) {
       const newJournal = await JournalEntry.create(standardJournalData);
 
       ui.notifications.info(
-        `Exported "${sourceJournal.name}" to standard journal`,
+        format('notify.exportedToStandard', { name: sourceJournal.name }),
       );
 
       if (options.openAfterExport !== false) {
@@ -61,39 +62,39 @@ static async exportToStandardJournal(sourceJournal, options = {}) {
       return newJournal;
     } catch (error) {
       console.error("Campaign Codex | Export failed:", error);
-      ui.notifications.error("Failed to export journal");
+      ui.notifications.error(localize('notify.exportJournalFailed'));
       return null;
     }
   }
 
-static async _generateAdditionalContext(data, type) {
-  if (!type) return null;
+  static async _generateAdditionalContext(data, type) {
+    if (!type) return null;
 
-  let uuid;
-  if (type === "location") {
-    uuid = data.parentRegion;
-  } else if (type === "shop") {
-    uuid = data.linkedLocation;
-  } else if ((["npc"].includes(type) && data.tagMode) || (["tag"].includes(type))) {
-    return `Tag<hr>`;
+    let uuid;
+    if (type === "location") {
+      uuid = data.parentRegion;
+    } else if (type === "shop") {
+      uuid = data.linkedLocation;
+    } else if ((["npc"].includes(type) && data.tagMode) || (["tag"].includes(type))) {
+      return `Tag<hr>`;
+    }
+
+    if (uuid) {
+      const uuidNameArray = await CampaignCodexLinkers.getNameFromUuids([uuid]);
+      const uuidName = uuidNameArray[0] || "";
+      return `@UUID[${uuid}]{${uuidName}}\n<hr>`;
+    }
+
+    return null;
   }
 
-  if (uuid) {
-    const uuidNameArray = await CampaignCodexLinkers.getNameFromUuids([uuid]);
-    const uuidName = uuidNameArray[0] || "";
-    return `@UUID[${uuid}]{${uuidName}}\n<hr>`;
-  }
-
-  return null;
-}
-
-static async _generateQuestsPage(data) {
+  static async _generateQuestsPage(data) {
     if (!data.quests || data.quests.length === 0) return null;
 
     let content = ``;
     for (const quest of data.quests) {
-        content += `<h3>${quest.title}</h3>\n`;
-        content += `${quest.description}\n`;
+      content += `<h3>${quest.title}</h3>\n`;
+      content += `${quest.description}\n`;
       if (quest.inventory && quest.inventory.length > 0) {
         const itemUuids = quest.inventory.map(item => item.itemUuid);
         const questInventory = await CampaignCodexLinkers.getNameFromUuids(itemUuids || []);
@@ -102,8 +103,8 @@ static async _generateQuestsPage(data) {
           content += `<li>${questItem}</li>\n`;
         }
         content += `</ul>\n`;
-        }
-        if (quest.objectives && quest.objectives.length > 0) {
+      }
+      if (quest.objectives && quest.objectives.length > 0) {
         content += `<h4>Objectives</h4>\n<ul>\n`;
         for (const objective of quest.objectives) {
           content += `<li>${objective.completed ? "[x]" : "[ ]"} ${objective.text}</li>\n`;
@@ -120,14 +121,14 @@ static async _generateQuestsPage(data) {
     }
     content += `\n`;
     return {
-        name: "Quests",
-        type: "text",
-        text: { content: content, format: 1 },
+      name: "Quests",
+      type: "text",
+      text: { content: content, format: 1 },
     };
-}
+  }
 
 
-static async _generateStandardContent(journal, type, data) {
+  static async _generateStandardContent(journal, type, data) {
     const pages = [];
     let mainContent = '';
     const additionalContext = await this._generateAdditionalContext(data, type);
@@ -135,52 +136,52 @@ static async _generateStandardContent(journal, type, data) {
       mainContent += additionalContext;
     }
     if (data.description) {
-        mainContent += `<br><hr><br>${data.description}`;
+      mainContent += `<br><hr><br>${data.description}`;
     }
     pages.push({
-        name: "Overview",
-        type: "text",
-        text: { content: mainContent, format: 1 },
+      name: "Overview",
+      type: "text",
+      text: { content: mainContent, format: 1 },
     });
 
     const contentGenerators = {
-        location: this._generateLocationContent,
-        shop: this._generateShopContent,
-        npc: this._generateNPCContent,
-        region: this._generateRegionContent,
-        default: this._generateGenericContent,
+      location: this._generateLocationContent,
+      shop: this._generateShopContent,
+      npc: this._generateNPCContent,
+      region: this._generateRegionContent,
+      default: this._generateGenericContent,
     };
-    
+
     const additionalPages = await (contentGenerators[type] || contentGenerators.default).bind(this)(data);
     pages.push(...additionalPages);
 
     return pages;
-}
+  }
 
 
-static async _generateLinkListPage(title, uuids) {
+  static async _generateLinkListPage(title, uuids) {
     if (!uuids || uuids.length === 0) return null;
 
     let content = ``;
     const docs = (await Promise.all(uuids.map((uuid) => fromUuid(uuid)))).filter(Boolean);
 
     for (const doc of docs) {
-        const tagged = doc.getFlag("campaign-codex", "data");
-        const type = doc.getFlag("campaign-codex", "type");
-        let taggedText = '';
-        if (tagged && ((tagged.tagMode && ["npc"].includes(type)) || ["tag"].includes(type))) {
-            taggedText = ' [TAG]';
-        }
-        content += `<li>@UUID[${doc.uuid}]{${doc.name}}${taggedText}</li>\n`;
+      const tagged = doc.getFlag("campaign-codex", "data");
+      const type = doc.getFlag("campaign-codex", "type");
+      let taggedText = '';
+      if (tagged && ((tagged.tagMode && ["npc"].includes(type)) || ["tag"].includes(type))) {
+        taggedText = ' [TAG]';
+      }
+      content += `<li>@UUID[${doc.uuid}]{${doc.name}}${taggedText}</li>\n`;
     }
     content += `</ul>\n\n`;
 
     return {
-        name: title,
-        type: "text",
-        text: { content: content, format: 1 },
+      name: title,
+      type: "text",
+      text: { content: content, format: 1 },
     };
-}
+  }
 
   static async _generateLocationContent(data) {
     const pages = [];
@@ -188,55 +189,55 @@ static async _generateLinkListPage(title, uuids) {
     pages.push(await this._generateLinkListPage("Shops", data.linkedShops));
     pages.push(await this._generateQuestsPage(data));
     if (data.notes) {
-        pages.push({
-            name: "GM Notes",
-            type: "text",
-            text: { content: `${data.notes}\n\n`, format: 1 },
-        });
+      pages.push({
+        name: "GM Notes",
+        type: "text",
+        text: { content: `${data.notes}\n\n`, format: 1 },
+      });
     }
     return pages.filter(Boolean);
   }
 
- static async _generateShopContent(data) {
+  static async _generateShopContent(data) {
     const pages = [];
     pages.push(await this._generateLinkListPage("NPCs", data.linkedNPCs));
     pages.push(await this._generateQuestsPage(data));
 
     if (data.inventory && data.inventory.length > 0) {
-        let content = ``;
-        content += `<p><strong>Markup:</strong> ${data.markup || 1.0}x base price</p>\n`;
-        content += `<table style="width: 100%; border-collapse: collapse;">\n`;
-        content += `<tr style="background: #f0f0f0;"><th style="border: 1px solid #ccc; padding: 8px;">Item</th><th style="border: 1px solid #ccc; padding: 8px;">Quantity</th><th style="border: 1px solid #ccc; padding: 8px;">Price</th></tr>\n`;
+      let content = ``;
+      content += `<p><strong>Markup:</strong> ${data.markup || 1.0}x base price</p>\n`;
+      content += `<table style="width: 100%; border-collapse: collapse;">\n`;
+      content += `<tr style="background: #f0f0f0;"><th style="border: 1px solid #ccc; padding: 8px;">Item</th><th style="border: 1px solid #ccc; padding: 8px;">Quantity</th><th style="border: 1px solid #ccc; padding: 8px;">Price</th></tr>\n`;
 
-        const itemPromises = data.inventory.map((itemData) => fromUuid(itemData.itemUuid));
-        const items = (await Promise.all(itemPromises)).filter(Boolean);
+      const itemPromises = data.inventory.map((itemData) => fromUuid(itemData.itemUuid));
+      const items = (await Promise.all(itemPromises)).filter(Boolean);
 
-        for (const item of items) {
-            const itemData = data.inventory.find((i) => i.itemUuid === item.uuid);
-            const basePrice = item.system.price?.value || 0;
-            const currency = item.system.price?.denomination || "gp";
-            const finalPrice = itemData.customPrice ?? basePrice * (data.markup || 1.0);
+      for (const item of items) {
+        const itemData = data.inventory.find((i) => i.itemUuid === item.uuid);
+        const basePrice = item.system.price?.value || 0;
+        const currency = item.system.price?.denomination || "gp";
+        const finalPrice = itemData.customPrice ?? basePrice * (data.markup || 1.0);
 
-            content += `<tr>`;
-            content += `<td style="border: 1px solid #ccc; padding: 8px;">@UUID[${item.uuid}]{${item.name}}</td>`;
-            content += `<td style="border: 1px solid #ccc; padding: 8px;">${itemData.quantity || 1}</td>`;
-            content += `<td style="border: 1px solid #ccc; padding: 8px;">${finalPrice.toFixed(2)} ${currency}</td>`;
-            content += `</tr>\n`;
-        }
-        content += `</table>\n\n`;
-        pages.push({
-            name: "Inventory",
-            type: "text",
-            text: { content: content, format: 1 },
-        });
+        content += `<tr>`;
+        content += `<td style="border: 1px solid #ccc; padding: 8px;">@UUID[${item.uuid}]{${item.name}}</td>`;
+        content += `<td style="border: 1px solid #ccc; padding: 8px;">${itemData.quantity || 1}</td>`;
+        content += `<td style="border: 1px solid #ccc; padding: 8px;">${finalPrice.toFixed(2)} ${currency}</td>`;
+        content += `</tr>\n`;
+      }
+      content += `</table>\n\n`;
+      pages.push({
+        name: "Inventory",
+        type: "text",
+        text: { content: content, format: 1 },
+      });
     }
 
     if (data.notes) {
-        pages.push({
-            name: "GM Notes",
-            type: "text",
-            text: { content: `${data.notes}\n\n`, format: 1 },
-        });
+      pages.push({
+        name: "GM Notes",
+        type: "text",
+        text: { content: `${data.notes}\n\n`, format: 1 },
+      });
     }
     return pages.filter(Boolean);
   }
@@ -249,11 +250,11 @@ static async _generateLinkListPage(title, uuids) {
     pages.push(await this._generateQuestsPage(data));
 
     if (data.notes) {
-        pages.push({
-            name: "GM Notes",
-            type: "text",
-            text: { content: `${data.notes}\n\n`, format: 1 },
-        });
+      pages.push({
+        name: "GM Notes",
+        type: "text",
+        text: { content: `${data.notes}\n\n`, format: 1 },
+      });
     }
     return pages.filter(Boolean);
   }
@@ -266,40 +267,40 @@ static async _generateLinkListPage(title, uuids) {
     pages.push(await this._generateLinkListPage("NPCs", data.linkedNPCs));
     pages.push(await this._generateQuestsPage(data));
     if (data.notes) {
-        pages.push({
-            name: "GM Notes",
-            type: "text",
-            text: { content: `${data.notes}\n\n`, format: 1 },
-        });
+      pages.push({
+        name: "GM Notes",
+        type: "text",
+        text: { content: `${data.notes}\n\n`, format: 1 },
+      });
     }
     return pages.filter(Boolean);
   }
 
 
-static async _generateGenericContent(data) {
+  static async _generateGenericContent(data) {
     const pages = [];
     pages.push(await this._generateQuestsPage(data));
     if (data.notes) {
-        pages.push({
-            name: "Notes",
-            type: "text",
-            text: { content: `${data.notes}\n\n`, format: 1 },
-        });
+      pages.push({
+        name: "Notes",
+        type: "text",
+        text: { content: `${data.notes}\n\n`, format: 1 },
+      });
     }
     return pages.filter(Boolean);
   }
 
-static async showExportDialog(sourceJournal) {
+  static async showExportDialog(sourceJournal) {
     const ccType = sourceJournal.getFlag("campaign-codex", "type");
     if (!ccType) {
-        ui.notifications.warn("This journal is not a Campaign Codex document");
-        return;
+      ui.notifications.warn(localize('notify.notCampaignCodexDocument'));
+      return;
     }
 
     const folders = game.folders.filter((f) => f.type === "JournalEntry");
     const folderOptions = folders
-        .map((f) => `<option value="${f.id}">${f.name}</option>`)
-        .join("");
+      .map((f) => `<option value="${f.id}">${f.name}</option>`)
+      .join("");
 
     const content = `
         <div class="form-group">
@@ -329,52 +330,52 @@ static async showExportDialog(sourceJournal) {
     `;
 
     const dialogData = await foundry.applications.api.DialogV2.wait({
-        window: { title: "Export to Standard Journal" },
-        content,
-        buttons: [
-            {
-                action: "export",
-                icon: '<i class="fas fa-book"></i>',
-                label: "Export",
-                default: true,
-                callback: (event, button) => {
-                    return Object.fromEntries(new FormData(button.form));
-                }
-            },
-            {
-                action: "cancel",
-                icon: '<i class="fas fa-times"></i>',
-                label: "Cancel",
-                callback: () => null
-            }
-        ],
-        rejectClose: true
+      window: { title: localize('dialog.exportToStandardJournal') },
+      content,
+      buttons: [
+        {
+          action: "export",
+          icon: '<i class="fas fa-book"></i>',
+          label: "Export",
+          default: true,
+          callback: (event, button) => {
+            return Object.fromEntries(new FormData(button.form));
+          }
+        },
+        {
+          action: "cancel",
+          icon: '<i class="fas fa-times"></i>',
+          label: "Cancel",
+          callback: () => null
+        }
+      ],
+      rejectClose: true
     }).catch(() => null);
 
     if (!dialogData) return null;
     const options = {
-        namePrefix: "",
-        openAfterExport: dialogData.openAfterExport === 'on',
+      namePrefix: "",
+      openAfterExport: dialogData.openAfterExport === 'on',
     };
 
     if (dialogData.folderId === "root") {
-        options.folderId = null;
+      options.folderId = null;
     } else if (dialogData.folderId && dialogData.folderId !== "") {
-        options.folderId = dialogData.folderId;
+      options.folderId = dialogData.folderId;
     }
 
     let customName = null;
     if (dialogData.exportName && dialogData.exportName.trim() !== "") {
-        customName = dialogData.exportName.trim();
-        options.namePrefix = "";
+      customName = dialogData.exportName.trim();
+      options.namePrefix = "";
     }
-    
+
     // Call the final export function and return its result.
     return await this.exportToStandardJournal(sourceJournal, {
-        ...options,
-        customName: customName,
+      ...options,
+      customName: customName,
     });
-}
+  }
 
   static async batchExport(journals, options = {}) {
     const ccJournals = journals.filter((j) =>
@@ -382,7 +383,7 @@ static async showExportDialog(sourceJournal) {
     );
 
     if (ccJournals.length === 0) {
-      ui.notifications.warn("No Campaign Codex journals selected");
+      ui.notifications.warn(localize('notify.noJournalsSelected'));
       return [];
     }
 
@@ -391,7 +392,7 @@ static async showExportDialog(sourceJournal) {
     let errorCount = 0;
 
     ui.notifications.info(
-      `Exporting ${ccJournals.length} Campaign Codex journals...`,
+      format('notify.exportingJournals', { count: ccJournals.length }),
     );
 
     for (const journal of ccJournals) {
@@ -414,10 +415,10 @@ static async showExportDialog(sourceJournal) {
     }
 
     if (errorCount === 0) {
-      ui.notifications.info(`Successfully exported ${successCount} journals`);
+      ui.notifications.info(format('notify.exportedJournals', { count: successCount }));
     } else {
       ui.notifications.warn(
-        `Exported ${successCount} journals with ${errorCount} errors`,
+        format('notify.exportedWithErrors', { count: successCount, errors: errorCount }),
       );
     }
 

@@ -1,6 +1,7 @@
 import { CampaignCodexWidget } from "./CampaignCodexWidget.js";
 import { gameSystemClass } from "../helper.js";
 import { localize, format, renderTemplate, isThemed, journalSystemClass } from "../helper.js";
+import { buildMapNoteToken } from "../map-note-links.js";
 
 
 const { DialogV2 } = foundry.applications.api;
@@ -18,6 +19,7 @@ class CodexMapNoteEditorDialog extends DialogV2 {
     }
 }
 
+
 export class MapNoteWidget extends CampaignCodexWidget {
 
     constructor(widgetId, widgetData, document) {
@@ -34,12 +36,12 @@ export class MapNoteWidget extends CampaignCodexWidget {
             .filter(n => isGM || n.visible)
             .map(n => ({
                 ...n,
-                title: n.title || "New Note",
+                title: n.title || localize('dialog.newNote'),
                 mapId: n.mapId || "",
                 visible: n.visible ?? false,
                 visibilityIcon: n.visible ? "fa-eye" : "fa-eye-slash",
-                visibilityTitle: n.visible ? "Player Visible" : "Player Hidden",
-                isGM: isGM 
+                visibilityTitle: n.visible ? localize('dialog.playerVisible') : localize('dialog.playerHidden'),
+                isGM: isGM
             }));
 
         return {
@@ -61,9 +63,9 @@ export class MapNoteWidget extends CampaignCodexWidget {
         }
 
         const savedData = (await this.getData()) || {};
-        const notes = [...(savedData.notes || [])]; 
+        const notes = [...(savedData.notes || [])];
         const index = notes.findIndex(n => n.id === id);
-        
+
         if (index === -1) return;
 
         notes[index] = { ...notes[index], ...updates };
@@ -167,15 +169,15 @@ export class MapNoteWidget extends CampaignCodexWidget {
     }
 
 
-async _toggleVisibility(id) {
+    async _toggleVisibility(id) {
         const savedData = (await this.getData()) || {};
         const notes = savedData.notes || [];
         const index = notes.findIndex(n => n.id === id);
-        
+
         if (index !== -1) {
             const currentState = notes[index].visible ?? false;
             notes[index] = { ...notes[index], visible: !currentState };
-            
+
             await this.saveData({ notes });
             this._updateNoteCardVisibility(id, notes[index].visible);
         }
@@ -192,15 +194,31 @@ async _toggleVisibility(id) {
         if (!journalData) return;
         let dragDataB = journalData.toDragData();
 
-        const noteTitle = el.dataset.title || "New Note";
-        const noteId = el.dataset.id; 
-        const mapId = el.dataset.mapId || ""; 
-        const widgetId = this.widgetId; 
+        const noteTitle = el.dataset.title || localize('dialog.newNote');
+        const noteId = el.dataset.id;
+        const mapId = el.dataset.mapId || "";
+        const widgetId = this.widgetId;
+        const linkLabel = `${noteTitle}${mapId ? ` (${mapId})` : ""}`;
+        const mapNoteDragData = {
+            type: "CampaignCodexMapNote",
+            entryId: journalID,
+            entryUuid: journalData.uuid,
+            widgetId,
+            noteId,
+            mapId,
+            label: linkLabel,
+            token: buildMapNoteToken({
+                entryId: journalID,
+                widgetId,
+                noteId,
+                label: linkLabel
+            })
+        };
 
         game.user._tempNoteDrop = {
             uuid: journalData.uuid,
             label: noteTitle,
-        
+
             flags: {
                 "campaign-codex": {
                     noteid: noteId,
@@ -212,12 +230,14 @@ async _toggleVisibility(id) {
 
 
         dragDataB.noteLabel = noteTitle;
+        dragDataB.campaignCodexMapNote = mapNoteDragData;
         if (!dragDataB) return;
+        event.dataTransfer.setData("application/x-campaign-codex-map-note", JSON.stringify(mapNoteDragData));
         event.dataTransfer.setData('text/plain', JSON.stringify(dragDataB));
     }
 
     async _deleteNote(id) {
-        const confirm = await this.confirmationDialog("Are you sure you want to delete this note?");
+        const confirm = await this.confirmationDialog(localize('dialog.deleteNote'));
         if (!confirm) return;
 
         const savedData = (await this.getData()) || {};
@@ -234,13 +254,12 @@ async _toggleVisibility(id) {
         const newNote = {
             id: newId,
             content: "",
-            title: "New Note",
+            title: localize('dialog.newNote'),
             mapId: "",
             visible: false
         };
         await this._viewNote(newId, true, newNote);
     }
-
 
       _onClickImage(event) {
         if (!event.target.matches("img:not(.nopopout)")) return;
@@ -256,15 +275,16 @@ async _toggleVisibility(id) {
       }
 
 
-/**
-     * Opens the note editor.
-     * @param {string} noteId 
-     * @param {boolean} editMode 
-     * @param {object|null} newNoteData - If present, this is a new unsaved note from _createNote.
-     */
+
+    /**
+         * Opens the note editor.
+         * @param {string} noteId 
+         * @param {boolean} editMode 
+         * @param {object|null} newNoteData - If present, this is a new unsaved note from _createNote.
+         */
     async _viewNote(noteId, editMode = false, newNoteData = null) {
-        
-        
+
+
         let note = newNoteData;
 
         if (!note) {
@@ -272,15 +292,15 @@ async _toggleVisibility(id) {
             const notes = savedData.notes || [];
             note = notes.find(n => n.id === noteId);
         }
-        
-        
+
+
         if (!note) return;
 
         const isOwner = this.document.isOwner;
         const canEdit = isOwner && editMode;
 
         const enrichedContent = await foundry.applications.ux.TextEditor.implementation.enrichHTML(
-            note.content, 
+            note.content,
             { async: true, secrets: isOwner }
         );
 
@@ -290,11 +310,11 @@ async _toggleVisibility(id) {
 
         if (canEdit) {
             const rawContent = foundry.utils.escapeHTML(note.content || "");
-            
+
             contentHtml = `
-              <article class="cc-enriched ${isThemed() ? 'themed':''} ${isThemed()} ${systemClass}">
+              <article class="cc-enriched ${isThemed() ? 'themed' : ''} ${isThemed()} ${systemClass}">
                 <section class="journal-entry-content">
-                  <prose-mirror name="flags.campaign-codex.data.${note.id}" value="${rawContent}" compact="true" class="journal-page-content cc-prosemirror ${journalClass} ${isThemed() ? 'themed':''} ${isThemed()}">
+                  <prose-mirror name="flags.campaign-codex.data.${note.id}" value="${rawContent}" compact="true" class="journal-page-content cc-prosemirror ${journalClass} ${isThemed() ? 'themed' : ''} ${isThemed()}">
                     ${enrichedContent}
                   </prose-mirror>
                 </section>
@@ -302,7 +322,7 @@ async _toggleVisibility(id) {
             `;
         } else {
             contentHtml = `
-                <article class="cc-enriched ${isThemed() ? 'themed':''} ${journalClass} ${isThemed()} ${systemClass}">
+                <article class="cc-enriched ${isThemed() ? 'themed' : ''} ${journalClass} ${isThemed()} ${systemClass}">
                   <section class="journal-entry-content cc-non-owner-view">
                     ${enrichedContent}
                   </section>
@@ -311,21 +331,21 @@ async _toggleVisibility(id) {
         }
         const themeOverride = isThemed();
         const ccEditMode = editMode ? "edit-mode" : "read-mode";
-        const { DialogV2 } = foundry.applications.api;
-        const baseTitle = note.title || "Note";
+        // const { DialogV2 } = foundry.applications.api;
+        const baseTitle = note.title || localize('dialog.newNote');
         const windowTitle = `${baseTitle}${note.mapId ? ` [${note.mapId}]` : ""}`;
 
         const dialog = new CodexMapNoteEditorDialog({
-            window: { title: windowTitle || "Note", resizable: true },
+            window: { title: windowTitle || localize('dialog.newNote'), resizable: true },
             id: noteId,
             modal: false,
             classes: ["cc-map-widget", "campaign-codex", "note-dialog", ccEditMode, themeOverride, "themed"],
             content: contentHtml,
-            onClose: (dialog) => {dialog.element.style.display = "none";},
+            onClose: (dialog) => { dialog.element.style.display = "none"; },
             buttons: [
                 {
                     action: "close",
-                    label: "Close",
+                    label: localize('dialog.close'),
                     icon: "fas fa-times"
                 }
             ],
@@ -334,6 +354,7 @@ async _toggleVisibility(id) {
 
         const rendered = await dialog.render(true);
         const html = rendered.element;
+
         html.addEventListener("click", (event) => {
           const clickedImage = event.target.closest("img:not(.nopopout)");
           if (!clickedImage) {
@@ -347,12 +368,13 @@ async _toggleVisibility(id) {
           this._onClickImage.call(this, event);
         });
 
+
         if (canEdit) {
             const proseMirror = html.querySelector('prose-mirror');
 
             if (proseMirror && !proseMirror.dataset.listenerAttached) {
                 proseMirror.dataset.listenerAttached = "true";
-                
+
                 proseMirror.addEventListener('save', async (event) => {
                     event.preventDefault();
                     event.stopPropagation();
@@ -362,7 +384,7 @@ async _toggleVisibility(id) {
                     try {
                         const target = event.currentTarget;
                         let valueToSave = Array.isArray(target.value) ? target.value[0] : target.value;
-                        
+
                         if (newNoteData) {
                             const currentData = (await this.getData()) || {};
                             const currentNotes = currentData.notes || [];
@@ -372,9 +394,9 @@ async _toggleVisibility(id) {
                             if (existingIndex > -1) {
                                 currentNotes[existingIndex].content = valueToSave;
                             } else {
-                                const noteToSave = { 
-                                    ...newNoteData, 
-                                    content: valueToSave 
+                                const noteToSave = {
+                                    ...newNoteData,
+                                    content: valueToSave
                                 };
                                 currentNotes.push(noteToSave);
                             }
@@ -385,7 +407,7 @@ async _toggleVisibility(id) {
                             await this._updateNoteData(noteId, { content: valueToSave });
                         }
                     } finally {
-                        proseMirror.dataset.saving = "false"; 
+                        proseMirror.dataset.saving = "false";
                     }
                     dialog.close();
                     this._refreshWidget();
@@ -416,7 +438,7 @@ async _toggleVisibility(id) {
 
         const btn = card.querySelector('[data-action="toggle-visibility"]');
         if (btn) {
-            btn.title = visible ? "Player Visible" : "Player Hidden";
+            btn.title = visible ? localize('dialog.playerVisible') : localize('dialog.playerHidden');
         }
     }
 
@@ -424,7 +446,7 @@ async _toggleVisibility(id) {
         const card = document.querySelector(`#widget-${this.widgetId} .note-card[data-id="${id}"]`);
         if (!card) return;
 
-        const title = note.title || "New Note";
+        const title = note.title || localize('dialog.newNote');
         const mapId = note.mapId || "";
         card.dataset.title = title;
         card.dataset.mapId = mapId;

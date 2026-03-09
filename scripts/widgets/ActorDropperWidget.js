@@ -1,4 +1,5 @@
 import { CampaignCodexWidget } from "./CampaignCodexWidget.js";
+import { localize } from "../helper.js";
 
 export class ActorDropperWidget extends CampaignCodexWidget {
     constructor(widgetId, widgetData, document) {
@@ -11,8 +12,8 @@ export class ActorDropperWidget extends CampaignCodexWidget {
         const savedData = (await this.getData()) || {};
         let actors = savedData.actors || [];
 
-        
-        
+        const isGM = game.user.isGM;
+
         const resolvedActors = (await Promise.all(actors.map(async (entry) => {
             const actor = await fromUuid(entry.uuid);
             if (!actor) return null;
@@ -29,8 +30,8 @@ export class ActorDropperWidget extends CampaignCodexWidget {
             if (this._pendingUpdates[entry.uuid] !== undefined) {
                 quantity = this._pendingUpdates[entry.uuid];
             }
-
             return {
+                id: entry.id,
                 uuid: entry.uuid,
                 name: actor.name,
                 img: actor.img || "icons/svg/mystery-man.svg",
@@ -39,7 +40,7 @@ export class ActorDropperWidget extends CampaignCodexWidget {
                 showCr: game.system.id === "dnd5e"
             };
         }))).filter(Boolean);
-        
+
 
         return {
             id: this.widgetId,
@@ -102,7 +103,6 @@ export class ActorDropperWidget extends CampaignCodexWidget {
             await this._dropToMap();
         });
 
-        
         htmlElement.addEventListener('drop', async (event) => {
             event.preventDefault();
             event.stopPropagation();
@@ -112,7 +112,7 @@ export class ActorDropperWidget extends CampaignCodexWidget {
             if (data.type === "Actor" && data.uuid) {
                 await this._addActor(data.uuid, htmlElement);
             } else {
-                ui.notifications.warn("Please drop an Actor document.");
+                ui.notifications.warn(localize('notify.dropActor'));
             }
         });
         htmlElement.querySelectorAll('.inventory-item').forEach(row => {
@@ -127,7 +127,27 @@ export class ActorDropperWidget extends CampaignCodexWidget {
                 }
             });
         });
+        htmlElement.addEventListener('dragstart', (e) => {
+            if (!e.target.closest('.inventory-item[data-drag="true"]')) return;
+            this._onDragStart(e);
+        });
 
+
+    }
+
+    async _onDragStart(event) {
+        const el = event.currentTarget?.classList?.contains('inventory-item')
+            ? event.currentTarget
+            : event.target.closest('.inventory-item[data-drag="true"]');
+        if (!el) return;
+
+        const uuid = el.dataset.uuid;
+        const actor = await fromUuid(uuid).catch(() => null);
+
+        const dragData = actor?.toDragData ? actor.toDragData() : { type: "Actor", uuid };
+        if (!dragData) return;
+
+        event.dataTransfer.setData("text/plain", JSON.stringify(dragData));
     }
 
     _queueUpdate(uuid, newVal) {
@@ -183,11 +203,10 @@ export class ActorDropperWidget extends CampaignCodexWidget {
         this._refreshWidget(htmlElement);
     }
 
-
     async _dropToIndividualToMap(uuid, htmlElement) {
         const actor = await fromUuid(uuid);
         if (!actor) {
-            return ui.notifications.warn("Could not find actor data.");
+            return ui.notifications.warn(localize('notify.actorDataNotFound'));
         }
 
         const savedData = (await this.getData()) || {};
@@ -211,7 +230,7 @@ export class ActorDropperWidget extends CampaignCodexWidget {
         try {
             if (game.campaignCodexNPCDropper) {
                 await game.campaignCodexNPCDropper.dropActorsToScene(actorsToDrop, {
-                    title: "Drop Actors to Map",
+                    title: localize('dialog.dropActorsToMap'),
                     skipSelectionDialog: true
                 });
             } else {
@@ -222,12 +241,13 @@ export class ActorDropperWidget extends CampaignCodexWidget {
         }
     }
 
+
     async _dropToMap() {
         const savedData = (await this.getData()) || {};
         const actorsData = savedData.actors || [];
 
         if (actorsData.length === 0) {
-            return ui.notifications.warn("No actors to drop.");
+            return ui.notifications.warn(localize('notify.noActorsToDrop'));
         }
 
         const npcsToDrop = [];
@@ -241,19 +261,23 @@ export class ActorDropperWidget extends CampaignCodexWidget {
         }
 
         if (npcsToDrop.length === 0) {
-            return ui.notifications.warn("Could not find actor data.");
+            return ui.notifications.warn(localize('notify.actorDataNotFound'));
         }
 
         try {
             if (game.campaignCodexNPCDropper) {
-                await game.campaignCodexNPCDropper.dropActorsToScene(npcsToDrop, { title: "Drop Actors to Map" });
+                const showDropperDialog = game.settings.get("campaign-codex", "showActorDropperDialog");
+                await game.campaignCodexNPCDropper.dropActorsToScene(npcsToDrop, {
+                    title: localize('dialog.dropActorsToMap'),
+                    skipSelectionDialog: !showDropperDialog
+                });
             } else {
                 console.error("Campaign Codex | game.campaignCodexNPCDropper not found.");
-                ui.notifications.error("Dropper utility not available.");
+                ui.notifications.error(localize('notify.dropperNotAvailable'));
             }
         } catch (error) {
             console.error("Campaign Codex | Error in ActorDropperWidget drop:", error);
-            ui.notifications.error("Failed to drop actors.");
+            ui.notifications.error(localize('notify.failedToDropActors'));
         }
     }
 

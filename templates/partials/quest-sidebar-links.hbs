@@ -1,0 +1,15 @@
+<div class="sidebar-links cc-quest-links">
+  <h3><i class="fas fa-link"></i> Linked Sheets</h3>
+  {{#if linkedSheets.length}}
+    <div class="cc-quest-linked-list">
+      {{#each linkedSheets}}
+        <div class="cc-quest-linked-item" data-action="openJournal" data-uuid="{{this.uuid}}">
+          <i class="{{this.icon}}"></i>
+          <span class="cc-quest-linked-name">{{this.name}}</span>
+        </div>
+      {{/each}}
+    </div>
+  {{else}}
+    <p class="notes">{{ccLocalize "quest.none"}}</p>
+  {{/if}}
+</div>

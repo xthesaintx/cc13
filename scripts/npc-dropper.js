@@ -9,7 +9,7 @@ export class NPCDropper {
    */
   static async dropNPCsToScene(npcs, options = {}) {
     if (!canvas.scene) {
-      ui.notifications.warn("No scene is currently active!");
+      ui.notifications.warn(localize('notify.noSceneActive'));
       return;
     }
 
@@ -33,7 +33,7 @@ export class NPCDropper {
     }
 
     if (npcsWithActors.length === 0) {
-      ui.notifications.warn("No NPCs with linked actors found to drop!");
+      ui.notifications.warn(localize('notify.noNpcsWithActors'));
       return;
     }
 
@@ -48,12 +48,12 @@ export class NPCDropper {
    */
   static async dropActorsToScene(actors, options = {}) {
     if (!canvas.scene) {
-      ui.notifications.warn("No scene is currently active!");
+      // ui.notifications.warn(localize('notify.noSceneActive'));
       return;
     }
 
     if (!actors || actors.length === 0) {
-      ui.notifications.warn("No NPCs with linked actors found to drop!");
+      // ui.notifications.warn(localize('notify.noActorsToDropNpc'));
       return;
     }
 
@@ -124,7 +124,7 @@ export class NPCDropper {
     }
 
     if (expandedResults.length === 0) {
-      ui.notifications.warn("No actors found to drop!");
+      // ui.notifications.warn(localize('notify.noValidActors'));
       return;
     }
 
@@ -240,19 +240,19 @@ export class NPCDropper {
 
 
 
-/**
-   * Shows the NPC selection dialog
-   * @param {Array} npcs - NPCs to show in dialog
-   * @param {Object} options - Dialog options
-   */
+  /**
+     * Shows the NPC selection dialog
+     * @param {Array} npcs - NPCs to show in dialog
+     * @param {Object} options - Dialog options
+     */
   static async _showDropToMapDialog(npcs, options = {}) {
     const content = `
       <div class="drop-to-map-dialog">
-        <p>Select NPCs to place onto the current scene:</p>
+        <p>${localize('dialog.selectNpcsToPlace')}</p>
         <div class="npc-selection" style="max-height: 300px; overflow-y: auto;">
           ${npcs
-            .map(
-              (npc) => `
+        .map(
+          (npc) => `
             <label>
               <input type="checkbox" name="selected-npcs" value="${npc._uniqueId}" checked style="margin-right: 8px;">
               <img src="${npc.img}" alt="${npc.name}" style="width: 32px; height: 32px; border-radius: 4px; margin-right: 8px;">
@@ -261,40 +261,39 @@ export class NPCDropper {
               ${npc.actor.pack ? '<span style="margin-left: 8px; font-size: 8px; padding: 2px 6px;">COMPENDIUM</span>' : ""}
             </label>
           `,
-            )
-            .join("")}
+        )
+        .join("")}
         </div>
-        ${
-          options.showHiddenToggle !== false
-            ? `
+        ${options.showHiddenToggle !== false
+        ? `
           <div style="margin-top: 12px;">
             <label style="display: flex; align-items: center; gap: 8px;">
               <input type="checkbox" name="start-hidden">
-              <span>Start tokens hidden</span>
+              <span>${localize('dialog.startTokensHidden')}</span>
             </label>
           </div>
         `
-            : ""
-        }
+        : ""
+      }
         <div class="cc-info">
           <ul>
-            <li><strong>Rotate:</strong> Scroll wheel to rotate tokens</li>
-            <li><strong>Grid Snap:</strong> Hold shift to disable snapping</li>
-            <li><strong>Skip Tokens:</strong> Right-click to skip unwanted NPCs</li>
+            <li><strong>${localize('dialog.rotateHelp')}</strong> ${localize('dialog.rotateHelpDetail')}</li>
+            <li><strong>${localize('dialog.gridSnapHelp')}</strong> ${localize('dialog.gridSnapHelpDetail')}</li>
+            <li><strong>${localize('dialog.skipTokensHelp')}</strong> ${localize('dialog.skipTokensHelpDetail')}</li>
           </ul>
         </div>
       </div>
     `;
 
     const dialogData = await foundry.applications.api.DialogV2.wait({
-      window: { title: options.title || "Drop NPCs to Map" },
+      window: { title: options.title || localize('dialog.dropNpcsToScene') },
       classes: ["campaign-codex", "npc-dropper"],
       content,
       buttons: [
         {
           action: "drop",
           icon: '<i class="fas fa-map"></i>',
-          label: "Start Placing",
+          label: localize('dialog.startPlacing'),
           default: true,
           callback: (event, button) => {
             const form = button.form;
@@ -310,7 +309,7 @@ export class NPCDropper {
         {
           action: "cancel",
           icon: '<i class="fas fa-times"></i>',
-          label: "Cancel",
+          label: localize('dialog.cancel'),
           callback: () => null,
         },
       ],
@@ -333,7 +332,7 @@ export class NPCDropper {
         ...options,
       });
     } else {
-      ui.notifications.warn("No NPCs selected!");
+      ui.notifications.warn(localize('notify.noNpcsSelected'));
       return { success: 0, failed: 0, imported: 0 };
     }
   }
@@ -352,7 +351,7 @@ export class NPCDropper {
     const droppedCount = { success: 0, failed: 0, imported: 0 };
     const actorResolutionCache = new Map();
 
-    ui.notifications.info(`Preparing ${npcData.length} NPCs for placement...`);
+    ui.notifications.info(format('notify.preparingNpcs', { count: npcData.length }));
 
     for (const npcInfo of npcData) {
       try {
@@ -376,7 +375,7 @@ export class NPCDropper {
     }
 
     if (preparedActors.length === 0) {
-      ui.notifications.warn("No actors could be prepared for placement!");
+      ui.notifications.warn(localize('notify.noActorsPrepared'));
       return droppedCount;
     }
 
@@ -503,7 +502,7 @@ export class NPCDropper {
 
     try {
       ui.notifications.info(
-        `Click on the canvas to place ${actors.length} NPCs. Drag to position, scroll to rotate, click to confirm, right-click to skip.`,
+        format('notify.placementInstructions', { count: actors.length }),
       );
 
       const prototypeTokens = actors.map((actor) => actor.prototypeToken);
@@ -513,7 +512,7 @@ export class NPCDropper {
       });
 
       if (!placements || placements.length === 0) {
-        ui.notifications.info("Token placement cancelled.");
+        ui.notifications.info(localize('notify.placementCancelled'));
         return droppedCount;
       }
 
@@ -559,7 +558,7 @@ export class NPCDropper {
     } catch (error) {
       console.error(`Campaign Codex | Error in TokenPlacement:`, error);
       ui.notifications.error(
-        "Token placement failed. Check console for details.",
+        localize('notify.tokenPlacementFailed'),
       );
       droppedCount.failed += actors.length;
       return droppedCount;
@@ -571,18 +570,18 @@ export class NPCDropper {
    * @param {Object} droppedCount - Results object
    */
   static _showResults(droppedCount) {
-    let message = `Dropped ${droppedCount.success} NPCs to scene`;
+    let message = format('notify.droppedResults', { success: droppedCount.success });
     if (droppedCount.imported > 0) {
-      message += ` (imported ${droppedCount.imported} from compendiums)`;
+      message += format('notify.droppedImported', { imported: droppedCount.imported });
     }
     if (droppedCount.failed > 0) {
-      message += `. ${droppedCount.failed} failed.`;
+      message += format('notify.droppedFailed', { failed: droppedCount.failed });
     }
 
     if (droppedCount.success > 0) {
       ui.notifications.info(message);
     } else {
-      ui.notifications.warn("No NPCs were successfully dropped to the scene.");
+      // ui.notifications.warn(localize('notify.noNpcsDropped'));
     }
   }
 
@@ -593,7 +592,7 @@ export class NPCDropper {
    */
   static async quickDrop(npcs, options = {}) {
     if (!canvas.scene) {
-      ui.notifications.warn("No scene is currently active!");
+      // ui.notifications.warn(localize('notify.noSceneActive'));
       return;
     }
 
@@ -616,7 +615,7 @@ export class NPCDropper {
     }
 
     if (npcsWithActors.length === 0) {
-      ui.notifications.warn("No NPCs with linked actors found to drop!");
+      // ui.notifications.warn(localize('notify.noNpcsWithActors'));
       return;
     }
 

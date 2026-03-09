@@ -1,14 +1,16 @@
 <div class="cc-widget-actor-dropper inventory-table inventory" id="widget-{{id}}">
 
     <div class="add-actor-header">
-        <input type="text" class="ad-title-input" value="{{title}}" placeholder="Widget Title">
-           {{#if actors}}         <button class="ad-drop-map-btn">
-    <i class="fas fa-street-view"></i>
+        <input type="text" class="ad-title-input" value="{{title}}" placeholder="{{ccLocalize 'ui.widgetTitle'}}">
+        {{#if actors}} <button class="ad-drop-map-btn">
+            <i class="fas fa-street-view"></i>
         </button>{{/if}}
     </div>
     {{#if actors}}
     {{#each actors}}
-    <div class="inventory-item" data-uuid="{{uuid}}">
+    <div class="inventory-item" data-uuid="{{uuid}}" {{#if ../isGM}}data-drag="true" draggable="true" {{/if}}
+            data-entry-id="{{id}}" data-entry-uuid="{{uuid}}"
+            data-title="{{name}}">
         <div class="item-image">
             <img src="{{img}}" alt="{{name}}">
         </div>
@@ -17,7 +19,8 @@
             <div class="item-name">{{name}}</div>
             {{#if ../showCrColumn}}
             {{#if cr}}
-            <div class="item-weight" style="font-size: 11px; color: var(--cc-text-muted);">CR {{cr}}</div>
+            <div class="item-weight" style="font-size: 11px; color: var(--cc-text-muted);">{{ccLocalize "ui.cr"}} {{cr}}
+            </div>
             {{/if}}
             {{/if}}
         </div>
@@ -28,15 +31,19 @@
         </div>
 
         <div class="item-actions" style="text-align:center">
-            <i class="fas fa-street-view inventory-button actor-drop-individual" data-uuid="{{uuid}}" title="Drop" ></i>
-            <i class="fas fa-trash inventory-button ad-remove-btn" data-uuid="{{uuid}}" title="Remove"></i>
+            <i class="fas fa-street-view inventory-button actor-drop-individual" data-uuid="{{uuid}}"
+                title="{{ccLocalize 'ui.drop'}}"></i>
+            <i class="fas fa-trash inventory-button ad-remove-btn" data-uuid="{{uuid}}"
+                title="{{ccLocalize 'ui.remove'}}"></i>
         </div>
     </div>
     {{/each}}
     {{else}}
     <div class="cc-ad-drop-area large">
         <i class="fas fa-user-plus"></i>
-        <span>Drop Actors Here</span>
+        <span>{{ccLocalize "ui.dropActorsHere"}}</span>
     </div>
     {{/if}}
 </div>
+
+

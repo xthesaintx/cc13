@@ -1,4 +1,5 @@
 import { CampaignCodexLinkers } from "./sheets/linkers.js";
+import { localize, format } from "./helper.js";
 
 export class SimpleCampaignCodexExporter {
     static CONSTANTS = {
@@ -76,7 +77,7 @@ export class SimpleCampaignCodexExporter {
             if (!config) return;
 
             if (config.performCleanup) {
-                ui.notifications.info("Performing cleanup before export...");
+                ui.notifications.info(localize('notify.exportCleaningUp'));
                 try {
                     if (typeof CleanUp !== "undefined" && CleanUp.performManualCleanup) {
                         await CleanUp.performManualCleanup();
@@ -84,23 +85,23 @@ export class SimpleCampaignCodexExporter {
                         await game.campaignCodexCleanup.constructor.performManualCleanup();
                     } else {
                         console.warn("Campaign Codex | Cleanup not available, skipping...");
-                        ui.notifications.warn("Cleanup functionality not available, continuing with export...");
+                        ui.notifications.warn(localize('notify.cleanupNotAvailable'));
                     }
-                    ui.notifications.info("Cleanup completed successfully.");
+                    ui.notifications.info(localize('notify.cleanupComplete'));
                 } catch (error) {
                     console.error("Campaign Codex | Cleanup failed:", error);
-                    ui.notifications.warn("Cleanup encountered errors, but export will continue...");
+                    ui.notifications.warn(localize('notify.cleanupErrors'));
                 }
             }
 
             const compendiums = await this._getOrCreateCompendiums(config);
             if (!compendiums) return;
 
-            ui.notifications.info("Collecting all linked documents...");
+            ui.notifications.info(localize('notify.collectingDocuments'));
             const exportData = await this._collectExportData(config);
 
             if (exportData.journals.size === 0) {
-                ui.notifications.warn("No Campaign Codex documents found to export!");
+                ui.notifications.warn(localize('notify.noDocumentsToExport'));
                 return;
             }
 
@@ -110,10 +111,10 @@ export class SimpleCampaignCodexExporter {
             await this._performExport(exportData, compendiums, config.exportTarget, config.packName, config);
 
             const targetName = config.exportTarget === "world" ? "World" : game.modules.get(config.exportTarget)?.title || config.exportTarget;
-            ui.notifications.info(`Export complete! Documents exported to "${targetName}".`);
+            ui.notifications.info(format('notify.exportComplete', { name: targetName }));
         } catch (error) {
             console.error("Campaign Codex | Export Error:", error);
-            ui.notifications.error(`Export failed: ${error.message}`);
+            ui.notifications.error(format('notify.exportFailed', { message: error.message }));
         }
     }
     /**
@@ -127,13 +128,13 @@ export class SimpleCampaignCodexExporter {
         } else {
             const module = this.findCompatibleModules(config.exportScenes).find((m) => m.id === config.exportTarget);
             if (!module) {
-                ui.notifications.error(`Module "${config.exportTarget}" not found or doesn't have required unlocked compendiums!`);
+                ui.notifications.error(format('notify.moduleNotFound', { name: config.exportTarget }));
                 return null;
             }
 
             if (config.exportType === "full") {
                 const confirmed = await foundry.applications.api.DialogV2.confirm({
-                    window: { title: "Overwrite Module Compendiums?" },
+                    window: { title: localize('dialog.overwriteCompendiums') },
                     content: `<p>This will <strong>delete all existing content</strong> in the compendiums within the module "<strong>${module.title}</strong>" before exporting. This cannot be undone.</p><p>Do you want to continue?</p>`,
                     yes: {
                         label: "Overwrite",
@@ -172,7 +173,7 @@ export class SimpleCampaignCodexExporter {
         for (const module of compatibleModules) {
             moduleOptions += `<option value="${module.id}">${module.title}</option>`;
         }
-    const journalFolderOptions = this._getFolderOptions("JournalEntry");
+        const journalFolderOptions = this._getFolderOptions("JournalEntry");
 
         const content = `
         <div class="form-group">
@@ -234,7 +235,7 @@ export class SimpleCampaignCodexExporter {
     `;
 
         const data = await foundry.applications.api.DialogV2.wait({
-            window: { title: "Export Campaign Codex" },
+            window: { title: localize('dialog.exportCampaignCodex') },
             content,
             buttons: [
                 {
@@ -333,7 +334,7 @@ export class SimpleCampaignCodexExporter {
         `;
 
         return await foundry.applications.api.DialogV2.confirm({
-            window: { title: "Confirm Export" },
+            window: { title: localize('dialog.confirmExport') },
             content,
             yes: {
                 label: "Export Now",
@@ -348,44 +349,44 @@ export class SimpleCampaignCodexExporter {
         });
     }
 
-/**
- * Recursively finds all documents to be exported, starting from world journals.
- * @param {object} config - The export configuration object.
- * @returns {Promise<{journals: Set<JournalEntry>, actors: Set<Actor>, items: Set<Item>}>}
- */
-static async _collectExportData(config) {
-    const { exportScenes, journalFolder: journalFolderId } = config;
-    const documents = {
-        journals: new Set(),
-        actors: new Set(),
-        items: new Set(),
-    };
-    if (exportScenes) {
-        documents.scenes = new Set();
-    }
-    const processedUuids = new Set();
+    /**
+     * Recursively finds all documents to be exported, starting from world journals.
+     * @param {object} config - The export configuration object.
+     * @returns {Promise<{journals: Set<JournalEntry>, actors: Set<Actor>, items: Set<Item>}>}
+     */
+    static async _collectExportData(config) {
+        const { exportScenes, journalFolder: journalFolderId } = config;
+        const documents = {
+            journals: new Set(),
+            actors: new Set(),
+            items: new Set(),
+        };
+        if (exportScenes) {
+            documents.scenes = new Set();
+        }
+        const processedUuids = new Set();
 
-    let sourceJournals = [];
-    if (journalFolderId && journalFolderId !== "all") {
-        sourceJournals = game.journal.filter(j => {
-            if (!j.folder) return false;
-            if (j.folder.id === journalFolderId) return true; 
-            return j.folder.ancestors.some(a => a.id === journalFolderId);
+        let sourceJournals = [];
+        if (journalFolderId && journalFolderId !== "all") {
+            sourceJournals = game.journal.filter(j => {
+                if (!j.folder) return false;
+                if (j.folder.id === journalFolderId) return true;
+                return j.folder.ancestors.some(a => a.id === journalFolderId);
+            });
+        } else {
+            sourceJournals = Array.from(game.journal.values());
+        }
+
+        const rootJournals = sourceJournals.filter((j) => {
+            const type = j.getFlag(this.CONSTANTS.FLAG_SCOPE, this.CONSTANTS.FLAG_TYPE);
+            return type && ["region", "location", "shop", "npc", "group"].includes(type);
         });
-    } else {
-        sourceJournals = Array.from(game.journal.values());
-    }
+        for (const journal of rootJournals) {
+            await this._recursivelyFindDocuments(journal.uuid, documents, processedUuids, exportScenes);
+        }
 
-    const rootJournals = sourceJournals.filter((j) => {
-        const type = j.getFlag(this.CONSTANTS.FLAG_SCOPE, this.CONSTANTS.FLAG_TYPE);
-        return type && ["region", "location", "shop", "npc", "group"].includes(type);
-    });
-    for (const journal of rootJournals) {
-        await this._recursivelyFindDocuments(journal.uuid, documents, processedUuids, exportScenes);
+        return documents;
     }
-
-    return documents;
-}
 
     static _extractTokenUuidsFromScene(sceneDoc) {
         const uuids = new Set();
@@ -515,17 +516,17 @@ static async _collectExportData(config) {
                 }
             }
         }
-            if (Array.isArray(codexData.quests)) {
-              for (const quest of codexData.quests) {
+        if (Array.isArray(codexData.quests)) {
+            for (const quest of codexData.quests) {
                 if (Array.isArray(quest.inventory)) {
-                  for (const item of quest.inventory) {
-                    if (item.itemUuid) {
-                      uuids.push(item.itemUuid);
+                    for (const item of quest.inventory) {
+                        if (item.itemUuid) {
+                            uuids.push(item.itemUuid);
+                        }
                     }
-                  }
                 }
-              }
             }
+        }
 
         return uuids.filter(Boolean);
     }
@@ -671,47 +672,47 @@ static async _collectExportData(config) {
         }
 
         if (config.pruneFolders) {
-            ui.notifications.info("Pruning empty folders...");
+            ui.notifications.info(localize('notify.pruningEmptyFolders'));
             for (const pack of Object.values(compendiums)) {
                 if (pack) await this._pruneEmptyFolders(pack, journalFolderId);
             }
         }
 
     }
- 
 
-/**
- * Removes all folders from a compendium that contain no documents and no populated subfolders.
- * @param {CompendiumCollection} pack - The compendium pack to prune.
- * @param {string|null} [exemptFolderId=null] - An ID of a folder to exempt from pruning.
- */
-static async _pruneEmptyFolders(pack, exemptFolderId = null) {
-    if (!pack.folders.size) return;
-    const allFolders = Array.from(pack.folders.values());
-    allFolders.sort((a, b) => b.depth - a.depth);
 
-    const nonEmptyFolderIds = new Set();
-    let foldersToDelete = []; // Changed to let
+    /**
+     * Removes all folders from a compendium that contain no documents and no populated subfolders.
+     * @param {CompendiumCollection} pack - The compendium pack to prune.
+     * @param {string|null} [exemptFolderId=null] - An ID of a folder to exempt from pruning.
+     */
+    static async _pruneEmptyFolders(pack, exemptFolderId = null) {
+        if (!pack.folders.size) return;
+        const allFolders = Array.from(pack.folders.values());
+        allFolders.sort((a, b) => b.depth - a.depth);
 
-    for (const folder of allFolders) {
-        const hasContent = folder.contents.length > 0;
-        const children = allFolders.filter(f => f.folder?.id === folder.id);
-        const hasNonEmptyChild = children.some(child => nonEmptyFolderIds.has(child.id));
-        if (hasContent || hasNonEmptyChild) {
-            nonEmptyFolderIds.add(folder.id);
-        } else {
-            foldersToDelete.push(folder.id);
+        const nonEmptyFolderIds = new Set();
+        let foldersToDelete = []; // Changed to let
+
+        for (const folder of allFolders) {
+            const hasContent = folder.contents.length > 0;
+            const children = allFolders.filter(f => f.folder?.id === folder.id);
+            const hasNonEmptyChild = children.some(child => nonEmptyFolderIds.has(child.id));
+            if (hasContent || hasNonEmptyChild) {
+                nonEmptyFolderIds.add(folder.id);
+            } else {
+                foldersToDelete.push(folder.id);
+            }
+        }
+        if (exemptFolderId) {
+            foldersToDelete = foldersToDelete.filter(id => id !== exemptFolderId);
+        }
+
+        if (foldersToDelete.length > 0) {
+            ui.notifications.info(format('notify.pruningFolders', { count: foldersToDelete.length, label: pack.metadata.label }));
+            await Folder.deleteDocuments(foldersToDelete, { pack: pack.collection });
         }
     }
-    if (exemptFolderId) {
-        foldersToDelete = foldersToDelete.filter(id => id !== exemptFolderId);
-    }
-
-    if (foldersToDelete.length > 0) {
-        ui.notifications.info(`Pruning ${foldersToDelete.length} empty folder(s) from "${pack.metadata.label}".`);
-        await Folder.deleteDocuments(foldersToDelete, { pack: pack.collection });
-    }
-}
     /**
      * Exports a document, creating its folder structure and updating by a smart match if it already exists.
      * @param {Document} doc - The document to export.
@@ -748,7 +749,7 @@ static async _pruneEmptyFolders(pack, exemptFolderId = null) {
         if (doc.documentName === "Scene") {
             exportData.active = false;
         }
-        
+
         let finalFolderId = parentFolderId;
         if (doc.folder) {
             const folderPath = [];
@@ -890,17 +891,17 @@ static async _pruneEmptyFolders(pack, exemptFolderId = null) {
             });
         }
 
-    if (Array.isArray(newCodexData.quests)) {
-      newCodexData.quests.forEach((quest) => {
-        if (Array.isArray(quest.inventory)) {
-          quest.inventory.forEach((item) => {
-            if (item.itemUuid) {
-              item.itemUuid = relink(item.itemUuid);
-            }
-          });
+        if (Array.isArray(newCodexData.quests)) {
+            newCodexData.quests.forEach((quest) => {
+                if (Array.isArray(quest.inventory)) {
+                    quest.inventory.forEach((item) => {
+                        if (item.itemUuid) {
+                            item.itemUuid = relink(item.itemUuid);
+                        }
+                    });
+                }
+            });
         }
-      });
-    }
 
         foundry.utils.setProperty(updateData, `flags.${this.CONSTANTS.FLAG_SCOPE}.${this.CONSTANTS.FLAG_DATA}`, newCodexData);
 
@@ -960,7 +961,7 @@ static async _pruneEmptyFolders(pack, exemptFolderId = null) {
 
             return compendiums;
         } catch (error) {
-            ui.notifications.error("Failed to create compendium set!");
+            ui.notifications.error(localize('notify.failedToCreateCompendium'));
             console.error("Campaign Codex |", error);
             return null;
         }
@@ -980,7 +981,7 @@ static async _pruneEmptyFolders(pack, exemptFolderId = null) {
 
         if (existing) {
             const confirmed = await Dialog.confirm({
-                title: "Overwrite Compendium?",
+                title: localize('dialog.overwriteCompendium'),
                 content: `<p>A compendium named "<strong>${name}</strong>" already exists. Do you want to delete and recreate it? This cannot be undone.</p>`,
                 yes: () => true,
                 no: () => false,
@@ -990,9 +991,9 @@ static async _pruneEmptyFolders(pack, exemptFolderId = null) {
                 throw new Error(`User cancelled overwrite of compendium: ${name}`);
             }
             await existing.deleteCompendium();
-            ui.notifications.info(`Recreating compendium: ${name}`);
+            ui.notifications.info(format('notify.recreatingCompendium', { name }));
         } else {
-            ui.notifications.info(`Creating new compendium: ${name}`);
+            ui.notifications.info(format('notify.creatingCompendium', { name }));
         }
 
         const pack = await foundry.documents.collections.CompendiumCollection.createCompendium({
@@ -1010,106 +1011,106 @@ static async _pruneEmptyFolders(pack, exemptFolderId = null) {
         return pack;
     }
 
-  /**
-   * Generates the markdown content for a single Campaign Codex journal.
-   * @param {JournalEntry} journal - The journal to convert.
-   * @returns {Promise<string>} The markdown content.
-   * @private
-   */
-  static async _generateObsidianFileContent(journal) {
-    let content = `# ${journal.name}\n\n`;
-    const data = journal.getFlag("campaign-codex", "data") || {};
+    /**
+     * Generates the markdown content for a single Campaign Codex journal.
+     * @param {JournalEntry} journal - The journal to convert.
+     * @returns {Promise<string>} The markdown content.
+     * @private
+     */
+    static async _generateObsidianFileContent(journal) {
+        let content = `# ${journal.name}\n\n`;
+        const data = journal.getFlag("campaign-codex", "data") || {};
 
-    if (data.description) {
-      content += `## Description\n${data.description}\n\n`;
-    }
-
-    const linkFields = {
-      "Regions": "linkedRegions",
-      "Parent Regions": "parentRegions",
-      "Locations": "linkedLocations",
-      "NPCs": "linkedNPCs",
-      "Shops": "linkedShops",
-      "Associates": "associates",
-      "Members": "members",
-    };
-
-    for (const [title, field] of Object.entries(linkFields)) {
-      if (data[field] && data[field].length > 0) {
-        content += `## ${title}\n`;
-        const docs = (await Promise.all(data[field].map(uuid => fromUuid(uuid)))).filter(Boolean);
-        for (const doc of docs) {
-          content += `- [[${doc.name}]]\n`;
+        if (data.description) {
+            content += `## Description\n${data.description}\n\n`;
         }
-        content += '\n';
-      }
-    }
-    
-    if (data.parentRegion) {
-        const parent = await fromUuid(data.parentRegion);
-        if (parent) {
-            content += `## Parent Region\n- [[${parent.name}]]\n\n`;
-        }
-    }
-    
-    if (data.linkedLocation) {
-        const location = await fromUuid(data.linkedLocation);
-        if (location) {
-            content += `## Location\n- [[${location.name}]]\n\n`;
-        }
-    }
 
-    if (data.inventory && data.inventory.length > 0) {
-      content += "## Inventory\n";
-      const itemPromises = data.inventory.map(itemData => fromUuid(itemData.itemUuid));
-      const items = (await Promise.all(itemPromises)).filter(Boolean);
-      for (const item of items) {
-        content += `- ${item.name}\n`;
-      }
-      content += '\n';
-    }
+        const linkFields = {
+            "Regions": "linkedRegions",
+            "Parent Regions": "parentRegions",
+            "Locations": "linkedLocations",
+            "NPCs": "linkedNPCs",
+            "Shops": "linkedShops",
+            "Associates": "associates",
+            "Members": "members",
+        };
 
-
-    if (data.quests) {
-      content += "## Quests\n";
-
-    for (const quest of data.quests) {
-        content += `### ${quest.title}\n`;
-        content += `${quest.description}\n`;
-      if (quest.inventory && quest.inventory.length > 0) {
-        const itemUuids = quest.inventory.map(item => item.itemUuid);
-        const questInventory = await CampaignCodexLinkers.getNameFromUuids(itemUuids || []);
-        content += `#### Rewards\n`;
-        for (const questItem of questInventory) {
-          content += `- ${questItem}\n`;
-        }
-        content += `\n`;
-        }
-        if (quest.objectives && quest.objectives.length > 0) {
-        content += `#### Objectives\n`;
-        for (const objective of quest.objectives) {
-          content += `- ${objective.completed ? "[x]" : "[ ]"} ${objective.text}\n`;
-
-          if (objective.objectives && objective.objectives.length > 0) {
-            for (const subobjective of objective.objectives) {
-              content += `    - ${subobjective.completed ? "[x]" : "[ ]"} ${subobjective.text}\n`;
+        for (const [title, field] of Object.entries(linkFields)) {
+            if (data[field] && data[field].length > 0) {
+                content += `## ${title}\n`;
+                const docs = (await Promise.all(data[field].map(uuid => fromUuid(uuid)))).filter(Boolean);
+                for (const doc of docs) {
+                    content += `- [[${doc.name}]]\n`;
+                }
+                content += '\n';
             }
-          }
-
         }
-        content += `\n`;
-      }
+
+        if (data.parentRegion) {
+            const parent = await fromUuid(data.parentRegion);
+            if (parent) {
+                content += `## Parent Region\n- [[${parent.name}]]\n\n`;
+            }
+        }
+
+        if (data.linkedLocation) {
+            const location = await fromUuid(data.linkedLocation);
+            if (location) {
+                content += `## Location\n- [[${location.name}]]\n\n`;
+            }
+        }
+
+        if (data.inventory && data.inventory.length > 0) {
+            content += "## Inventory\n";
+            const itemPromises = data.inventory.map(itemData => fromUuid(itemData.itemUuid));
+            const items = (await Promise.all(itemPromises)).filter(Boolean);
+            for (const item of items) {
+                content += `- ${item.name}\n`;
+            }
+            content += '\n';
+        }
+
+
+        if (data.quests) {
+            content += "## Quests\n";
+
+            for (const quest of data.quests) {
+                content += `### ${quest.title}\n`;
+                content += `${quest.description}\n`;
+                if (quest.inventory && quest.inventory.length > 0) {
+                    const itemUuids = quest.inventory.map(item => item.itemUuid);
+                    const questInventory = await CampaignCodexLinkers.getNameFromUuids(itemUuids || []);
+                    content += `#### Rewards\n`;
+                    for (const questItem of questInventory) {
+                        content += `- ${questItem}\n`;
+                    }
+                    content += `\n`;
+                }
+                if (quest.objectives && quest.objectives.length > 0) {
+                    content += `#### Objectives\n`;
+                    for (const objective of quest.objectives) {
+                        content += `- ${objective.completed ? "[x]" : "[ ]"} ${objective.text}\n`;
+
+                        if (objective.objectives && objective.objectives.length > 0) {
+                            for (const subobjective of objective.objectives) {
+                                content += `    - ${subobjective.completed ? "[x]" : "[ ]"} ${subobjective.text}\n`;
+                            }
+                        }
+
+                    }
+                    content += `\n`;
+                }
+            }
+            content += `\n`;
+        }
+
+
+        if (data.notes) {
+            content += `## GM Notes\n${data.notes}\n\n`;
+        }
+
+        return content;
     }
-    content += `\n`;
-}
-
-
-    if (data.notes) {
-      content += `## GM Notes\n${data.notes}\n\n`;
-    }
-
-    return content;
-  }
 
     /**
      * Exports all Campaign Codex journals to a downloadable zip archive of Obsidian-compatible markdown files,
@@ -1118,7 +1119,7 @@ static async _pruneEmptyFolders(pack, exemptFolderId = null) {
      */
     static async exportToObsidian() {
         if (typeof JSZip === "undefined") {
-            ui.notifications.error("JSZip library is not available. Please ensure it is loaded.");
+            ui.notifications.error(localize('notify.jsZipNotAvailable'));
             console.error("Campaign Codex | JSZip is not defined.");
             return;
         }
@@ -1126,11 +1127,11 @@ static async _pruneEmptyFolders(pack, exemptFolderId = null) {
         const codexJournals = game.journal.filter((j) => j.getFlag("campaign-codex", "type"));
 
         if (codexJournals.length === 0) {
-            ui.notifications.warn("No Campaign Codex documents found to export!");
+            ui.notifications.warn(localize('notify.noDocumentsToExport'));
             return;
         }
 
-        ui.notifications.info(`Generating ${codexJournals.length} files for Obsidian export...`);
+        ui.notifications.info(format('notify.generatingObsidianFiles', { count: codexJournals.length }));
 
         const zip = new JSZip();
         for (const journal of codexJournals) {
@@ -1160,26 +1161,26 @@ static async _pruneEmptyFolders(pack, exemptFolderId = null) {
                 }, 100);
             }
 
-            ui.notifications.info(`Successfully exported journals to ${zipFileName}`);
+            ui.notifications.info(format('notify.obsidianExportSuccess', { name: zipFileName }));
 
         } catch (error) {
-            ui.notifications.error("Failed to generate the zip file. See the console for details.");
+            ui.notifications.error(localize('notify.obsidianExportFailed'));
             console.error("Campaign Codex | Error generating zip file for Obsidian export:", error);
         }
     }
-   /**
-     * Recursively gets the full folder path for a journal entry.
-     * @param {JournalEntry} journal - The journal entry.
-     * @returns {string} The folder path, e.g., "Main Folder/Sub Folder/".
-     * @private
-     */
+    /**
+      * Recursively gets the full folder path for a journal entry.
+      * @param {JournalEntry} journal - The journal entry.
+      * @returns {string} The folder path, e.g., "Main Folder/Sub Folder/".
+      * @private
+      */
     static _getJournalFolderPath(journal) {
-      let path = "";
-      let currentFolder = journal.folder;
-      while (currentFolder) {
-        path = `${currentFolder.name}/${path}`;
-        currentFolder = currentFolder.folder;
-      }
-      return path;
+        let path = "";
+        let currentFolder = journal.folder;
+        while (currentFolder) {
+            path = `${currentFolder.name}/${path}`;
+            currentFolder = currentFolder.folder;
+        }
+        return path;
     }
 }

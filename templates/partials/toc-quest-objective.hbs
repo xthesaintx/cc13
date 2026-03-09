@@ -1,11 +1,16 @@
 {{#each objectives}}
-  {{#if this.visible}}
+  {{#if (or ../isGM this.visible)}}
   <li>
-    {{#if this.completed}}<i class="fas fa-check-square"></i>{{else}}<i class="far fa-square"></i>{{/if}}
+    {{#if ../isGM}}
+      <i class="{{#if this.completed}}fas fa-square-check{{else}}{{#if this.failed}}fas fa-square-xmark{{else}}far fa-square{{/if}}{{/if}} cc-objective-control-icon" data-action="toggleObjectiveState" data-doc-uuid="{{../docUuid}}" data-quest-id="{{../questId}}" data-objective-id="{{this.id}}" title="{{ccLocalize 'quest.toggleCompletion'}}"></i>
+      <i class="fas {{#if this.visible}}fa-eye{{else}}fa-eye-slash{{/if}} cc-objective-control-icon" data-action="toggleObjectiveVisibility" data-doc-uuid="{{../docUuid}}" data-quest-id="{{../questId}}" data-objective-id="{{this.id}}" title="{{ccLocalize 'quest.togglePlayerVisibility'}}"></i>
+    {{else}}
+      {{#if this.completed}}<i class="fas fa-square-check"></i>{{else}}{{#if this.failed}}<i class="fas fa-square-xmark"></i>{{else}}<i class="far fa-square"></i>{{/if}}{{/if}}
+    {{/if}}
     <span>{{{this.enrichedText}}}</span>
     {{#if this.objectives.length}}
       <ul class="quest-objectives">
-        {{> "modules/campaign-codex/templates/partials/toc-quest-objective.hbs" objectives=this.objectives}}
+        {{> "modules/campaign-codex/templates/partials/toc-quest-objective.hbs" objectives=this.objectives isGM=../isGM docUuid=../docUuid questId=../questId}}
       </ul>
     {{/if}}
   </li>

@@ -1,5 +1,6 @@
 <div class="content-header">
-    <h2><i class="fas fa-boxes"></i> {{#if labelOverride}}{{labelOverride}}{{else}}{{ccLocalize "names.inventory" }}{{/if}}</h2>
+    <h2><i class="fas fa-boxes"></i> {{#if labelOverride}}{{labelOverride}}{{else}}{{ccLocalize "names.inventory"
+        }}{{/if}}</h2>
 </div>
 
 
@@ -7,72 +8,80 @@
 <div class="inventory-table inventory">
     <div class="form-group">
         <div class="form-fields">
-            <input type="search" id="inventory-filter" name="filter" placeholder="Filter...">
+            <input type="search" id="inventory-filter" name="filter" placeholder="{{ccLocalize 'ui.filter'}}">
         </div>
     </div>
 
     {{#each inventorySections}}
-        {{#if ../showHeaders}}
-        <details open>
-            <summary class="inventory-header">
-                <h3>{{label}}</h3>
+    {{#if ../showHeaders}}
+    <details open>
+        <summary class="inventory-header">
+            <h3>{{label}}</h3>
         </summary>
         {{/if}}
 
-    {{#each items}}
-    {{#unless (and ../../hideByPermission (not canView))}}
-    {{{isGM}}}
-    {{#if (or quantity infinite ../../isGM)}}
-    <div class="inventory-item" data-uuid="{{itemUuid}}" data-item-name="{{name}}" {{#if canView}}data-action="openItem"{{/if}} title="{{ccLocalize 'title.open.sheet'}}" {{#if ../../isGM}}draggable="true"{{/if}}>
-        
-        <div class="item-image">
-            <img src="{{img}}" alt="{{name}}">
-        </div>
+        {{#each items}}
+        {{#unless (and ../../hideByPermission (not canView))}}
+        {{{isGM}}}
+        {{#if (or quantity infinite ../../isGM)}}
+        <div class="inventory-item" data-uuid="{{itemUuid}}" data-item-name="{{name}}" {{#if
+            canView}}data-action="openItem" {{/if}} title="{{ccLocalize 'title.open.sheet'}}" {{#if
+            ../../isGM}}draggable="true" {{/if}}>
 
-        <div class="item-details">
-            <div class="item-name">{{name}}</div>
-        </div>
+            <div class="item-image">
+                <img src="{{img}}" alt="{{name}}">
+            </div>
 
-        {{#unless ../../isLoot}}
-        <div class="item-final-price cc-inv-price-table">
-                <span class="price-currency {{#if customPrice}}custom-price-active{{/if}}">{{finalPrice}} {{currency}}</span>
-        </div>
-        {{/unless}}
-        {{#unless infinite}}
-        <div class="quantity-control" style="text-align:center">
-               {{#if quantity}}{{quantity}} <i class="fas fa-boxes"></i>{{else}} <i class="fas fa-ban"></i>{{/if}}
-        </div>
-        {{/unless}}
-        {{#if (or ../../isGM (not ../../isLoot))}}
+            <div class="item-details">
+                <div class="item-name">{{name}}</div>
+            </div>
+
+            {{#unless ../../isLoot}}
+            <div class="item-final-price cc-inv-price-table">
+                <span class="price-currency {{#if customPrice}}custom-price-active{{/if}}">{{finalPrice}}
+                    {{currency}}</span>
+            </div>
+            {{/unless}}
+            {{#unless infinite}}
+            <div class="quantity-control" style="text-align:center">
+                {{#if quantity}}{{quantity}} <i class="fas fa-boxes"></i>{{else}} <i class="fas fa-ban"></i>{{/if}}
+            </div>
+            {{/unless}}
+            {{#if (or ../../isGM (not ../../isLoot))}}
             {{#if ../../isGM}}
             <div class="item-actions" style="text-align:center">
-                <i class="fas fa-infinity inventory-button {{#if infinite}}enabled{{/if}}" data-uuid="{{itemUuid}}" data-action="infiniteToggle"  title="{{ccLocalize 'title.infinite.item'}}"></i>
-                <i class="fas fa-paper-plane inventory-button send-to-player" data-type="inventory" data-action="sendToPlayer" data-uuid="{{itemUuid}}" data-sheet-uuid="{{../../selectedSheetUuid}}" data-doc-uuid="{{../../selectedSheetUuid}}" title="{{ccLocalize 'title.send.player'}}"></i>
+                <i class="fas fa-infinity inventory-button {{#if infinite}}enabled{{/if}}" data-uuid="{{itemUuid}}"
+                    data-action="infiniteToggle" title="{{ccLocalize 'title.infinite.item'}}"></i>
+                <i class="fas fa-paper-plane inventory-button send-to-player" data-type="inventory"
+                    data-action="sendToPlayer" data-uuid="{{itemUuid}}" data-sheet-uuid="{{../../selectedSheetUuid}}"
+                    data-doc-uuid="{{../../selectedSheetUuid}}" title="{{ccLocalize 'title.send.player'}}"></i>
             </div>
             {{else}}
             {{#if ../../allowPlayerPurchasing}}
             <div class="item-actions" style="text-align:center">
-                <i class="fas fa-coins inventory-button send-to-player" data-type="inventory" data-action="playerPurchase" data-uuid="{{itemUuid}}" data-sheet-uuid="{{../../selectedSheetUuid}}" data-doc-uuid="{{../../selectedSheetUuid}}" title="{{ccLocalize 'title.send.purchase'}}"></i>
-              </div>
-              {{/if}}
+                <i class="fas fa-coins inventory-button send-to-player" data-type="inventory"
+                    data-action="playerPurchase" data-uuid="{{itemUuid}}" data-sheet-uuid="{{../../selectedSheetUuid}}"
+                    data-doc-uuid="{{../../selectedSheetUuid}}" title="{{ccLocalize 'title.send.purchase'}}"></i>
+            </div>
             {{/if}}
-        {{/if}}
+            {{/if}}
+            {{/if}}
 
-    </div>
-    {{/if}}
-    {{/unless}}
-    {{/each}}
-    {{#if ../showHeaders}}
-        </details>
+        </div>
+        {{/if}}
+        {{/unless}}
+        {{/each}}
+        {{#if ../showHeaders}}
+    </details>
     {{/if}}
     {{/each}}
 </div>
 
 {{else}}
-    {{#if isGM}}
-    <div class="empty-state">
-        <i class="fas fa-boxes"></i>
-        <h3>{{ccLocalize "dragToAdd.empty"}}</h3>
-        <p>{{ccLocalize "dragToAdd.item"}}</p>
-    </div>
-    {{/if}} {{/if}}
+{{#if isGM}}
+<div class="empty-state">
+    <i class="fas fa-boxes"></i>
+    <h3>{{ccLocalize "dragToAdd.empty"}}</h3>
+    <p>{{ccLocalize "dragToAdd.item"}}</p>
+</div>
+{{/if}} {{/if}}

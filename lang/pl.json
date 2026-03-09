@@ -96,6 +96,7 @@
       "note": "Notatki",
       "actor": "Aktor",
       "player": "Gracz",
+      "faction": "Frakcja",
       "tag": "Tag",
       "tags": "Tagi",
       "inventory":"Ekwipunek",
@@ -319,7 +320,9 @@
         }
       },
       "cancel": "Anuluj",
-      "Save": "Zapisz"
+      "Save": "Zapisz",
+      "tagsPlaceholder": "Dodaj tag...",
+      "removeTag": "Usun tag"
     }
   }
 }

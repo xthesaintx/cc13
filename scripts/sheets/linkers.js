@@ -1,6 +1,6 @@
 import { TemplateComponents } from "./template-components.js";
 import { CampaignCodexBaseSheet } from "./base-sheet.js";
-import { localize } from "../helper.js";
+import { localize, format } from "../helper.js";
 
 /**
  * A static utility class for fetching, processing, and cleaning linked data
@@ -50,6 +50,23 @@ export class CampaignCodexLinkers {
     return cache.taggedNPCs.get(key);
   }
 
+  static _getLinkCardNoteMap(document, fieldName) {
+    if (!document || !fieldName) return new Map();
+    const data = document.getFlag("campaign-codex", "data") || {};
+    const raw = data.linkCardNotes?.[fieldName];
+    const entries = Array.isArray(raw)
+      ? raw
+      : (raw && typeof raw === "object"
+        ? Object.entries(raw).map(([uuid, note]) => ({ uuid, note }))
+        : []);
+
+    return new Map(
+      entries
+        .filter((entry) => entry?.uuid && typeof entry.note === "string" && entry.note.trim())
+        .map((entry) => [entry.uuid, entry.note.trim()]),
+    );
+  }
+
   // =========================================================================
   // General & Data Cleaning Utilities
   // =========================================================================
@@ -70,7 +87,7 @@ export class CampaignCodexLinkers {
         currentData[fieldName] = cleanedArray;
         await document.setFlag("campaign-codex", "data", currentData);
         const removedCount = currentArray.length - cleanedArray.length;
-        ui.notifications.warn(`Removed ${removedCount} broken ${fieldName} references from ${document.name}`);
+        ui.notifications.warn(format('notify.removedBrokenRefs', { count: removedCount, field: fieldName, name: document.name }));
       }
     } catch (error) {
       // console.error(`Campaign Codex | Error clearing broken ${fieldName} references:`, error);
@@ -121,7 +138,7 @@ export class CampaignCodexLinkers {
 
   static getLinkedActor(actorUuid) {
     if (!actorUuid) return Promise.resolve(null);
-    
+
     const cache = this._createOperationCache();
     return this._getCachedDoc(actorUuid, cache)
       .then((actor) => {
@@ -160,7 +177,7 @@ export class CampaignCodexLinkers {
         if (!region) {
           console.warn(`Campaign Codex | Broken parentRegion link from ${locationDoc.name}: ${regionUuid}`);
           return locationDoc.unsetFlag("campaign-codex", "data.parentRegion").then(() => {
-            ui.notifications.warn(`Removed broken parent region link from ${locationDoc.name}.`);
+            ui.notifications.warn(format('notify.removedBrokenParent', { name: locationDoc.name }));
             return null;
           });
         }
@@ -183,7 +200,7 @@ export class CampaignCodexLinkers {
 
   static getLinkedLocation(locationUuid) {
     if (!locationUuid) return Promise.resolve(null);
-    
+
     const cache = this._createOperationCache();
     return this._getCachedDoc(locationUuid, cache)
       .then((journal) => {
@@ -217,11 +234,12 @@ export class CampaignCodexLinkers {
     if (!locationUuids || !Array.isArray(locationUuids)) return [];
     const hideByPermission = game.settings.get("campaign-codex", "hideByPermission");
     const cache = this._createOperationCache();
-    
+    const linkCardNotes = this._getLinkCardNoteMap(document, "linkedLocations");
+
     const locationPromises = locationUuids.map(async (uuid) => {
       const journal = await this._getCachedDoc(uuid, cache);
       if (!journal) throw new Error(`Linked location not found: ${uuid}`);
-      
+
       const locationData = this._getCachedFlags(journal, cache);
       const imageData = journal.getFlag("campaign-codex", "image") || TemplateComponents.getAsset("image", "location");
       const tabOverrides = journal.getFlag("campaign-codex", "tab-overrides") || [];
@@ -236,6 +254,7 @@ export class CampaignCodexLinkers {
         id: journal.id,
         uuid: journal.uuid,
         name: journal.name,
+        linkCardNote: linkCardNotes.get(journal.uuid) || "",
         shops: linkedShops.sort(),
         canView: canView,
         permission: journal.permission,
@@ -254,7 +273,7 @@ export class CampaignCodexLinkers {
     const results = await Promise.allSettled(locationPromises);
     const locations = [];
     const brokenLocationUuids = [];
-    
+
     results.forEach((result, index) => {
       if (result.status === "fulfilled") {
         locations.push(result.value);
@@ -272,12 +291,13 @@ export class CampaignCodexLinkers {
 
     return locations;
   }
-  
+
   static async getLinkedRegions(document, regionUuids, fieldName = "linkedRegions") {
     if (!regionUuids || !Array.isArray(regionUuids)) return [];
     const hideByPermission = game.settings.get("campaign-codex", "hideByPermission");
     const cache = this._createOperationCache();
-    
+    const linkCardNotes = this._getLinkCardNoteMap(document, fieldName);
+
     const regionPromises = regionUuids.map(async (uuid) => {
       const journal = await this._getCachedDoc(uuid, cache);
       if (!journal) throw new Error(`Linked region not found: ${uuid}`);
@@ -296,6 +316,7 @@ export class CampaignCodexLinkers {
         id: journal.id,
         uuid: journal.uuid,
         name: journal.name,
+        linkCardNote: linkCardNotes.get(journal.uuid) || "",
         shops: linkedShops.sort(),
         canView: canView,
         permission: journal.permission,
@@ -306,14 +327,14 @@ export class CampaignCodexLinkers {
         img: imageData,
         showImage: imageAreaOverride?.visible ?? true,
         iconOverride: journal.getFlag("campaign-codex", "icon-override") || null,
-        meta: null, 
+        meta: null,
       };
     });
 
     const results = await Promise.allSettled(regionPromises);
     const regions = [];
     const brokenRegionUuids = [];
-    
+
     results.forEach((result, index) => {
       if (result.status === "fulfilled") {
         regions.push(result.value);
@@ -325,7 +346,7 @@ export class CampaignCodexLinkers {
 
     if (brokenRegionUuids.length > 0) {
       document._skipRelationshipUpdates = true;
-      await this.clearBrokenReferences(document, brokenRegionUuids, fieldName); 
+      await this.clearBrokenReferences(document, brokenRegionUuids, fieldName);
       delete document._skipRelationshipUpdates;
     }
 
@@ -339,8 +360,9 @@ export class CampaignCodexLinkers {
     const brokenLocationUuids = [];
     const brokenShopUuids = [];
     const cache = this._createOperationCache();
+    const linkCardNotes = this._getLinkCardNoteMap(document, "linkedLocations");
 
-    const locationPromises = directLocationUuids.map((uuid) => this._processDirectLocation(uuid, locationMap, cache));
+    const locationPromises = directLocationUuids.map((uuid) => this._processDirectLocation(uuid, locationMap, cache, linkCardNotes));
     const locationResults = await Promise.allSettled(locationPromises);
 
     locationResults.forEach((result, index) => {
@@ -373,7 +395,7 @@ export class CampaignCodexLinkers {
     return Array.from(locationMap.values());
   }
 
-  static async _processDirectLocation(uuid, locationMap, cache) {
+  static async _processDirectLocation(uuid, locationMap, cache, linkCardNotes = new Map()) {
     const journal = await this._getCachedDoc(uuid, cache);
     const hideByPermission = game.settings.get("campaign-codex", "hideByPermission");
     if (!journal) {
@@ -385,8 +407,8 @@ export class CampaignCodexLinkers {
     const npcData = this._getCachedFlags(journal, cache);
     const imageData = journal.getFlag("campaign-codex", "image") || TemplateComponents.getAsset("image", "location");
     const typeIcon = typeData === "region" || typeData === "location" ? typeData : "location";
-      const tabOverrides = journal.getFlag("campaign-codex", "tab-overrides") || [];
-      const imageAreaOverride = tabOverrides?.find(override => override.key === "imageArea");
+    const tabOverrides = journal.getFlag("campaign-codex", "tab-overrides") || [];
+    const imageAreaOverride = tabOverrides?.find(override => override.key === "imageArea");
     const [linkedTags, linkedShops, canView] = await Promise.all([
       this._getCachedTaggedNPCs(npcData.linkedNPCs || [], cache),
       this.getNameFromUuids(npcData.linkedShops || []),
@@ -397,6 +419,7 @@ export class CampaignCodexLinkers {
       id: journal.id,
       uuid: journal.uuid,
       name: journal.name,
+      linkCardNote: linkCardNotes.get(journal.uuid) || "",
       img: imageData,
       tags: (linkedTags || [])
         .filter((tag) => !hideByPermission || tag.canView)
@@ -442,8 +465,8 @@ export class CampaignCodexLinkers {
     const locationType = location.getFlag("campaign-codex", "type");
     const typeData = shop.getFlag("campaign-codex", "type") || {};
     const typeIcon = locationType === "region" || locationType === "location" ? locationType : "location";
-      const tabOverrides = location.getFlag("campaign-codex", "tab-overrides") || [];
-      const imageAreaOverride = location.tabOverrides?.find(override => override.key === "imageArea");
+    const tabOverrides = location.getFlag("campaign-codex", "tab-overrides") || [];
+    const imageAreaOverride = location.tabOverrides?.find(override => override.key === "imageArea");
     if (!locationShopUuids.includes(shop.uuid)) return;
 
     if (!locationMap.has(location.id)) {
@@ -489,7 +512,8 @@ export class CampaignCodexLinkers {
     if (!npcUuids || !Array.isArray(npcUuids)) return [];
     const hideByPermission = game.settings.get("campaign-codex", "hideByPermission");
     const cache = this._createOperationCache();
-    
+    const linkCardNotes = this._getLinkCardNoteMap(document, "linkedNPCs");
+
     const npcPromises = npcUuids.map(async (uuid) => {
       const journal = await this._getCachedDoc(uuid, cache);
       if (!journal) throw new Error(`NPC journal not found: ${uuid}`);
@@ -502,16 +526,17 @@ export class CampaignCodexLinkers {
         this.getNameFromUuids(npcData.linkedShops || []),
         this._getCachedCanView(journal.uuid, cache),
       ]);
-      
+
       const imageData = journal.getFlag("campaign-codex", "image") || actor?.img || TemplateComponents.getAsset("image", "npc");
       const tabOverrides = journal.getFlag("campaign-codex", "tab-overrides") || [];
       const imageAreaOverride = tabOverrides?.find(override => override.key === "imageArea");
-      const isTagged =  journal.getFlag("campaign-codex", "type") === "tag" || npcData.tagMode ;
+      const isTagged = journal.getFlag("campaign-codex", "type") === "tag" || npcData.tagMode;
 
       return {
         id: journal.id,
         uuid: journal.uuid,
         name: journal.name,
+        linkCardNote: linkCardNotes.get(journal.uuid) || "",
         locations: allLocations.sort(),
         shops: linkedShops.sort(),
         img: imageData,
@@ -532,7 +557,7 @@ export class CampaignCodexLinkers {
     const results = await Promise.allSettled(npcPromises);
     const npcs = [];
     const brokenNPCUuids = [];
-    
+
     results.forEach((result, index) => {
       if (result.status === "fulfilled") {
         npcs.push(result.value);
@@ -555,7 +580,8 @@ export class CampaignCodexLinkers {
     if (!npcUuids || !Array.isArray(npcUuids)) return [];
     const hideByPermission = game.settings.get("campaign-codex", "hideByPermission");
     const cache = this._createOperationCache();
-    
+    const linkCardNotes = this._getLinkCardNoteMap(document, "linkedNPCs");
+
     const npcPromises = npcUuids.map(async (uuid) => {
       const journal = await this._getCachedDoc(uuid, cache);
       if (!journal) throw new Error(`Direct NPC journal not found: ${uuid}`);
@@ -571,12 +597,13 @@ export class CampaignCodexLinkers {
       const imageData = journal.getFlag("campaign-codex", "image") || actor?.img || TemplateComponents.getAsset("image", "npc");
       const tabOverrides = journal.getFlag("campaign-codex", "tab-overrides") || [];
       const imageAreaOverride = tabOverrides?.find(override => override.key === "imageArea");
-      const isTagged =  journal.getFlag("campaign-codex", "type") === "tag" || npcData.tagMode ;
+      const isTagged = journal.getFlag("campaign-codex", "type") === "tag" || npcData.tagMode;
 
       return {
         id: journal.id,
         uuid: journal.uuid,
         name: journal.name,
+        linkCardNote: linkCardNotes.get(journal.uuid) || "",
         img: imageData,
         showImage: imageAreaOverride?.visible ?? true,
         iconOverride: journal.getFlag("campaign-codex", "icon-override") || null,
@@ -598,7 +625,7 @@ export class CampaignCodexLinkers {
     const results = await Promise.allSettled(npcPromises);
     const npcs = [];
     const brokenNPCUuids = [];
-    
+
     results.forEach((result, index) => {
       if (result.status === "fulfilled") {
         npcs.push(result.value);
@@ -624,7 +651,7 @@ export class CampaignCodexLinkers {
     const shopPromises = shopUuids.map(async (shopUuid) => {
       const shop = await this._getCachedDoc(shopUuid, cache);
       if (!shop) throw new Error(`Shop not found: ${shopUuid}`);
-      
+
       const shopData = this._getCachedFlags(shop, cache);
       const linkedNPCUuids = shopData.linkedNPCs || [];
       const linkedNpcs = await this.getLinkedNPCs(shop, linkedNPCUuids);
@@ -635,7 +662,7 @@ export class CampaignCodexLinkers {
     const results = await Promise.allSettled(shopPromises);
     const npcMap = new Map();
     const brokenShopUuids = [];
-    
+
     results.forEach((result, index) => {
       if (result.status === "fulfilled") {
         const { shopName, npcs } = result.value;
@@ -671,14 +698,14 @@ export class CampaignCodexLinkers {
   static async getTaggedNPCs(npcList) {
     if (!npcList?.length) return [];
     const cache = this._createOperationCache();
-    
+
     const tagPromises = npcList.map(async (uuid) => {
       try {
         const journal = await this._getCachedDoc(uuid, cache);
         if (!journal) return null;
 
         const npcData = this._getCachedFlags(journal, cache);
-        const isTagged =  journal.getFlag("campaign-codex", "type") === "tag" || npcData.tagMode ;
+        const isTagged = journal.getFlag("campaign-codex", "type") === "tag" || npcData.tagMode;
 
         if (isTagged) {
           return {
@@ -686,7 +713,7 @@ export class CampaignCodexLinkers {
             uuid: journal.uuid,
             name: journal.name,
             permission: journal.permission,
-            meta: `<span class="entity-type" style="background: var(--cc-border);">${localize("names.tag")}</span>`,
+            meta: `<span class="entity-type" style="background: var(--cc-border);">${localize("names.faction") || localize("names.tag")}</span>`,
             tag: isTagged,
             canView: await this._getCachedCanView(journal.uuid, cache),
           };
@@ -697,7 +724,7 @@ export class CampaignCodexLinkers {
         return null;
       }
     });
-    
+
     const resolvedTags = await Promise.all(tagPromises);
     return resolvedTags.filter(Boolean);
   }
@@ -706,11 +733,12 @@ export class CampaignCodexLinkers {
     if (!groupUuids || !Array.isArray(groupUuids)) return [];
     const hideByPermission = game.settings.get("campaign-codex", "hideByPermission");
     const cache = this._createOperationCache();
-    
+    const linkCardNotes = this._getLinkCardNoteMap(document, "linkedGroups");
+
     const groupPromises = groupUuids.map(async (uuid) => {
       const journal = await this._getCachedDoc(uuid, cache);
       if (!journal) throw new Error(`Linked group not found: ${uuid}`);
-      
+
       const groupData = this._getCachedFlags(journal, cache);
       const imageData = journal.getFlag("campaign-codex", "image") || TemplateComponents.getAsset("image", "group");
       const [linkedTags, canView] = await Promise.all([
@@ -722,6 +750,7 @@ export class CampaignCodexLinkers {
         id: journal.id,
         uuid: journal.uuid,
         name: journal.name,
+        linkCardNote: linkCardNotes.get(journal.uuid) || "",
         canView: canView,
         permission: journal.permission,
         tags: linkedTags
@@ -735,7 +764,7 @@ export class CampaignCodexLinkers {
     const results = await Promise.allSettled(groupPromises);
     const group = [];
     const brokenGroupUuids = [];
-    
+
     results.forEach((result, index) => {
       if (result.status === "fulfilled") {
         group.push(result.value);
@@ -759,7 +788,8 @@ export class CampaignCodexLinkers {
     if (!associateUuids || !Array.isArray(associateUuids)) return [];
     const hideByPermission = game.settings.get("campaign-codex", "hideByPermission");
     const cache = this._createOperationCache();
-    
+    const linkCardNotes = this._getLinkCardNoteMap(document, "associates");
+
     const associatePromises = associateUuids.map(async (uuid) => {
       const journal = await this._getCachedDoc(uuid, cache);
       if (!journal) throw new Error(`Associate journal not found: ${uuid}`);
@@ -781,12 +811,13 @@ export class CampaignCodexLinkers {
         .map((tag) => tag.name)
         .sort();
 
-      const isTagged =  journal.getFlag("campaign-codex", "type") === "tag" || npcData.tagMode ;
+      const isTagged = journal.getFlag("campaign-codex", "type") === "tag" || npcData.tagMode;
 
       return {
         id: journal.id,
         uuid: journal.uuid,
         name: journal.name,
+        linkCardNote: linkCardNotes.get(journal.uuid) || "",
         img: imageData,
         showImage: imageAreaOverride?.visible ?? true,
         iconOverride: journal.getFlag("campaign-codex", "icon-override") || null,
@@ -805,7 +836,7 @@ export class CampaignCodexLinkers {
     const results = await Promise.allSettled(associatePromises);
     const associates = [];
     const brokenAssociateUuids = [];
-    
+
     results.forEach((result, index) => {
       if (result.status === "fulfilled") {
         associates.push(result.value);
@@ -843,7 +874,7 @@ export class CampaignCodexLinkers {
       const shopPromises = (locationData.linkedShops || []).map(async (shopUuid) => {
         const shop = await this._getCachedDoc(shopUuid, cache);
         if (!shop) return [];
-        
+
         const shopData = this._getCachedFlags(shop, cache);
         const shopNPCs = await this.getLinkedNPCs(shop, shopData.linkedNPCs || []);
         return shopNPCs.map((npc) => ({ ...npc, locationName: location.name, shopName: shop.name }));
@@ -861,7 +892,7 @@ export class CampaignCodexLinkers {
 
     const allResults = await Promise.allSettled(locationPromises);
     const npcMap = new Map();
-    
+
     for (const result of allResults) {
       if (result.status === "fulfilled") {
         const npcsFromOneLocation = result.value;
@@ -900,7 +931,8 @@ export class CampaignCodexLinkers {
     if (!shopUuids || !Array.isArray(shopUuids)) return [];
     const hideByPermission = game.settings.get("campaign-codex", "hideByPermission");
     const cache = this._createOperationCache();
-    
+    const linkCardNotes = this._getLinkCardNoteMap(document, "linkedShops");
+
     const shopPromises = shopUuids.map(async (uuid) => {
       const journal = await this._getCachedDoc(uuid, cache);
       if (!journal) throw new Error(`Shop journal not found: ${uuid}`);
@@ -919,6 +951,7 @@ export class CampaignCodexLinkers {
         id: journal.id,
         uuid: journal.uuid,
         name: journal.name,
+        linkCardNote: linkCardNotes.get(journal.uuid) || "",
         img: imageData,
         showImage: imageAreaOverride?.visible ?? true,
         iconOverride: journal.getFlag("campaign-codex", "icon-override") || null,
@@ -935,7 +968,7 @@ export class CampaignCodexLinkers {
     const results = await Promise.allSettled(shopPromises);
     const shops = [];
     const brokenShopUuids = [];
-    
+
     results.forEach((result, index) => {
       if (result.status === "fulfilled") {
         shops.push(result.value);
@@ -958,7 +991,8 @@ export class CampaignCodexLinkers {
     if (!shopUuids || !Array.isArray(shopUuids)) return [];
     const hideByPermission = game.settings.get("campaign-codex", "hideByPermission");
     const cache = this._createOperationCache();
-    
+    const linkCardNotes = this._getLinkCardNoteMap(document, "linkedShops");
+
     const shopPromises = shopUuids.map(async (uuid) => {
       const journal = await this._getCachedDoc(uuid, cache);
       if (!journal) throw new Error(`Shop journal not found: ${uuid}`);
@@ -978,6 +1012,7 @@ export class CampaignCodexLinkers {
         id: journal.id,
         uuid: journal.uuid,
         name: journal.name,
+        linkCardNote: linkCardNotes.get(journal.uuid) || "",
         tags: (linkedTags || [])
           .filter((tag) => !hideByPermission || tag.canView)
           .map((tag) => tag.name)
@@ -995,7 +1030,7 @@ export class CampaignCodexLinkers {
     const results = await Promise.allSettled(shopPromises);
     const shops = [];
     const brokenShopUuids = [];
-    
+
     results.forEach((result, index) => {
       if (result.status === "fulfilled") {
         shops.push(result.value);
@@ -1075,210 +1110,210 @@ export class CampaignCodexLinkers {
   }
 
 
-static async getInventory(document, inventoryData) {
-  if (!inventoryData || !Array.isArray(inventoryData)) return [];
+  static async getInventory(document, inventoryData) {
+    if (!inventoryData || !Array.isArray(inventoryData)) return [];
 
-  const roundFinalPrice = game.settings.get("campaign-codex", "roundFinalPrice");
-  const systemId = game.system.id;
-  const { pricePath, denominationPath, currency: defaultCurrency } = this._getSystemSettings(systemId);
-  const denominationOverride = game.settings.get("campaign-codex", "itemDenominationOverride");
-  const finalCurrency = denominationOverride || defaultCurrency;
-  const markup = document.getFlag("campaign-codex", "data.markup") || 1.0;
-  const cache = this._createOperationCache();
+    const roundFinalPrice = game.settings.get("campaign-codex", "roundFinalPrice");
+    const systemId = game.system.id;
+    const { pricePath, denominationPath, currency: defaultCurrency } = this._getSystemSettings(systemId);
+    const denominationOverride = game.settings.get("campaign-codex", "itemDenominationOverride");
+    const finalCurrency = denominationOverride || defaultCurrency;
+    const markup = document.getFlag("campaign-codex", "data.markup") || 1.0;
+    const cache = this._createOperationCache();
 
-  let calculateBasePrice = (item, rawPrice) => {
-    if (typeof rawPrice === "number") return rawPrice;
-    return parseFloat(String(rawPrice).replace(/[^\d.]/g, "")) || 0;
-  };
-  
-  let getCurrency = (item) => {
-    if (finalCurrency) return finalCurrency;
-    if (denominationPath) return this.getValue(item, denominationPath) || "gp";
-    return "gp";
-  };
-
-
-
-  // PF2E Strategy
-  if (systemId === "pf2e") {
-    calculateBasePrice = (item) => {
-      const price = this.getValue(item, "system.price.value");
-      if (!price) return 0;
-      if (price.pp > 0) return parseFloat((price.pp + (price.gp / 10) + (price.sp / 100) + (price.cp / 1000)).toFixed(3));
-      if (price.gp > 0) return parseFloat((price.gp + (price.sp / 10) + (price.cp / 100)).toFixed(2));
-      if (price.sp > 0) return parseFloat((price.sp + (price.cp / 10)).toFixed(1));
-      return price.cp || 0;
+    let calculateBasePrice = (item, rawPrice) => {
+      if (typeof rawPrice === "number") return rawPrice;
+      return parseFloat(String(rawPrice).replace(/[^\d.]/g, "")) || 0;
     };
-    getCurrency = (item) => {
-      if (denominationOverride) return finalCurrency; 
-      const price = this.getValue(item, "system.price.value") || {};
-      if (price.pp > 0) return "pp";
-      if (price.gp > 0) return "gp";
-      if (price.sp > 0) return "sp";
-      if (price.cp > 0) return "cp";
+
+    let getCurrency = (item) => {
+      if (finalCurrency) return finalCurrency;
+      if (denominationPath) return this.getValue(item, denominationPath) || "gp";
+      return "gp";
     };
-  }
+
+
+
+    // PF2E Strategy
+    if (systemId === "pf2e") {
+      calculateBasePrice = (item) => {
+        const price = this.getValue(item, "system.price.value");
+        if (!price) return 0;
+        if (price.pp > 0) return parseFloat((price.pp + (price.gp / 10) + (price.sp / 100) + (price.cp / 1000)).toFixed(3));
+        if (price.gp > 0) return parseFloat((price.gp + (price.sp / 10) + (price.cp / 100)).toFixed(2));
+        if (price.sp > 0) return parseFloat((price.sp + (price.cp / 10)).toFixed(1));
+        return price.cp || 0;
+      };
+      getCurrency = (item) => {
+        if (denominationOverride) return finalCurrency;
+        const price = this.getValue(item, "system.price.value") || {};
+        if (price.pp > 0) return "pp";
+        if (price.gp > 0) return "gp";
+        if (price.sp > 0) return "sp";
+        if (price.cp > 0) return "cp";
+      };
+    }
     // WFRP4e Strategy
-  else if (systemId === "wfrp4e") {
-    calculateBasePrice = (item) => {
-      const cost = this.getValue(item, "system.price");
-      if (!cost) return 0;
-      if ((cost.gc || 0) > 0) return parseFloat(((cost.gc||0) + ((cost.ss||0) / 20) + ((cost.bp||0) / 240)).toFixed(2));
-      if ((cost.ss || 0) > 0) return parseFloat(((cost.ss||0) + ((cost.bp||0) / 12)).toFixed(1));
-      return cost.bp || 0;
-    };
-    getCurrency = (item) => {
-      if (denominationOverride) return finalCurrency; 
-      const cost = this.getValue(item, "system.price") || {};
-      if ((cost.gc || 0) > 0) return "gc";
-      if ((cost.ss || 0) > 0) return "ss";
-      if ((cost.bp || 0) > 0) return "bp";
-    };
-  }
-
-
-
-
-  // Shadowdark Strategy
-  else if (systemId === "shadowdark") {
-    calculateBasePrice = (item) => {
-      const cost = this.getValue(item, "system.cost");
-      if (!cost) return 0;
-      if ((cost.gp || 0) > 0) return parseFloat(((cost.gp||0) + ((cost.sp||0) / 10) + ((cost.cp||0) / 100)).toFixed(2));
-      if ((cost.sp || 0) > 0) return parseFloat(((cost.sp||0) + ((cost.cp||0) / 10)).toFixed(1));
-      return cost.cp || 0;
-    };
-    getCurrency = (item) => {
-      if (denominationOverride) return finalCurrency; 
-      const cost = this.getValue(item, "system.cost") || {};
-      if ((cost.gp || 0) > 0) return "gp";
-      if ((cost.sp || 0) > 0) return "sp";
-      if ((cost.cp || 0) > 0) return "cp";
-    };
-  }
-
-// Shadow of the Demon Lord Strategy
-  else if (systemId === "demonlord") {
-    calculateBasePrice = (item) => {
-      const valStr = String(this.getValue(item, "system.value") || "0");
-      const match = valStr.match(/([\d\.]+)\s*(gc|ss|cp|bits)?/i);
-      if (!match) return 0;
-
-      const amt = parseFloat(match[1]);
-      const type = (match[2] || "gc").toLowerCase();
-
-      if (type === "bits") return parseFloat((amt / 1000).toFixed(3));
-      if (type === "cp") return parseFloat((amt / 100).toFixed(2));
-      if (type === "ss") return parseFloat((amt / 10).toFixed(1));
-      return amt; // gc
-    };
-    getCurrency = (item) => {
-      if (denominationOverride) return finalCurrency;
-      const valStr = String(this.getValue(item, "system.value") || "");
-      const match = valStr.match(/[a-zA-Z]+/);
-      return match ? match[0].toLowerCase() : "gc";
-    };
-  }
-
-  // shadowrun6 Strategy
-  else if (systemId === "shadowrun6-eden") {
-    calculateBasePrice = (item) => {
-      const cost = this.getValue(item, "system.priceDef");
-      if (!cost) return 0;
-      return cost;
-    };
-    getCurrency = (item) => {
-      if (denominationOverride) return finalCurrency; 
-      return "¥";
-    };
-  }
-
-  const brokenItemUuids = [];
-
-  const itemPromises = inventoryData.map(async (itemData) => {
-  const item = await this._getCachedDoc(itemData.itemUuid, cache);
-    
-    if (!item) {
-      brokenItemUuids.push(itemData.itemUuid);
-      console.warn(`Campaign Codex | Inventory item not found: ${itemData.itemUuid}`);
-      return null; 
-    }
-    const canView = item.testUserPermission(game.user, "OBSERVER"); 
-
-    const basePrice = calculateBasePrice(item, this.getValue(item, pricePath));
-    const currency = getCurrency(item);
-    let calculatedPrice = basePrice * markup;
-
-    if (roundFinalPrice) {
-      calculatedPrice = Math.round(calculatedPrice);
-    } else {
-      calculatedPrice = Math.round(calculatedPrice * 100) / 100;
+    else if (systemId === "wfrp4e") {
+      calculateBasePrice = (item) => {
+        const cost = this.getValue(item, "system.price");
+        if (!cost) return 0;
+        if ((cost.gc || 0) > 0) return parseFloat(((cost.gc || 0) + ((cost.ss || 0) / 20) + ((cost.bp || 0) / 240)).toFixed(2));
+        if ((cost.ss || 0) > 0) return parseFloat(((cost.ss || 0) + ((cost.bp || 0) / 12)).toFixed(1));
+        return cost.bp || 0;
+      };
+      getCurrency = (item) => {
+        if (denominationOverride) return finalCurrency;
+        const cost = this.getValue(item, "system.price") || {};
+        if ((cost.gc || 0) > 0) return "gc";
+        if ((cost.ss || 0) > 0) return "ss";
+        if ((cost.bp || 0) > 0) return "bp";
+      };
     }
 
-    const finalPrice = (itemData.customPrice !== null && itemData.customPrice !== undefined)
-      ? itemData.customPrice 
-      : calculatedPrice;
 
-    return {
-      permission: item.permission,
-      infinite: itemData?.infinite || false,
-      type: item?.type || null,
-      canView: canView,
-      itemId: item.id,
-      itemUuid: item.uuid,
-      uuid: item.uuid,
-      name: item.name,
-      img: item.img,
-      basePrice: basePrice,
-      finalPrice: finalPrice,
-      customPrice: itemData.customPrice,
-      currency: currency,
-      quantity: itemData.quantity === undefined ? 1 : itemData.quantity,
-      weight: null, 
-    };
-  });
 
-  const results = await Promise.all(itemPromises);
-  if (brokenItemUuids.length > 0) {
+
+    // Shadowdark Strategy
+    else if (systemId === "shadowdark") {
+      calculateBasePrice = (item) => {
+        const cost = this.getValue(item, "system.cost");
+        if (!cost) return 0;
+        if ((cost.gp || 0) > 0) return parseFloat(((cost.gp || 0) + ((cost.sp || 0) / 10) + ((cost.cp || 0) / 100)).toFixed(2));
+        if ((cost.sp || 0) > 0) return parseFloat(((cost.sp || 0) + ((cost.cp || 0) / 10)).toFixed(1));
+        return cost.cp || 0;
+      };
+      getCurrency = (item) => {
+        if (denominationOverride) return finalCurrency;
+        const cost = this.getValue(item, "system.cost") || {};
+        if ((cost.gp || 0) > 0) return "gp";
+        if ((cost.sp || 0) > 0) return "sp";
+        if ((cost.cp || 0) > 0) return "cp";
+      };
+    }
+
+    // Shadow of the Demon Lord Strategy
+    else if (systemId === "demonlord") {
+      calculateBasePrice = (item) => {
+        const valStr = String(this.getValue(item, "system.value") || "0");
+        const match = valStr.match(/([\d\.]+)\s*(gc|ss|cp|bits)?/i);
+        if (!match) return 0;
+
+        const amt = parseFloat(match[1]);
+        const type = (match[2] || "gc").toLowerCase();
+
+        if (type === "bits") return parseFloat((amt / 1000).toFixed(3));
+        if (type === "cp") return parseFloat((amt / 100).toFixed(2));
+        if (type === "ss") return parseFloat((amt / 10).toFixed(1));
+        return amt; // gc
+      };
+      getCurrency = (item) => {
+        if (denominationOverride) return finalCurrency;
+        const valStr = String(this.getValue(item, "system.value") || "");
+        const match = valStr.match(/[a-zA-Z]+/);
+        return match ? match[0].toLowerCase() : "gc";
+      };
+    }
+
+    // shadowrun6 Strategy
+    else if (systemId === "shadowrun6-eden") {
+      calculateBasePrice = (item) => {
+        const cost = this.getValue(item, "system.priceDef");
+        if (!cost) return 0;
+        return cost;
+      };
+      getCurrency = (item) => {
+        if (denominationOverride) return finalCurrency;
+        return "¥";
+      };
+    }
+
+    const brokenItemUuids = [];
+
+    const itemPromises = inventoryData.map(async (itemData) => {
+      const item = await this._getCachedDoc(itemData.itemUuid, cache);
+
+      if (!item) {
+        brokenItemUuids.push(itemData.itemUuid);
+        console.warn(`Campaign Codex | Inventory item not found: ${itemData.itemUuid}`);
+        return null;
+      }
+      const canView = item.testUserPermission(game.user, "OBSERVER");
+
+      const basePrice = calculateBasePrice(item, this.getValue(item, pricePath));
+      const currency = getCurrency(item);
+      let calculatedPrice = basePrice * markup;
+
+      if (roundFinalPrice) {
+        calculatedPrice = Math.round(calculatedPrice);
+      } else {
+        calculatedPrice = Math.round(calculatedPrice * 100) / 100;
+      }
+
+      const finalPrice = (itemData.customPrice !== null && itemData.customPrice !== undefined)
+        ? itemData.customPrice
+        : calculatedPrice;
+
+      return {
+        permission: item.permission,
+        infinite: itemData?.infinite || false,
+        type: item?.type || null,
+        canView: canView,
+        itemId: item.id,
+        itemUuid: item.uuid,
+        uuid: item.uuid,
+        name: item.name,
+        img: item.img,
+        basePrice: basePrice,
+        finalPrice: finalPrice,
+        customPrice: itemData.customPrice,
+        currency: currency,
+        quantity: itemData.quantity === undefined ? 1 : itemData.quantity,
+        weight: null,
+      };
+    });
+
+    const results = await Promise.all(itemPromises);
+    if (brokenItemUuids.length > 0) {
       await this._removeBrokenItems(document, brokenItemUuids);
+    }
+    return results.filter(i => i !== null);
   }
-  return results.filter(i => i !== null);
-}
 
-static async _removeBrokenItems(document, items) {
+  static async _removeBrokenItems(document, items) {
     if (!items || items.length === 0) return;
 
     try {
-        const currentData = document.getFlag("campaign-codex", "data") || {};
-        const currentInventory = currentData.inventory || [];
-        const cleanedInventory = currentInventory.filter((item) => !items.includes(item.itemUuid));
+      const currentData = document.getFlag("campaign-codex", "data") || {};
+      const currentInventory = currentData.inventory || [];
+      const cleanedInventory = currentInventory.filter((item) => !items.includes(item.itemUuid));
 
-        if (cleanedInventory.length !== currentInventory.length) {
-            currentData.inventory = cleanedInventory;
-            await document.setFlag("campaign-codex", "data", currentData);
-            const removedCount = currentInventory.length - cleanedInventory.length;
-            ui.notifications.warn(`Removed ${removedCount} broken inventory items from ${document.name}`);
-        }
+      if (cleanedInventory.length !== currentInventory.length) {
+        currentData.inventory = cleanedInventory;
+        await document.setFlag("campaign-codex", "data", currentData);
+        const removedCount = currentInventory.length - cleanedInventory.length;
+        ui.notifications.warn(format('notify.removedBrokenInventory', { count: removedCount, name: document.name }));
+      }
     } catch (error) {
-        console.error(`Campaign Codex | Error cleaning broken inventory items:`, error);
+      console.error(`Campaign Codex | Error cleaning broken inventory items:`, error);
     }
-}
+  }
 
   static async getNameFromUuids(ccUuids, removeTags = false) {
     if (!ccUuids || !Array.isArray(ccUuids)) return [];
     const cache = this._createOperationCache();
-    
+
     const docs = await Promise.all(ccUuids.map(uuid => this._getCachedDoc(uuid, cache)));
-    
+
     const namePromises = docs.map(async (doc, index) => {
       try {
         if (!doc) return null;
         const canView = game.user.isGM || doc.testUserPermission(game.user, CONST.DOCUMENT_OWNERSHIP_LEVELS.OBSERVER);
         if (!canView) return null;
-        
+
         if (removeTags) {
           const docData = doc.getFlag("campaign-codex", "data") || {};
-          const isTagged =  doc.getFlag("campaign-codex", "type") === "tag" || docData.tagMode ;
+          const isTagged = doc.getFlag("campaign-codex", "type") === "tag" || docData.tagMode;
           if (isTagged === true) return null;
         }
 

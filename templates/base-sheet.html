@@ -31,50 +31,41 @@
         {{{customFooterContent}}}
         <div clas="cc-linkwrapper">
 
-        {{!-- Tags --}}
         <div class="sidebar-links cc-tags">
-            <h3 class="cc-tags">Tags
-              <i class="fas fa-circle-plus" title="Create new Tag" data-action="createTag"></i><i class="fas fa-eye toggletags" data-action="toggleTags" title="Toggle Existing Tags"></i>
-
-         </h3>
-        <div class="link-tags">
-            {{#each quickTags}}
-            <div class="link-card npc-link tag-card" data-action="openNPC" data-uuid="{{uuid}}" title="{{name}}">
-              <span class="link-name">{{name}}</span>
+          <div class="sheet-tags-editor">
+            <div class="sheet-tag-cloud">
+              {{#each sheetTagList}}
+              <span class="sheet-tag-chip">
+                <span class="sheet-tag-name" data-tag="{{this}}">{{this}}</span>
+                {{#if ../isOwnerOrHigher}}
+                <button type="button" class="sheet-tag-remove" data-tag="{{this}}" aria-label="{{ccLocalize 'ui.removeTag'}}">
+                  <i class="fas fa-trash"></i>
+                </button>
+                {{/if}}
+              </span>
+              {{/each}}
             </div>
-            {{/each}}{{#if (and isGM showTags)}}
-            {{#each existingTags}}
-            <div class="link-card existing-tag " data-action="linkTag" data-uuid="{{uuid}}" title="{{name}}">
-              <span class="link-name">{{name}}</span>
+            {{#if isOwnerOrHigher}}
+            <div class="sheet-tag-add-tools">
+              <button type="button" class="sheet-tag-toggle-add" aria-expanded="false" aria-label="{{ccLocalize 'ui.tagsPlaceholder'}}">
+                <i class="fas fa-tag"></i>
+              </button>
+              <div class="sheet-tag-add-wrap is-hidden">
+                <input type="text" class="sheet-tag-add-input" list="{{sheetTagsDatalistId}}" placeholder="{{ccLocalize 'ui.tagsPlaceholder'}}" />
+                <datalist id="{{sheetTagsDatalistId}}">
+                  {{#each worldTags}}
+                  <option value="{{this}}"></option>
+                  {{/each}}
+                </datalist>
+              </div>
             </div>
-            {{/each}}{{/if}}
+            {{/if}}
           </div>
-
-
         </div>
 
-        {{!-- Quick Links --}} {{#if quickLinks}}
-        <div class="sidebar-links cc-quicklinks">
-          <h3 class="cc-quicklinks">Quicklinks
-            <i class="fas fa-eye" data-action="toggleQuicklinks" title="Toggle Quicklinks"></i>
-          </h3>
-          {{#if showQuicklinks}}
-          <div class="link-tags">
-            {{#each quickLinks}}
-            <div class="link-card {{type}}-link" data-action="open{{capitalize type}}" data-uuid="{{uuid}}" title="{{name}}">
-              <i class="{{#if iconOverride}}{{iconOverride}}{{else}}{{getIcon type}}{{/if}} link-icon"></i>
-              <span class="link-name">{{name}}</span>
-            </div>
-            {{/each}}
-          </div>
-          {{/if}}
-        </div>
-        {{/if}}
+
       </div>
     </div>
-      {{#if isGM}}
-         <i class="fas fa-cog cc-customise-tabs" title="Customise Tabs" data-action="editTabs"></i>
-      {{/if}}
     </aside>
     {{!-- Sidebar --}}
     <aside class="sheet-mini-sidebar">
@@ -82,9 +73,6 @@
           {{#each tabs}}
               <i class="{{icon}} group-tab vertical {{#if active}}active{{/if}}" data-tab="{{key}}" data-action="ccChangeTab" title="{{label}}"></i>
           {{/each}}
-          {{#if isGM}}
-             <i class="fas fa-cog group-tab vertical" title="Customise Tabs" data-action="editTabs"></i>
-          {{/if}}
         </nav>
 
 
@@ -105,5 +93,3 @@
     </main>
   </div>
 </div>
-
-

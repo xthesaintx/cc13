@@ -1,9 +1,10 @@
 
 
 import { CampaignCodexWidget } from "./CampaignCodexWidget.js";
+import { localize } from "../helper.js";
 
 export class ReputationTrackerWidget extends CampaignCodexWidget {
-  
+
   constructor(widgetId, widgetData, document) {
     super(widgetId, widgetData, document);
     this.defaultUseLoyalty = false;
@@ -25,7 +26,7 @@ export class ReputationTrackerWidget extends CampaignCodexWidget {
    */
   async _prepareContext() {
     const savedData = (await this.getData()) || {};
-    
+
     const useLoyalty = savedData.useLoyalty ?? this.defaultUseLoyalty;
     let reputationValue = savedData.reputationValue ?? this.defaultReputationValue;
 
@@ -33,19 +34,19 @@ export class ReputationTrackerWidget extends CampaignCodexWidget {
       id: this.widgetId,
       useLoyalty: useLoyalty,
       value: reputationValue,
-      icon: "fa-meh", 
+      icon: "fa-meh",
       statusClass: "neutral",
       tooltip: "Neutral Reputation"
     };
 
-    
+
     if (useLoyalty) {
       const actor = await this._getLinkedActor();
       if (actor) {
         const loyalty = foundry.utils.getProperty(actor, "system.attributes.loyalty.value");
-        context.value = Number(loyalty) || 0; 
-        
-        
+        context.value = Number(loyalty) || 0;
+
+
         if (context.value >= 10) {
           context.icon = "fa-heart";
           context.statusClass = "good";
@@ -63,10 +64,10 @@ export class ReputationTrackerWidget extends CampaignCodexWidget {
         context.tooltip = "No Linked Actor Found!";
         context.value = "-";
       }
-    } 
-    
+    }
+
     else {
-      
+
       if (context.value > 0) {
         context.icon = "fa-heart";
         context.statusClass = "good";
@@ -85,7 +86,7 @@ export class ReputationTrackerWidget extends CampaignCodexWidget {
   async render() {
     const data = await this._prepareContext();
     return `
-      <div class="cc-widget-reputation-tracker" id="widget-${this.widgetId}" ${this.isGM ? ``: `style="display:none;"`}>
+      <div class="cc-widget-reputation-tracker" id="widget-${this.widgetId}" ${this.isGM ? `` : `style="display:none;"`}>
         <div class="cc-widget-card">
           
           <div class="cc-widget-face cc-widget-front">
@@ -137,21 +138,21 @@ export class ReputationTrackerWidget extends CampaignCodexWidget {
     if (checkbox) {
       checkbox.addEventListener('change', async (e) => {
         const currentData = (await this.getData()) || {};
-        
+
         const useLoyalty = e.target.checked;
-        
-        await this.saveData({ 
+
+        await this.saveData({
           ...currentData,
-          useLoyalty: useLoyalty 
+          useLoyalty: useLoyalty
         });
-        
+
         this._refreshWidget(htmlElement);
       });
     }
   }
 
   async _updateValue(delta, htmlElement) {
-    
+
     const savedData = (await this.getData()) || {};
     const useLoyalty = savedData.useLoyalty ?? this.defaultUseLoyalty;
 
@@ -163,7 +164,7 @@ export class ReputationTrackerWidget extends CampaignCodexWidget {
         await actor.update({ "system.attributes.loyalty.value": newValue });
         this._refreshWidget(htmlElement);
       } else {
-        ui.notifications.warn("Campaign Codex | No Linked Actor found for Loyalty tracking.");
+        ui.notifications.warn(localize('notify.noLinkedActor'));
       }
     } else {
       let currentVal = savedData.reputationValue ?? this.defaultReputationValue;
@@ -173,7 +174,7 @@ export class ReputationTrackerWidget extends CampaignCodexWidget {
         ...savedData,
         reputationValue: newValue
       });
-      
+
       this._refreshWidget(htmlElement);
     }
   }

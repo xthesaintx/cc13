@@ -224,9 +224,16 @@ export class CalendarTimelineWidget extends CampaignCodexWidget {
         });
     }
 
+    _localizeCalendarLabel(label) {
+        if (!label) return "";
+        const localized = game.i18n.localize(label);
+        return localized && localized !== label ? localized : label;
+    }
+
     _formatDate(calendar, y, m, d) {
         const month = calendar.months.values[m];
-        return `${month ? month.abbreviation : "???"} ${d + 1}, ${y}`;
+        const monthLabel = month ? this._localizeCalendarLabel(month.abbreviation || month.name || "???") : "???";
+        return `${monthLabel} ${d + 1}, ${y}`;
     }
 
     async render() {
@@ -751,7 +758,7 @@ _generateAxisLabels(minTs, maxTs, todayTs, secondsPerDay, calendar, originX, ren
                         labels.push({ 
                             left: mAbsLeft - renderMinX, 
                             timestamp: monthTs, 
-                            label: calendar.months.values[m].abbreviation, 
+                            label: this._localizeCalendarLabel(calendar.months.values[m].abbreviation || calendar.months.values[m].name || "???"), 
                             type: "month" 
                         });
                     }

@@ -1,15 +1,14 @@
-<div class="form-body scrollable" >
+<div class="form-body scrollable">
     <input type="file" id="wgtgm-import-file" accept=".json" style="display:none;" />
 
-    <p class="notes">Configure the theme colors for the Campaign Codex UI. Changes will be applied after saving.</p>
+    <p class="notes">{{ccLocalize "ui.themeConfigDescription"}}</p>
 
     {{#each fieldsets as |fieldset|}}
     <fieldset>
         <legend>{{fieldset.legend}}</legend>
         {{#each fieldset.fields as |f|}}
-            {{formField f.field value=f.value}}
+        {{formField f.field value=f.value}}
         {{/each}}
     </fieldset>
     {{/each}}
 </div>
-

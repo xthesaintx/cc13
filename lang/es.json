@@ -63,6 +63,8 @@
       "note": "Notas",
       "actor": "Actor",
       "player": "Jugador",
+      "faction": "Faccion",
+      "factions": "Facciones",
       "tag": "Etiqueta",
       "tags": "Etiquetas",
       "inventory": "Inventario",
@@ -241,7 +243,9 @@
           "player": "¿Enviar <strong>{type}</strong> a qué personaje de jugador?"
         }
       },
-      "cancel": "Cancelar"
+      "cancel": "Cancelar",
+      "tagsPlaceholder": "Agregar una etiqueta...",
+      "removeTag": "Eliminar etiqueta"
     }
   }
 }

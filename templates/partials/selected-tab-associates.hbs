@@ -1,12 +1,12 @@
 <div class="content-header">
-    <h2><i class="fas fa-user"></i> {{#if labelOverride}}{{labelOverride}}{{else}}{{ccLocalize "names.associates" }}{{/if}}</h2>
+  <h2><i class="fas fa-user"></i> {{#if labelOverride}}{{labelOverride}}{{else}}{{ccLocalize "names.associates"
+    }}{{/if}}</h2>
 </div>
-  {{{dropToMapBtn}}}
+{{{dropToMapBtn}}}
 
-  {{#if hasContent}}
-    <div class="associates-list">
-      {{{npcGridHtml}}}
-    </div>
-  {{else}}
-    <p><em>No associates linked.</em></p>
-  {{/if}}
+{{#if hasContent}}
+<div class="associates-list">
+  {{{npcGridHtml}}}
+</div>
+{{else}}
+{{/if}}

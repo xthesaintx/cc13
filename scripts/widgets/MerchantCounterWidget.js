@@ -1,5 +1,6 @@
 import { CampaignCodexWidget } from "./CampaignCodexWidget.js";
-import {CampaignCodexLinkers} from "../sheets/linkers.js";
+import { CampaignCodexLinkers } from "../sheets/linkers.js";
+import { localize, format } from "../helper.js";
 
 export class MerchantCounterWidget extends CampaignCodexWidget {
 
@@ -11,25 +12,25 @@ export class MerchantCounterWidget extends CampaignCodexWidget {
 
     async _prepareContext() {
         const savedData = (await this.getData()) || {};
-        
+
         let rawTables = savedData.restockTables || [];
-        
+
         if (savedData.restockTableUuid && rawTables.length === 0) {
             rawTables.push(savedData.restockTableUuid);
         }
 
         const normalizedTables = rawTables.map(entry => {
             let data = typeof entry === 'string' ? { uuid: entry, multiplier: 1 } : { uuid: entry.uuid, multiplier: entry.multiplier || 1 };
-            
+
             if (this._pendingUpdates[data.uuid] !== undefined) {
                 data.multiplier = this._pendingUpdates[data.uuid];
             }
-            
+
             return data;
         });
 
-        
-        
+
+
         const resolvedTables = (await Promise.all(normalizedTables.map(async (entry) => {
             const table = await fromUuid(entry.uuid);
             if (!table) return null;
@@ -40,7 +41,7 @@ export class MerchantCounterWidget extends CampaignCodexWidget {
                 multiplier: entry.multiplier
             };
         }))).filter(Boolean);
-        
+
 
         return {
             id: this.widgetId,
@@ -51,7 +52,7 @@ export class MerchantCounterWidget extends CampaignCodexWidget {
 
     async render() {
         const data = await this._prepareContext();
-        
+
         if (!data.isGM) return `
             <div class="cc-widget-merchant-counter is-empty" id="widget-${this.widgetId}">
             </div>
@@ -116,16 +117,16 @@ export class MerchantCounterWidget extends CampaignCodexWidget {
             const handleUpdate = (e, direction) => {
                 e.preventDefault();
                 e.stopPropagation();
-                
+
                 const card = e.currentTarget.closest('.mc-table-card');
                 const uuid = card.dataset.uuid;
-                
+
                 const currentText = e.currentTarget.textContent.replace('x', '');
                 const currentVal = parseInt(currentText) || 1;
                 const nextVal = direction === 'up' ? this._getNextMultiplier(currentVal) : this._getPrevMultiplier(currentVal);
-                
+
                 e.currentTarget.textContent = `x${nextVal}`;
-                
+
                 this._queueUpdate(uuid, nextVal);
             };
 
@@ -147,7 +148,7 @@ export class MerchantCounterWidget extends CampaignCodexWidget {
 
         htmlElement.querySelector('button[data-action="restockAll"]')?.addEventListener('click', async (e) => {
             e.preventDefault();
-            await this._restockShop(htmlElement, null); 
+            await this._restockShop(htmlElement, null);
         });
 
         htmlElement.addEventListener('drop', async (event) => {
@@ -155,11 +156,11 @@ export class MerchantCounterWidget extends CampaignCodexWidget {
             event.stopPropagation();
             let data;
             try { data = JSON.parse(event.dataTransfer.getData('text/plain')); } catch (err) { return; }
-                if (data.type !== "RollTable" || !data.uuid) {
-                    return ui.notifications.warn("Please drop a RollTable document.");
-                }
-                await this._addTable(data.uuid, htmlElement);
-            });
+            if (data.type !== "RollTable" || !data.uuid) {
+                return ui.notifications.warn(localize('notify.dropRollTable'));
+            }
+            await this._addTable(data.uuid, htmlElement);
+        });
     }
 
     _getNextMultiplier(current) {
@@ -204,7 +205,7 @@ export class MerchantCounterWidget extends CampaignCodexWidget {
 
         if (hasChanges) {
             await this.saveData({ ...savedData, restockTables: tables });
-            
+
             this._pendingUpdates = {};
         }
     }
@@ -212,11 +213,11 @@ export class MerchantCounterWidget extends CampaignCodexWidget {
     async _addTable(uuid, htmlElement) {
         const savedData = (await this.getData()) || {};
         let tables = savedData.restockTables || [];
-        
+
         if (savedData.restockTableUuid && tables.length === 0) {
-            tables.push({uuid: savedData.restockTableUuid, multiplier: 1});
+            tables.push({ uuid: savedData.restockTableUuid, multiplier: 1 });
         }
-        
+
         tables = tables.map(t => typeof t === 'string' ? { uuid: t, multiplier: 1 } : t);
 
         if (!tables.find(t => t.uuid === uuid)) {
@@ -229,7 +230,7 @@ export class MerchantCounterWidget extends CampaignCodexWidget {
     async _removeTable(uuid, htmlElement) {
         const savedData = (await this.getData()) || {};
         let tables = savedData.restockTables || [];
-        
+
         tables = tables.map(t => typeof t === 'string' ? { uuid: t, multiplier: 1 } : t);
 
         tables = tables.filter(t => t.uuid !== uuid);
@@ -237,108 +238,108 @@ export class MerchantCounterWidget extends CampaignCodexWidget {
         this._refreshWidget(htmlElement);
     }
 
-async _restockShop(htmlElement, specificTableUuid = null) {
-    const savedData = (await this.getData()) || {};
-    let rawTables = savedData.restockTables || [];
-    if (savedData.restockTableUuid && rawTables.length === 0) rawTables.push(savedData.restockTableUuid);
+    async _restockShop(htmlElement, specificTableUuid = null) {
+        const savedData = (await this.getData()) || {};
+        let rawTables = savedData.restockTables || [];
+        if (savedData.restockTableUuid && rawTables.length === 0) rawTables.push(savedData.restockTableUuid);
 
-    let allTables = rawTables.map(t => typeof t === 'string' ? { uuid: t, multiplier: 1 } : t);
+        let allTables = rawTables.map(t => typeof t === 'string' ? { uuid: t, multiplier: 1 } : t);
 
-    allTables = allTables.map(t => {
-        if (this._pendingUpdates[t.uuid] !== undefined) {
-            return { ...t, multiplier: this._pendingUpdates[t.uuid] };
+        allTables = allTables.map(t => {
+            if (this._pendingUpdates[t.uuid] !== undefined) {
+                return { ...t, multiplier: this._pendingUpdates[t.uuid] };
+            }
+            return t;
+        });
+
+        let targetTables = specificTableUuid
+            ? allTables.filter(t => t.uuid === specificTableUuid)
+            : allTables;
+
+        if (targetTables.length === 0) return ui.notifications.warn(localize('notify.noRestockTables'));
+
+        const currentData = this.document.getFlag("campaign-codex", "data") || {};
+        const inventory = foundry.utils.deepClone(currentData.inventory || []);
+
+        let cachedInventory = [];
+        const activeSheet = Object.values(this.document.apps)[0];
+        if (activeSheet && activeSheet._processedData && activeSheet._processedData.inventory) {
+            cachedInventory = activeSheet._processedData.inventory;
+        } else {
+            cachedInventory = await CampaignCodexLinkers.getInventory(this.document, inventory);
         }
-        return t;
-    });
+        const workingCache = [...cachedInventory];
 
-    let targetTables = specificTableUuid 
-        ? allTables.filter(t => t.uuid === specificTableUuid) 
-        : allTables;
+        const drawPromises = [];
+        for (const tableEntry of targetTables) {
+            const table = await fromUuid(tableEntry.uuid);
+            if (!table) continue;
 
-    if (targetTables.length === 0) return ui.notifications.warn("No restock tables linked.");
-
-    const currentData = this.document.getFlag("campaign-codex", "data") || {};
-    const inventory = foundry.utils.deepClone(currentData.inventory || []);
-    
-    let cachedInventory = [];
-    const activeSheet = Object.values(this.document.apps)[0];
-    if (activeSheet && activeSheet._processedData && activeSheet._processedData.inventory) {
-        cachedInventory = activeSheet._processedData.inventory;
-    } else {
-        cachedInventory = await CampaignCodexLinkers.getInventory(this.document, inventory);
-    }
-    const workingCache = [...cachedInventory];
-
-    const drawPromises = [];
-    for (const tableEntry of targetTables) {
-        const table = await fromUuid(tableEntry.uuid);
-        if (!table) continue;
-
-        const multiplier = tableEntry.multiplier || 1;
-        for(let i = 0; i < multiplier; i++) {
-            drawPromises.push(table.draw({displayChat: false}));
-        }
-    }
-
-    const draws = await Promise.all(drawPromises);
-    const allResults = draws.flatMap(d => d.results || []);
-
-    if (allResults.length === 0) return ui.notifications.warn("No valid items found in roll results.");
-
-    const validUuids = [];
-    for (const r of allResults) {
-        let itemUuid = r.documentUuid;
-        
-        if (!itemUuid && r.text && r.text.includes("@UUID[")) {
-            const match = r.text.match(/@UUID\[([^\]]+)\]/);
-            if (match) itemUuid = match[1];
+            const multiplier = tableEntry.multiplier || 1;
+            for (let i = 0; i < multiplier; i++) {
+                drawPromises.push(table.draw({ displayChat: false }));
+            }
         }
 
-        if (itemUuid && typeof itemUuid === "string" && itemUuid.includes("Item.")) {
-            validUuids.push(itemUuid);
+        const draws = await Promise.all(drawPromises);
+        const allResults = draws.flatMap(d => d.results || []);
+
+        if (allResults.length === 0) return ui.notifications.warn(localize('notify.noValidItems'));
+
+        const validUuids = [];
+        for (const r of allResults) {
+            let itemUuid = r.documentUuid;
+
+            if (!itemUuid && r.text && r.text.includes("@UUID[")) {
+                const match = r.text.match(/@UUID\[([^\]]+)\]/);
+                if (match) itemUuid = match[1];
+            }
+
+            if (itemUuid && typeof itemUuid === "string" && itemUuid.includes("Item.")) {
+                validUuids.push(itemUuid);
+            }
         }
-    }
 
-    const fetchedItems = await Promise.all(validUuids.map(uuid => fromUuid(uuid).catch(() => null)));
-    
-    let totalItemsAdded = 0;
+        const fetchedItems = await Promise.all(validUuids.map(uuid => fromUuid(uuid).catch(() => null)));
 
-    for (const item of fetchedItems) {
-        if (!item) continue;
+        let totalItemsAdded = 0;
 
-        const existingCacheItem = workingCache.find(i => 
-            i.itemUuid === item.uuid || 
-            (i.name === item.name && i.img === item.img && i.type === item.type)
-        );
+        for (const item of fetchedItems) {
+            if (!item) continue;
 
-        if (existingCacheItem) {
-            const inventoryEntry = inventory.find(i => i.itemUuid === existingCacheItem.itemUuid);
-            
-            if (inventoryEntry) {
-                inventoryEntry.quantity = (inventoryEntry.quantity || 0) + 1;
+            const existingCacheItem = workingCache.find(i =>
+                i.itemUuid === item.uuid ||
+                (i.name === item.name && i.img === item.img && i.type === item.type)
+            );
+
+            if (existingCacheItem) {
+                const inventoryEntry = inventory.find(i => i.itemUuid === existingCacheItem.itemUuid);
+
+                if (inventoryEntry) {
+                    inventoryEntry.quantity = (inventoryEntry.quantity || 0) + 1;
+                } else {
+                    inventory.push({ itemUuid: item.uuid, quantity: 1, customPrice: null });
+                }
             } else {
                 inventory.push({ itemUuid: item.uuid, quantity: 1, customPrice: null });
+                workingCache.push({
+                    itemUuid: item.uuid,
+                    name: item.name,
+                    img: item.img,
+                    type: item.type,
+                    quantity: 1
+                });
             }
-        } else {
-            inventory.push({ itemUuid: item.uuid, quantity: 1, customPrice: null });
-            workingCache.push({
-                itemUuid: item.uuid,
-                name: item.name,
-                img: item.img,
-                type: item.type,
-                quantity: 1 
-            });
+            totalItemsAdded++;
         }
-        totalItemsAdded++;
-    }
 
-    if (totalItemsAdded > 0) {
-        await this.document.setFlag("campaign-codex", "data.inventory", inventory);
-        ui.notifications.info(`Restocked ${totalItemsAdded} items.`);
-    } else {
-        ui.notifications.warn("No valid items found in roll results.");
+        if (totalItemsAdded > 0) {
+            await this.document.setFlag("campaign-codex", "data.inventory", inventory);
+            ui.notifications.info(format('notify.restocked', { count: totalItemsAdded }));
+        } else {
+            ui.notifications.warn(localize('notify.noValidItems'));
+        }
     }
-}
 
 
     async _refreshWidget(htmlElement) {

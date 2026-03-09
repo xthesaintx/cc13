@@ -37,7 +37,6 @@ export class RegionSheet extends CampaignCodexBaseSheet {
     const shopUuids = regionData.linkedShops || [];
 
     const [
-      // parentRegion,
       rawLinkedNPCs,
       rawRegions,
       rawLocations,
@@ -49,9 +48,8 @@ export class RegionSheet extends CampaignCodexBaseSheet {
       canViewScene,
       parentRegions,
       inventory,
-      // canViewRegion,
+      linkedQuests
     ] = await Promise.all([
-      // CampaignCodexLinkers.getLinkedRegion(this.document),
       CampaignCodexLinkers.getLinkedNPCs(this.document, regionData.linkedNPCs || []),
       CampaignCodexLinkers.getLinkedRegions(this.document, regionUuids, "linkedRegions"),
       CampaignCodexLinkers.getLinkedLocations(this.document, locationUuids),
@@ -62,13 +60,12 @@ export class RegionSheet extends CampaignCodexBaseSheet {
       CampaignCodexLinkers.getShopNPCs(this.document, regionData.linkedShops),
       this.constructor.canUserView(regionData.linkedScene),
       CampaignCodexLinkers.getLinkedRegions(this.document, parentRegionUuids, "parentRegions"),
-      CampaignCodexLinkers.getInventory(this.document, regionData.inventory)
-      // this.constructor.canUserView(regionData.parentRegion),
+      CampaignCodexLinkers.getInventory(this.document, regionData.inventory),
+      CampaignCodexBaseSheet.resolveLinkedQuestEntries(regionData.linkedQuests || [])
     ]);
 
     return {
       regionData,
-      // parentRegion,
       rawLinkedNPCs,
       rawRegions,
       rawLocations,
@@ -80,8 +77,8 @@ export class RegionSheet extends CampaignCodexBaseSheet {
       linkedScene,
       canViewScene,
       parentRegions,
-      inventory
-      // canViewRegion,
+      inventory,
+      linkedQuests
     };
   }
 
@@ -114,6 +111,10 @@ export class RegionSheet extends CampaignCodexBaseSheet {
       {
         key: "npcs",
         label: localize("names.npcs"),
+      },
+      {
+        key: "factions",
+        label: localize("names.factions"),
       },
       {
         key: "quests",
@@ -160,15 +161,16 @@ export class RegionSheet extends CampaignCodexBaseSheet {
       canViewScene,
       parentRegions,
       inventory,
+      linkedQuests
     } = this._processedData;
 
     const hiddenAssociates = this.document.getFlag("campaign-codex", "data")?.hiddenAssociates || [];
 
-    [ rawLinkedNPCs, rawRegions, rawLocations, rawNPCs, regionNPCs, rawShops, rawdirectShops, rawShopNPCs, parentRegions]
+    [rawLinkedNPCs, rawRegions, rawLocations, rawNPCs, regionNPCs, rawShops, rawdirectShops, rawShopNPCs, parentRegions, linkedQuests]
       .flat()
-      .filter(Boolean) 
+      .filter(Boolean)
       .forEach(item => {
-          if (hiddenAssociates.includes(item.uuid)) item.hidden = true;
+        if (hiddenAssociates.includes(item.uuid)) item.hidden = true;
       });
 
 
@@ -188,6 +190,8 @@ export class RegionSheet extends CampaignCodexBaseSheet {
     context.canViewScene = canViewScene;
     context.linkedRegions = rawRegions;
     context.parentRegions = parentRegions;
+      context.quests = linkedQuests;
+
     ((context.regionNPCs = regionNPCs),
 
       // --- Basic Sheet Info ---
@@ -230,7 +234,7 @@ export class RegionSheet extends CampaignCodexBaseSheet {
     // TABS
     const tabOverrides = this.document.getFlag("campaign-codex", "tab-overrides") || [];
     let defaultTabs = this._getTabDefinitions();
-    const gmOnlyTabs = ["notes"];
+    const gmOnlyTabs = game.settings.get("campaign-codex", "allowPlayerNotes") ? [] : ["notes"];
     if (!game.user.isGM) {
       defaultTabs = defaultTabs.filter((tab) => !gmOnlyTabs.includes(tab.key));
     }
@@ -302,9 +306,9 @@ export class RegionSheet extends CampaignCodexBaseSheet {
             context.shopNPCsWithoutTaggedNPCsnoDirectnoShop.length,
           view:
             context.linkedNPCsWithoutTaggedNPCs.length +
-              context.shopNPCsWithoutTaggedNPCsnoDirect.length +
-              context.shopNPCsWithoutTaggedNPCsnoDirectnoShop.length +
-              context.regionNPCsProcessed.length >
+            context.shopNPCsWithoutTaggedNPCsnoDirect.length +
+            context.shopNPCsWithoutTaggedNPCsnoDirectnoShop.length +
+            context.regionNPCsProcessed.length >
             0,
         },
         active: this._currentTab === "npcs",
@@ -313,12 +317,20 @@ export class RegionSheet extends CampaignCodexBaseSheet {
         icon: TemplateComponents.getAsset("icon", "npc"),
       },
       {
+        key: "factions",
+        statistic: { value: context.taggedNPCs.length, view: context.taggedNPCs.length > 0 },
+        active: this._currentTab === "factions",
+        content: await renderIfActive("factions", this._generateFactionsTab(context)),
+        label: localize("names.factions"),
+        icon: TemplateComponents.getAsset("icon", "faction"),
+      },
+      {
         key: "quests",
-        statistic: { value: context.sheetData.quests.length, view: context.sheetData.quests.length > 0 },
+        statistic: { value: context.quests.length, view: context.quests.length > 0 },
         active: this._currentTab === "quests",
         content: await renderIfActive(
           "quests",
-          TemplateComponents.questList(this.document, context.sheetData.quests, context.isGM),
+          TemplateComponents.questList(this.document, context.quests, context.isGM),
         ),
         label: localize("names.quests"),
         icon: "fas fa-scroll",
@@ -370,12 +382,12 @@ export class RegionSheet extends CampaignCodexBaseSheet {
         const override = tabOverrides.find(o => o.key === tab.key);
         const isVisibleByDefault = defaultTabVis[tab.key] ?? true;
         const isVisible = override?.visible ?? isVisibleByDefault;
-        
+
         if (!isVisible) return null;
         const isHiddenByDefault = defaultTabHidden[tab.key] ?? false;
         const isHidden = override?.hidden ?? isHiddenByDefault;
         if (!game.user.isGM && isHidden) {
-            return null;
+          return null;
         }
 
         const dynamicTab = tabContext.find(t => t.key === tab.key);
@@ -384,8 +396,8 @@ export class RegionSheet extends CampaignCodexBaseSheet {
         const finalLabel = override?.label || tab.label;
         return {
           ...tab,
-          ...dynamicTab, 
-          label: finalLabel, 
+          ...dynamicTab,
+          label: finalLabel,
         };
       })
       .filter(Boolean);
@@ -428,9 +440,15 @@ export class RegionSheet extends CampaignCodexBaseSheet {
     event.stopPropagation();
     if (data.type === "Scene") {
       await this._handleSceneDrop(data, event);
-    } else if (data.type === "Item") {
+    } else if (data.type === "Item" || data.type === "Folder") {
       await this._handleItemDrop(data, event);
     } else if (data.type === "JournalEntry" || data.type === "JournalEntryPage") {
+      const dropped = await fromUuid(data.uuid);
+      const journal = dropped?.documentName === "JournalEntryPage" ? dropped.parent : dropped;
+      if (journal?.getFlag("campaign-codex", "type") === "quest") {
+        await this._linkQuestJournal(journal);
+        return;
+      }
       await this._handleJournalDrop(data, event);
     } else if (data.type === "Actor") {
       await this._handleActorDrop(data, event);
@@ -449,16 +467,16 @@ export class RegionSheet extends CampaignCodexBaseSheet {
     const label = this._labelOverride(this.document, "info");
     const hideByPermission = game.settings.get("campaign-codex", "hideByPermission");
 
-     const templateData = {
+    const templateData = {
       widgetsPosition: context.widgetsPosition,
       widgetsToRender: context.infoWidgetsToRender,
       activewidget: context.activewidgetInfo,
       inactivewidgets: context.inactivewidgetsInfo,
       addedWidgetNames: context.addedWidgetNamesInfo,
       availableWidgets: context.availableWidgets,
-      isWidgetTrayOpen:this._isWidgetInfoTrayOpen,
+      isWidgetTrayOpen: this._isWidgetInfoTrayOpen,
       isGM: context.isGM,
-      labelOverride:label,
+      labelOverride: label,
       richTextDescription: TemplateComponents.richTextSection(this.document, context.sheetData.enrichedDescription, "description", context.isOwnerOrHigher)
     };
     return await renderTemplate("modules/campaign-codex/templates/partials/base-info.hbs", templateData);
@@ -470,7 +488,7 @@ export class RegionSheet extends CampaignCodexBaseSheet {
     const label = this._labelOverride(this.document, "regions") || localize("names.parentregions");
 
     return `
-      ${TemplateComponents.contentHeader("fas fa-book-atlas", label, "" )}
+      ${TemplateComponents.contentHeader("fas fa-book-atlas", label, "")}
       ${TemplateComponents.entityGrid(data.parentRegions, "parentregion")}
 
     `;
@@ -505,7 +523,7 @@ export class RegionSheet extends CampaignCodexBaseSheet {
 
   async _generateNPCsTab(data) {
     const label = this._labelOverride(this.document, "npcs") || localize("names.npcs");
-    let buttons =``;
+    let buttons = ``;
     if (data.isGM) {
       if (canvas.scene && data.linkedNPCsWithoutTaggedNPCs.length > 0) {
         buttons += `<i class="fas fa-street-view refresh-btn npcs-to-map-button" data-action="npcsToMapButton" title="${format("button.droptoscene", { type: localize("names.npc") })}"></i>`;
@@ -516,6 +534,14 @@ export class RegionSheet extends CampaignCodexBaseSheet {
     return `
       ${TemplateComponents.contentHeader(TemplateComponents.getAsset("icon", "npc"), label, buttons)}
       ${await this._generateNPCsBySource(data)}
+    `;
+  }
+
+  async _generateFactionsTab(data) {
+    const label = this._labelOverride(this.document, "factions") || localize("names.factions");
+    return `
+      ${TemplateComponents.contentHeader("fas fa-people-group", label)}
+      ${TemplateComponents.entityGrid(data.taggedNPCs, "npc", true, false)}
     `;
   }
 
@@ -557,10 +583,10 @@ export class RegionSheet extends CampaignCodexBaseSheet {
     }
     if (
       data.linkedNPCsWithoutTaggedNPCs.length +
-        directShopNPCs.length +
-        locationNPCs.length +
-        locationShopNPCs.length +
-        data.regionNPCsProcessed.length ===
+      directShopNPCs.length +
+      locationNPCs.length +
+      locationShopNPCs.length +
+      data.regionNPCsProcessed.length ===
       0
     ) {
       content = TemplateComponents.emptyState("npc");
@@ -604,7 +630,7 @@ export class RegionSheet extends CampaignCodexBaseSheet {
   async _handleSceneDrop(data, event) {
     const scene = await fromUuid(data.uuid);
     if (!scene) {
-      ui.notifications.warn("Could not find the dropped scene.");
+      ui.notifications.warn(localize('notify.documentNotFound'));
       return;
     }
 
@@ -679,26 +705,26 @@ export class RegionSheet extends CampaignCodexBaseSheet {
       if (!locationData.linkedStandardJournals.includes(journal.uuid)) {
         locationData.linkedStandardJournals.push(journal.uuid);
         await this.document.setFlag("campaign-codex", "data", locationData);
-        ui.notifications.info(`Linked journal "${journal.name}".`);
+        ui.notifications.info(format('notify.linkedJournal', { name: journal.name }));
       } else {
-        ui.notifications.warn(`Journal "${journal.name}" is already linked.`);
+        ui.notifications.warn(format('notify.journalAlreadyLinked', { name: journal.name }));
       }
     } else if (journalType === "location") {
       await game.campaignCodex.linkRegionToLocation(this.document, journal);
     } else if (journalType === "region") {
 
-        const dropType = event.target.closest(".tab-panel")?.dataset.tab;
-        if (dropType === "parentregions") {
-          await game.campaignCodex.linkRegionToRegion(journal, this.document);
-        } else {
-          await game.campaignCodex.linkRegionToRegion(this.document, journal);
-        }
+      const dropType = event.target.closest(".tab-panel")?.dataset.tab;
+      if (dropType === "parentregions") {
+        await game.campaignCodex.linkRegionToRegion(journal, this.document);
+      } else {
+        await game.campaignCodex.linkRegionToRegion(this.document, journal);
+      }
     } else if (["npc", "tag"].includes(journalType)) {
       await game.campaignCodex.linkRegionToNPC(this.document, journal);
     } else if (journalType === "shop") {
       await game.campaignCodex.linkRegionToShop(this.document, journal);
     } else {
-      return; 
+      return;
     }
     this.render(true);
   }

@@ -16,6 +16,7 @@ import { CampaignCodexJournalConverter } from "./campaign-codex-convertor.js";
 import { NPCDropper } from "./npc-dropper.js";
 import { CampaignCodexTokenPlacement } from "./token-placement.js";
 import { GroupSheet } from "./sheets/group-sheet.js";
+import { QuestSheet } from "./sheets/quest-sheet.js";
 import { TemplateComponents } from "./sheets/template-components.js";
 import { GroupLinkers } from "./sheets/group-linkers.js";
 import {
@@ -38,10 +39,12 @@ import {
 } from "./helper.js";
 import { CampaignCodexMapMarker, _getCampaignCodexIcon } from "./codex-map-marker.js";
 import { CampaignCodexTOCSheet } from "./campaign-codex-toc.js";
+import { registerMapNoteTextEnricher, registerMapNoteLinkClickHandler } from "./map-note-links.js";
 // let tocSheetInstance = null;
 
 Hooks.once("init", async function () {
     console.log("Campaign Codex | Initializing");
+    registerMapNoteTextEnricher();
     
     widgetManager.initialize();
 
@@ -49,7 +52,10 @@ Hooks.once("init", async function () {
     const templatePaths = [
     "modules/campaign-codex/templates/partials/toc-quest-objective.hbs",
     "modules/campaign-codex/templates/quests/quest-list.hbs",
-    "modules/campaign-codex/templates/partials/quest-card.hbs",
+    "modules/campaign-codex/templates/partials/quest-linked-card.hbs",
+    "modules/campaign-codex/templates/partials/quest-sidebar-links.hbs",
+    "modules/campaign-codex/templates/partials/quest-sidebar-admin.hbs",
+    "modules/campaign-codex/templates/partials/quest-sheet-editor.hbs",
     "modules/campaign-codex/templates/partials/selected-sheet-view.hbs",
     "modules/campaign-codex/templates/partials/group-sheet-sidebar.hbs",
     "modules/campaign-codex/templates/partials/group-tab-info.hbs",
@@ -163,7 +169,13 @@ Hooks.once("i18nInit", async function () {
     foundry.applications.apps.DocumentSheetConfig.registerSheet(JournalEntry, "campaign-codex", TagSheet, {
         canBeDefault: true, 
         makeDefault: false,
-        label: `Campaign Codex: ${game.i18n.localize('CAMPAIGN_CODEX.names.tag') || "Tag"}`, 
+        label: `Campaign Codex: ${game.i18n.localize('CAMPAIGN_CODEX.names.faction') || game.i18n.localize('CAMPAIGN_CODEX.names.tag') || "Faction"}`, 
+    });
+
+    foundry.applications.apps.DocumentSheetConfig.registerSheet(JournalEntry, "campaign-codex", QuestSheet, {
+        canBeDefault: true,
+        makeDefault: false,
+        label: `Campaign Codex: ${game.i18n.localize('CAMPAIGN_CODEX.names.quest')}`,
     });
     console.log("Campaign Codex | Sheets registered");
 });
@@ -177,9 +189,11 @@ Hooks.once("ready", async function () {
     templateManager.scanAllTemplates();
 
     console.log("Campaign Codex | Ready");
+    registerMapNoteLinkClickHandler();
     game.campaignCodex = new CampaignManager();
     game.campaignCodex.initialize(); 
     game.campaignCodex.tocSheetInstance = null;
+    game.campaignCodex.questBoardInstance = null;
 
     // Exporter Testing
     game.SimpleCampaignCodexExporter = SimpleCampaignCodexExporter; 
@@ -188,6 +202,7 @@ Hooks.once("ready", async function () {
     //API
     game.modules.get('campaign-codex').api = {
       openTOCSheet: game.campaignCodex.openTOCSheet,
+      openQuestBoard: game.campaignCodex.openQuestBoard,
       convertJournalToCCSheet: convertJournalToCCSheet,
       exportToObsidian:()=> SimpleCampaignCodexExporter.exportToObsidian(),
       migrateLegacyWidgets:(document)=> migrateLegacyWidgets(document),
@@ -307,6 +322,7 @@ Hooks.on("renderDialogV2", (dialog, html, data) => {
         npc: "campaign-codex.NPCSheet", 
         tag: "campaign-codex.TagSheet",
         group: "campaign-codex.GroupSheet",
+        quest: "campaign-codex.QuestSheet",
     };
     const campaignCodexTypes = {
         region: `Campaign Codex: ${localize("names.region")}`,
@@ -314,7 +330,8 @@ Hooks.on("renderDialogV2", (dialog, html, data) => {
         shop: `Campaign Codex: ${localize("names.shop")}`,
         npc: `Campaign Codex: ${localize("names.npc")}`,
         group: `Campaign Codex: ${localize("names.group")}`,
-        tag: `Campaign Codex: ${localize("names.tag")}`,
+        tag: `Campaign Codex: ${localize("names.faction") || localize("names.tag")}`,
+        quest: `Campaign Codex: ${localize("names.quest")}`,
     };
 
     const nameInput = form.querySelector('input[name="name"]');
@@ -356,7 +373,17 @@ Hooks.on("renderJournalDirectory", (app, html, data) => {
     addJournalDirectoryUI(html);
 });
 
+function refreshQuestBoardIfOpen(document) {
+    const board = foundry.applications.instances.get("campaign-codex-quest-board");
+    if (!board) return;
+    const type = document?.getFlag?.("campaign-codex", "type");
+    if (type === "quest") {
+        board.render(true);
+    }
+}
+
 Hooks.on("createJournalEntry", async (document, options, userId) => {
+    refreshQuestBoardIfOpen(document);
     if (game.user.id !== userId || document.pack || options.skipRelationshipUpdates || options.campaignCodexImport || game.campaignCodexImporting) return;
 
     const journalType = document.getFlag("campaign-codex", "type");
@@ -371,6 +398,7 @@ Hooks.on("createJournalEntry", async (document, options, userId) => {
     if (folder) {
         await document.update({ folder: folder.id });
     }
+    refreshQuestBoardIfOpen(document);
 });
 
 Hooks.on("createScene", async (scene, options, userId) => {
@@ -439,6 +467,7 @@ Hooks.on("ready", () => {
 
  
 Hooks.on("updateJournalEntry", async (document, changes, options, userId) => {
+    refreshQuestBoardIfOpen(document);
     if (canvas.ready){
     const mapMarkerChanged = foundry.utils.hasProperty(changes, "flags.campaign-codex.data.mapMarker");
     if (mapMarkerChanged) {
@@ -555,8 +584,58 @@ Hooks.on("importAdventure", async (adventure, formData, created, updated) => {
     }
 });
 
+function _isCodexSceneNoteVisibleToUser(noteDocument) {
+    if (game.user.isGM) return true;
+    const ccFlags = noteDocument?.flags?.["campaign-codex"];
+    if (!ccFlags?.noteid || !ccFlags?.widgetid) return true;
+
+    const entryId = noteDocument.entryId;
+    const journal = entryId ? game.journal.get(entryId) : null;
+    if (!journal) return true;
+
+    const widgetData = journal.getFlag("campaign-codex", `data.widgets.mapnote.${ccFlags.widgetid}`);
+    const noteData = widgetData?.notes?.find?.((n) => n.id === ccFlags.noteid);
+    if (!noteData) return true;
+
+    return !!noteData.visible;
+}
+
+function _applyCodexSceneNoteVisibility(note) {
+    if (!note || game.user.isGM) return;
+    const shouldShow = _isCodexSceneNoteVisibleToUser(note.document);
+
+    // Force the actual placeable state for player users based on the widget note visibility.
+    note.visible = shouldShow;
+    if (note.controlIcon) note.controlIcon.visible = shouldShow;
+    if (note.tooltip) note.tooltip.visible = false;
+}
+
+Hooks.on("drawNote", (note) => {
+    _applyCodexSceneNoteVisibility(note);
+});
+
+Hooks.on("refreshNote", (note) => {
+    _applyCodexSceneNoteVisibility(note);
+});
+
+Hooks.on("canvasReady", () => {
+    if (game.user.isGM) return;
+    for (const note of canvas?.notes?.placeables || []) {
+        _applyCodexSceneNoteVisibility(note);
+    }
+});
+
+Hooks.on("updateJournalEntry", (journal) => {
+    if (game.user.isGM || !canvas?.ready) return;
+
+    for (const note of canvas.notes?.placeables || []) {
+        if (note?.document?.entryId !== journal.id) continue;
+        _applyCodexSceneNoteVisibility(note);
+    }
+});
 
 Hooks.on("hoverNote", async (note, hovered) => {
+    if (!_isCodexSceneNoteVisibleToUser(note.document)) return;
     if (game.settings.get("campaign-codex", "mapMarkersHover"))
      {
         const ccFlags = note.document.flags?.["campaign-codex"];
@@ -570,6 +649,7 @@ Hooks.on("hoverNote", async (note, hovered) => {
 });
 
 Hooks.on("activateNote", (note, options) => {
+    if (!_isCodexSceneNoteVisibleToUser(note.document)) return false;
     const ccFlags = note.document.flags?.["campaign-codex"];
     if (!ccFlags?.noteid || !ccFlags?.widgetid) return;
     const notePosition = note.worldTransform;
@@ -628,5 +708,3 @@ Hooks.on("getSceneControlButtons", (controls) => {
     };
 }
 });
-
-

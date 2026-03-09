@@ -15,6 +15,8 @@ import { CalendarTimelineWidget } from "./CalendarTimelineWidget.js";
 import { MapNoteWidget } from "./MapNoteWidget.js";
 import { ActorDropperWidget } from "./ActorDropperWidget.js";
 import { SceneWidget } from "./SceneWidget.js";
+import { ServicesWidget } from "./ServicesWidget.js";
+
 
 class WidgetManager {
     constructor() {
@@ -29,6 +31,7 @@ class WidgetManager {
         }
 
     _registerDefaultWidgets() {
+        this.registerWidget("Services", ServicesWidget);
         this.registerWidget("worldMap", WorldMapWidget);
         this.registerWidget("networkGraph", NetworkGraphWidget);
         this.registerWidget("orgChart", OrgChartWidget);
@@ -40,8 +43,8 @@ class WidgetManager {
         this.registerWidget("Macros", MacroWidget);
         this.registerWidget("Map Notes", MapNoteWidget);
         this.registerWidget("Roll Table", RollTableWidget);
-        this.registerWidget("Merchant Counter", MerchantCounterWidget);
         this.registerWidget("Scenes", SceneWidget);
+        this.registerWidget("Merchant Counter", MerchantCounterWidget);
         if (this._miniCalendar?.active) {
             this.registerWidget("Mini Calendar Forecast", CalendarForecastWidget);
             this.registerWidget("Mini Calendar Events", CalendarEventWidget);

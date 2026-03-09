@@ -3,4 +3,23 @@
 </div>
 {{{richTextDescription}}}
 
+{{#if isGM}}
+{{#if allowPlayerNotes}}
+<section class="cc-player-notes-panel">
+    {{#if gmPlayerNotes.length}}
+        {{#each gmPlayerNotes}}
+        <details class="cc-gm-player-note"  data-user-id="{{this.userId}}" data-user-name="{{this.userName}}">
+            <summary class="cc-player-note-user-pill"><i class="fas fa-user"></i> {{this.userName}}</summary>
+            <div class="cc-gm-player-note-content">
+                <div class="cc-gm-player-note-actions">
 
+                </div>
+                <div class="cc-gm-player-note-body">{{{this.enrichedNote}}}</div>
+            </div>
+        </details>
+        {{/each}}
+    {{else}}
+    {{/if}}
+</section>
+{{/if}}
+{{/if}}

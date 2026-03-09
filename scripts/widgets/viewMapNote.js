@@ -1,5 +1,5 @@
 import { gameSystemClass } from "../helper.js";
-import { localize, format, renderTemplate, isThemed, journalSystemClass } from "../helper.js"; 
+import { localize, format, renderTemplate, isThemed, journalSystemClass } from "../helper.js";
 
 const { DialogV2 } = foundry.applications.api;
 
@@ -25,10 +25,9 @@ class CodexMapNotePopup extends DialogV2 {
             </button>
         `;
         if (this.journal.testUserPermission(game.user, CONST.DOCUMENT_OWNERSHIP_LEVELS.OBSERVER)) this.window.close.insertAdjacentHTML("beforebegin", openJournalBtn);
-    
+
         return frame;
     }
-    
   /** @inheritDoc */
   async _onFirstRender(context, options) {
     await super._onFirstRender(context, options);
@@ -72,53 +71,57 @@ class CodexMapNotePopup extends DialogV2 {
 
 
 
-
 }
+
+
+
+
 
 
 export async function displayCodexNote(entryId, widgetId, noteId, origin = null) {
     const journal = game.journal.get(entryId);
-    if (!journal) return ui.notifications.warn("Campaign Codex | Journal Entry not found.");
+    if (!journal) return ui.notifications.warn(localize('notify.journalNotFound'));
 
     const widgetData = journal.getFlag("campaign-codex", `data.widgets.mapnote.${widgetId}`);
-    if (!widgetData?.notes) return ui.notifications.warn("Campaign Codex | Widget data missing.");
+    if (!widgetData?.notes) return ui.notifications.warn(localize('notify.widgetDataMissing'));
 
     const noteData = widgetData.notes.find(n => n.id === noteId);
     if (!noteData) {
         if (journal) journal.sheet.render(true);
-        return ui.notifications.warn("Campaign Codex | Note and Journal content not found.");
+        return ui.notifications.warn(localize('notify.noteContentNotFound'));
     }
+    if (!game.user.isGM && !noteData.visible) return;
 
     const enrichedContent = await foundry.applications.ux.TextEditor.implementation.enrichHTML(
-        noteData.content || "", 
+        noteData.content || "",
         { async: true, secrets: journal.isOwner }
     );
-    
-    const parentJournal = journal.testUserPermission(game.user, CONST.DOCUMENT_OWNERSHIP_LEVELS.OBSERVER) ? `: ${journal.name}` :'';
 
-    
+    const parentJournal = journal.testUserPermission(game.user, CONST.DOCUMENT_OWNERSHIP_LEVELS.OBSERVER) ? `: ${journal.name}` : '';
+
+
     const systemClass = gameSystemClass(game.system.id);
     const journalClass = journalSystemClass(game.system.id);
     const baseTitle = noteData.title || "Note";
     const windowTitle = `${baseTitle}${noteData.mapId ? ` [${noteData.mapId.toUpperCase()}]` : ""} ${parentJournal}`;
-        const themeOverride = isThemed();
+    const themeOverride = isThemed();
 
     const width = 600;
     const position = origin ? {
         width: width,
         height: "auto",
-        top: origin.ty-42,
-        left: origin.tx - (width / 2) 
+        top: origin.ty - 42,
+        left: origin.tx - (width / 2)
     } : { width: width, height: "auto" };
 
     new CodexMapNotePopup({
-        id:noteId,
-        window: { 
-            title: windowTitle, 
+        id: noteId,
+        window: {
+            title: windowTitle,
             resizable: true,
             icon: "fas fa-map-pin",
             minimizable: true,
-            },
+        },
         classes: ["campaign-codex", "note-popup", "themed", themeOverride],
         position: position,
         codex: {
@@ -133,7 +136,7 @@ export async function displayCodexNote(entryId, widgetId, noteId, origin = null)
         },
 
         content: `
-            <article class="cc-enriched ${isThemed() ? 'themed':''} ${journalClass} ${isThemed()} ${systemClass}">
+            <article class="cc-enriched ${isThemed() ? 'themed' : ''} ${journalClass} ${isThemed()} ${systemClass}">
               <section class="journal-entry-content cc-non-owner-view">
                 ${enrichedContent}
               </section>
@@ -142,7 +145,7 @@ export async function displayCodexNote(entryId, widgetId, noteId, origin = null)
         buttons: [
             {
                 action: "close",
-                label: "Close",
+                label: localize('dialog.close'),
                 icon: "fas fa-times",
                 default: true
             }
@@ -153,22 +156,23 @@ export async function displayCodexNote(entryId, widgetId, noteId, origin = null)
 
 export async function hoverCodexNote(entryId, widgetId, noteId, origin = null) {
     const journal = game.journal.get(entryId);
-    if (!journal) return ui.notifications.warn("Campaign Codex | Journal Entry not found.");
+    if (!journal) return ui.notifications.warn(localize('notify.journalNotFound'));
 
     const widgetData = journal.getFlag("campaign-codex", `data.widgets.mapnote.${widgetId}`);
-    if (!widgetData?.notes) return ui.notifications.warn("Campaign Codex | Widget data missing.");
+    if (!widgetData?.notes) return ui.notifications.warn(localize('notify.widgetDataMissing'));
 
     const noteData = widgetData.notes.find(n => n.id === noteId);
     if (!noteData) return;
+    if (!game.user.isGM && !noteData.visible) return;
 
     const enrichedContent = await foundry.applications.ux.TextEditor.implementation.enrichHTML(
-        noteData.content || "", 
+        noteData.content || "",
         { async: true, secrets: journal.isOwner }
     );
-    
-    const parentJournal = journal.testUserPermission(game.user, CONST.DOCUMENT_OWNERSHIP_LEVELS.OBSERVER) ? `: ${journal.name}` :'';
 
-            const themeOverride = isThemed();
+    const parentJournal = journal.testUserPermission(game.user, CONST.DOCUMENT_OWNERSHIP_LEVELS.OBSERVER) ? `: ${journal.name}` : '';
+
+    const themeOverride = isThemed();
 
     const systemClass = gameSystemClass(game.system.id);
     const journalClass = journalSystemClass(game.system.id);
@@ -179,18 +183,18 @@ export async function hoverCodexNote(entryId, widgetId, noteId, origin = null) {
     const position = origin ? {
         width: width,
         height: height,
-        top: origin.ty ,
-        left: origin.tx - (width / 2) 
+        top: origin.ty,
+        left: origin.tx - (width / 2)
     } : { width: width, height: height };
 
     const app = new CodexMapNotePopup({
         id: `hover-${noteId}`,
-        window: { 
-            title: windowTitle, 
+        window: {
+            title: windowTitle,
             resizable: false,
             icon: "fas fa-map-pin",
             minimizable: false,
-            },
+        },
         classes: ["campaign-codex", "note-popup", "hover-note", "themed", themeOverride],
         position: position,
         codex: {
@@ -205,7 +209,7 @@ export async function hoverCodexNote(entryId, widgetId, noteId, origin = null) {
         },
 
         content: `
-            <article class="cc-enriched ${isThemed() ? 'themed':''} ${journalClass} ${isThemed()} ${systemClass}">
+            <article class="cc-enriched ${isThemed() ? 'themed' : ''} ${journalClass} ${isThemed()} ${systemClass}">
               <section class="journal-entry-content cc-non-owner-view">
                 ${enrichedContent}
               </section>
@@ -217,7 +221,7 @@ export async function hoverCodexNote(entryId, widgetId, noteId, origin = null) {
         buttons: [
             {
                 action: "close",
-                label: "Close",
+                label: localize('dialog.close'),
                 icon: "fas fa-times",
                 default: true
             }
@@ -227,12 +231,12 @@ export async function hoverCodexNote(entryId, widgetId, noteId, origin = null) {
     if (app.element && origin) {
         const renderedHeight = app.element.offsetHeight;
         const newTop = app.position.top - (renderedHeight / 2);
-        
+
         app.setPosition({
             top: newTop
         });
     }
-if (app.element) {
+    if (app.element) {
         app.element.addEventListener('mouseleave', () => {
             app.element.style.display = 'none';
             app.close();
@@ -240,7 +244,7 @@ if (app.element) {
         const contentWrapper = app.element.querySelector('.cc-enriched');
         const contentEl = app.element.querySelector('.journal-entry-content');
         const indicator = app.element.querySelector('.codex-overflow-indicator');
-        
+
         if (contentEl && indicator) {
             if (contentEl.scrollHeight > contentEl.parentElement.clientHeight) {
                 indicator.style.display = 'block';

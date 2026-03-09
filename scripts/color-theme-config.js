@@ -1,22 +1,25 @@
-const { SchemaField, ColorField, StringField, FilePathField,BooleanField,NumberField } = foundry.data.fields;
+const { SchemaField, ColorField, StringField, FilePathField, BooleanField, NumberField } = foundry.data.fields;
 var ApplicationV2 = foundry.applications.api.ApplicationV2;
 var HandlebarsApplicationMixin = foundry.applications.api.HandlebarsApplicationMixin;
 const ColorThemeCC = HandlebarsApplicationMixin((ApplicationV2));
+import { localize } from "./helper.js";
 
 /**
  * The Application responsible for configuring the Campaign Codex theme colors.
  * @extends {FormApplicationV2}
  */
 export class ColorThemeConfig extends ColorThemeCC {
-  static DEFAULT_OPTIONS = {
-        tag:'form',
+    static get DEFAULT_OPTIONS() {
+    return {   
+          // static DEFAULT_OPTIONS = {
+        tag: 'form',
         id: "campaign-codex-theme-config",
-        title: "Campaign Codex Theme Colors",
+        title: localize("dialog.themeColors"),
         classes: ["campaign-codex-theme-config campaign-codex"],
         window: {
             icon: "fa-solid fa-palette",
             contentClasses: ["standard-form"],
-          resizable: true,
+            resizable: true,
         },
         position: { width: 520, height: 750 },
         form: {
@@ -27,12 +30,12 @@ export class ColorThemeConfig extends ColorThemeCC {
         actions: {
             reset: this.#onResetDefaults,
             apply: this.#onApply,
-            importTheme: function(event, target) {
+            importTheme: function (event, target) {
                 this.element.querySelector("#wgtgm-import-file").click();
-                },
+            },
             exportTheme: this.#_exportTheme
         }
-    };
+    };}
 
     /** @override */
     static PARTS = {
@@ -53,22 +56,22 @@ export class ColorThemeConfig extends ColorThemeCC {
         const fontChoices = foundry.applications.settings.menus.FontConfig.getAvailableFontChoices();
 
         return new SchemaField({
-            primary: new ColorField({ label: "Seconday Accent"}),
-            slate: new ColorField({ label: "Slate"}),
-            textMuted: new ColorField({ label: "Text Muted"}),
+            primary: new ColorField({ label: "Seconday Accent" }),
+            slate: new ColorField({ label: "Slate" }),
+            textMuted: new ColorField({ label: "Text Muted" }),
             sidebarBg: new ColorField({ label: "Sidebar Background" }),
             sidebarText: new ColorField({ label: "Light Text" }),
-            accent: new ColorField({ label: "Accent"}),
+            accent: new ColorField({ label: "Accent" }),
             mainBg: new ColorField({ label: "Main Background" }),
             mainText: new ColorField({ label: "Main Text" }),
             cardBg: new ColorField({ label: "Card Background" }),
             border: new ColorField({ label: "Border" }),
             success: new ColorField({ label: "Success" }),
             danger: new ColorField({ label: "Danger" }),
-            backgroundImageTile: new BooleanField({ label: "Tile Background Image"}),
-            anchorImage: new BooleanField({ label: "Image Anchor", hint: "Enabled: Anchor Bottom-Right of window; Default: Middle-Left"}),
-            themeOverrideToLight: new StringField({ label: "Override Theme", hint:"Forces a theme on CC Sheets on all clients", choices:{none: "none",dark:"dark",light:"light"} }),
-            backgroundOpacity: new NumberField({label:"Background Image Opacity", nullable: false, min: 1, max: 100, step: 1}),
+            backgroundImageTile: new BooleanField({ label: "Tile Background Image" }),
+            anchorImage: new BooleanField({ label: "Image Anchor", hint: "Enabled: Anchor Bottom-Right of window; Default: Middle-Left" }),
+            themeOverrideToLight: new StringField({ label: "Override Theme", hint: "Forces a theme on CC Sheets on all clients", choices: { none: "none", dark: "dark", light: "light" } }),
+            backgroundOpacity: new NumberField({ label: "Background Image Opacity", nullable: false, min: 1, max: 100, step: 1 }),
             backgroundImage: new FilePathField({
                 categories: ["IMAGE"],
                 label: "Background Image",
@@ -94,7 +97,7 @@ export class ColorThemeConfig extends ColorThemeCC {
 
 
 
-static get themeFields() {
+    static get themeFields() {
         return [
             "themeOverrideToLight",
             "accent", "primary",
@@ -102,25 +105,25 @@ static get themeFields() {
             "sidebarBg", "mainBg", "cardBg",
             "border", "slate",
             "success", "danger",
-            "backgroundOpacity", "backgroundImage","backgroundImageTile", "anchorImage",
+            "backgroundOpacity", "backgroundImage", "backgroundImageTile", "anchorImage",
             "fontHeading", "fontBody"
         ];
     }
 
 
-  async _renderFrame(options) {
-    const frame = await super._renderFrame(options);
-    if ( !this.hasFrame ) return frame;
-    const copyId = `
+    async _renderFrame(options) {
+        const frame = await super._renderFrame(options);
+        if (!this.hasFrame) return frame;
+        const copyId = `
         <button type="button" class="header-control fa-solid fa-file-import icon" data-action="importTheme"
                 data-tooltip="Import from JSON" aria-label="Import from JSON"></button>
         <button type="button" class="header-control fa-solid fa-file-export icon" data-action="exportTheme"
                 data-tooltip="Export to JSON" aria-label="Export to JSON"></button>
       `;
-      this.window.close.insertAdjacentHTML("beforebegin", copyId);
-    
-    return frame;
-  }
+        this.window.close.insertAdjacentHTML("beforebegin", copyId);
+
+        return frame;
+    }
 
     async _onRender(context, options) {
         await super._onRender(context, options);
@@ -130,18 +133,18 @@ static get themeFields() {
         }
     }
 
-   static async #_exportTheme(event, app) {
+    static async #_exportTheme(event, app) {
         event.preventDefault();
         const formData = new foundry.applications.ux.FormDataExtended(app.form);
         for (const [key, value] of Object.entries(formData.object)) {
-            if (!value){
+            if (!value) {
                 const setting = game.settings.settings.get(`campaign-codex.color-${key}`);
                 await game.settings.set("campaign-codex", `color-${key}`, setting.default);
-            }else{
-            await game.settings.set("campaign-codex", `color-${key}`, value);
+            } else {
+                await game.settings.set("campaign-codex", `color-${key}`, value);
+            }
         }
-        }
-        ui.notifications.info("Campaign Codex theme settings applied!");
+        ui.notifications.info(localize('notify.themeApplied'));
 
         const data = {};
         for (const field of this.constructor.themeFields) {
@@ -149,7 +152,7 @@ static get themeFields() {
         }
         const filename = `campaign-codex-theme.json`;
         foundry.utils.saveDataToFile(JSON.stringify(data, null, 2), "text/json", filename);
-        ui.notifications.info("Campaign Codex: Theme exported successfully.");
+        ui.notifications.info(localize('notify.themeExported'));
     }
 
     async _importTheme(event) {
@@ -169,15 +172,15 @@ static get themeFields() {
                         }
                     }
 
-                    ui.notifications.info("Theme imported successfully.");
-                    
+                    ui.notifications.info(localize('notify.themeImported'));
+
                     this.render();
-                    
+
                 }
 
             } catch (err) {
                 console.error("Campaign Codex | Import Error:", err);
-                ui.notifications.error("Failed to parse JSON file.");
+                ui.notifications.error(localize('notify.themeImportFailed'));
             }
             event.target.value = "";
         };
@@ -194,7 +197,7 @@ static get themeFields() {
             { legend: "Backgrounds", fields: ["sidebarBg", "mainBg", "cardBg"] },
             { legend: "Borders", fields: ["border", "slate"] },
             { legend: "Feedback Colors", fields: ["success", "danger"] },
-            { legend: "Background Image", fields: ["backgroundOpacity","backgroundImage","backgroundImageTile","anchorImage"] },
+            { legend: "Background Image", fields: ["backgroundOpacity", "backgroundImage", "backgroundImageTile", "anchorImage"] },
             { legend: "Typography", fields: ["fontHeading", "fontBody"] },
         ];
 
@@ -213,20 +216,20 @@ static get themeFields() {
         return [
             {
                 type: "button",
-                action: "reset", 
+                action: "reset",
                 icon: "fa-solid fa-undo",
-                label: "Reset Defaults"
+                label: localize("tabs.reset")
             },
             {
                 type: "button",
                 action: "apply",
                 icon: "fa-solid fa-check",
-                label: "Apply Changes"
+                label: "Apply"
             },
             {
                 type: "submit",
                 icon: "fa-solid fa-floppy-disk",
-                label: "Save Changes"
+                label: localize("dialog.save")
             }
         ];
     }
@@ -235,14 +238,14 @@ static get themeFields() {
         event.preventDefault();
         const formData = new foundry.applications.ux.FormDataExtended(app.form);
         for (const [key, value] of Object.entries(formData.object)) {
-            if (!value){
+            if (!value) {
                 const setting = game.settings.settings.get(`campaign-codex.color-${key}`);
                 await game.settings.set("campaign-codex", `color-${key}`, setting.default);
-            }else{
-            await game.settings.set("campaign-codex", `color-${key}`, value);
+            } else {
+                await game.settings.set("campaign-codex", `color-${key}`, value);
+            }
         }
-        }
-        ui.notifications.info("Campaign Codex theme settings applied!");
+        ui.notifications.info(localize('notify.themeApplied'));
     }
 
     static async #onSubmitForm(event, form, formData) {
@@ -251,44 +254,44 @@ static get themeFields() {
 
             await game.settings.set("campaign-codex", `color-${key}`, value);
         }
-        ui.notifications.info("Campaign Codex theme colors updated!");
+        ui.notifications.info(localize('notify.themeApplied'));
         foundry.applications.settings.SettingsConfig.reloadConfirm({ world: true });
 
     }
 
     static async #onResetDefaults() {
         const fontChoices = foundry.applications.settings.menus.FontConfig.getAvailableFontChoices();
-        const schema = 
-        new SchemaField({
-            primary: new ColorField({ label: "Seconday Accent"}),
-            slate: new ColorField({ label: "Slate"}),
-            textMuted: new ColorField({ label: "Text Muted"}),
-            sidebarBg: new ColorField({ label: "Sidebar Background" }),
-            sidebarText: new ColorField({ label: "Light Text" }),
-            accent: new ColorField({ label: "Accent"}),
-            mainBg: new ColorField({ label: "Main Background" }),
-            mainText: new ColorField({ label: "Main Text" }),
-            cardBg: new ColorField({ label: "Card Background" }),
-            border: new ColorField({ label: "Border" }),
-            success: new ColorField({ label: "Success" }),
-            danger: new ColorField({ label: "Danger" }),
-            backgroundImageTile: new BooleanField({ label: "Tile Background Image"}),
-            themeOverrideToLight: new StringField({ label: "Override Theme", hint:"Forces a theme on CC Sheets on all clients", choices:["none","dark","light"] }),
-            backgroundOpacity: new NumberField({label:"Background Image Opacity", nullable: false, min: 1, max: 100, step: 1}),
-            anchorImage: new BooleanField({ label: "Image Anchor", hint: "Enabled: Anchor Bottom-Right of window; Default: Middle-Left"}),
-            backgroundImage: new FilePathField({
-                categories: ["IMAGE"],
-                label: "Background Image",
-            }),
-            fontHeading: new StringField({
-                label: "Heading Font",
-                choices: fontChoices
-            }),
-            fontBody: new StringField({
-                label: "Body Font",
-                choices: fontChoices
-            })
-        });
+        const schema =
+            new SchemaField({
+                primary: new ColorField({ label: "Seconday Accent" }),
+                slate: new ColorField({ label: "Slate" }),
+                textMuted: new ColorField({ label: "Text Muted" }),
+                sidebarBg: new ColorField({ label: "Sidebar Background" }),
+                sidebarText: new ColorField({ label: "Light Text" }),
+                accent: new ColorField({ label: "Accent" }),
+                mainBg: new ColorField({ label: "Main Background" }),
+                mainText: new ColorField({ label: "Main Text" }),
+                cardBg: new ColorField({ label: "Card Background" }),
+                border: new ColorField({ label: "Border" }),
+                success: new ColorField({ label: "Success" }),
+                danger: new ColorField({ label: "Danger" }),
+                backgroundImageTile: new BooleanField({ label: "Tile Background Image" }),
+                themeOverrideToLight: new StringField({ label: "Override Theme", hint: "Forces a theme on CC Sheets on all clients", choices: ["none", "dark", "light"] }),
+                backgroundOpacity: new NumberField({ label: "Background Image Opacity", nullable: false, min: 1, max: 100, step: 1 }),
+                anchorImage: new BooleanField({ label: "Image Anchor", hint: "Enabled: Anchor Bottom-Right of window; Default: Middle-Left" }),
+                backgroundImage: new FilePathField({
+                    categories: ["IMAGE"],
+                    label: "Background Image",
+                }),
+                fontHeading: new StringField({
+                    label: "Heading Font",
+                    choices: fontChoices
+                }),
+                fontBody: new StringField({
+                    label: "Body Font",
+                    choices: fontChoices
+                })
+            });
         for (const key of Object.keys(schema.fields)) {
             const settingKey = `campaign-codex.color-${key}`;
             const setting = game.settings.settings.get(settingKey);
@@ -296,8 +299,8 @@ static get themeFields() {
                 await game.settings.set("campaign-codex", `color-${key}`, setting.default);
             }
         }
-        ui.notifications.info("Campaign Codex theme colors have been reset to default.");
-        this.render(); 
+        ui.notifications.info(localize('notify.themeReset'));
+        this.render();
     }
 }
 

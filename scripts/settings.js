@@ -171,6 +171,22 @@ export default async function campaigncodexSettings() {
         type: Boolean,
         default: true,
     });
+    game.settings.register("campaign-codex", "showActorDropperDialog", {
+        name: localize("showActorDropperDialog.name"),
+        hint: localize("showActorDropperDialog.hint"),
+        scope: "world",
+        config: true,
+        type: Boolean,
+        default: true,
+    });
+    game.settings.register("campaign-codex", "allowPlayerNotes", {
+        name: "Allow Player Notes",
+        hint: "If enabled, players can access the Notes tab and save personal notes per sheet.",
+        scope: "world",
+        config: true,
+        type: Boolean,
+        default: false,
+    });
     game.settings.register("campaign-codex", "showOnlyPinned", {
         name: localize("showOnlyPinned.name"),
         hint: localize("showOnlyPinned.hint"),
@@ -381,16 +397,6 @@ game.settings.registerMenu("campaign-codex", "themeColorPicker", {
         restricted: true
     });
 
-    game.settings.register("campaign-codex", "collapsedFolderStates", {
-        name: "Collapsed Folder States (TOC)", // Display name (can be localized)
-        hint: "Remembers which folder groups are collapsed by the user in the Table of Contents.", // Help text
-        scope: "client", 
-        config: false, 
-        default: [], 
-        type: Array 
-    });
-
-
     game.settings.register("campaign-codex", "resetItemPathsButton", {
         name: localize("resetItemPathsButton.name"),
         hint: localize("resetItemPathsButton.hint"),
@@ -426,11 +432,12 @@ game.settings.registerMenu("campaign-codex", "themeColorPicker", {
 }
 function getDefaultVisibilities() {
   const TABS_BY_SHEET = {
-    npc: ["info", "locations", "shops", "inventory", "npcs", "quests", "journals", "widgets", "notes"],
-    location: ["info", "shops", "inventory", "npcs", "quests", "journals", "widgets", "notes"],
-    shop: ["info", "inventory", "npcs", "quests", "journals", "widgets", "notes"],
-    region: ["info", "shops", "regions", "parentregions", "inventory", "npcs", "quests", "journals", "widgets", "notes"],
-    tag: ["info", "locations", "shops", "inventory", "npcs", "quests", "journals", "widgets", "notes"]
+    npc: ["info", "locations", "regions", "shops", "inventory", "associates", "factions", "quests", "journals", "widgets", "notes", "mapMarker"],
+    location: ["info", "shops", "inventory", "npcs", "factions", "quests", "journals", "widgets", "notes", "mapMarker"],
+    shop: ["info", "inventory", "npcs", "factions", "quests", "journals", "widgets", "notes", "mapMarker"],
+    region: ["info", "shops", "regions", "parentregions", "locations", "inventory", "npcs", "factions", "quests", "journals", "widgets", "notes", "mapMarker"],
+    group: ["info", "regions", "locations", "shops", "npcs", "factions", "quests", "journals", "widgets", "notes", "mapMarker"],
+    tag: ["info", "factions", "inventory", "quests", "journals", "widgets", "notes", "mapMarker"]
   };
   
   const defaults = {};

@@ -1,28 +1,37 @@
 {{#each objectives}}
 
 {{#if (or ../isGM this.visible)}}
-<li class="objective-item" data-quest-id="{{../quest.id}}" data-objective-id="{{this.id}}" draggable="true">
+<li class="objective-item" data-quest-id="{{../quest.id}}" data-objective-id="{{this.id}}" data-doc-uuid="{{#if ../questDocUuid}}{{../questDocUuid}}{{else}}{{../uuid}}{{/if}}" draggable="true">
   <div class="objective-content">
-      <i class="far {{#if this.completed}}fa-circle-check{{else}}fa-circle{{/if}} objective-toggle-icon" data-quest-id="{{../quest.id}}" data-objective-id="{{this.id}}" data-field="completed" title="Toggle Completion" {{#if ../isGM}}  data-action="objectiveToggle" {{/if}}data-uuid="{{../uuid}}">
-      </i>
-      
-      <span class="objective-text {{#if (not ../isGroupSheet)}}editable{{/if}}" data-quest-id="{{../quest.id}}" data-objective-id="{{this.id}}">{{this.text}}</span>
-      <div class="objective-controls">
-           {{#if ../isGM}} 
-          <a class="objective-toggle-icon" data-quest-id="{{../quest.id}}" data-objective-id="{{this.id}}" data-field="visible" title="Toggle Player Visibility"  data-action="objectiveToggle" data-uuid="{{../uuid}}">
-              <i class="fas {{#if this.visible}}fa-eye{{else}}fa-eye-slash{{/if}}"></i>
-          </a>
-         {{#if (not ../isGroupSheet)}}
-          <a class="remove-objective" data-quest-id="{{../quest.id}}" data-objective-id="{{this.id}}" title="Delete Objective">
-              <i class="fas fa-trash"></i>
-          </a>
-          {{/if}}
-          {{/if}}
-      </div>
+    <i class="far {{#if this.completed}}fa-circle-check{{else}}{{#if this.failed}}fa-circle-xmark{{else}}fa-circle{{/if}}{{/if}} objective-toggle-icon"
+      data-quest-id="{{../quest.id}}" data-objective-id="{{this.id}}" data-field="completed"
+      title="{{ccLocalize 'quest.toggleCompletion'}}" {{#if ../isGM}} data-action="objectiveToggle"
+      {{/if}}data-uuid="{{#if ../questDocUuid}}{{../questDocUuid}}{{else}}{{../uuid}}{{/if}}">
+    </i>
+
+    <span class="objective-text {{#if (not ../isGroupSheet)}}editable{{/if}}" data-quest-id="{{../quest.id}}"
+      data-objective-id="{{this.id}}" data-doc-uuid="{{#if ../questDocUuid}}{{../questDocUuid}}{{else}}{{../uuid}}{{/if}}">{{this.text}}</span>
+    <div class="objective-controls">
+      {{#if ../isGM}}
+      <a class="objective-toggle-icon" data-quest-id="{{../quest.id}}" data-objective-id="{{this.id}}"
+        data-field="visible" title="{{ccLocalize 'quest.togglePlayerVisibility'}}" data-action="objectiveToggle"
+        data-uuid="{{#if ../questDocUuid}}{{../questDocUuid}}{{else}}{{../uuid}}{{/if}}">
+        <i class="fas {{#if this.visible}}fa-eye{{else}}fa-eye-slash{{/if}}"></i>
+      </a>
+      {{#if (not ../isGroupSheet)}}
+      <a class="remove-objective" data-quest-id="{{../quest.id}}" data-objective-id="{{this.id}}"
+        data-doc-uuid="{{#if ../questDocUuid}}{{../questDocUuid}}{{else}}{{../uuid}}{{/if}}"
+        title="{{ccLocalize 'quest.deleteObjective'}}">
+        <i class="fas fa-trash"></i>
+      </a>
+      {{/if}}
+      {{/if}}
+    </div>
   </div>
   {{#if this.objectives.length}}
   <ul class="objective-list">
-    {{> "modules/campaign-codex/templates/partials/quest-sub-objective.hbs" objectives=this.objectives quest=../quest isGM=../isGM isGroupSheet=../isGroupSheet}}
+    {{> "modules/campaign-codex/templates/partials/quest-sub-objective.hbs" objectives=this.objectives quest=../quest
+    isGM=../isGM isGroupSheet=../isGroupSheet questDocUuid=../questDocUuid}}
   </ul>
   {{/if}}
 </li>

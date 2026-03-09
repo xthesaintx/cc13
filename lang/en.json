@@ -1,8 +1,7 @@
 {
-  "CAMPAIGN_CODEX": 
-  {
-    "updateHTML":"<div> <p><strong>IMPORTANT ACTION REQUIRED: Campaign Codex</strong></p><p>If you have just updated Campaign Codex from an 1.5.7 or older Execute the 'Migrate Parent Region' macro in the included Compendium</p></div>",
-    "welcomePageHTML" : "<div> <p><strong>Welcome to Campaign Codex</strong></p> <p>Folder management, system item price location and system item currency location, and other configurations can be changed in settings.</p> <div><button data-campaign-codex-handler=\"campaign-codex|openMenu|core_settings\"><i class=\"fas fa-wrench\"></i>Settings</button></div> <hr> <p><strong>Be part of the Campaign Codex Community</strong></p> <p>If you would like to suggest a feature, report a bug, or just want to chat, feel free to join us on Discord.</p> <div><button data-campaign-codex-handler=\"campaign-codex|openWindow|https://discord.gg/fycwH79s2y\"><i class=\"fab fa-discord\"></i> Join Discord</button></div> <p><strong>Found a bug?</strong></p> <p>If you would like to report a bug and Discord is not your thing head on over to GitHub.</p> <div><button data-campaign-codex-handler=\"campaign-codex|openWindow|https://github.com/xthesaintx/cc13\"><i class=\"fas fa-bug\"></i> Report a Bug</button></div> <p><strong>Supporting the development</strong></p> <p>If you want to support the development, consider taking a look at the membership options on Patreon.</p> <div><button data-campaign-codex-handler=\"campaign-codex|openWindow|https://patreon.com/wgtngm\"><i class=\"fa-brands fa-patreon\"></i> Become a member</button></div><p>If you prefer, you can support via Ko-fi.</p><div><button data-campaign-codex-handler=\"campaign-codex|openWindow|https://ko-fi.com/wgtngm\"><i class=\"fas fa-cup-togo\"></i> Buy a coffee</button></div><p><strong>Documentation</strong></p> <p>Feeling a little lost? Head over to our documentation page for some direction, or jump on Discord and ask a question</a>.</p> <div><button data-campaign-codex-handler=\"campaign-codex|openWindow|https://campaigncodex.wgtngm.com\"><i class=\"fas fa-book\"></i> Documentation</button></div></div>",   
+  "CAMPAIGN_CODEX": {
+    "updateHTML": "<div> <p><strong>IMPORTANT ACTION REQUIRED: Campaign Codex</strong></p><p>If you have just updated Campaign Codex from an 1.5.7 or older Execute the 'Migrate Parent Region' macro in the included Compendium</p></div>",
+    "welcomePageHTML": "<div> <p><strong>Welcome to Campaign Codex</strong></p> <p>Folder management, system item price location and system item currency location, and other configurations can be changed in settings.</p> <div><button data-campaign-codex-handler=\"campaign-codex|openMenu|core_settings\"><i class=\"fas fa-wrench\"></i>Settings</button></div> <hr> <p><strong>Be part of the Campaign Codex Community</strong></p> <p>If you would like to suggest a feature, report a bug, or just want to chat, feel free to join us on Discord.</p> <div><button data-campaign-codex-handler=\"campaign-codex|openWindow|https://discord.gg/fycwH79s2y\"><i class=\"fab fa-discord\"></i> Join Discord</button></div> <p><strong>Found a bug?</strong></p> <p>If you would like to report a bug and Discord is not your thing head on over to GitHub.</p> <div><button data-campaign-codex-handler=\"campaign-codex|openWindow|https://github.com/xthesaintx/cc13\"><i class=\"fas fa-bug\"></i> Report a Bug</button></div> <p><strong>Supporting the development</strong></p> <p>If you want to support the development, consider taking a look at the membership options on Patreon.</p> <div><button data-campaign-codex-handler=\"campaign-codex|openWindow|https://patreon.com/wgtngm\"><i class=\"fa-brands fa-patreon\"></i> Become a member</button></div><p>If you prefer, you can support via Ko-fi.</p><div><button data-campaign-codex-handler=\"campaign-codex|openWindow|https://ko-fi.com/wgtngm\"><i class=\"fas fa-cup-togo\"></i> Buy a coffee</button></div><p><strong>Documentation</strong></p> <p>Feeling a little lost? Head over to our documentation page for some direction, or jump on Discord and ask a question</a>.</p> <div><button data-campaign-codex-handler=\"campaign-codex|openWindow|https://campaigncodex.wgtngm.com\"><i class=\"fas fa-book\"></i> Documentation</button></div></div>",
     "tabs": {
       "original-name": "Original Name",
       "override-name": "Override Name",
@@ -11,47 +10,49 @@
       "edit-title": "Configure Tabs",
       "reset": "Reset to Defaults"
     },
-    "widgets":{
-      "available":"Available",
-      "inactive":"Inactive",
-      "active":"Active"
-
+    "widgets": {
+      "available": "Available",
+      "inactive": "Inactive",
+      "active": "Active"
     },
-    "context":{
+    "context": {
       "hideAssociate": "Hide from Player",
       "showAssociate": "Show to Player",
-      "export":"Export to Standard Journal",
-      "group":"Add to {type}",
+      "export": "Export to Standard Journal",
+      "group": "Add to {type}",
       "changeImage": "Change Image",
       "removeImage": "Remove Image",
       "showImage": "Show Image to Players",
-      "removeLink":"Unlink",
-      "removeTag":"Remove Tag"
+      "showInDirectory": "Show in Directory",
+      "removeLink": "Unlink",
+      "removeTag": "Remove Tag"
     },
-    "toc":{
-      "filter":"Left-click to Include, Right-click to Exclude.",
-      "clear":"Clear Filters"
+    "toc": {
+      "filter": "Left-click includes, right-click excludes. Use the Mode button to toggle AND/OR include logic.",
+      "clear": "Clear Filters",
+      "filterPlaceholder": "Filter..."
     },
-    "button":{
-        "title":"Create new {type}",
-        "droptoscene" : "Drop  {type} to current scene",
-        "tagmode": "Tag Mode",
-        "dropactortoscene": "Drop Actor to current scene"
+    "button": {
+      "deactivate": "Deactivate",
+      "title": "Create new {type}",
+      "droptoscene": "Drop  {type} to current scene",
+      "tagmode": "Tag Mode",
+      "dropactortoscene": "Drop Actor to current scene"
     },
     "info": {
-        "automatically":"{type} are automatically populated from all {source}.",
-        "refresh":"Refresh",
-        "linkfound":"Linking existing {type}.",
-        "newlink":"Created and linked {type} from the scene.",
-        "linked":"Linked {type}"
+      "automatically": "{type} are automatically populated from all {source}.",
+      "refresh": "Refresh",
+      "linkfound": "Linking existing {type}.",
+      "newlink": "Created and linked {type} from the scene.",
+      "linked": "Linked {type}"
     },
-    "sheet":{
+    "sheet": {
       "journal": "{type} Journal"
     },
-    "add":"Add {type}",
+    "add": "Add {type}",
     "group": {
-      "notfound":"The item you are trying to add could not be found.",
-      "self":"A group cannot be added to itself.",
+      "notfound": "The item you are trying to add could not be found.",
+      "self": "A group cannot be added to itself.",
       "expandAll": "Expand All",
       "collapseAll": "Collapse All",
       "toggleRegions": "Hide/Show Regions",
@@ -61,16 +62,16 @@
       "toggleItems": "Hide/Show Inventory Items",
       "toggleNPCs": "Hide/Show NPCs",
       "toggleNPCTags": "Hide/Show Tags on NPCs",
-      "toggleTagMode": "Tag Tree Mode"
+      "toggleTagMode": "Factions View"
     },
     "member": {
-      "type":"Member {type}"
+      "type": "Member {type}"
     },
     "heading": {
-      "in":"{type} {in}"
+      "in": "{type} {in}"
     },
     "names": {
-      "widgets":"Widgets",
+      "widgets": "Widgets",
       "regionlocation": "Region or Location",
       "location": "Location",
       "locations": "Locations",
@@ -97,36 +98,37 @@
       "note": "Notes",
       "actor": "Actor",
       "player": "Player",
+      "faction": "Faction",
       "tag": "Tag",
       "tags": "Tags",
-      "inventory":"Inventory",
+      "inventory": "Inventory",
       "loot": "Loot",
-      "scene":"Scene",
+      "scene": "Scene",
       "standard": "Standard",
-      "quest":"Quest",
-      "quests":"Quests",
-      "toc":"Table of Contents",
-      "widgets": "Widgets",
-      "factions": "Factions"
+      "quest": "Quest",
+      "quests": "Quests",
+      "toc": "Table of Contents",
+      "factions": "Factions",
+      "faction": "Faction"
     },
     "settings": {
-      "allowPlayerPurchasing":{
+      "allowPlayerPurchasing": {
         "name": "Allow players to puchase from Inventories",
         "hint": "If enabled players can send items to themselves from an inventory"
       },
-      "mapMarkerOverride":{
+      "mapMarkerOverride": {
         "name": "Map Marker Scale",
         "hint": "Size of the Campaign Codex Map marker. Default 1"
       },
-      "mapMarkerColor":{
+      "mapMarkerColor": {
         "name": "Use CC Accent colour for the map markers",
         "hint": "If enabled CC map markers will use the CC Accent colour for the background"
       },
-      "mapMarkers":{
+      "mapMarkers": {
         "name": "Enable Campaign Codex Map Markers",
         "hint": "If enabled CC sheets with a name that starts with an optional letter followed by up to three digits followd by an optional letter will create a custom map marker, ie A13"
       },
-      "mapMarkersHover":{
+      "mapMarkersHover": {
         "name": "Enable Hover on Campaign Codex Map Markers",
         "hint": "If enabled map note widget markers will show content on hover"
       },
@@ -138,19 +140,23 @@
         "name": "Styled TOC Button",
         "hint": "Enable to use the Campaign Codex theme for the Table of Contents button in the scene controls."
       },
-      "colorPicker":{
+      "colorPicker": {
         "name": "Accent Color Override",
         "hint": "Override the default theme accent color. Enter a hex code like #d4af37. Leave blank to restore the default."
       },
-      "showOnlyPinned":{
+      "showOnlyPinned": {
         "name": "Show Only Pinned Quests in ToC",
         "hint": "If checked, the Table of Contents will only show quests that have been marked as 'pinned'."
       },
-      "showStats":{
+      "showStats": {
         "name": "Show stats in menu",
         "hint": "Will show (#) next to a menu item in the sheets to indicate the number of each kind, viewable by GM only."
       },
-      "roundFinalPrice":{
+      "showActorDropperDialog": {
+        "name": "Show Actor Dropper Dialog",
+        "hint": "If disabled, the Actor Dropper widget places actors immediately without the selection dialog."
+      },
+      "roundFinalPrice": {
         "name": "Round final price to a whole number",
         "hint": "Will round the final price of an item to the nearest whole number."
       },
@@ -198,7 +204,7 @@
         "name": "Hide by ownership",
         "hint": "Hide linked sheets if the user does not have observer or higher ownership of the journal"
       },
-      "hideInventoryByPermission":{
+      "hideInventoryByPermission": {
         "name": "Hide Inventory Items by ownership",
         "hint": "Hide Items in Inventories if the user does not have observer or higher ownership of the item"
       },
@@ -229,23 +235,23 @@
       "faileditem": "Failed to transfer item"
     },
     "warn": {
-      "notEnoughCurrency":"Not enough funds",
+      "notEnoughCurrency": "Not enough funds",
       "directly": "Cannot remove {type} directly",
       "remove": "Remove {type}",
-      "invaliddrop":"No members with linked actors found to drop!",
-      "nonpcfound":"No NPCs available to drop to map!",
-      "actornotfound":"Linked actor not found!",
-      "failedtodrop":"Failed to drop NPC to map!",
-      "scenenotfound":"Could not find the dropped scene."
+      "invaliddrop": "No members with linked actors found to drop!",
+      "nonpcfound": "No NPCs available to drop to map!",
+      "actornotfound": "Linked actor not found!",
+      "failedtodrop": "Failed to drop NPC to map!",
+      "scenenotfound": "Could not find the dropped scene."
     },
     "message": {
       "open": "Open {type}",
       "unlink": "Unlink {type}",
-      "droptomap":"Drop {type} Members to Scene",
-      "drop":"Drop to Scene."
+      "droptomap": "Drop {type} Members to Scene",
+      "drop": "Drop to Scene."
     },
     "title": {
-      "all":"All",
+      "all": "All",
       "open": {
         "actor": "Open Actor Sheet",
         "sheet": "Open Sheet"
@@ -261,11 +267,11 @@
         "purchase": "Purchase",
         "item": {
           "player": "Send Item to Player Character",
-          "typetoplayer":"Sent {type} to {player}."
+          "typetoplayer": "Sent {type} to {player}."
         }
       },
-      "infinite":{
-        "item":"Toggle infinite amount"
+      "infinite": {
+        "item": "Toggle infinite amount"
       },
       "remove": {
         "item": "Remove Item",
@@ -280,7 +286,7 @@
       }
     },
     "inventory": {
-      "added":"Added {type} to inventory",
+      "added": "Added {type} to inventory",
       "price": {
         "name": "Price",
         "base": "Base Price",
@@ -299,7 +305,7 @@
       }
     },
     "ui": {
-      "addedto":"Added {type} to {typeb}",
+      "addedto": "Added {type} to {typeb}",
       "drag": {
         "link": {
           "journal": {
@@ -320,7 +326,325 @@
         }
       },
       "cancel": "Cancel",
-      "Save": "Save"
+      "Save": "Save",
+      "quicklinks": "Quicklinks",
+      "toggleQuicklinks": "Toggle Quicklinks",
+      "customiseTabs": "Customise Tabs",
+      "createNewTag": "Create new Tag",
+      "toggleExistingTags": "Toggle Existing Tags",
+      "themeConfigDescription": "Configure the theme colors for the Campaign Codex UI. Changes will be applied after saving.",
+      "tabName": "Tab Name",
+      "defaultVisible": "Default Visible",
+      "hiddenFromPlayer": "Hidden from Player",
+      "tabPickerDescription": "Select which tabs are visible by default <i class=\"fas fa-power-off\"></i> and which are hidden from players <i class=\"fas fa-eye-slash\"></i> for each sheet type. This setting applies to all users. GMs can override this for individual sheets using the \"Configure Tabs\" button <i class=\"fas fa-cog\"></i> on the sheet header.",
+      "lootMode": "Loot Mode",
+      "filter": "Filter...",
+      "tagsPlaceholder": "Add a tag...",
+      "removeTag": "Remove tag",
+      "noAssociatesLinked": "No associates linked.",
+      "moveWidgets": "Move Widgets",
+      "dropActorsHere": "Drop Actors Here",
+      "widgetTitle": "Widget Title",
+      "noteTitle": "Note Title",
+      "noNotesAvailable": "No notes available.",
+      "noQuestsFound": "No quests found.",
+      "drop": "Drop",
+      "remove": "Remove",
+      "cr": "CR"
+    },
+    "quest": {
+      "rewards": "Rewards",
+      "objectives": "Objectives",
+      "addObjective": "Add Objective",
+      "addSubObjective": "Add Sub-Objective",
+      "toggleCompletion": "Toggle Completion",
+      "togglePlayerVisibility": "Toggle Player Visibility",
+      "deleteObjective": "Delete Objective",
+      "markAsIncomplete": "Mark as Incomplete",
+      "markAsComplete": "Mark as Complete",
+      "removeFromQuestBoard": "Remove from Quest Board",
+      "pinToQuestBoard": "Pin to Quest Board",
+      "hideFromPlayers": "Hide from Players",
+      "showToPlayers": "Show to Players",
+      "removeQuest": "Remove Quest",
+      "removeItem": "Remove Item",
+      "pinned": "Pinned",
+      "notPinned": "Unpinned",
+      "active": "Active",
+      "completed": "Completed",
+      "inactive": "Inactive",
+      "failed": "Failed",
+      "cycleStatus": "Cycle Status",
+      "openSource": "Open Quest Source",
+      "pinnedQuests": "Pinned Quests",
+      "noPinnedQuests": "No pinned quests yet. Pin quests from the left panel.",
+      "progress": "Progress",
+      "blocked": "Blocked",
+      "locked": "Locked",
+      "unlocked": "Unlocked",
+      "owner": "Owner",
+      "visible": "Visible",
+      "dueDate": "Due Date",
+      "urgency": "Urgency",
+      "boardColumn": "Board Column",
+      "boardOrder": "Board Order",
+      "hideRewardsSideBar": "Hide Rewards",
+      "notifyPlayersSideBar": "Auto Notify",
+      "messageOnCompletedSideBar": "Post Completed",
+      "hideRewards": "Hide Rewards From Players",
+      "notifyPlayers": "Auto notify players on changes",
+      "messageOnCompleted": "Post to chat when completed",
+      "notifyPlayersNow": "Post Update",
+      "updated": "Updated",
+      "questGiver": "Quest Giver",
+      "related": "Related Sheets",
+      "dependencies": "Depends On",
+      "unlocks": "Unlocks",
+      "macros": "Macros",
+      "none": "None",
+      "dropQuestGiver": "Drop a sheet here to set quest giver",
+      "dropRelated": "Drop a sheet here to link as related",
+      "dropDependency": "Drop a quest here",
+      "dropUnlock": "Drop a quest here",
+      "dropMacro": "Drop a macro here",
+      "currency": "Currency",
+      "reputation": "Reputation",
+      "rewardText": "Reward Notes",
+      "rewardClaimed": "Reward Claimed",
+      "addCheckIn": "Add Check-In",
+      "checkInNote": "Check-in note",
+      "checkIns": "Check-Ins",
+      "updatedForPlayers": "Quest has been updated.",
+      "createHandout": "Create Handout",
+      "recentUpdates": "Recent Updates",
+      "noRecentUpdates": "No recent updates.",
+      "linkedQuestNotPinned": "That linked quest is not currently pinned on the board.",
+      "columnActive": "Active",
+      "columnCompleted": "Completed",
+      "columnFailed": "Failed",
+      "openSourceJournal": "Open Source Journal: {name}",
+      "distributeAwards": "Distribute Awards"
+    },
+    "dialog": {
+      "create": "Create",
+      "cancel": "Cancel",
+      "save": "Save",
+      "close": "Close",
+      "confirm": "Confirm",
+      "yes": "Yes",
+      "no": "No",
+      "createNew": "Create New {type}",
+      "nameLabel": "Name:",
+      "enterName": "Enter {type} name...",
+      "defaultName": "New {type}",
+      "areYouSure": "Are you sure?",
+      "importContent": "Do you want to import the existing text content from \"{name}\" into the Campaign Codex description?",
+      "defaultTabVisibility": "Default Tab Visibility",
+      "themeColors": "Campaign Codex Theme Colors",
+      "templatePath": "Campaign Codex Template Path",
+      "editPin": "Edit Pin",
+      "newNote": "New Note",
+      "exportCampaignCodex": "Export Campaign Codex",
+      "importCampaignCodex": "Import Campaign Codex",
+      "confirmExport": "Confirm Export",
+      "confirmImport": "Confirm Import",
+      "overwriteCompendiums": "Overwrite Module Compendiums?",
+      "overwriteCompendium": "Overwrite Compendium?",
+      "exportToStandardJournal": "Export to Standard Journal",
+      "sendItemToPlayer": "Send Item to Player Character",
+      "dropActorsToMap": "Drop Actors to Map",
+      "dropToMap": "Drop {name} to Map",
+      "dropNpcsToMap": "Drop {name} NPCs to Map",
+      "contextImage": "Context Image",
+      "templates": "Templates",
+      "dropNpcsToScene": "Drop NPCs to Map",
+      "selectNpcsToPlace": "Select NPCs to place onto the current scene:",
+      "startTokensHidden": "Start tokens hidden",
+      "startPlacing": "Start Placing",
+      "rotateHelp": "Rotate:",
+      "rotateHelpDetail": "Scroll wheel to rotate tokens",
+      "gridSnapHelp": "Grid Snap:",
+      "gridSnapHelpDetail": "Hold shift to disable snapping",
+      "skipTokensHelp": "Skip Tokens:",
+      "skipTokensHelpDetail": "Right-click to skip unwanted NPCs",
+      "deleteNote": "Are you sure you want to delete this note?",
+      "playerVisible": "Player Visible",
+      "playerHidden": "Player Hidden",
+      "exportToModule": "Export to Module",
+      "exportToObsidian": "Export to Obsidian",
+      "selectExportTarget": "Select Export Target",
+      "selectImportTarget": "Select Import Target",
+      "exportCleanup": "Run cleanup before exporting",
+      "sendToPlayer": "Send <strong>{item}</strong> to which player character?",
+      "filterCharacters": "Filter Characters...",
+      "deductFunds": "Deduct funds from actor",
+      "sendToPlayerTitle": "Send Item to Player Character",
+      "distributeAwardsTitle": "Distribute Awards",
+      "distributeMode": "Distribution",
+      "divideAmongSelected": "Divide total among selected",
+      "totalToEachSelected": "Give total to each selected",
+      "includeRewards": "Reward Types",
+      "includeXP": "Include XP",
+      "includeCurrency": "Include Currency",
+      "selectRecipients": "Recipients",
+      "offline": "Offline"
+    },
+    "notify": {
+      "journalNotFound": "Campaign Codex | Journal Entry not found.",
+      "widgetDataMissing": "Campaign Codex | Widget data missing.",
+      "noteContentNotFound": "Campaign Codex | Note and Journal content not found.",
+      "dragDropToLink": "Drag and drop a Journal Entry onto the pin marker to link it.",
+      "journalUnlinked": "Journal unlinked from pin.",
+      "invalidDropType": "Only Journal Entries and Journal Entry Pages can be dropped onto the map.",
+      "documentNotFound": "Could not find the dropped document.",
+      "addedPin": "Added pin for \"{name}\".",
+      "mergingFolders": "Merging duplicate \"{name}\" folders...",
+      "folderCleanupComplete": "Campaign Codex folder cleanup complete.",
+      "cannotCreateType": "Cannot create document of unknown type: \"{type}\"",
+      "couldNotFindJournal": "Campaign Codex | Could not find Journal Entry with UUID: {uuid}",
+      "invalidConversionType": "Campaign Codex | Invalid conversion type \"{type}\".",
+      "noTextPages": "Journal \"{name}\" has no text pages with content to convert.",
+      "createdSheets": "Created {count} new {type} sheet(s) from the pages of \"{name}\".",
+      "createdSheet": "Successfully created a new {type} sheet from \"{name}\".",
+      "dropRollTable": "Please drop a RollTable document.",
+      "rollTableNotFound": "Linked RollTable not found.",
+      "documentTypeNotFound": "{type} document not found",
+      "failedToOpen": "Failed to open {type}",
+      "noLinkedActor": "Campaign Codex | No Linked Actor found for Loyalty tracking.",
+      "dropMacro": "Please drop a Macro document.",
+      "macroExecuted": "Executed: {name}",
+      "macroNotFound": "Macro not found.",
+      "dropActor": "Please drop an Actor document.",
+      "actorDataNotFound": "Could not find actor data.",
+      "dropperNotAvailable": "Dropper utility not available.",
+      "failedToDropActors": "Failed to drop actors.",
+      "noActorsToDrop": "No actors to drop.",
+      "noRestockTables": "No restock tables linked.",
+      "noValidItems": "No valid items found in roll results.",
+      "restocked": "Restocked {count} items.",
+      "tabVisibilitySaved": "Campaign Codex default tab visibility saved!",
+      "tabVisibilityReset": "Campaign Codex default tab visibility has been reset.",
+      "invalidTemplate": "Invalid template definition.",
+      "failedTemplate": "Failed to load template: {name}",
+      "themeApplied": "Campaign Codex theme settings applied!",
+      "themeExported": "Campaign Codex: Theme exported successfully.",
+      "themeImported": "Theme imported successfully.",
+      "themeImportFailed": "Failed to parse JSON file.",
+      "themeReset": "Campaign Codex theme colors have been reset to default.",
+      "noLinkedActorForDrop": "Campaign Codex | No Linked Actor found for Loyalty tracking.",
+      "noSceneActive": "No scene is currently active!",
+      "noNpcsWithActors": "No NPCs with linked actors found to drop!",
+      "noActorsToDropNpc": "No actors to drop!",
+      "noValidActors": "No valid actors found to drop!",
+      "noNpcsSelected": "No NPCs selected!",
+      "preparingNpcs": "Preparing {count} NPCs for placement...",
+      "noActorsPrepared": "No actors could be prepared for placement!",
+      "placementInstructions": "Click on the canvas to place {count} NPCs. Drag to position, scroll to rotate, click to confirm, right-click to skip.",
+      "placementCancelled": "Token placement cancelled.",
+      "tokenPlacementFailed": "Token placement failed. Check console for details.",
+      "droppedResults": "Dropped {success} NPCs to scene",
+      "droppedImported": " (imported {imported} from compendiums)",
+      "droppedFailed": ". {failed} failed.",
+      "noNpcsDropped": "No NPCs were successfully dropped to the scene.",
+      "awardsUnsupportedSystem": "This system is not supported for award distribution.",
+      "noAssignedCharacters": "No player-assigned characters were found.",
+      "noRewardsToDistribute": "No distributable XP or currency rewards are set on this quest.",
+      "awardsDistributed": "Distributed rewards to {count} characters (XP: {xpCount}, Currency: {currencyCount}).",
+      "exportCleaningUp": "Performing cleanup before export...",
+      "cleanupNotAvailable": "Cleanup functionality not available, continuing with export...",
+      "cleanupComplete": "Cleanup completed successfully.",
+      "cleanupErrors": "Cleanup encountered errors, but export will continue...",
+      "collectingDocuments": "Collecting all linked documents...",
+      "noDocumentsToExport": "No Campaign Codex documents found to export!",
+      "exportComplete": "Export complete! Documents exported to \"{name}\".",
+      "exportFailed": "Export failed: {message}",
+      "moduleNotFound": "Module \"{name}\" not found or doesn't have required unlocked compendiums!",
+      "pruningEmptyFolders": "Pruning empty folders...",
+      "pruningFolders": "Pruning {count} empty folder(s) from \"{label}\".",
+      "failedToCreateCompendium": "Failed to create compendium set!",
+      "recreatingCompendium": "Recreating compendium: {name}",
+      "creatingCompendium": "Creating new compendium: {name}",
+      "jsZipNotAvailable": "JSZip library is not available. Please ensure it is loaded.",
+      "generatingObsidianFiles": "Generating {count} files for Obsidian export...",
+      "obsidianExportSuccess": "Successfully exported journals to {name}",
+      "obsidianExportFailed": "Failed to generate the zip file. See the console for details.",
+      "importCollecting": "Collecting documents from compendiums...",
+      "noDocumentsToImport": "No Campaign Codex documents found to import!",
+      "importingFrom": "Importing documents from \"{name}\"...",
+      "importFailed": "Import failed: {message}",
+      "noCompendiumsFound": "No Campaign Codex compendiums found!",
+      "importingFolders": "Importing folder structures...",
+      "relinkingDocuments": "Relinking imported documents...",
+      "relinkingScenes": "Relinking imported scenes...",
+      "templatePathUpdated": "Campaign Codex template path updated!",
+      "usingExistingScene": "Using existing scene \"{name}\" from world",
+      "importedScene": "Imported scene \"{name}\" from compendium to world",
+      "importComplete": "Import complete!",
+      "importedCount": "Imported: {count}",
+      "skippedCount": "Skipped/Used Existing: {count}",
+      "replacedCount": "Replaced: {count}",
+      "failedCount": "Failed: {count}",
+      "notCampaignCodexDocument": "This journal is not a Campaign Codex document",
+      "exportedToStandard": "Exported \"{name}\" to standard journal",
+      "exportJournalFailed": "Failed to export journal",
+      "noJournalsSelected": "No Campaign Codex journals selected",
+      "exportingJournals": "Exporting {count} Campaign Codex journals...",
+      "exportedJournals": "Successfully exported {count} journals",
+      "exportedWithErrors": "Exported {count} journals with {errors} errors",
+      "sceneImportFailed": "Failed to import scene \"{name}\": {message}",
+      "noSceneLinked": "No scene linked to this document",
+      "linkedSceneNotFound": "Linked scene not found",
+      "compendiumSceneNotSupported": "Opening scenes from compendiums is not supported. Please import the scene into your world and link it again.",
+      "openLinkedSceneFailed": "Failed to open linked scene",
+      "createdNpcJournal": "Created NPC journal for \"{name}\"",
+      "resetItemPathsFailed": "Failed to reset item paths",
+      "movedRegion": "Moved \"{child}\" into \"{parent}\".",
+      "regionCannotBeSelfParent": "A region cannot be its own parent.",
+      "circularDependency": "You cannot move \"{child}\" into \"{parent}\" as it is an ancestor.",
+      "maxNestingDepth": "This action would exceed the maximum nesting depth of {depth}.",
+      "locationRefreshed": "Location data refreshed!",
+      "linkedScene": "Linked scene \"{name}\" to {doc}",
+      "linkedJournal": "Linked journal \"{name}\".",
+      "journalAlreadyLinked": "Journal \"{name}\" is already linked.",
+      "removedBrokenRefs": "Removed {count} broken {field} references from {name}",
+      "removedBrokenParent": "Removed broken parent region link from {name}.",
+      "removedBrokenInventory": "Removed {count} broken inventory items from {name}",
+      "sheetNotFound": "Selected sheet not found",
+      "npcNoLinkedActor": "This NPC has no linked actor to drop!",
+      "sourceDocNotFound": "Could not find the source document.",
+      "removedMember": "Removed member from group",
+      "circularGroupDependency": "Cannot add \"{name}\" as it would create a circular dependency.",
+      "alreadyInGroup": "\"{name}\" is already included in this group.",
+      "failedToUpdateImage": "Failed to update image",
+      "idCollision": "A random ID collision occurred. Please try again.",
+      "unlinkedScene": "Unlinked scene",
+      "itemNotFound": "Item not found",
+      "noSourceDocument": "No source document set",
+      "outOfStock": "Item is out of stock.",
+      "unlinkedJournal": "Unlinked journal.",
+      "failedToRemoveLocationLink": "Failed to remove location link.",
+      "linkedRegionOrLocationNotFound": "Could not find the linked region or location.",
+      "removedFromRegion": "Removed \"{location}\" from region \"{region}\"",
+      "dropToMapNotImplemented": "Drop to map not implemented for {type} sheets",
+      "noNPCsWithActors": "No NPCs with linked actors found to drop!",
+      "tagNotFound": "Could not find the tag to link.",
+      "itemNotFoundToAdd": "Could not find item to add to entry",
+      "addedToQuest": "Added \"{item}\" to quest \"{quest}\"",
+      "actorNotFound": "Could not find the dropped actor.",
+      "linkedActorToDocument": "Linked \"{actor}\" to \"{document}\"",
+      "linkedActorToJournal": "Linked actor \"{name}\" to this journal.",
+      "linkedAsAssociate": "Linked \"{name}\" as an associate.",
+      "cannotLinkSelf": "Cannot link an NPC to itself as an associate.",
+      "actorDropNotConfigured": "Actor drop not configured for \"{type}\" sheets.",
+      "documentNotFoundType": "{type} document not found",
+      "failedToOpenType": "Failed to open {type}",
+      "noPlayerCharacters": "No player characters found"
+    },
+    "export": {
+      "exportButton": "Export Campaign Codex",
+      "exportTooltip": "Export all Campaign Codex content to compendium",
+      "importButton": "Import Campaign Codex",
+      "importTooltip": "Import Campaign Codex content from compendium"
     }
   }
 }

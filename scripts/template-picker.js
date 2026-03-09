@@ -8,8 +8,8 @@ const templateCC = HandlebarsApplicationMixin((ApplicationV2));
  * @extends {FormApplicationV2}
  */
 export class TemplatePicker extends templateCC {
-  static DEFAULT_OPTIONS = {
-        tag:'form',
+    static DEFAULT_OPTIONS = {
+        tag: 'form',
         id: "campaign-codex-template-config",
         title: "Campaign Codex Template Path",
         classes: ["campaign-codex-theme-config campaign-codex"],
@@ -91,19 +91,19 @@ export class TemplatePicker extends templateCC {
     }
 
     static #onBrowse(event, app) {
-    event.preventDefault();
-    const formData = new foundry.applications.ux.FormDataExtended(app.form);
+        event.preventDefault();
+        const formData = new foundry.applications.ux.FormDataExtended(app.form);
 
-    const form = this.element;
-    const input = form.querySelector("input");
-    // console.log(input);
-    
-    new foundry.applications.apps.FilePicker.implementation({
-      type: "folder",
-      current: input.value,
-      callback: (path) => {input.value = path;},
-    }).browse();
-  
+        const form = this.element;
+        const input = form.querySelector("input");
+        // console.log(input);
+
+        new foundry.applications.apps.FilePicker.implementation({
+            type: "folder",
+            current: input.value,
+            callback: (path) => { input.value = path; },
+        }).browse();
+
     }
 
     static async #onSubmitForm(event, form, formData) {
@@ -111,7 +111,7 @@ export class TemplatePicker extends templateCC {
         for (const [key, value] of Object.entries(formData.object)) {
             await game.settings.set("campaign-codex", "journalTemplateFolder", value);
         }
-        ui.notifications.info("Campaign Codex template path updated!");
+        ui.notifications.info(localize('notify.templatePathUpdated'));
     }
 }
 

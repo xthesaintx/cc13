@@ -1,12 +1,14 @@
 /**
  * Base class for all Campaign Codex widgets.
  */
+import { localize, format } from "../helper.js";
+
 export class CampaignCodexWidget {
     /**
      * @param {string} widgetId - A unique identifier for this specific widget instance.
-     * @param {object} initialData - Data potentially passed from the widget tag (e.g., for initial setup).
-     * @param {Document} document - The Journal Entry document this widget belongs to.
-     */
+ * @param {object} initialData - Data potentially passed from the widget tag (e.g., for initial setup).
+ * @param {Document} document - The Journal Entry document this widget belongs to.
+ */
     constructor(widgetId, initialData, document) {
         if (!widgetId || !document) {
             throw new Error("Campaign Codex Widget requires a widgetId and document.");
@@ -14,7 +16,7 @@ export class CampaignCodexWidget {
         this.widgetId = widgetId;
         this.initialData = initialData;
         this.document = document;
-        this.widgetType = this.constructor.name.replace('Widget', '').toLowerCase(); 
+        this.widgetType = this.constructor.name.replace('Widget', '').toLowerCase();
     }
 
     /**
@@ -32,7 +34,7 @@ export class CampaignCodexWidget {
      * @param {HTMLElement} htmlElement - The widget's container element in the DOM.
      */
     async activateListeners(htmlElement) {
-        
+
     }
 
     /**
@@ -57,28 +59,28 @@ export class CampaignCodexWidget {
     async saveDataTemporal(data) {
         try {
             const flagPath = `flags.campaign-codex.data.widgets.${this.widgetType}.${this.widgetId}`;
-             await this.document.updateSource({ [flagPath]: data });
-             foundry.utils.setProperty(this.document, flagPath, data);
-             console.log(`Campaign Codex | Saved widget data (ID: ${this.widgetId}) without render.`);
+            await this.document.updateSource({ [flagPath]: data });
+            foundry.utils.setProperty(this.document, flagPath, data);
+            console.log(`Campaign Codex | Saved widget data (ID: ${this.widgetId}) without render.`);
 
         } catch (error) {
             console.error(`Campaign Codex | Error saving data for widget ${this.widgetType} (ID: ${this.widgetId}):`, error);
         }
     }
 
-/**
-     * Saves data for this specific widget instance to the document flags.
-     * @param {object} data - The data object to save.
-     * @returns {Promise<Document | undefined>} The updated document.
-     */
+    /**
+         * Saves data for this specific widget instance to the document flags.
+         * @param {object} data - The data object to save.
+         * @returns {Promise<Document | undefined>} The updated document.
+         */
     async saveData(data) {
         try {
             const flagPath = `data.widgets.${this.widgetType}.${this.widgetId}`;
-            
+
             return await this.document.setFlag("campaign-codex", flagPath, data);
         } catch (error) {
             console.error(`Campaign Codex | Error saving data via setFlag for widget ${this.widgetType} (ID: ${this.widgetId}):`, error);
-             return undefined;
+            return undefined;
         }
 
     }
@@ -87,14 +89,14 @@ export class CampaignCodexWidget {
      * Removes all data for this widget instance from the document flags.
      * @returns {Promise<Document | undefined>} The updated document.
      */
-     async removeData() {
+    async removeData() {
         try {
             const flagPath = `data.widgets.${this.widgetType}.${this.widgetId}`;
-            
+
             return await this.document.unsetFlag("campaign-codex", flagPath);
         } catch (error) {
             console.error(`Campaign Codex | Error removing data via unsetFlag for widget ${this.widgetType} (ID: ${this.widgetId}):`, error);
-             return undefined;
+            return undefined;
         }
     }
 
@@ -109,43 +111,43 @@ export class CampaignCodexWidget {
 
 
 
-/**
- * Shows a confirmation dialog.
- * @param {string} [message="Are you sure?"] - The confirmation message.
- * @returns {Promise<boolean>}
- */
- async confirmationDialog(message = "Are you sure?") {
-    const proceed = await foundry.applications.api.DialogV2.confirm({
-        content: message,
-        rejectClose: false,
-        modal: true,
-    });
-    return proceed;
-}
-
-/**
- * Opens a document from its UUID.
- * @param {string} uuid - The document UUID.
- * @param {string} [type="document"] - A label for error messages.
- */
- async _onOpenDocument(uuid, type = "document") {
-    if (!uuid) return console.warn(`Campaign Codex | No UUID found for ${type}`);
-
-    try {
-        const doc = await fromUuid(uuid);
-        if (doc) {
-            if (doc instanceof JournalEntryPage) {
-                doc.parent.sheet.render(true, { pageId: doc.id });
-            } else {
-                doc.sheet.render(true);
-            }
-        } else {
-            ui.notifications.warn(`${type} document not found`);
-        }
-    } catch (error) {
-        console.error(`Campaign Codex | Error opening ${type}:`, error);
-        ui.notifications.error(`Failed to open ${type}`);
+    /**
+     * Shows a confirmation dialog.
+     * @param {string} [message="Are you sure?"] - The confirmation message.
+     * @returns {Promise<boolean>}
+     */
+    async confirmationDialog(message = localize('dialog.areYouSure')) {
+        const proceed = await foundry.applications.api.DialogV2.confirm({
+            content: message,
+            rejectClose: false,
+            modal: true,
+        });
+        return proceed;
     }
-}
+
+    /**
+     * Opens a document from its UUID.
+     * @param {string} uuid - The document UUID.
+     * @param {string} [type="document"] - A label for error messages.
+     */
+    async _onOpenDocument(uuid, type = "document") {
+        if (!uuid) return console.warn(`Campaign Codex | No UUID found for ${type}`);
+
+        try {
+            const doc = await fromUuid(uuid);
+            if (doc) {
+                if (doc instanceof JournalEntryPage) {
+                    doc.parent.sheet.render(true, { pageId: doc.id });
+                } else {
+                    doc.sheet.render(true);
+                }
+            } else {
+                ui.notifications.warn(format('notify.documentTypeNotFound', { type }));
+            }
+        } catch (error) {
+            console.error(`Campaign Codex | Error opening ${type}:`, error);
+            ui.notifications.error(format('notify.failedToOpen', { type }));
+        }
+    }
 
 }

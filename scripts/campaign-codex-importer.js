@@ -1,3 +1,5 @@
+import { localize, format } from "./helper.js";
+
 export class SimpleCampaignCodexImporter {
     static CONSTANTS = {
         FLAG_SCOPE: "campaign-codex",
@@ -13,17 +15,17 @@ export class SimpleCampaignCodexImporter {
             const compendiums = await this._findRelatedCompendiums(config.journalCompendium);
             if (!compendiums) return;
 
-            ui.notifications.info("Collecting documents from compendiums...");
+            ui.notifications.info(localize('notify.importCollecting'));
             const importData = await this._collectImportData(compendiums, config.timestampedFolderId);
             if (importData.journals.size === 0) {
-                ui.notifications.warn("No Campaign Codex documents found to import!");
+                ui.notifications.warn(localize('notify.noDocumentsToImport'));
                 return;
             }
 
             const confirmed = await this._confirmImport(importData, config.baseName, config.skipExisting);
             if (!confirmed) return;
 
-            ui.notifications.info(`Importing documents from "${config.baseName}"...`);
+            ui.notifications.info(format('notify.importingFrom', { name: config.baseName }));
             const results = await this._performImport(
                 importData,
                 config.replaceExisting,
@@ -41,7 +43,7 @@ export class SimpleCampaignCodexImporter {
             delete this._timestampedRootId;
             delete this._packParentFolderId;
             console.error("Campaign Codex | Import Error:", error);
-            ui.notifications.error(`Import failed: ${error.message}`);
+            ui.notifications.error(format('notify.importFailed', { message: error.message }));
         }
     }
     /**
@@ -92,7 +94,7 @@ export class SimpleCampaignCodexImporter {
         }
 
         if (importOptions.length === 0) {
-            ui.notifications.warn("No Campaign Codex compendiums found!");
+            ui.notifications.warn(localize('notify.noCompendiumsFound'));
             return null;
         }
 
@@ -118,7 +120,7 @@ export class SimpleCampaignCodexImporter {
     `;
 
         return await foundry.applications.api.DialogV2.wait({
-            window: { title: "Import Campaign Codex" },
+            window: { title: localize('dialog.importCampaignCodex') },
             content,
             buttons: [
                 {
@@ -240,15 +242,15 @@ export class SimpleCampaignCodexImporter {
                 codexData.inventory.forEach((item) => addUuid(item.itemUuid));
             }
 
-              if (Array.isArray(codexData.quests)) {
+            if (Array.isArray(codexData.quests)) {
                 for (const quest of codexData.quests) {
-                  if (Array.isArray(quest.inventory)) {
-                    for (const item of quest.inventory) {
-                      addUuid(item.itemUuid);
+                    if (Array.isArray(quest.inventory)) {
+                        for (const item of quest.inventory) {
+                            addUuid(item.itemUuid);
+                        }
                     }
-                  }
                 }
-              }
+            }
 
 
 
@@ -257,7 +259,7 @@ export class SimpleCampaignCodexImporter {
                 if (!content) continue;
                 const matches = content.match(/@UUID\[([^\]]+)\]/g) || [];
                 for (const match of matches) {
-                    const uuid = match.slice(6, -1); 
+                    const uuid = match.slice(6, -1);
                     addUuid(uuid);
                 }
             }
@@ -357,7 +359,7 @@ export class SimpleCampaignCodexImporter {
         this._packParentFolderId = null;
 
         if (this._timestampedRootId) {
-              const packName = baseName || "Imported Pack";
+            const packName = baseName || "Imported Pack";
 
             let parentFolder = game.folders.find((f) => f.name === packName && f.type === "JournalEntry" && !f.folder);
             if (!parentFolder) {
@@ -368,7 +370,7 @@ export class SimpleCampaignCodexImporter {
 
         game.campaignCodexImporting = true;
         try {
-            ui.notifications.info("Importing folder structures...");
+            ui.notifications.info(localize('notify.importingFolders'));
             await this._importAllFolderStructures(importData);
 
             const typesToProcess = ["actors", "items", "scenes", "journals"];
@@ -393,7 +395,7 @@ export class SimpleCampaignCodexImporter {
                 }
             }
 
-            ui.notifications.info("Relinking imported documents...");
+            ui.notifications.info(localize('notify.relinkingDocuments'));
             const updates = [];
             for (const [oldUuid, newUuid] of uuidMap) {
                 const newDoc = await fromUuid(newUuid);
@@ -406,7 +408,7 @@ export class SimpleCampaignCodexImporter {
                 await JournalEntry.updateDocuments(updates);
             }
             if (importData.scenes) {
-                ui.notifications.info("Relinking imported scenes...");
+                ui.notifications.info(localize('notify.relinkingScenes'));
                 const sceneUpdates = [];
                 for (const [oldUuid, newUuid] of uuidMap) {
                     const newDoc = await fromUuid(newUuid);
@@ -443,20 +445,20 @@ export class SimpleCampaignCodexImporter {
         return false;
     }
 
-/**
- * Checks if a compendium folder or any of its subfolders will contain importable documents.
- * @param {Folder} folder         - The compendium folder to check.
- * @param {Set<Document>} docsToImport - The set of documents that will be imported.
- * @returns {boolean}
- */
-static _folderContainsImportableDocs(folder, docsToImport) {
-    for (const doc of docsToImport) {
-        if (this._isEntityInRoot(doc, folder.id)) {
-            return true; 
+    /**
+     * Checks if a compendium folder or any of its subfolders will contain importable documents.
+     * @param {Folder} folder         - The compendium folder to check.
+     * @param {Set<Document>} docsToImport - The set of documents that will be imported.
+     * @returns {boolean}
+     */
+    static _folderContainsImportableDocs(folder, docsToImport) {
+        for (const doc of docsToImport) {
+            if (this._isEntityInRoot(doc, folder.id)) {
+                return true;
+            }
         }
+        return false;
     }
-    return false; 
-}
     /**
      * Recreates the folder structures, skipping folders that won't contain any imported documents.
      * @param {Object} importData - The full import data object.
@@ -667,17 +669,17 @@ static _folderContainsImportableDocs(folder, docsToImport) {
                 if (item.itemUuid) item.itemUuid = relink(item.itemUuid);
             });
         }
-    if (Array.isArray(newCodexData.quests)) {
-        newCodexData.quests.forEach((quest) => {
-            if (Array.isArray(quest.inventory)) {
-                quest.inventory.forEach((item) => {
-                    if (item.itemUuid) {
-                        item.itemUuid = relink(item.itemUuid);
-                    }
-                });
-            }
-        });
-    }
+        if (Array.isArray(newCodexData.quests)) {
+            newCodexData.quests.forEach((quest) => {
+                if (Array.isArray(quest.inventory)) {
+                    quest.inventory.forEach((item) => {
+                        if (item.itemUuid) {
+                            item.itemUuid = relink(item.itemUuid);
+                        }
+                    });
+                }
+            });
+        }
 
 
         foundry.utils.setProperty(updateData, `flags.${this.CONSTANTS.FLAG_SCOPE}.${this.CONSTANTS.FLAG_DATA}`, newCodexData);
@@ -739,7 +741,7 @@ static _folderContainsImportableDocs(folder, docsToImport) {
         </div>`;
 
         return await foundry.applications.api.DialogV2.confirm({
-            window: { title: "Confirm Import" },
+            window: { title: localize('dialog.confirmImport') },
             content: content,
             yes: {
                 label: "Import Now",
@@ -759,12 +761,12 @@ static _folderContainsImportableDocs(folder, docsToImport) {
         const totalSkipped = total("skipped");
         const totalReplaced = total("replaced");
         const totalFailed = total("failed");
-        let message = `Import complete!`;
+        let message = localize('notify.importComplete');
         const details = [];
-        if (totalImported > 0) details.push(`✓ Imported: ${totalImported}`);
-        if (totalSkipped > 0) details.push(`↻ Skipped/Used Existing: ${totalSkipped}`);
-        if (totalReplaced > 0) details.push(`↺ Replaced: ${totalReplaced}`);
-        if (totalFailed > 0) details.push(`✗ Failed: ${totalFailed}`);
+        if (totalImported > 0) details.push(`✓ ${format('notify.importedCount', { count: totalImported })}`);
+        if (totalSkipped > 0) details.push(`↻ ${format('notify.skippedCount', { count: totalSkipped })}`);
+        if (totalReplaced > 0) details.push(`↺ ${format('notify.replacedCount', { count: totalReplaced })}`);
+        if (totalFailed > 0) details.push(`✗ ${format('notify.failedCount', { count: totalFailed })}`);
         if (details.length > 0) message += `\n${details.join("\n")}`;
         console.log("Campaign Codex | Import Results:", results);
         ui.notifications.info(message);

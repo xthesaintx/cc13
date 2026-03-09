@@ -29,7 +29,7 @@ export class TemplateComponents {
       npc: { icon: "fas fa-user", image: myModulePath + "ui/npc.webp" },
       item: { icon: "fas fa-box", image: myModulePath + "ui/item.webp" },
       group: { icon: "fas fa-sitemap", image: myModulePath + "ui/group.webp" },
-      tag: { icon: "fas fa-tag", image: myModulePath + "ui/npc.webp" },
+      tag: { icon: "fas fa-people-group", image: myModulePath + "ui/npc.webp" },
       faction: { icon: "fas fa-people-group", image: myModulePath + "ui/npc.webp" },
       quest: { icon: "fas fa-scroll", image: myModulePath + "ui/npc.webp" },
       default: {
@@ -85,7 +85,7 @@ export class TemplateComponents {
 
     if (!isOwner) {
       return `
-        <article class="cc-enriched ${isThemed() ? 'themed':''} ${isThemed()} ${systemClass}">
+        <article class="cc-enriched ${isThemed() ? 'themed' : ''} ${isThemed()} ${systemClass}">
           <section class="journal-entry-content cc-non-owner-view">
             ${enrichedValue}
           </section>
@@ -102,9 +102,9 @@ export class TemplateComponents {
     const escapedRawValue = foundry.utils.escapeHTML(rawValue);
 
     return `
-      <article class="cc-enriched ${isThemed() ? 'themed':''} ${isThemed()} ${systemClass}">
+      <article class="cc-enriched ${isThemed() ? 'themed' : ''} ${isThemed()} ${systemClass}">
         <section class="journal-entry-content">
-          <prose-mirror name="flags.campaign-codex.data.${editlocation}" value="${escapedRawValue}" document-uuid="${docIn.uuid}" toggled class="journal-page-content cc-prosemirror ${journalClass} ${isThemed() ? 'themed':''} ${isThemed()}">
+          <prose-mirror name="flags.campaign-codex.data.${editlocation}" value="${escapedRawValue}" document-uuid="${docIn.uuid}" toggled class="journal-page-content cc-prosemirror ${journalClass} ${isThemed() ? 'themed' : ''} ${isThemed()}">
             ${enrichedValue}
           </prose-mirror>
         </section>
@@ -170,10 +170,15 @@ export class TemplateComponents {
     return `
       <div class="empty-state">
         <i class="${icons[type] || "fas fa-question"}"></i>
-        <h3>${messages[type] || localize("dropzone.empty")}</h3>
-        <p>${descriptions[type] || localize("dropzone.generic")}</p>
       </div>
     `;
+    // return `
+    //   <div class="empty-state">
+    //     <i class="${icons[type] || "fas fa-question"}"></i>
+    //     <h3>${messages[type] || localize("dropzone.empty")}</h3>
+    //     <p>${descriptions[type] || localize("dropzone.generic")}</p>
+    //   </div>
+    // `;
   }
 
 
@@ -204,50 +209,85 @@ export class TemplateComponents {
   // Quest Card Components
   // =========================================================================
 
-  static async questList(docIn, quests, isGM, isGroupSheet = false) {
-    if (!quests) {
-      return;
-    }
+  static async questList(docIn, quests, isGM, isGroupSheet = false, options = {}) {
+    const sourceData = docIn?.getFlag("campaign-codex", "data") || {};
+    if (!quests || !Array.isArray(quests)) return;
+    const linkedQuestUuids = quests || [];
+    const showHeader = options.showHeader ?? true;
+    // let questEntries = [];
+
+    if (!docIn && (linkedQuestUuids ?? []).length === 0) return;
+
+
+    const questEntries = await Promise.all(
+      linkedQuestUuids.map(async (uuid) => {
+        const questDoc = await fromUuid(uuid);
+        if (!questDoc) return null;
+        const qData = questDoc.getFlag("campaign-codex", "data") || {};
+        if (!Array.isArray(qData.quests) || qData.quests.length === 0) return null;
+        const q = foundry.utils.deepClone(qData.quests[0]);
+        if (!q || typeof q !== "object") return null;
+        const questOverrides = questDoc.getFlag("campaign-codex", "tab-overrides") || [];
+        const imageAreaOverride = questOverrides?.find(override => override.key === "imageArea");
+        const imageData = questDoc.getFlag("campaign-codex", "image") || TemplateComponents.getAsset("image", "quest");
+
+        const isInHideList = sourceData?.hiddenAssociates?.includes(uuid);
+        if (isInHideList && !game.user.isGM) {
+          return null;
+        }
+        q.hidden = isInHideList ? "hidden-associate" : "";
+        
+        q.canView = await CampaignCodexBaseSheet.canUserView(questDoc.uuid);
+        q.showImage =  imageAreaOverride?.visible ?? true;
+        q.img = imageData ;
+        q.docUuid = questDoc.uuid;
+        return{
+          ...q,
+        }
+      }),
+    );
+
+
+
+    if (!questEntries) return;
     let label = localize("names.quests");
-      if (docIn)
-      {
-        const tabOverrides = docIn.getFlag("campaign-codex", "tab-overrides");
-        if (Array.isArray(tabOverrides)) {
+    if (docIn) {
+      const tabOverrides = docIn.getFlag("campaign-codex", "tab-overrides");
+      if (Array.isArray(tabOverrides)) {
         const override = tabOverrides.find(tab => tab.key === "quests");
-        if (override && override.label) label = override.label ;
+        if (override && override.label) label = override.label;
       }
     }
-  
-    const addButton = isGM
-      ? '<i class="fas fa-circle-plus add-quest refresh-btn"></i>'
-      : "";
-    const visibleQuests = isGM ? quests : quests.filter((q) => q.visible);
 
-    const hideInventoryByPermission = game.settings.get("campaign-codex", "hideInventoryByPermission");
+    const addButton = isGM
+      ? `<i class="fas fa-circle-plus add-quest refresh-btn" data-action="createQuestJournal" data-doc-uuid="${docIn?.uuid || ""}" title="${format("button.title", { type: localize("names.quest") })}"></i>`
+      : "";
+   const validQuestEntries = questEntries.filter((q) => q && typeof q === "object");
+    const visibleQuests = isGM ? validQuestEntries : validQuestEntries.filter((q) => q.visible);
 
     const processedQuests = await Promise.all(
       visibleQuests.map(async (quest) => {
-        const inventoryWithoutPerms = await CampaignCodexLinkers.getInventory(docIn, quest.inventory || []);
-        const processedInventory = await Promise.all(
-          inventoryWithoutPerms.map(async (item) => {
-            const canView = await CampaignCodexBaseSheet.canUserView(item.uuid || item.itemUuid);
-            return { ...item, canView, type: "item" };
-          }),
-        );
-        const finalItems = hideInventoryByPermission
-          ? processedInventory.filter((item) => item.canView)
-          : processedInventory;
+
+
+
+        const statusClass = quest.inactive ? "inactive" : (quest.failed ? "failed" : (quest.completed ? "completed" : "active"));
+        const statusLabel = statusClass === "inactive"
+          ? (localize("quest.inactive") || "Inactive")
+          : statusClass === "failed"
+          ? localize("quest.failed")
+          : (statusClass === "completed" ? localize("quest.completed") : localize("quest.active"));
+
         return {
           ...quest,
-          inventory: finalItems,
+          docUuid: quest.docUuid || docIn?.uuid,
           canEdit: isGM && !isGroupSheet,
+          statusClass,
+          statusLabel,
         };
       }),
     );
 
     const hideSection = !processedQuests || processedQuests.length === 0;
-    const journalClass = journalSystemClass(game.system.id);
-    const themed = isThemed() ? `themed ${isThemed()}` :``;
     const templateData = {
       hide: hideSection,
       doc: docIn,
@@ -255,9 +295,7 @@ export class TemplateComponents {
       isGM: isGM,
       isGroupSheet: isGroupSheet,
       header: this.contentHeader("fas fa-scroll", label, addButton),
-      systemClass: gameSystemClass(game.system.id),
-      themed:themed,
-      journalClass:journalClass,
+      showHeader: showHeader,
     };
 
     return renderTemplate("modules/campaign-codex/templates/quests/quest-list.hbs", templateData);
@@ -281,7 +319,8 @@ export class TemplateComponents {
    */
   static entityGrid(entities, type, showActorButton = false, disableRemove = false) {
     if (!entities || entities.length === 0) {
-      return this.emptyState(type);
+      return "";
+      // return this.emptyState(type);
     }
 
     const alphaCards = game.settings.get("campaign-codex", "sortCardsAlpha");
@@ -303,6 +342,16 @@ export class TemplateComponents {
    * @returns {string} The HTML for the entity card.
    */
   static entityCard(entity, type, showActorButton = false, disableRemove = false, customData = {}) {
+    const defaultLinkField = {
+      associate: "associates",
+      shop: "linkedShops",
+      region: "linkedRegions",
+      parentregion: "parentRegions",
+      group: "linkedGroups",
+    }[type];
+    if (defaultLinkField && !customData["data-link-field"]) {
+      customData["data-link-field"] = defaultLinkField;
+    }
     const customDataAttr = Object.entries(customData)
       .map(([key, value]) => `${key}="${value}"`)
       .join(" ");
@@ -310,7 +359,6 @@ export class TemplateComponents {
     if (hideByPermission && !entity.canView) {
       return "";
     }
-
 
     if (entity.hidden && !game.user.isGM) {
       return "";
@@ -320,66 +368,66 @@ export class TemplateComponents {
 
     const isShopSource = entity.source === "shop";
     const sourceAttr = entity.source ? `data-source="${entity.source}"` : "";
+    const linkCardNote = typeof entity.linkCardNote === "string" ? entity.linkCardNote.trim() : "";
+    const linkCardNoteHtml = linkCardNote
+      ? `<div class="entity-link-note" title="Card Note"><i class="fas fa-square-pen"></i>${foundry.utils.escapeHTML(linkCardNote)}</div>`
+      : "";
 
     let removeButton = "";
     if (disableRemove) {
       removeButton = `data-remove-disabled="true"`;
-    } 
+    }
 
     return `
-        ${
-          entity.canView
-            ? `<div class="entity-card ${type}-card open-${type} ${isHidden} ${entity.showImage ? ``:`hide-entity-image`}" data-action="open${this.getHandlerName(type)}" data-type="${type}" ${removeButton} data-uuid="${entity.uuid}" ${customDataAttr} draggable="true" data-drag="true" data-entry-id="${entity.id}" style="cursor: pointer; position:relative;" ${sourceAttr}>`
-            : `<div class="entity-card ${type}-card ${entity.showImage ? ``:`hide-entity-image`}" style="position:relative;" ${customDataAttr} ${sourceAttr}>`
-        } 
-        <div class="entity-image ${entity.showImage ? ``:`hide-entity-image`}">
+        ${entity.canView
+        ? `<div class="entity-card ${type}-card open-${type} ${isHidden} ${entity.showImage ? `` : `hide-entity-image`}" data-action="open${this.getHandlerName(type)}" data-type="${type}" ${removeButton} data-uuid="${entity.uuid}" ${customDataAttr} draggable="true" data-drag="true" data-entry-id="${entity.id}" style="cursor: pointer; position:relative;" ${sourceAttr}>`
+        : `<div class="entity-card ${type}-card ${entity.showImage ? `` : `hide-entity-image`}" style="position:relative;" ${customDataAttr} ${sourceAttr}>`
+      } 
+        <div class="entity-image ${entity.showImage ? `` : `hide-entity-image`}">
           <img src="${entity.img}" alt="${entity.name}">
         </div>
         <div class="entity-content">
           <h4 class="entity-name">${entity.name}</h4>
           ${entity.meta ? `<div class="entity-meta">
             ${entity.meta || `<span class="entity-type">${type}</span>`}
-          </div>` :``}
-          ${
-            entity.locations && entity.locations.length > 0
-              ? `
+          </div>` : ``}
+          ${linkCardNoteHtml}
+          ${entity.locations && entity.locations.length > 0
+        ? `
             <div class="entity-locations">
               <i class="fas fa-map-marker-alt"></i>
               ${entity.locations.map((loc) => `<span class="location-tag">${loc}</span>`).join("")}
             </div>
           `
-              : ""
-          }
-          ${
-            entity.regions && entity.regions.length > 0
-              ? `
+        : ""
+      }
+          ${entity.regions && entity.regions.length > 0
+        ? `
             <div class="entity-locations">
               <i class="fas fa-globe"></i>
               ${entity.regions.map((reg) => `<span class="location-tag">${reg}</span>`).join("")}
             </div>
           `
-              : ""
-          }
-          ${
-            entity.shops && entity.shops.length > 0
-              ? `
+        : ""
+      }
+          ${entity.shops && entity.shops.length > 0
+        ? `
             <div class="entity-locations shop-tags">
               <i class="fas fa-book-open"></i>
               ${entity.shops.map((shop) => `<span class="location-tag shop-tag">${shop}</span>`).join("")}
             </div>
           `
-              : ""
-          }
-          ${
-            entity.tags && entity.tags.length > 0
-              ? `
+        : ""
+      }
+          ${entity.tags && entity.tags.length > 0
+        ? `
             <div class="entity-locations tag-mode-tags">
-              <i class="fas fa-tag"></i>
+              <i class="fas fa-people-group"></i>
               ${entity.tags.map((tag) => `<span class="location-tag tag-mode">${tag}</span>`).join("")}
             </div>
           `
-              : ""
-          }              
+        : ""
+      }              
         </div>
       </div>
     `;
@@ -438,7 +486,7 @@ export class TemplateComponents {
    */
   static standardJournalCard(journal, disableRemove = false) {
     const iconClass = journal.uuid.includes("JournalEntryPage") ? "fas fa-book-bookmark" : "fas fa-book";
-    const contextOverride = disableRemove ? ``:`data-removable="true"`;
+    const contextOverride = disableRemove ? `` : `data-removable="true"`;
     return `
         <div class="entity-card journal-card open-journal" data-action="openJournal" ${contextOverride} data-uuid="${journal.uuid}" style="cursor: pointer;" data-type="journal">
             <div class="entity-content" style="display: flex; align-items: center; gap: 8px; flex-grow: 1;">
@@ -453,9 +501,10 @@ export class TemplateComponents {
   // Dialogs
   // =========================================================================
 
-static async createPlayerSelectionDialog(itemName, onPlayerSelected) {
+  static async createPlayerSelectionDialog(itemName, onPlayerSelected, options = {}) {
+    const showDeductFunds = options.showDeductFunds !== undefined ? !!options.showDeductFunds : true;
     const allowedTypes = ["character", "player", "group"];
-    
+
     const playerCharacters = game.actors
       .filter((actor) => actor.type && allowedTypes.includes(actor.type.toLowerCase()))
       .sort((a, b) => {
@@ -468,31 +517,31 @@ static async createPlayerSelectionDialog(itemName, onPlayerSelected) {
       });
 
     if (playerCharacters.length === 0) {
-      ui.notifications.warn("No player characters found");
+      ui.notifications.warn(localize('notify.noPlayerCharacters'));
       return;
     }
 
     const content = `
       <div class="player-selection header campaign-codex">
-        <p>Send <strong>${itemName}</strong> to which player character?</p>
+        <p>${format('dialog.sendToPlayer', { item: itemName })}</p>
         
         <div class="form-group" style="margin-bottom: 10px;">
-            <input type="text" name="filter" placeholder="Filter Characters..." autocomplete="off">
+            <input type="text" name="filter" placeholder="${localize('dialog.filterCharacters')}" autocomplete="off">
         </div>
-        <div class="form-group" style="display: flex; align-items: center; margin-bottom: 5px;">
+        ${showDeductFunds ? `<div class="form-group" style="display: flex; align-items: center; margin-bottom: 5px;">
            <input type="checkbox" name="deductFunds" id="deductFunds" style="margin-right: 8px;"> 
-           <label for="deductFunds" style="cursor: pointer;">Deduct funds from actor</label>
-        </div>
+           <label for="deductFunds" style="cursor: pointer;">${localize('dialog.deductFunds')}</label>
+        </div>` : ""}
       </div>
       <div class="player-selection campaign-codex">
 
         <div class="player-list">
           ${playerCharacters
-            .map((char) => {
-              const assignedUser = game.users.find((u) => u.character?.uuid === char.uuid);
-              const userInfo = assignedUser ? ` (${assignedUser.name})` : " (Unassigned)";
+        .map((char) => {
+          const assignedUser = game.users.find((u) => u.character?.uuid === char.uuid);
+          const userInfo = assignedUser ? ` (${assignedUser.name})` : " (Unassigned)";
 
-              return `
+          return `
               <div class="player-option" data-actor-uuid="${char.uuid}" >
                 <img src="${char.img}" alt="${char.name}" style="width: 32px; height: 32px; border-radius: 4px; margin-right: 8px;">
                 <div class="player-info">
@@ -501,15 +550,15 @@ static async createPlayerSelectionDialog(itemName, onPlayerSelected) {
                 </div>
               </div>
             `;
-            })
-            .join("")}
+        })
+        .join("")}
         </div>
       </div>
     `;
 
     const dialog = new foundry.applications.api.DialogV2({
       window: {
-        title: "Send Item to Player Character",
+        title: localize('dialog.sendToPlayerTitle'),
       },
       classes: ["campaign-codex", "send-to-player"],
       content: content,
@@ -517,7 +566,7 @@ static async createPlayerSelectionDialog(itemName, onPlayerSelected) {
         {
           action: "cancel",
           icon: "fas fa-times",
-          label: "Cancel",
+          label: localize('dialog.cancel'),
         },
       ],
     });
@@ -532,7 +581,7 @@ static async createPlayerSelectionDialog(itemName, onPlayerSelected) {
 
     filterInput.addEventListener("input", (event) => {
       const query = event.target.value.toLowerCase().trim();
-      
+
       playerOptions.forEach((option) => {
         const name = option.querySelector(".character-name").innerText.toLowerCase();
         const user = option.querySelector(".user-info").innerText.toLowerCase();
@@ -545,13 +594,13 @@ static async createPlayerSelectionDialog(itemName, onPlayerSelected) {
       element.addEventListener("click", async (event) => {
         const actorUuid = event.currentTarget.dataset.actorUuid;
         const actor = await fromUuid(actorUuid);
-        const shouldDeduct = deductCheckbox.checked;
+        const shouldDeduct = deductCheckbox?.checked ?? false;
         if (actor) {
           onPlayerSelected(actor, shouldDeduct);
         }
         dialog.close();
       });
-    
+
     });
   }
 

@@ -1,6 +1,7 @@
 import { localize, format, targetedRefresh } from "./helper.js";
 import { CampaignCodexLinkers } from "./sheets/linkers.js";
 import { CampaignCodexTOCSheet } from "./campaign-codex-toc.js";
+import { CampaignCodexQuestBoard } from "./campaign-codex-quest-board.js";
 
 export class CampaignManager {
   // =========================================================================
@@ -9,13 +10,13 @@ export class CampaignManager {
   _sheetRefreshQueue = new Set();
   _sheetRefreshTimeout = null;
   _globalRefreshTimeout = null;
-  _sheetRefreshDebounce = 100; 
+  _sheetRefreshDebounce = 100;
 
   constructor() {
     this.relationshipCache = new Map();
     this._creationQueue = new Set();
     this.tagCache = [];
-    this._ready = null; 
+    this._ready = null;
   }
 
   /**
@@ -23,53 +24,53 @@ export class CampaignManager {
    * It ensures that the initialization only runs once.
    */
   initialize() {
-      if (this._ready) return;
-      this._ready = this.initializeTagCache();
+    if (this._ready) return;
+    this._ready = this.initializeTagCache();
   }
 
-    async initializeTagCache() {
-        console.log("Campaign Codex | Initializing Tag Cache");
-        const taggedNpcs = [];
-        for (const journal of game.journal) {
-          const type = journal.getFlag("campaign-codex", "type");
-          const tagMode = journal.getFlag("campaign-codex", "data")?.tagMode;
-          if ((["npc"].includes(type) && tagMode) || ["tag"].includes(type)) {
-                taggedNpcs.push({
-                    uuid: journal.uuid,
-                    id: journal.id,
-                    name: journal.name
-                });
-            }
-        }
-        this.tagCache = taggedNpcs;
-        console.log("Campaign Codex | Tag Cache Initialized with", this.tagCache.length, "tags.");
+  async initializeTagCache() {
+    console.log("Campaign Codex | Initializing Tag Cache");
+    const taggedNpcs = [];
+    for (const journal of game.journal) {
+      const type = journal.getFlag("campaign-codex", "type");
+      const tagMode = journal.getFlag("campaign-codex", "data")?.tagMode;
+      if ((["npc"].includes(type) && tagMode) || ["tag"].includes(type)) {
+        taggedNpcs.push({
+          uuid: journal.uuid,
+          id: journal.id,
+          name: journal.name
+        });
+      }
     }
+    this.tagCache = taggedNpcs;
+    console.log("Campaign Codex | Tag Cache Initialized with", this.tagCache.length, "tags.");
+  }
 
-    addTagToCache(npcDoc) {
-        if (!this.tagCache.some(tag => tag.uuid === npcDoc.uuid)) {
-            this.tagCache.push({
-                uuid: npcDoc.uuid,
-                id: npcDoc.id,
-                name: npcDoc.name
-            });
-        }
+  addTagToCache(npcDoc) {
+    if (!this.tagCache.some(tag => tag.uuid === npcDoc.uuid)) {
+      this.tagCache.push({
+        uuid: npcDoc.uuid,
+        id: npcDoc.id,
+        name: npcDoc.name
+      });
     }
+  }
 
-    updateTagInCache(npcDoc) {
-        const tag = this.tagCache.find(tag => tag.uuid === npcDoc.uuid);
-        if (tag) {
-            tag.name = npcDoc.name;
-        }
+  updateTagInCache(npcDoc) {
+    const tag = this.tagCache.find(tag => tag.uuid === npcDoc.uuid);
+    if (tag) {
+      tag.name = npcDoc.name;
     }
+  }
 
-    removeTagFromCache(npcDoc) {
-        this.tagCache = this.tagCache.filter(tag => tag.uuid !== npcDoc.uuid);
-    }
+  removeTagFromCache(npcDoc) {
+    this.tagCache = this.tagCache.filter(tag => tag.uuid !== npcDoc.uuid);
+  }
 
-    async getTagCache() {
-        await this._ready; 
-        return this.tagCache;
-    }
+  async getTagCache() {
+    await this._ready;
+    return this.tagCache;
+  }
 
 
   // =========================================================================
@@ -81,30 +82,36 @@ export class CampaignManager {
    * If the sheet is already open, it brings it to the front.
    */
   async openTOCSheet(tab = "") {
-    const validTabIds = CampaignCodexTOCSheet.TABS.sheet.tabs.map(t => t.id);
-    if (!validTabIds.includes(tab)) {
-        tab = "groups";
-    }
     if (game.campaignCodex.tocSheetInstance && game.campaignCodex.tocSheetInstance.rendered) {
-      game.campaignCodex.tocSheetInstance.changeTab(tab, "sheet", { force: true });
+      game.campaignCodex.tocSheetInstance.render(true);
       return;
     }
 
-    
+
     let savedDimensions = game.settings.get("campaign-codex", "tocSheetDimensions");
-    game.campaignCodex.tocSheetInstance = new CampaignCodexTOCSheet({ 
-        position: { 
-            width: savedDimensions.width, 
-            height: savedDimensions.height 
-        } 
+    game.campaignCodex.tocSheetInstance = new CampaignCodexTOCSheet({
+      position: {
+        width: savedDimensions.width,
+        height: savedDimensions.height
+      }
     });
     await game.campaignCodex.tocSheetInstance.render(true);
-    game.campaignCodex.tocSheetInstance.changeTab(tab, "sheet", { force: true });
 
   }
 
+  async openQuestBoard() {
+    if (game.campaignCodex.questBoardInstance && game.campaignCodex.questBoardInstance.rendered) {
+      game.campaignCodex.questBoardInstance.close();
+      return;
+    }
+    game.campaignCodex.questBoardInstance = new CampaignCodexQuestBoard({
+      position: { width: 900, height: 700 }
+    });
+    await game.campaignCodex.questBoardInstance.render(true);
+  }
+
   async createTagJournal(actor = null, name = null) {
-    const journalName = name || (actor ? `${actor.name} - Journal` : "New Tag Journal");
+    const journalName = name || (actor ? `${actor.name} - Faction` : "New Faction");
     const creationKey = `npc-${actor?.uuid || journalName}`;
     if (this._creationQueue.has(creationKey)) return;
     this._creationQueue.add(creationKey);
@@ -127,10 +134,10 @@ export class CampaignManager {
           },
           core: { sheetClass: "campaign-codex.TagSheet" },
         },
-        pages: [{ name: "Overview", type: "text", text: { content: `<h1>${journalName}</h1><p>Tag details...</p>` } }],
+        pages: [{ name: "Overview", type: "text", text: { content: `<h1>${journalName}</h1><p>Faction details...</p>` } }],
       };
       const newJournal = await JournalEntry.create(journalData);
-      
+
       return (newJournal);
     } finally {
       this._creationQueue.delete(creationKey);
@@ -164,7 +171,7 @@ export class CampaignManager {
         pages: [{ name: "Overview", type: "text", text: { content: `<h1>${journalName}</h1><p>NPC details...</p>` } }],
       };
       const newJournal = await JournalEntry.create(journalData);
-      
+
       return (newJournal);
     } finally {
       this._creationQueue.delete(creationKey);
@@ -273,6 +280,7 @@ export class CampaignManager {
             data: {
               description: "",
               members: [],
+              linkedNPCs: [],
               notes: "",
             },
           },
@@ -286,13 +294,64 @@ export class CampaignManager {
     }
   }
 
+  async createQuestJournal(name = "New Quest") {
+    const creationKey = `quest-${name}`;
+    if (this._creationQueue.has(creationKey)) return;
+    this._creationQueue.add(creationKey);
+    try {
+      const defaultQuest = {
+        id: foundry.utils.randomID(),
+        title: name,
+        description: "",
+        completed: false,
+        failed: false,
+        visible: false,
+        pinned: false,
+        hideRewards: false,
+        notifyPlayers: false,
+        urgency: "medium",
+        boardColumn: "active",
+        questGiverUuid: "",
+        relatedUuids: [],
+        dependencies: [],
+        unlocks: [],
+        checkIns: [],
+        rewardXP: 0,
+        rewardCurrency: 0,
+        rewardReputation: 0,
+        rewardClaimed: false,
+        updatedAt: Date.now(),
+        objectives: [],
+        inventory: [],
+      };
+      const journalData = {
+        name,
+        flags: {
+          "campaign-codex": {
+            type: "quest",
+            data: {
+              description: "",
+              notes: "",
+              quests: [defaultQuest],
+            },
+          },
+          core: { sheetClass: "campaign-codex.QuestSheet" },
+        },
+        pages: [{ name: "Overview", type: "text", text: { content: `<h1>${name}</h1><p>Quest details...</p>` } }],
+      };
+      return await JournalEntry.create(journalData);
+    } finally {
+      this._creationQueue.delete(creationKey);
+    }
+  }
+
   // =========================================================================
   // Data Linking & Unlinking
   // =========================================================================
 
   async linkLocationToNPC(locationDoc, npcDoc) {
     if (locationDoc.uuid === npcDoc.uuid) return;
-    
+
     const locData = locationDoc.getFlag("campaign-codex", "data") || {};
     const locNPCs = new Set(locData.linkedNPCs || []);
     if (!locNPCs.has(npcDoc.uuid)) {
@@ -300,7 +359,7 @@ export class CampaignManager {
       locData.linkedNPCs = [...locNPCs];
       await locationDoc.setFlag("campaign-codex", "data", locData);
     }
-    
+
     const npcData = npcDoc.getFlag("campaign-codex", "data") || {};
     const npcLocs = new Set(npcData.linkedLocations || []);
     if (!npcLocs.has(locationDoc.uuid)) {
@@ -312,41 +371,41 @@ export class CampaignManager {
 
   async linkRegionToNPC(regionDoc, npcDoc) {
     if (regionDoc.uuid === npcDoc.uuid) return;
-    
+
     const locData = regionDoc.getFlag("campaign-codex", "data") || {};
     const npcData = npcDoc.getFlag("campaign-codex", "data") || {};
     const locNPCs = new Set(locData.linkedNPCs || []);
-      if (!locNPCs.has(npcDoc.uuid)) {
-        locNPCs.add(npcDoc.uuid);
-        locData.linkedNPCs = [...locNPCs];
-        await regionDoc.setFlag("campaign-codex", "data", locData);
-      }
-      
-      const npcLocs = new Set(npcData.linkedLocations || []);
-      if (!npcLocs.has(regionDoc.uuid)) {
-        npcLocs.add(regionDoc.uuid);
-        npcData.linkedLocations = [...npcLocs];
-        await npcDoc.setFlag("campaign-codex", "data", npcData);
-      }
+    if (!locNPCs.has(npcDoc.uuid)) {
+      locNPCs.add(npcDoc.uuid);
+      locData.linkedNPCs = [...locNPCs];
+      await regionDoc.setFlag("campaign-codex", "data", locData);
+    }
+
+    const npcLocs = new Set(npcData.linkedLocations || []);
+    if (!npcLocs.has(regionDoc.uuid)) {
+      npcLocs.add(regionDoc.uuid);
+      npcData.linkedLocations = [...npcLocs];
+      await npcDoc.setFlag("campaign-codex", "data", npcData);
+    }
   }
 
 
-    async linkGroupToTag(groupDoc, tagDoc) {
+  async linkGroupToTag(groupDoc, tagDoc) {
     if (groupDoc.uuid === tagDoc.uuid) return;
     const groupData = groupDoc.getFlag("campaign-codex", "data") || {};
     const tagData = tagDoc.getFlag("campaign-codex", "data") || {};
     const groupNPCs = new Set(groupData.linkedNPCs || []);
-      if (!groupNPCs.has(tagDoc.uuid)) {
-        groupNPCs.add(tagDoc.uuid);
-        groupData.linkedNPCs = [...groupNPCs];
-        await groupDoc.setFlag("campaign-codex", "data", groupData);
-      }
-      const tagGroups = new Set(tagData.linkedGroups || []);
-      if (!tagGroups.has(groupDoc.uuid)) {
-        tagGroups.add(groupDoc.uuid);
-        tagData.linkedGroups = [...tagGroups];
-        await tagDoc.setFlag("campaign-codex", "data", tagData);
-      }
+    if (!groupNPCs.has(tagDoc.uuid)) {
+      groupNPCs.add(tagDoc.uuid);
+      groupData.linkedNPCs = [...groupNPCs];
+      await groupDoc.setFlag("campaign-codex", "data", groupData);
+    }
+    const tagGroups = new Set(tagData.linkedGroups || []);
+    if (!tagGroups.has(groupDoc.uuid)) {
+      tagGroups.add(groupDoc.uuid);
+      tagData.linkedGroups = [...tagGroups];
+      await tagDoc.setFlag("campaign-codex", "data", tagData);
+    }
   }
 
 
@@ -357,7 +416,7 @@ export class CampaignManager {
     if (locationDoc.uuid === shopDoc.uuid) return;
     const shopData = shopDoc.getFlag("campaign-codex", "data") || {};
     const oldLocationUuid = shopData.linkedLocation;
-    
+
     if (oldLocationUuid && oldLocationUuid !== locationDoc.uuid) {
       const oldLocationDoc = await fromUuid(oldLocationUuid).catch(() => null);
       if (oldLocationDoc) {
@@ -373,7 +432,7 @@ export class CampaignManager {
       locData.linkedShops = [...locShops];
       await locationDoc.setFlag("campaign-codex", "data", locData);
     }
-    
+
     shopData.linkedLocation = locationDoc.uuid;
     await shopDoc.setFlag("campaign-codex", "data", shopData);
   }
@@ -382,7 +441,7 @@ export class CampaignManager {
     if (regionDoc.uuid === shopDoc.uuid) return;
     const shopData = shopDoc.getFlag("campaign-codex", "data") || {};
     const oldRegionUuid = shopData.linkedLocation;
-    
+
     if (oldRegionUuid && oldRegionUuid !== regionDoc.uuid) {
       const oldRegionDoc = await fromUuid(oldRegionUuid).catch(() => null);
       if (oldRegionDoc) {
@@ -404,7 +463,7 @@ export class CampaignManager {
 
   async linkShopToNPC(shopDoc, npcDoc) {
     if (shopDoc.uuid === npcDoc.uuid) return;
-    
+
     const shopData = shopDoc.getFlag("campaign-codex", "data") || {};
     const shopNPCs = new Set(shopData.linkedNPCs || []);
     if (!shopNPCs.has(npcDoc.uuid)) {
@@ -412,7 +471,7 @@ export class CampaignManager {
       shopData.linkedNPCs = [...shopNPCs];
       await shopDoc.setFlag("campaign-codex", "data", shopData);
     }
-    
+
     const npcData = npcDoc.getFlag("campaign-codex", "data") || {};
     const npcShops = new Set(npcData.linkedShops || []);
     if (!npcShops.has(shopDoc.uuid)) {
@@ -424,7 +483,7 @@ export class CampaignManager {
 
   async linkNPCToNPC(npc1Doc, npc2Doc) {
     if (npc1Doc.uuid === npc2Doc.uuid) return;
-    
+
     const npc1Data = npc1Doc.getFlag("campaign-codex", "data") || {};
     const associates1 = new Set(npc1Data.associates || []);
     if (!associates1.has(npc2Doc.uuid)) {
@@ -432,7 +491,7 @@ export class CampaignManager {
       npc1Data.associates = [...associates1];
       await npc1Doc.setFlag("campaign-codex", "data", npc1Data);
     }
-    
+
     const npc2Data = npc2Doc.getFlag("campaign-codex", "data") || {};
     const associates2 = new Set(npc2Data.associates || []);
     if (!associates2.has(npc1Doc.uuid)) {
@@ -444,7 +503,7 @@ export class CampaignManager {
 
   async linkRegionToLocation(regionDoc, locationDoc) {
     if (regionDoc.uuid === locationDoc.uuid) return;
-    
+
     const allRegions = game.journal.filter(j => j.getFlag("campaign-codex", "type") === "region");
     for (const region of allRegions) {
       if (region.uuid === regionDoc.uuid) continue;
@@ -455,7 +514,7 @@ export class CampaignManager {
         await region.setFlag("campaign-codex", "data", regionData);
       }
     }
-    
+
     const regionData = regionDoc.getFlag("campaign-codex", "data") || {};
     const linkedLocations = new Set(regionData.linkedLocations || []);
     if (!linkedLocations.has(locationDoc.uuid)) {
@@ -463,13 +522,13 @@ export class CampaignManager {
       regionData.linkedLocations = [...linkedLocations];
       await regionDoc.setFlag("campaign-codex", "data", regionData);
     }
-    
+
     const locationData = locationDoc.getFlag("campaign-codex", "data") || {};
     locationData.parentRegion = regionDoc.uuid;
     await locationDoc.setFlag("campaign-codex", "data", locationData);
 
     for (const app of foundry.applications.instances.values()) {
-    
+
       if (app.document && (app.document.uuid === regionDoc.uuid || app.document.uuid === locationDoc.uuid)) {
         app.render(false);
       }
@@ -502,8 +561,8 @@ export class CampaignManager {
       case "region": await this._handleRegionUpdates(document, changes); break;
       case "group": break;
     }
-    await this.scheduleSheetRefresh(document.uuid)
-    
+    // await this.scheduleSheetRefresh(document.uuid)
+
   }
 
   async cleanupActorRelationships(actorDoc) {
@@ -520,10 +579,10 @@ export class CampaignManager {
   async _handleLocationUpdates(locationDoc) {
     const oldData = foundry.utils.getProperty(locationDoc._source, "flags.campaign-codex.data") || {};
     const newData = foundry.utils.getProperty(locationDoc, "flags.campaign-codex.data") || {};
-    
-    
+
+
     const updateTasks = [];
-    
+
     const oldShops = new Set(oldData.linkedShops || []);
     const newShops = new Set(newData.linkedShops || []);
     for (const shopUuid of oldShops) {
@@ -542,7 +601,7 @@ export class CampaignManager {
         })());
       }
     }
-    
+
     const oldNPCs = new Set(oldData.linkedNPCs || []);
     const newNPCs = new Set(newData.linkedNPCs || []);
     for (const npcUuid of oldNPCs) {
@@ -572,16 +631,16 @@ export class CampaignManager {
       }
     }
     await Promise.all(updateTasks);
-    
+
   }
 
   async _handleShopUpdates(shopDoc) {
     const oldData = foundry.utils.getProperty(shopDoc._source, "flags.campaign-codex.data") || {};
     const newData = foundry.utils.getProperty(shopDoc, "flags.campaign-codex.data") || {};
-    
-    
+
+
     const updateTasks = [];
-    
+
     const oldLocationUuid = oldData.linkedLocation;
     const newLocationUuid = newData.linkedLocation;
     if (oldLocationUuid !== newLocationUuid) {
@@ -608,7 +667,7 @@ export class CampaignManager {
         })());
       }
     }
-    
+
     const oldNPCs = new Set(oldData.linkedNPCs || []);
     const newNPCs = new Set(newData.linkedNPCs || []);
     for (const npcUuid of oldNPCs) {
@@ -638,14 +697,14 @@ export class CampaignManager {
       }
     }
     await Promise.all(updateTasks);
-    
+
   }
 
   async _handleNPCUpdates(npcDoc, changes) {
     const oldData = foundry.utils.getProperty(npcDoc._source, "flags.campaign-codex.data") || {};
     const newData = foundry.utils.getProperty(npcDoc, "flags.campaign-codex.data") || {};
     const updateTasks = [];
-    
+
     if (changes.linkedLocations) {
       const oldLocations = new Set(oldData.linkedLocations || []);
       const newLocations = new Set(newData.linkedLocations || []);
@@ -660,7 +719,7 @@ export class CampaignManager {
         }
       }
     }
-    
+
     if (changes.linkedShops) {
       const oldShops = new Set(oldData.linkedShops || []);
       const newShops = new Set(newData.linkedShops || []);
@@ -675,7 +734,7 @@ export class CampaignManager {
         }
       }
     }
-    
+
     if (changes.associates) {
       const oldAssociates = new Set(oldData.associates || []);
       const newAssociates = new Set(newData.associates || []);
@@ -697,8 +756,8 @@ export class CampaignManager {
     if (!foundry.utils.hasProperty(changes, "flags.campaign-codex.data.linkedLocations")) return;
     const oldData = foundry.utils.getProperty(regionDoc._source, "flags.campaign-codex.data") || {};
     const newData = foundry.utils.getProperty(regionDoc, "flags.campaign-codex.data") || {};
-    
-    
+
+
     const updateTasks = [];
     const oldLocations = new Set(oldData.linkedLocations || []);
     const newLocations = new Set(newData.linkedLocations || []);
@@ -718,7 +777,7 @@ export class CampaignManager {
         })());
       }
     }
-    
+
     const oldShops = new Set(oldData.linkedShops || []);
     const newShops = new Set(newData.linkedShops || []);
     for (const shopUuid of oldShops) {
@@ -737,7 +796,7 @@ export class CampaignManager {
         })());
       }
     }
-        
+
     const oldNPCs = new Set(oldData.linkedNPCs || []);
     const newNPCs = new Set(newData.linkedNPCs || []);
     for (const npcUuid of oldNPCs) {
@@ -767,80 +826,291 @@ export class CampaignManager {
       }
     }
     await Promise.all(updateTasks);
-    
+
   }
 
+  // // =========================================================================
+  // // UI & Sheet Management
+  // // =========================================================================
+
+
+  // /**
+  //  * Schedules a global refresh of all open codex sheets.
+  //  * This is debounced to prevent multiple refreshes.
+  //  */
+  // async scheduleGlobalRefresh() {
+  //   console.log("Campaign Codex | Queued global refresh.");
+  //   if (this._sheetRefreshTimeout) {
+  //     clearTimeout(this._sheetRefreshTimeout);
+  //     this._sheetRefreshQueue.clear();
+  //     this._sheetRefreshTimeout = null;
+  //     console.log("Campaign Codex | Cleared pending targeted refresh in favor of global.");
+  //   }
+
+  //   if (this._globalRefreshTimeout) {
+  //     clearTimeout(this._globalRefreshTimeout);
+  //   }
+
+  //   this._globalRefreshTimeout = setTimeout(async () => {
+  //     console.log("Campaign Codex | Debounce timer fired. Processing global refresh.");
+  //     this._globalRefreshTimeout = null;
+  //     await this.refreshAllOpenCodexSheets();
+  //   }, this._sheetRefreshDebounce);
+  // }
+
+  // /**
+  //  * Schedules a refresh for a specific document's sheet and related sheets.
+  //  * This is debounced to prevent multiple refreshes from simultaneous updates.
+  //  * @param {string} changedDocUuid - The UUID of the document that was updated.
+  //  */
+  // async scheduleSheetRefresh(changedDocUuid) {
+  //   // const originalWindow = ui.activeWindow;
+
+  //   if (this._globalRefreshTimeout) {
+  //     console.log("Campaign Codex | Global refresh pending, skipping targeted queue.");
+  //     return;
+  //   }
+
+  //   this._sheetRefreshQueue.add(changedDocUuid);
+
+  //   if (this._sheetRefreshTimeout) {
+  //     clearTimeout(this._sheetRefreshTimeout);
+  //   }
+
+  //   this._sheetRefreshTimeout = setTimeout(async () => {
+  //     const originalWindow = ui.activeWindow;
+  //     const uuidsToProcess = Array.from(this._sheetRefreshQueue);
+  //     this._sheetRefreshQueue.clear();
+  //     this._sheetRefreshTimeout = null;
+
+  //     await this._processSheetRefresh(uuidsToProcess);
+
+  //     if (originalWindow?.document && originalWindow.rendered) {
+  //       originalWindow.bringToFront();
+  //     }
+  //   }, this._sheetRefreshDebounce);
+
+
+  // }
+
+
+
+  // /**
+  //  * Refreshes all open Campaign Codex sheets.
+  //  * This is useful when a global change occurs (like renaming or deleting a tag) 
+  //  * that affects sheets that aren't directly linked to the changed document.
+  //  */
+  // async refreshAllOpenCodexSheets() {
+  //   const docsWithOpenEditors = new Set();
+  //   const sheetsToRefresh = new Set();
+  //   const activeWindow = ui.activeWindow;
+  //   const tocSheet = foundry.applications.instances.get("campaign-codex-toc-sheet");
+  //   if (tocSheet) {
+  //     tocSheet.render();
+  //   }
+  //   for (const app of foundry.applications.instances.values()) {
+  //     const isCodexSheet = app.document?.getFlag && app.document.getFlag("campaign-codex", "type");
+  //     if (isCodexSheet && !docsWithOpenEditors.has(app.document.uuid)) {
+  //       if (app.rendered) app.render(true);
+  //     }
+  //   }
+  //   if (activeWindow.rendered) activeWindow.bringToFront();
+  // }
+
+  // /**
+  //  * Processes a batch of changed UUIDs and refreshes all affected sheets once.
+  //  * (This was formerly _scheduleSheetRefresh)
+  //  * @param {string[]} changedDocUuids - An array of document UUIDs that were updated.
+  //  */
+  // async _processSheetRefresh(changedDocUuids) {
+  //   if (changedDocUuids.length === 0) return;
+
+
+  //   const allUuidsToRefresh = new Set();
+  //   const allIndirectUuids = new Set();
+
+  //   changedDocUuids.forEach(uuid => allUuidsToRefresh.add(uuid));
+
+
+
+  //   const indirectGroups = await Promise.all(changedDocUuids.map(async (changedDocUuid) => {
+  //     try {
+  //       const changedDoc = await fromUuid(changedDocUuid);
+  //       if (!changedDoc) return [];
+
+  //       const changedType = changedDoc.getFlag("campaign-codex", "type");
+  //       const indirect = [];
+
+  //       if (["npc", "tag"].includes(changedType)) {
+  //         const npcData = changedDoc.getFlag("campaign-codex", "data") || {};
+  //         indirect.push(...(npcData.linkedLocations || []));
+
+  //         const allLocations = await CampaignCodexLinkers.getAllLocations(changedDoc, npcData.linkedLocations || []);
+  //         indirect.push(...allLocations.map((loc) => loc.uuid));
+
+  //         const regionUuids = await Promise.all(allLocations.map(async (loc) => {
+  //           try {
+  //             const locationDoc = await fromUuid(loc.uuid);
+  //             return locationDoc ? locationDoc.getFlag("campaign-codex", "data.parentRegion") : null;
+  //           } catch {
+  //             return null;
+  //           }
+  //         }));
+  //         indirect.push(...regionUuids.filter(Boolean));
+  //       }
+
+  //       if (changedType === "shop") {
+  //         const shopData = changedDoc.getFlag("campaign-codex", "data") || {};
+  //         if (shopData.linkedLocation) {
+  //           indirect.push(shopData.linkedLocation);
+  //           const locationDoc = await fromUuid(shopData.linkedLocation);
+  //           const parentRegion = locationDoc?.getFlag("campaign-codex", "data.parentRegion");
+  //           if (parentRegion) indirect.push(parentRegion);
+  //         }
+  //       }
+
+  //       return indirect;
+  //     } catch (e) {
+  //       console.warn(`Campaign Codex | Could not process indirect relationships for ${changedDocUuid}`, e);
+  //       return [];
+  //     }
+  //   }));
+
+  //   for (const indirect of indirectGroups) {
+  //     for (const uuid of indirect) {
+  //       allIndirectUuids.add(uuid);
+  //     }
+  //   }
+
+
+  //   allIndirectUuids.forEach(uuid => allUuidsToRefresh.add(uuid));
+
+  //   const finalUuidsToRefresh = new Set(allUuidsToRefresh);
+
+
+
+  //   const relatedChecks = [];
+  //   for (const app of foundry.applications.instances.values()) {
+  //     if (!app.document?.getFlag) continue;
+  //     if (finalUuidsToRefresh.has(app.document.uuid)) continue;
+  //     if (!app._isRelatedDocument) continue;
+
+  //     relatedChecks.push((async () => {
+  //       try {
+  //         const relatedResults = await Promise.all(
+  //           changedDocUuids.map((changedDocUuid) => app._isRelatedDocument(changedDocUuid))
+  //         );
+  //         return relatedResults.some(Boolean) ? app.document.uuid : null;
+  //       } catch {
+  //         return null;
+  //       }
+  //     })());
+  //   }
+
+  //   const relatedUuids = await Promise.all(relatedChecks);
+  //   for (const uuid of relatedUuids) {
+  //     if (uuid) finalUuidsToRefresh.add(uuid);
+  //   }
+
+
+  //   const tocSheet = foundry.applications.instances.get("campaign-codex-toc-sheet");
+  //   if (tocSheet) {
+  //     tocSheet.render();
+  //   }
+
+
+
+  //   const renderPromises = [];
+  //   const uuidSet = new Set(finalUuidsToRefresh);
+
+  //   for (const app of foundry.applications.instances.values()) {
+  //     if (app.document && uuidSet.has(app.document.uuid)) {
+  //       if (app.rendered) {
+  //         const renderPromise = app.render(true);
+  //         if (renderPromise instanceof Promise) {
+  //           renderPromises.push(renderPromise);
+  //         }
+  //       }
+  //     }
+  //   }
+
+  //   if (renderPromises.length > 0) {
+  //     await Promise.allSettled(renderPromises);
+  //   }
+
+
+  // }
+  
   // =========================================================================
   // UI & Sheet Management
   // =========================================================================
 
 
-/**
- * Schedules a global refresh of all open codex sheets.
- * This is debounced to prevent multiple refreshes.
- */
-async scheduleGlobalRefresh() {
-  console.log("Campaign Codex | Queued global refresh.");
-  if (this._sheetRefreshTimeout) {
-    clearTimeout(this._sheetRefreshTimeout);
-    this._sheetRefreshQueue.clear();
-    this._sheetRefreshTimeout = null;
-    console.log("Campaign Codex | Cleared pending targeted refresh in favor of global.");
-  }
-
-  if (this._globalRefreshTimeout) {
-    clearTimeout(this._globalRefreshTimeout);
-  }
-
-  this._globalRefreshTimeout = setTimeout(async () => {
-    console.log("Campaign Codex | Debounce timer fired. Processing global refresh.");
-    this._globalRefreshTimeout = null;
-    await this.refreshAllOpenCodexSheets(); 
-  }, this._sheetRefreshDebounce);
-}
-
-/**
- * Schedules a refresh for a specific document's sheet and related sheets.
- * This is debounced to prevent multiple refreshes from simultaneous updates.
- * @param {string} changedDocUuid - The UUID of the document that was updated.
- */
-async scheduleSheetRefresh(changedDocUuid) {
-  const originalWindow = ui.activeWindow;
-
-  if (this._globalRefreshTimeout) {
-    console.log("Campaign Codex | Global refresh pending, skipping targeted queue.");
-    return;
-  }
-
-  this._sheetRefreshQueue.add(changedDocUuid);
-
-  if (this._sheetRefreshTimeout) {
-    clearTimeout(this._sheetRefreshTimeout);
-  }
-
-  this._sheetRefreshTimeout = setTimeout(async () => {
-    const uuidsToProcess = Array.from(this._sheetRefreshQueue);
-    this._sheetRefreshQueue.clear();
-    this._sheetRefreshTimeout = null;
-    
-    await this._processSheetRefresh(uuidsToProcess);
-
-    if (originalWindow?.document && originalWindow.rendered) {
-      originalWindow.bringToFront();
+  /**
+   * Schedules a global refresh of all open codex sheets.
+   * This is debounced to prevent multiple refreshes.
+   */
+  async scheduleGlobalRefresh() {
+    console.log("Campaign Codex | Queued global refresh.");
+    if (this._sheetRefreshTimeout) {
+      clearTimeout(this._sheetRefreshTimeout);
+      this._sheetRefreshQueue.clear();
+      this._sheetRefreshTimeout = null;
+      console.log("Campaign Codex | Cleared pending targeted refresh in favor of global.");
     }
-  }, this._sheetRefreshDebounce);
+
+    if (this._globalRefreshTimeout) {
+      clearTimeout(this._globalRefreshTimeout);
+    }
+
+    this._globalRefreshTimeout = setTimeout(async () => {
+      console.log("Campaign Codex | Debounce timer fired. Processing global refresh.");
+      this._globalRefreshTimeout = null;
+      await this.refreshAllOpenCodexSheets();
+    }, this._sheetRefreshDebounce);
+  }
+
+  /**
+   * Schedules a refresh for a specific document's sheet and related sheets.
+   * This is debounced to prevent multiple refreshes from simultaneous updates.
+   * @param {string} changedDocUuid - The UUID of the document that was updated.
+   */
+  async scheduleSheetRefresh(changedDocUuid) {
+    if (this._globalRefreshTimeout) {
+      console.log("Campaign Codex | Global refresh pending, skipping targeted queue.");
+      return;
+    }
+
+    this._sheetRefreshQueue.add(changedDocUuid);
+
+    if (this._sheetRefreshTimeout) {
+      clearTimeout(this._sheetRefreshTimeout);
+    }
+
+    this._sheetRefreshTimeout = setTimeout(async () => {
+      const originalWindow = ui.activeWindow;
+      const uuidsToProcess = Array.from(this._sheetRefreshQueue);
+      this._sheetRefreshQueue.clear();
+      this._sheetRefreshTimeout = null;
+
+      await this._processSheetRefresh(uuidsToProcess, originalWindow);
+
+      if (originalWindow?.document && originalWindow.rendered) {
+        originalWindow.bringToFront();
+      }
+    }, this._sheetRefreshDebounce);
 
 
-}
+  }
 
 
 
-/**
- * Refreshes all open Campaign Codex sheets.
- * This is useful when a global change occurs (like renaming or deleting a tag) 
- * that affects sheets that aren't directly linked to the changed document.
- */
-async refreshAllOpenCodexSheets() {
+  /**
+   * Refreshes all open Campaign Codex sheets.
+   * This is useful when a global change occurs (like renaming or deleting a tag) 
+   * that affects sheets that aren't directly linked to the changed document.
+   */
+  async refreshAllOpenCodexSheets() {
     const docsWithOpenEditors = new Set();
     const sheetsToRefresh = new Set();
     const activeWindow = ui.activeWindow;
@@ -850,136 +1120,143 @@ async refreshAllOpenCodexSheets() {
     }
     for (const app of foundry.applications.instances.values()) {
       const isCodexSheet = app.document?.getFlag && app.document.getFlag("campaign-codex", "type");
-      if ( isCodexSheet && !docsWithOpenEditors.has(app.document.uuid) ) {
-          if (app.rendered) app.render(true);
-        }
+      if (isCodexSheet && !docsWithOpenEditors.has(app.document.uuid)) {
+        if (app.rendered) app.render(true);
       }
+    }
     if (activeWindow.rendered) activeWindow.bringToFront();
   }
 
-/**
- * Processes a batch of changed UUIDs and refreshes all affected sheets once.
- * (This was formerly _scheduleSheetRefresh)
- * @param {string[]} changedDocUuids - An array of document UUIDs that were updated.
- */
-async _processSheetRefresh(changedDocUuids) {
-  if (changedDocUuids.length === 0) return;
+  /**
+   * Processes a batch of changed UUIDs and refreshes all affected sheets once.
+   * (This was formerly _scheduleSheetRefresh)
+   * @param {string[]} changedDocUuids - An array of document UUIDs that were updated.
+   */
+  async _processSheetRefresh(changedDocUuids, preferredWindow = null) {
+    if (changedDocUuids.length === 0) return;
 
 
-  const allUuidsToRefresh = new Set();
-  const allIndirectUuids = new Set();
+    const allUuidsToRefresh = new Set();
+    const allIndirectUuids = new Set();
 
-  changedDocUuids.forEach(uuid => allUuidsToRefresh.add(uuid));
+    changedDocUuids.forEach(uuid => allUuidsToRefresh.add(uuid));
 
-  
-  
-  const indirectGroups = await Promise.all(changedDocUuids.map(async (changedDocUuid) => {
-    try {
-      const changedDoc = await fromUuid(changedDocUuid);
-      if (!changedDoc) return [];
 
-      const changedType = changedDoc.getFlag("campaign-codex", "type");
-      const indirect = [];
 
-      if (["npc", "tag"].includes(changedType)) {
-        const npcData = changedDoc.getFlag("campaign-codex", "data") || {};
-        indirect.push(...(npcData.linkedLocations || []));
-
-        const allLocations = await CampaignCodexLinkers.getAllLocations(changedDoc, npcData.linkedLocations || []);
-        indirect.push(...allLocations.map((loc) => loc.uuid));
-
-        const regionUuids = await Promise.all(allLocations.map(async (loc) => {
-          try {
-            const locationDoc = await fromUuid(loc.uuid);
-            return locationDoc ? locationDoc.getFlag("campaign-codex", "data.parentRegion") : null;
-          } catch {
-            return null;
-          }
-        }));
-        indirect.push(...regionUuids.filter(Boolean));
-      }
-
-      if (changedType === "shop") {
-        const shopData = changedDoc.getFlag("campaign-codex", "data") || {};
-        if (shopData.linkedLocation) {
-          indirect.push(shopData.linkedLocation);
-          const locationDoc = await fromUuid(shopData.linkedLocation);
-          const parentRegion = locationDoc?.getFlag("campaign-codex", "data.parentRegion");
-          if (parentRegion) indirect.push(parentRegion);
-        }
-      }
-
-      return indirect;
-    } catch (e) {
-      console.warn(`Campaign Codex | Could not process indirect relationships for ${changedDocUuid}`, e);
-      return [];
-    }
-  }));
-
-  for (const indirect of indirectGroups) {
-    for (const uuid of indirect) {
-      allIndirectUuids.add(uuid);
-    }
-  }
-  
-
-  allIndirectUuids.forEach(uuid => allUuidsToRefresh.add(uuid));
-
-  const finalUuidsToRefresh = new Set(allUuidsToRefresh);
-
-  
-  
-  const relatedChecks = [];
-  for (const app of foundry.applications.instances.values()) {
-    if (!app.document?.getFlag) continue;
-    if (finalUuidsToRefresh.has(app.document.uuid)) continue;
-    if (!app._isRelatedDocument) continue;
-
-    relatedChecks.push((async () => {
+    const indirectGroups = await Promise.all(changedDocUuids.map(async (changedDocUuid) => {
       try {
-        const relatedResults = await Promise.all(
-          changedDocUuids.map((changedDocUuid) => app._isRelatedDocument(changedDocUuid))
-        );
-        return relatedResults.some(Boolean) ? app.document.uuid : null;
-      } catch {
-        return null;
+        const changedDoc = await fromUuid(changedDocUuid);
+        if (!changedDoc) return [];
+
+        const changedType = changedDoc.getFlag("campaign-codex", "type");
+        const indirect = [];
+
+        if (["npc", "tag"].includes(changedType)) {
+          const npcData = changedDoc.getFlag("campaign-codex", "data") || {};
+          indirect.push(...(npcData.linkedLocations || []));
+
+          const allLocations = await CampaignCodexLinkers.getAllLocations(changedDoc, npcData.linkedLocations || []);
+          indirect.push(...allLocations.map((loc) => loc.uuid));
+
+          const regionUuids = await Promise.all(allLocations.map(async (loc) => {
+            try {
+              const locationDoc = await fromUuid(loc.uuid);
+              return locationDoc ? locationDoc.getFlag("campaign-codex", "data.parentRegion") : null;
+            } catch {
+              return null;
+            }
+          }));
+          indirect.push(...regionUuids.filter(Boolean));
+        }
+
+        if (changedType === "shop") {
+          const shopData = changedDoc.getFlag("campaign-codex", "data") || {};
+          if (shopData.linkedLocation) {
+            indirect.push(shopData.linkedLocation);
+            const locationDoc = await fromUuid(shopData.linkedLocation);
+            const parentRegion = locationDoc?.getFlag("campaign-codex", "data.parentRegion");
+            if (parentRegion) indirect.push(parentRegion);
+          }
+        }
+
+        return indirect;
+      } catch (e) {
+        console.warn(`Campaign Codex | Could not process indirect relationships for ${changedDocUuid}`, e);
+        return [];
       }
-    })());
-  }
+    }));
 
-  const relatedUuids = await Promise.all(relatedChecks);
-  for (const uuid of relatedUuids) {
-    if (uuid) finalUuidsToRefresh.add(uuid);
-  }
-  
-
-  const tocSheet = foundry.applications.instances.get("campaign-codex-toc-sheet");
-  if (tocSheet) {
-    tocSheet.render();
-  }
-  
+    for (const indirect of indirectGroups) {
+      for (const uuid of indirect) {
+        allIndirectUuids.add(uuid);
+      }
+    }
 
 
-  const renderPromises = [];
-  const uuidSet = new Set(finalUuidsToRefresh);
-  
-  for (const app of foundry.applications.instances.values()) {
-    if (app.document && uuidSet.has(app.document.uuid)) {
-      if (app.rendered) {
-        const renderPromise = app.render(true);
-        if (renderPromise instanceof Promise) {
-          renderPromises.push(renderPromise);
+    allIndirectUuids.forEach(uuid => allUuidsToRefresh.add(uuid));
+
+    const finalUuidsToRefresh = new Set(allUuidsToRefresh);
+
+
+
+    const relatedChecks = [];
+    for (const app of foundry.applications.instances.values()) {
+      if (!app.document?.getFlag) continue;
+      if (finalUuidsToRefresh.has(app.document.uuid)) continue;
+      if (!app._isRelatedDocument) continue;
+
+      relatedChecks.push((async () => {
+        try {
+          const relatedResults = await Promise.all(
+            changedDocUuids.map((changedDocUuid) => app._isRelatedDocument(changedDocUuid))
+          );
+          return relatedResults.some(Boolean) ? app.document.uuid : null;
+        } catch {
+          return null;
+        }
+      })());
+    }
+
+    const relatedUuids = await Promise.all(relatedChecks);
+    for (const uuid of relatedUuids) {
+      if (uuid) finalUuidsToRefresh.add(uuid);
+    }
+
+
+    const tocSheet = foundry.applications.instances.get("campaign-codex-toc-sheet");
+    if (tocSheet) {
+      tocSheet.render();
+    }
+
+
+
+    const renderPromises = [];
+    const uuidSet = new Set(finalUuidsToRefresh);
+
+    for (const app of foundry.applications.instances.values()) {
+      if (app.document && uuidSet.has(app.document.uuid)) {
+        if (app.rendered) {
+          if (preferredWindow && app === preferredWindow) {
+            continue;
+          }
+          const renderPromise = app.render(true);
+          if (renderPromise instanceof Promise) {
+            renderPromises.push(renderPromise);
+          }
         }
       }
     }
-  }
-  
-  if (renderPromises.length > 0) {
-    await Promise.allSettled(renderPromises);
-  }
+
+    if (renderPromises.length > 0) {
+      await Promise.allSettled(renderPromises);
+    }
+
+    if (preferredWindow?.rendered && preferredWindow?.document && uuidSet.has(preferredWindow.document.uuid)) {
+      await preferredWindow.render(true);
+    }
 
 
- }
+  }
 
   // =========================================================================
   // Scene Management
@@ -992,14 +1269,14 @@ async _processSheetRefresh(changedDocUuids) {
       const existingScene = game.scenes.find(s => s.name === scene.name);
       if (existingScene) {
         targetScene = existingScene;
-        ui.notifications.info(`Using existing scene "${scene.name}" from world`);
+        ui.notifications.info(format('notify.usingExistingScene', { name: scene.name }));
       } else {
         try {
           const importedScenes = await Scene.createDocuments([scene.toObject()]);
           targetScene = importedScenes[0];
-          ui.notifications.info(`Imported scene "${scene.name}" from compendium to world`);
+          ui.notifications.info(format('notify.importedScene', { name: scene.name }));
         } catch (error) {
-          ui.notifications.error(`Failed to import scene "${scene.name}": ${error.message}`);
+          ui.notifications.error(format('notify.sceneImportFailed', { name: scene.name, message: error.message }));
           console.error("Campaign Codex | Failed to import scene:", error);
           return;
         }
@@ -1008,6 +1285,12 @@ async _processSheetRefresh(changedDocUuids) {
     const docData = document.getFlag("campaign-codex", "data") || {};
     docData.linkedScene = targetScene.uuid;
     await document.setFlag("campaign-codex", "data", docData);
+
+    try {
+      await targetScene.update({ journal: document.id });
+    } catch (error) {
+      console.warn("Campaign Codex | Failed to set scene journal link:", error);
+    }
   }
 
 
@@ -1015,23 +1298,23 @@ async _processSheetRefresh(changedDocUuids) {
     const documentData = document.getFlag("campaign-codex", "data") || {};
     const linkedSceneUuid = documentData.linkedScene;
     if (!linkedSceneUuid) {
-      return ui.notifications.warn("No scene linked to this document");
+      return ui.notifications.warn(localize('notify.noSceneLinked'));
     }
     try {
       const linkedScene = await fromUuid(linkedSceneUuid);
       if (!linkedScene) {
-        return ui.notifications.error("Linked scene not found");
+        return ui.notifications.error(localize('notify.linkedSceneNotFound'));
       }
 
       if (linkedScene.pack) {
-        return ui.notifications.warn("Opening scenes from compendiums is not supported. Please import the scene into your world and link it again.");
+        return ui.notifications.warn(localize('notify.compendiumSceneNotSupported'));
       }
 
       return linkedScene.view();
 
     } catch (error) {
       console.error("Campaign Codex | Error opening linked scene:", error);
-      ui.notifications.error("Failed to open linked scene");
+      ui.notifications.error(localize('notify.openLinkedSceneFailed'));
     }
   }
 
@@ -1041,17 +1324,17 @@ async _processSheetRefresh(changedDocUuids) {
       let worldScene;
       if (existingScene) {
         worldScene = existingScene;
-        ui.notifications.info(`Using existing world scene "${compendiumScene.name}"`);
+        ui.notifications.info(format('notify.usingExistingScene', { name: compendiumScene.name }));
       } else {
         const importedScenes = await Scene.createDocuments([compendiumScene.toObject()]);
         worldScene = importedScenes[0];
-        ui.notifications.info(`Imported scene "${compendiumScene.name}" from compendium to world`);
+        ui.notifications.info(format('notify.importedScene', { name: compendiumScene.name }));
       }
       await document.setFlag("campaign-codex", "data.worldSceneUuid", worldScene.uuid);
       worldScene.view();
     } catch (error) {
       console.error("Campaign Codex | Error importing scene:", error);
-      ui.notifications.error(`Failed to import scene "${compendiumScene.name}": ${error.message}`);
+      ui.notifications.error(format('notify.sceneImportFailed', { name: compendiumScene.name, message: error.message }));
     }
   }
 
@@ -1062,26 +1345,26 @@ async _processSheetRefresh(changedDocUuids) {
   getActorDisplayMeta(actor, npcData) {
     let metaLabel = ""
     if (npcData.sheetTypeLabelOverride !== undefined && npcData.sheetTypeLabelOverride !== "") {
-            metaLabel = npcData.sheetTypeLabelOverride;
-        } else if (npcData.tagMode) {
-            metaLabel = localize("names.tag") 
-        } else {
-            metaLabel = actor?.type === "character" 
-                ? localize("names.player") : localize("names.npc");
-        }
+      metaLabel = npcData.sheetTypeLabelOverride;
+    } else if (npcData.tagMode) {
+      metaLabel = localize("names.faction") || localize("names.tag")
+    } else {
+      metaLabel = actor?.type === "character"
+        ? localize("names.player") : localize("names.npc");
+    }
     return `<span class="entity-type">${metaLabel}</span>`;
 
   }
 
   async findOrCreateNPCJournalForActor(actor) {
     if (!actor) return null;
-    let npcJournal = game.journal.find(j => 
+    let npcJournal = game.journal.find(j =>
       j.getFlag("campaign-codex", "type") === "npc" &&
       j.getFlag("campaign-codex", "data")?.linkedActor === actor.uuid
     );
     if (!npcJournal) {
       npcJournal = await this.createNPCJournal(actor);
-      ui.notifications.info(`Created NPC journal for "${actor.name}"`);
+      ui.notifications.info(format('notify.createdNpcJournal', { name: actor.name }));
     }
     return npcJournal;
   }
@@ -1109,10 +1392,10 @@ async _processSheetRefresh(changedDocUuids) {
     try {
       await game.settings.set("campaign-codex", "itemPricePath", "system.price.value");
       await game.settings.set("campaign-codex", "itemDenominationPath", "system.price.denomination");
-      ui.notifications.info("Item price paths reset to D&D5e defaults");
+      ui.notifications.info(localize('notifications.itemPricePathsReset'));
     } catch (error) {
       console.error("Campaign Codex | Error resetting item paths:", error);
-      ui.notifications.error("Failed to reset item paths");
+      ui.notifications.error(localize('notify.resetItemPathsFailed'));
     }
   }
 
@@ -1128,7 +1411,7 @@ async _processSheetRefresh(changedDocUuids) {
     }
   }
 
-// =========================================================================
+  // =========================================================================
   // Region-to-Region Linking
   // =========================================================================
 
@@ -1141,7 +1424,7 @@ async _processSheetRefresh(changedDocUuids) {
   async linkRegionToRegion(parentRegionDoc, childRegionDoc) {
     const isValid = await this._isValidRegionMove(parentRegionDoc, childRegionDoc);
     if (!isValid) {
-      return; 
+      return;
     }
 
     const childData = childRegionDoc.getFlag("campaign-codex", "data") || {};
@@ -1155,15 +1438,15 @@ async _processSheetRefresh(changedDocUuids) {
 
     const childParentRegions = new Set(childData.parentRegions || []);
     childParentRegions.add(parentRegionDoc.uuid);
-    childData.parentRegions= [...childParentRegions];
-    
+    childData.parentRegions = [...childParentRegions];
+
     await childRegionDoc.setFlag("campaign-codex", "data", childData);
 
-    ui.notifications.info(`Moved "${childRegionDoc.name}" into "${parentRegionDoc.name}".`);
+    ui.notifications.info(format('notify.movedRegion', { child: childRegionDoc.name, parent: parentRegionDoc.name }));
 
     for (const app of foundry.applications.instances.values()) {
-      if (app.document && (app.document.uuid === parentRegionDoc.uuid || app.document.uuid === childRegionDoc.uuid )) {
-      if (app.rendered) app.render(true);
+      if (app.document && (app.document.uuid === parentRegionDoc.uuid || app.document.uuid === childRegionDoc.uuid)) {
+        if (app.rendered) app.render(true);
       }
     }
   }
@@ -1182,28 +1465,28 @@ async _processSheetRefresh(changedDocUuids) {
       maxDepth = 5;
     }
     if (newParent.uuid === childToMove.uuid) {
-      ui.notifications.warn("A region cannot be its own parent.");
+      ui.notifications.warn(localize('notify.regionCannotBeSelfParent'));
       return false;
     }
 
     const [isCircular, parentDepth, childSubtreeDepth] = await Promise.all([
       this._isAncestor(childToMove, newParent),
       this._getRegionDepth(newParent),
-      this._getRegionDepth(childToMove, true) 
+      this._getRegionDepth(childToMove, true)
     ]);
 
-    
+
     if (isCircular) {
-      ui.notifications.warn(`You cannot move "${childToMove.name}" into "${newParent.name}" as it is an ancestor.`);
+      ui.notifications.warn(format('notify.circularDependency', { child: childToMove.name, parent: newParent.name }));
       return false;
     }
 
     if (parentDepth + 1 + childSubtreeDepth > maxDepth) {
-      ui.notifications.warn(`This action would exceed the maximum nesting depth of ${maxDepth}.`);
+      ui.notifications.warn(format('notify.maxNestingDepth', { depth: maxDepth }));
       return false;
     }
 
-    return true; 
+    return true;
   }
 
   /**
@@ -1213,7 +1496,7 @@ async _processSheetRefresh(changedDocUuids) {
    * @returns {Promise<boolean>} - True if a circular dependency is detected.
    * @private
    */
-async _isAncestor(potentialAncestor, doc) {
+  async _isAncestor(potentialAncestor, doc) {
     const queue = [doc];
     const visited = new Set([doc.uuid]);
     while (queue.length > 0) {
@@ -1250,26 +1533,26 @@ async _isAncestor(potentialAncestor, doc) {
 
     if (!countChildren) {
       const data = regionDoc.getFlag("campaign-codex", "data") || {};
-      const parentUuids = data.parentRegions || []; 
+      const parentUuids = data.parentRegions || [];
 
       if (parentUuids.length > 0) {
-        const parentDepthPromises = parentUuids.map(uuid => 
+        const parentDepthPromises = parentUuids.map(uuid =>
           fromUuid(uuid)
-            .catch(() => null) 
-            .then(parentDoc => 
+            .catch(() => null)
+            .then(parentDoc =>
               parentDoc ? this._getRegionDepth(parentDoc, false, memo, new Set(visited)) : 0
             )
         );
 
         const parentDepths = await Promise.all(parentDepthPromises);
-        
+
         depth = 1 + Math.max(0, ...parentDepths);
       }
-  
+
     } else {
       const data = regionDoc.getFlag("campaign-codex", "data") || {};
       const linkedRegionUuids = data.linkedRegions || [];
-      
+
       if (linkedRegionUuids.length > 0) {
         const childDepthPromises = linkedRegionUuids.map(uuid =>
           fromUuid(uuid).then(childDoc =>
@@ -1281,11 +1564,11 @@ async _isAncestor(potentialAncestor, doc) {
       }
     }
 
-    
+
     memo.set(cacheKey, depth);
     return depth;
   }
 
 
-  
+
 }

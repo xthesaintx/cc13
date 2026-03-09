@@ -1,15 +1,7 @@
-import { CampaignCodexLinkers } from "./sheets/linkers.js";
-import { CampaignCodexBaseSheet } from "./sheets/base-sheet.js";
 import { TemplateComponents } from "./sheets/template-components.js";
+import { localize, createFromScene } from "./helper.js";
 
-import {
-    localize,
-    format,
-    createFromScene,
-    getCampaignCodexFolder
-} from "./helper.js";
 var SearchFilter = foundry.applications.ux.SearchFilter;
-
 var ApplicationV2 = foundry.applications.api.ApplicationV2;
 var HandlebarsApplicationMixin = foundry.applications.api.HandlebarsApplicationMixin;
 const campaignCodexToc = HandlebarsApplicationMixin((ApplicationV2));
@@ -17,14 +9,17 @@ const campaignCodexToc = HandlebarsApplicationMixin((ApplicationV2));
 export class CampaignCodexTOCSheet extends campaignCodexToc {
     static SCOPE = "campaign-codex";
     static TYPE_KEY = "type";
+    static TOC_STATE_FLAG = "tocState";
+    static #docSearchCache = new Map();
+
     static DEFAULT_OPTIONS = {
         id: "campaign-codex-toc-sheet",
         classes: ["campaign-codex", "codex-toc"],
-        tag: 'div',
+        tag: "div",
         window: {
             frame: true,
-            title: 'Campaign Codex',
-            icon:'fas fa-closed-captioning',
+            title: "Campaign Codex",
+            icon: "fas fa-closed-captioning",
             minimizable: true,
             resizable: true,
         },
@@ -32,592 +27,570 @@ export class CampaignCodexTOCSheet extends campaignCodexToc {
             createSheet: this.#createSheet,
             openDocument: this.#openDocument,
             changeDefaultOwnership: this.#changeDefaultOwnership,
-            collapseQuests:this.#collapseQuests,
-            sendToPlayer:this.#sendToPlayer,
-            clickTag: this.#clickTag,
-            toggleCollapse:this.#toggleCollapse,
-            toggleTagFilter: {
-                handler: this.#toggleTagFilter,
-                buttons: [0, 2] 
-            },
+            selectFolderNode: this.#selectFolderNode,
+            toggleFolderNode: this.#toggleFolderNode,
+            toggleTagFilter: { handler: this.#toggleTagFilter, buttons: [0, 2] },
+            toggleFilterMode: this.#toggleFilterMode,
+            toggleSearchScope: this.#toggleSearchScope,
+            setViewMode: this.#setViewMode,
             clearTagFilters: this.#clearTagFilters,
-
+            openQuestBoard: this.#openQuestBoard,
         },
     };
 
-  /**
-   * The current set of file extensions which are being filtered upon
-   * @type {string[]}
-   */
-  #search = new SearchFilter({
-    inputSelector: "input[name=filter]",
-    contentSelector: "section",
-    callback: this._onSearchFilter.bind(this)
-  });
-
-  /**
-   * A cached list of items that can be filtered.
-   * @type {Array<{element: HTMLElement, name: string}>}
-   */
-  #filterableItems = [];
-    #includedTags = new Set();
-    #excludedTags = new Set();
-    #tagSelection = new Map();
-    
     static PARTS = {
-        tabs: {
-            template: "modules/campaign-codex/templates/codex-toc-tabnav.hbs",
-        },
-        subheader: {template: "modules/campaign-codex/templates/codex-toc-header.hbs"},
-        groups: {
-            template: "modules/campaign-codex/templates/codex-toc-content.hbs",
-            scrollable: [''],
-        },
-        regions: {
-            template: "modules/campaign-codex/templates/codex-toc-content.hbs",
-            scrollable: [''],
-        },
-        locations: {
-            template: "modules/campaign-codex/templates/codex-toc-content.hbs",
-            scrollable: [''],
-        },
-        shops: {
-            template: "modules/campaign-codex/templates/codex-toc-content.hbs",
-            scrollable: [''],
-        },
-        npcs: {
-            template: "modules/campaign-codex/templates/codex-toc-content.hbs",
-            scrollable: [''],
-        },
-        tags: {
-            template: "modules/campaign-codex/templates/codex-toc-tags.hbs",
-            scrollable: [''],
-        },
-        quests: {
-            template: "modules/campaign-codex/templates/codex-toc-quest.hbs",
-            scrollable: [''],
-        },
+        main: { template: "modules/campaign-codex/templates/codex-toc-content.hbs", scrollable: [""] },
+    };
+    static SELECTORS = {
+        JOURNAL_CARD: ".cc-toc-journal-list .directory-item[data-uuid]",
     };
 
-        static TABS = {
-        sheet: {
-            tabs: [
-                { id: "groups", type:"group", title: "Groups", icon: "fas fa-folder-tree", cssClass: "cc-toc group", create: true},
-                { id: "regions", type:"region", title: "Regions", icon: "fas fa-globe", cssClass: "cc-toc region", create: true },
-                { id: "locations", type:"location", title: "Locations", icon: "fas fa-map-marker-alt", cssClass: "cc-toc location", create: true },
-                { id: "shops", type:"shop", title: "Entries", icon: "fas fa-house", cssClass: "cc-toc shop", create: true },
-                { id: "npcs", type:"npc", title: "NPCs", icon: "fas fa-user", cssClass: "cc-toc npc", create: true },
-                { id: "tags", type:"tag", title: "Tags", icon: "fas fa-tag", cssClass: "cc-toc tag", create: true },
-                { id: "quests", type:"quest", title: "Quests", icon: "fas fa-scroll", cssClass: "cc-toc quest" },
-            ],
-            initial: "groups",
-        }
-    };
+    #searchQuery = "";
+    #tagSelection = new Map();
+    #includeMode = "and";
+    #searchScope = "title";
+    #viewMode = "list";
+    #selectedFolderNode = "all";
+    #expandedFolderNodes = new Set();
+    #pendingSearchSelection = null;
+    #persistStateDebounced = foundry.utils.debounce(() => this.#persistState(), 250);
 
-
-  _onSearchFilter(event, query, rgx) {
-    // Loop through the cached items instead of querying the DOM
-    for (const item of this.#filterableItems) {
-      const match = rgx.test(item.name);
-      item.element.style.display = match ? "" : "none";
-    }
-  }
-
-
-// In campaign-codex-toc.js (Around line 160)
-/**
- * Finds the folder path for a given journal, relative to a codex root folder name.
- * @param {JournalEntry} journal - The journal entry.
- * @param {string} rootFolderName - The name of the root folder to stop at.
- * @returns {{path: string, folderId: string|null}} The path string and the ID of the deepest folder.
- */
-_getRelativeFolderPath(journal, rootFolderName) {
-    const pathParts = [];
-    let currentFolder = journal.folder;
-
-    const initialFolderId = journal.folder?.id || null; 
-    
-    while (currentFolder) {
-        if (rootFolderName && currentFolder.name === rootFolderName) {
-            break;
-        }
-        
-        pathParts.push(currentFolder.name);
-        
-        currentFolder = currentFolder.folder;
+    constructor(options = {}) {
+        super(options);
+        this.#restoreState();
     }
 
-    if (pathParts.length === 0) {
-        return { path: "", folderId: "Root" }; 
-    }
-
-    return { 
-        path: pathParts.reverse().join(" - "),
-        folderId: initialFolderId 
-    };
-}
-
-
-async _prepareContext(options) {
-    const context = await super._prepareContext(options);
-    context.tabs = this._prepareTabs("sheet");
-    const codexJournals = game.journal.filter((j) => j.getFlag(this.constructor.SCOPE, this.constructor.TYPE_KEY));
-
-
-    let allTags = []; 
-    if (typeof game.campaignCodex?.getTagCache === 'function') {
-        allTags = await game.campaignCodex.getTagCache();
-    } else {
-        console.warn("Campaign Codex | getTagCache() was not available during _prepareContext. Proceeding with empty tags.");
-    }
-
-
-    const tagUuids = new Set(allTags.map(tag => tag.uuid));
-    context.isGM = game.user.isGM;
-
-
-    const allQuestsToProcess = codexJournals.flatMap(doc => {
-        const docType = doc.getFlag(this.constructor.SCOPE, this.constructor.TYPE_KEY);
-        if (docType === 'group') {
-            return [];
-        }
-        const journalQuests = doc.getFlag("campaign-codex", "data")?.quests || [];
-        return journalQuests.map(quest => ({ quest, doc }));
-    });
-
-
-
-    const hideInventoryByPermission = game.settings.get("campaign-codex", "hideInventoryByPermission");
-
-
-    const questProcessingPromises = allQuestsToProcess.map(async ({ quest, doc }) => {
-        const canViewSource = doc.testUserPermission(game.user, CONST.DOCUMENT_OWNERSHIP_LEVELS.OBSERVER);
-        const descriptionPromise = foundry.applications.ux.TextEditor.implementation.enrichHTML(quest.description || "", { async: true });
-
-        const inventoryWithoutPerms = await CampaignCodexLinkers.getInventory(doc, quest.inventory || []);
-        const processedInventory = await Promise.all(
-            inventoryWithoutPerms.map(async (item) => {
-                const canView = await CampaignCodexBaseSheet.canUserView(item.uuid || item.itemUuid);
-                return { ...item, canView, type: "item" };
-            })
-        );
-        const finalItems = hideInventoryByPermission
-            ? processedInventory.filter(item => item.canView)
-            : processedInventory;
-
-        const enrichObjectivesRecursively = async (objectives) => {
-            if (!objectives) return [];
-            
-            const enrichedPromises = objectives
-                .filter(obj => obj.visible)
-                .map(async obj => {
-                    const enrichedText = await foundry.applications.ux.TextEditor.implementation.enrichHTML(obj.text || "", { async: true });
-                    const subObjectives = await enrichObjectivesRecursively(obj.objectives);
-                    return { ...obj, enrichedText, objectives: subObjectives };
-                });
-
-            return Promise.all(enrichedPromises);
+    _commitSearchQuery(rawValue, options = {}) {
+        const nextQuery = String(rawValue || "");
+        if (nextQuery === this.#searchQuery) return;
+        const start = Number.isFinite(options.selectionStart) ? options.selectionStart : null;
+        const end = Number.isFinite(options.selectionEnd) ? options.selectionEnd : start;
+        this.#pendingSearchSelection = start === null ? null : {
+            start,
+            end,
+            direction: options.selectionDirection || "none",
         };
-        
-        const [enrichedDescription, visibleObjectives] = await Promise.all([
-            descriptionPromise,
-            enrichObjectivesRecursively(quest.objectives)
-        ]);
-        return {
-            ...quest,
-            inventory: finalItems, 
-            journalUuid: doc.uuid,
-            journalName: doc.name,
-            canViewSource,
-            enrichedDescription,
-            visibleObjectives,
-            isGM: context.isGM
-        };
-    });
-
-    const processedQuests = await Promise.all(questProcessingPromises);
-
-    const content = {
-        groups: [], regions: [], locations: [], shops: [], npcs: [], tags: [],
-        questsPinned: [], questsUnpinned: [],
-    };
-
-    for (const questItem of processedQuests) {
-        if (questItem.pinned) {
-            content.questsPinned.push(questItem);
-        } else {
-            content.questsUnpinned.push(questItem);
-        }
+        this.#searchQuery = nextQuery;
+        this.#persistStateDebounced();
+        this.render();
     }
-    
-    const folderNames = {
-        location: "Campaign Codex - Locations",
-        shop: "Campaign Codex - Entries",
-        npc: "Campaign Codex - NPCs",
-        region: "Campaign Codex - Regions",
-        group: "Campaign Codex - Groups",
-        tag: "Campaign Codex - Tags",
-    };
 
-    codexJournals.forEach(journal => {
-        const type = journal.getFlag(this.constructor.SCOPE, this.constructor.TYPE_KEY);
-        const ownershipLevel = journal.ownership.default;
-        const ownershipIcon = ownershipLevel >= 2 ? 'fas fa-eye' : 'fas fa-eye-slash';
-        const iconOverride = journal.getFlag("campaign-codex", "icon-override");
-        if (iconOverride) {
-          context.customIcon = iconOverride;
-        }
-        const quests = journal.getFlag("campaign-codex", "data")?.quests;
-        const isAnyQuestVisible = quests && quests.some(quest => quest.visible);
-        const hasQuests = quests && quests.length > 0;
+    #restoreState() {
+        const saved = game.user?.getFlag(this.constructor.SCOPE, this.constructor.TOC_STATE_FLAG);
+        if (!saved || typeof saved !== "object") return;
+        if (typeof saved.searchQuery === "string") this.#searchQuery = saved.searchQuery;
+        if (saved.searchScope === "title" || saved.searchScope === "content") this.#searchScope = saved.searchScope;
+        if (saved.viewMode === "list" || saved.viewMode === "tile") this.#viewMode = saved.viewMode;
+    }
 
-        const item = {
-            id: journal.id,
-            quests: hasQuests,
-            questsvisible: isAnyQuestVisible, 
-            name: journal.name,
-            uuid: journal.uuid,
-            ownershipIcon: ownershipIcon,
-            ownershipLevel: ownershipLevel,
-            iconOverride:iconOverride,
-            canView: journal.testUserPermission(game.user, CONST.DOCUMENT_OWNERSHIP_LEVELS.OBSERVER),
-            folderPath: "" 
+    async #persistState() {
+        if (!game.user) return;
+        const payload = {
+            searchQuery: this.#searchQuery,
+            searchScope: this.#searchScope,
+            viewMode: this.#viewMode,
         };
-        let pathData;
-        switch (type) {
-            case "group":
-                pathData = this._getRelativeFolderPath(journal, folderNames["group"]);
-                item.folderPath = pathData.path;
-                item.folderId = pathData.folderId || "Root";
-                content.groups.push(item);
-                break;
-            case "region":
-                pathData = this._getRelativeFolderPath(journal, folderNames["region"]);
-                item.folderPath = pathData.path;
-                item.folderId = pathData.folderId || "Root";
-                content.regions.push(item);
-                break;
-            case "location":
-                pathData = this._getRelativeFolderPath(journal, folderNames["location"]);
-                item.folderPath = pathData.path;
-                item.folderId = pathData.folderId || "Root";
-                content.locations.push(item);
-                break;
-            case "shop":
-                pathData = this._getRelativeFolderPath(journal, folderNames["shop"]);
-                item.folderPath = pathData.path;
-                item.folderId = pathData.folderId || "Root";
-                content.shops.push(item);
-                break;
-            case "npc":
-                if (!tagUuids.has(journal.uuid)) {
-                pathData = this._getRelativeFolderPath(journal, folderNames["npc"]);
-                item.folderPath = pathData.path;
-                item.folderId = pathData.folderId || "Root";
-                content.npcs.push(item);
-                } else {
-                pathData = this._getRelativeFolderPath(journal, folderNames["tag"]);
-                item.folderPath = pathData.path;
-                item.folderId = pathData.folderId || "Root";
-                content.tags.push(item);
+        await game.user.setFlag(this.constructor.SCOPE, this.constructor.TOC_STATE_FLAG, payload);
+    }
+
+    _toSearchableText(value) {
+        if (Array.isArray(value)) value = value[0] || "";
+        if (value && typeof value === "object") {
+            if (typeof value.content === "string") value = value.content;
+            else if (typeof value.value === "string") value = value.value;
+            else {
+                try {
+                    value = JSON.stringify(value);
+                } catch (_error) {
+                    value = "";
                 }
-                break;
-            case "tag":
-                pathData = this._getRelativeFolderPath(journal, folderNames["tag"]);
-                item.folderPath = pathData.path;
-                item.folderId = pathData.folderId || "Root";
-                content.tags.push(item);
-                break;
+            }
         }
-    });
-    
-    const tagProcessingPromises = content.tags.map(async (tagItem) => {
-        const journal = game.journal.get(tagItem.id);
-        if (!journal) return { ...tagItem, children: [], hasChildren: false };
-        
-        const journalData = journal.getFlag(this.constructor.SCOPE, "data") || {};
-        
-        const associateUuids = journalData.associates || [];
-        const locationUuids = journalData.linkedLocations || []; 
-        const shopUuids = journalData.linkedShops || [];
-        const groupUuids = journalData.linkedGroups || [];
+        return String(value || "").replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+    }
 
-        const tagownershipLevel = journal.ownership.default;
-        const tagownershipIcon = tagownershipLevel >= 2 ? 'fas fa-eye' : 'fas fa-eye-slash';
-
-        tagItem.ownershipIcon = tagownershipIcon;
-        tagItem.ownershipLevel = tagownershipLevel;
-        tagItem.canView = journal.testUserPermission(game.user, CONST.DOCUMENT_OWNERSHIP_LEVELS.OBSERVER);
-
-        const allUuids = [...associateUuids, ...locationUuids, ...shopUuids, ...groupUuids];
-        if (allUuids.length === 0) {
-             return { ...tagItem, children: [], hasChildren: false };
-        }
-
-        const childrenDocs = (await Promise.all(allUuids.map(uuid => fromUuid(uuid)))).filter(Boolean); 
-
-        const iconOverride = journal.getFlag("campaign-codex", "icon-override");
-        if (iconOverride) {
-          context.customIcon = iconOverride;
-        }
-
-        const hideByPermission = game.settings.get("campaign-codex", "hideByPermission");
-        const typeOrder = { group: 1, region: 2, location: 3, shop: 4, npc: 5, associate: 5 };
-
-        const processedChildren = childrenDocs
-            .filter(doc => {
-                const canView = doc.testUserPermission(game.user, CONST.DOCUMENT_OWNERSHIP_LEVELS.OBSERVER);
-                return !hideByPermission || canView;
-            })
-            .map(doc => {
-                 const childIconOverride = doc.getFlag("campaign-codex", "icon-override");
-                    if (iconOverride) {
-                      context.customIcon = iconOverride;
-                    }
-                const type = doc.getFlag(this.constructor.SCOPE, this.constructor.TYPE_KEY);
-                const quests = doc.getFlag("campaign-codex", "data")?.quests;
-                const isAnyQuestVisible = quests && quests.some(quest => quest.visible);
-                const hasQuests = quests && quests.length > 0;
-
-                return {
-                    id: doc.id,
-                    uuid: doc.uuid,
-                    quests: hasQuests,
-                    questsvisible: isAnyQuestVisible, 
-                    name: doc.name,
-                    img: doc.img, 
-                    type: type,
-                    childIconOverride: childIconOverride,
-                    canView: doc.testUserPermission(game.user, CONST.DOCUMENT_OWNERSHIP_LEVELS.OBSERVER),
-                    displayIcon: TemplateComponents.getAsset("icon", type),
-                    ownershipIcon: doc.ownership.default >= 2 ? 'fas fa-eye' : 'fas fa-eye-slash',
-                    ownershipLevel: doc.ownership.default
-                };
-            })
-            .sort((a, b) => {
-                const typeA = typeOrder[a.type] || 99;
-                const typeB = typeOrder[b.type] || 99;
-                if (typeA !== typeB) return typeA - typeB;
-                return a.name.localeCompare(b.name, undefined, { numeric: true });
-            });
-            
-        return {
-            ...tagItem,
-            children: processedChildren,
-            hasChildren: processedChildren.length > 0
-        };
-    });
-
-    content.tags = await Promise.all(tagProcessingPromises); 
-
-    const cloudTags = content.tags.map(t => {
-        const selectionState = this.#tagSelection.get(t.id) || 0;
-        let stateClass = "neutral";
-        if (selectionState === 1) stateClass = "included";
-        if (selectionState === -1) stateClass = "excluded";
-
-        return {
-            ownershipIcon: t.ownershipIcon,
-            ownershipLevel: t.ownershipLevel,
-            canView: t.canView,
-            uuid: t.uuid,
-            id: t.id,
-            name: t.name,
-            icon: t.customIcon || t.displayIcon,
-            count: t.children ? t.children.length : 0,
-            state: stateClass
-        };
-    }).sort((a,b) => a.name.localeCompare(b.name));
-
-    let filteredResults = [];
-    const hasActiveFilters = this.#tagSelection.size > 0;
-
-    if (hasActiveFilters) {
-        const requiredTags = [];
-        const excludedTags = [];
+    _buildSelectionBuckets() {
+        const includedKeys = [];
+        const excludedKeys = [];
         for (const [id, state] of this.#tagSelection) {
-            if (state === 1) requiredTags.push(id);
-            if (state === -1) excludedTags.push(id);
+            if (state === 1) includedKeys.push(id);
+            if (state === -1) excludedKeys.push(id);
         }
-
-        const itemMap = new Map();
-        for (const tag of content.tags) {
-            if (!tag.children) continue;
-            for (const child of tag.children) {
-                if (!itemMap.has(child.uuid)) {
-                    itemMap.set(child.uuid, { data: child, tags: new Set() });
-                }
-                itemMap.get(child.uuid).tags.add(tag.id);
-            }
-        }
-
-        for (const [uuid, entry] of itemMap.entries()) {
-            const itemTags = entry.tags;
-
-            const isExcluded = excludedTags.some(tagId => itemTags.has(tagId));
-            if (isExcluded) continue;
-
-            const matchesRequirements = requiredTags.every(tagId => itemTags.has(tagId));
-
-            if (matchesRequirements) {
-                filteredResults.push(entry.data);
-            }
-        }
-        
-        filteredResults.sort((a, b) => a.name.localeCompare(b.name));
+        return { includedKeys, excludedKeys };
     }
 
-    context.cloudTags = cloudTags;
-    context.filteredResults = filteredResults;
-    context.hasActiveFilters = hasActiveFilters;
-    context.resultCount = filteredResults.length;
+    _documentKeys(doc) {
+        return new Set([
+            `type:${doc.type}`,
+            ...((doc.tags || []).map((tag) => `tag:${String(tag || "").toLowerCase()}`)),
+        ]);
+    }
+    _displayTypeName(type) {
+        const normalized = String(type || "").trim().toLowerCase();
+        if (normalized === "tag") return "Faction";
+        return localize(`names.${normalized}`) || normalized;
+    }
 
+    _matchesTagSelection(doc, includedKeys, excludedKeys) {
+        const keys = this._documentKeys(doc);
+        if (excludedKeys.some((key) => keys.has(key))) return false;
+        if (!includedKeys.length) return true;
+        if (this.#includeMode === "and") return includedKeys.every((key) => keys.has(key));
+        return includedKeys.some((key) => keys.has(key));
+    }
 
-Object.values(content).forEach(arr => {
-    if (Array.isArray(arr) && arr.length > 0) {
-        if (arr[0].hasOwnProperty('name') && arr[0].hasOwnProperty('folderPath')) {
-            arr.sort((a, b) => {
-                const pathA = a.folderPath;
-                const pathB = b.folderPath;
-                const aIsEmpty = pathA === "";
-                const bIsEmpty = pathB === "";
-                if (aIsEmpty && !bIsEmpty) {
-                    return 1; 
+    _matchesFolderSelection(doc) {
+        if (this.#selectedFolderNode === "all") return true;
+        return (doc.folderNodeKeys || []).includes(this.#selectedFolderNode);
+    }
+
+    _buildCloudTags(docs, includedKeys, excludedKeys) {
+        const keyMeta = new Map();
+        for (const doc of docs) {
+            const typeKey = `type:${doc.type}`;
+            if (!keyMeta.has(typeKey)) keyMeta.set(typeKey, { name: this._displayTypeName(doc.type), icon: TemplateComponents.getAsset("icon", doc.type) });
+            for (const rawTag of doc.tags || []) {
+                const normalized = String(rawTag || "").trim();
+                if (!normalized) continue;
+                const tagKey = `tag:${normalized.toLowerCase()}`;
+                if (!keyMeta.has(tagKey)) keyMeta.set(tagKey, { name: normalized, icon: "fas fa-hashtag" });
+            }
+        }
+
+        const docsWithoutExcluded = docs.filter((doc) => {
+            const keys = this._documentKeys(doc);
+            return !excludedKeys.some((key) => keys.has(key));
+        });
+        const docsForDynamicCounts = (this.#includeMode === "and" && includedKeys.length > 0)
+            ? docs.filter((doc) => this._matchesTagSelection(doc, includedKeys, excludedKeys))
+            : docsWithoutExcluded;
+
+        const dynamicCounts = new Map();
+        for (const doc of docsForDynamicCounts) {
+            for (const key of this._documentKeys(doc)) dynamicCounts.set(key, (dynamicCounts.get(key) || 0) + 1);
+        }
+
+        const selectedKeys = Array.from(this.#tagSelection.keys());
+        const cloudKeys = new Set([
+            ...Array.from(dynamicCounts.keys()).filter((key) => (dynamicCounts.get(key) || 0) > 0),
+            ...selectedKeys,
+        ]);
+
+        return Array.from(cloudKeys).map((key) => {
+            const state = this.#tagSelection.get(key) || 0;
+            let stateClass = "neutral";
+            if (state === 1) stateClass = this.#includeMode === "and" ? "included-and" : "included-or";
+            if (state === -1) stateClass = "excluded";
+            const meta = keyMeta.get(key) || { name: key, icon: "fas fa-tag" };
+            return { id: key, name: meta.name, icon: meta.icon, count: dynamicCounts.get(key) || 0, state: stateClass };
+        }).sort((a, b) => a.name.localeCompare(b.name));
+    }
+
+    _ensureDefaultExpanded(rootNodes) {
+        if (this.#expandedFolderNodes.size === 0) return;
+        const validKeys = new Set();
+        const stack = [...rootNodes];
+        while (stack.length) {
+            const node = stack.pop();
+            if (!node) continue;
+            validKeys.add(node.key);
+            if (node.children?.length) stack.push(...node.children);
+        }
+        this.#expandedFolderNodes = new Set(
+            [...this.#expandedFolderNodes].filter((key) => validKeys.has(key))
+        );
+    }
+
+    _nodeHtml(node) {
+        const hasChildren = (node.children || []).length > 0;
+        const expanded = this.#expandedFolderNodes.has(node.key);
+        const active = this.#selectedFolderNode === node.key;
+        const toggleIcon = hasChildren ? "fa-folder-plus" : "fa-folder";
+        const toggleAction = hasChildren ? `data-action="toggleFolderNode" data-node-key="${node.key}"` : "";
+        const childrenHtml = hasChildren && expanded
+            ? `<ul class="cc-tree-children">${node.children.map((child) => this._nodeHtml(child)).join("")}</ul>`
+            : "";
+        return `
+            <li class="cc-tree-node ${active ? "active" : ""}">
+              <div class="cc-tree-row">
+                <i class="fas ${toggleIcon} cc-tree-toggle ${hasChildren ? "expandable" : "static"}" ${toggleAction}></i>
+                <span class="cc-tree-label" data-action="selectFolderNode" data-node-key="${node.key}">
+                  ${node.label}
+                </span>
+                <span class="folder-count">${node.count}</span>
+              </div>
+              ${childrenHtml}
+            </li>
+        `;
+    }
+
+    _renderTreeHtml(rootNodes) {
+        const allActive = this.#selectedFolderNode === "all";
+        const allCount = rootNodes.reduce((acc, n) => acc + (n.count || 0), 0);
+        const allNode = `
+          <li class="cc-tree-node ${allActive ? "active" : ""}">
+            <div class="cc-tree-row">
+              <i class="fas fa-folder-plus cc-tree-toggle"></i>
+              <span class="cc-tree-label" data-action="selectFolderNode" data-node-key="all">All</span>
+              <span class="folder-count">${allCount}</span>
+            </div>
+          </li>
+        `;
+        return `<ul class="cc-folder-tree">${allNode}${rootNodes.map((node) => this._nodeHtml(node)).join("")}</ul>`;
+    }
+
+    /**
+     * Public helper: select a tag filter by raw tag name and re-render.
+     * @param {string} tagName
+     * @param {{state?: number, clear?: boolean}} [options]
+     */
+    setTagFilterByName(tagName, options = {}) {
+        const raw = String(tagName || "").trim();
+        if (!raw) return;
+        const state = Number.isFinite(Number(options.state)) ? Number(options.state) : 1;
+        const clear = options.clear ?? true;
+        const key = `tag:${raw.toLowerCase()}`;
+
+        if (clear) {
+            this.#tagSelection.clear();
+            this.#selectedFolderNode = "all";
+        }
+
+        if (state === 0) this.#tagSelection.delete(key);
+        else this.#tagSelection.set(key, state);
+
+        this.render(true);
+    }
+
+    async _prepareContext(options) {
+        const context = await super._prepareContext(options);
+        context.isGM = game.user.isGM;
+        context.searchScopeLabel = this.#searchScope === "content" ? "fa-book" : "fa-input-text";
+        context.searchScopeTitle = this.#searchScope === "content" ? "Search Content" : "Search Title";
+        context.searchQuery = this.#searchQuery;
+        context.includeModeLabel = this.#includeMode.toUpperCase();
+        context.viewMode = this.#viewMode;
+
+        const codexJournals = game.journal.filter((j) => j.getFlag(this.constructor.SCOPE, this.constructor.TYPE_KEY));
+        const seenDocIds = new Set();
+        const folderNodeMap = new Map();
+        const rootFolderNodes = [];
+        const ensureFolderNode = (folder) => {
+            if (!folder) return null;
+            const key = `folder:${folder.id}`;
+            let node = folderNodeMap.get(key);
+            if (!node) {
+                node = { key, label: folder.name || "Folder", count: 0, children: [], childMap: new Map() };
+                folderNodeMap.set(key, node);
+                if (folder.folder) {
+                    const parentNode = ensureFolderNode(folder.folder);
+                    if (parentNode && !parentNode.childMap.has(key)) {
+                        parentNode.childMap.set(key, node);
+                        parentNode.children.push(node);
+                    }
+                } else {
+                    rootFolderNodes.push(node);
                 }
-                if (!aIsEmpty && bIsEmpty) {
-                    return -1;
+            }
+            return node;
+        };
+
+        const docs = [];
+        let hasUnfiledDocs = false;
+        for (const journal of codexJournals) {
+            seenDocIds.add(journal.id);
+            const type = journal.getFlag(this.constructor.SCOPE, this.constructor.TYPE_KEY);
+            if (!type) continue;
+            const ownershipLevel = journal.ownership.default;
+            const ownershipIcon = ownershipLevel >= 2 ? "fas fa-eye" : "fas fa-eye-slash";
+            const iconOverride = journal.getFlag("campaign-codex", "icon-override");
+            const cacheKey = [
+                String(journal._stats?.modifiedTime ?? journal._source?._stats?.modifiedTime ?? 0),
+                String(journal.folder?.id || ""),
+                String(journal.name || ""),
+                String(ownershipLevel),
+                String(type),
+            ].join("|");
+            const cached = CampaignCodexTOCSheet.#docSearchCache.get(journal.id);
+            let titleText = "";
+            let contentText = "";
+            let docTags = [];
+            if (cached?.cacheKey === cacheKey) {
+                titleText = cached.titleText;
+                contentText = cached.contentText;
+                docTags = cached.tags;
+            } else {
+                const journalData = journal.getFlag("campaign-codex", "data") || {};
+                const descriptionValue = journal.getFlag("campaign-codex", "data.description") ?? journalData.description;
+                const plainDescription = this._toSearchableText(descriptionValue);
+                const plainNotes = this._toSearchableText(journalData.notes);
+                docTags = Array.isArray(journalData.tags) ? journalData.tags.map((t) => String(t ?? "").trim()).filter(Boolean) : [];
+                titleText = SearchFilter.cleanQuery(journal.name);
+                contentText = SearchFilter.cleanQuery([plainDescription, plainNotes].join(" ").trim());
+                CampaignCodexTOCSheet.#docSearchCache.set(journal.id, {
+                    cacheKey,
+                    titleText,
+                    contentText,
+                    tags: docTags,
+                });
+            }
+            const canView = journal.testUserPermission(game.user, CONST.DOCUMENT_OWNERSHIP_LEVELS.OBSERVER);
+            const folderNodeKeys = [];
+            let currentFolder = journal.folder;
+            if (!currentFolder) {
+                hasUnfiledDocs = true;
+                folderNodeKeys.push("folder:unfiled");
+            } else {
+                while (currentFolder) {
+                    const node = ensureFolderNode(currentFolder);
+                    if (node) folderNodeKeys.push(node.key);
+                    currentFolder = currentFolder.folder;
                 }
-                const pathCompare = pathA.localeCompare(pathB, undefined, { numeric: true });
-                if (pathCompare !== 0) return pathCompare;
-                return a.name.localeCompare(b.name, undefined, { numeric: true });
+            }
+
+            docs.push({
+                id: journal.id,
+                name: journal.name,
+                uuid: journal.uuid,
+                type,
+                iconOverride,
+                ownershipIcon,
+                ownershipLevel,
+                canView,
+                tags: docTags,
+                titleText,
+                contentText,
+                folderNodeKeys,
             });
-        } else if (arr[0].hasOwnProperty('title')) {
-            arr.sort((a, b) => a.title.localeCompare(b.title, undefined, { numeric: true }));
         }
-    }
-});
-
-    for (const tab of this.constructor.TABS.sheet.tabs) {
-      if (tab.id === 'quests') {
-        context[tab.id] = { questsPinned: content.questsPinned, questsUnpinned: content.questsUnpinned };
-      }
-      else {
-        context[tab.id] = { items: content[tab.id] };
-      }
-    }
-
-    context.counts = {
-        groups: content.groups.length,
-        regions: content.regions.length,
-        locations: content.locations.length,
-        shops: content.shops.length,
-        npcs: content.npcs.length,
-        tags: content.tags.length,
-        quests: content.questsPinned.length + content.questsUnpinned.length
-    };
-        
-    context.hasContent = codexJournals.length > 0 || allTags.length > 0;
-    return context;
-}
-
-async _preparePartContext(partId, context) {
-    context.isGM = game.user.isGM;
-    const openStates = this._getOpenStates();
-    switch (partId){
-        case 'groups':
-        case 'locations':
-        case 'regions':       
-        case 'npcs':
-        case 'tags':
-        case 'shops':
-            let items = context[partId].items || [];
-            if (!context.isGM) {
-                items = items.filter(i => i.canView);
-            }
-            const sections = [];
-            let currentPath = null;
-            let currentSection = null;
-
-            for (const item of items) {
-                // If the path changes, start a new section
-                if (item.folderPath !== currentPath) {
-                    currentPath = item.folderPath;
-                    
-                    const displayTitle = currentPath === "" ? "" : currentPath;
-                    const sectionId = item.folderId;
-                    const isCollapsed = !openStates.includes(sectionId);
-                    
-                    currentSection = {
-                        title: displayTitle,
-                        items: [],
-                        isCollapsed: isCollapsed,
-                        sectionId: sectionId,
-                    };
-                    sections.push(currentSection);
-                }
-                
-                // Add item to the current section
-                if (currentSection) {
-                    currentSection.items.push(item);
-                }
-            }
-            context.items = items;   
-            context.sections = sections;
-
-            break;
-        case 'quests':
-            context.questsPinned = context[partId].questsPinned || [];
-            context.questsUnpinned = context[partId].questsUnpinned || [];
-            context.showOnlyPinned = game.settings.get("campaign-codex", "showOnlyPinned");
-            context.hasContent = context.questsPinned.length > 0 || context.questsUnpinned.length > 0;
-            break;
-        default:
+        for (const cachedId of CampaignCodexTOCSheet.#docSearchCache.keys()) {
+            if (!seenDocIds.has(cachedId)) CampaignCodexTOCSheet.#docSearchCache.delete(cachedId);
         }
-    context.tab = context.tabs[partId];
-    return context;
-  }
+
+        const pruneAndSortNodes = (nodes) => {
+            const kept = [];
+            for (const node of nodes) {
+                node.children = pruneAndSortNodes(node.children || []);
+                node.childMap = new Map(node.children.map((child) => [child.key, child]));
+                if (node.count > 0) kept.push(node);
+            }
+            kept.sort((a, b) => a.label.localeCompare(b.label, undefined, { numeric: true }));
+            return kept;
+        };
+        const { includedKeys, excludedKeys } = this._buildSelectionBuckets();
+        const cleanedSearchQuery = SearchFilter.cleanQuery(this.#searchQuery || "").toLowerCase();
+        const matchesSearch = (doc) => {
+            if (!cleanedSearchQuery) return true;
+            const haystack = String(this.#searchScope === "content" ? doc.contentText : doc.titleText).toLowerCase();
+            return haystack.includes(cleanedSearchQuery);
+        };
+        const visibleDocs = docs.filter((doc) => context.isGM || doc.canView);
+        const docsForCountsAndTree = visibleDocs
+            .filter((doc) => this._matchesTagSelection(doc, includedKeys, excludedKeys))
+            .filter(matchesSearch);
+        for (const node of folderNodeMap.values()) node.count = 0;
+        let unfiledCount = 0;
+        for (const doc of docsForCountsAndTree) {
+            for (const key of doc.folderNodeKeys || []) {
+                if (key === "folder:unfiled") {
+                    unfiledCount += 1;
+                    continue;
+                }
+                const node = folderNodeMap.get(key);
+                if (node) node.count += 1;
+            }
+        }
+        const rootNodes = pruneAndSortNodes(rootFolderNodes);
+        if (hasUnfiledDocs && unfiledCount > 0) {
+            rootNodes.push({
+                key: "folder:unfiled",
+                label: "Unfiled",
+                count: unfiledCount,
+                children: [],
+                childMap: new Map(),
+            });
+        }
+        this._ensureDefaultExpanded(rootNodes);
+        const filteredDocs = docsForCountsAndTree
+            .filter((doc) => this._matchesFolderSelection(doc))
+            .sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+
+        const cloudTags = this._buildCloudTags(visibleDocs, includedKeys, excludedKeys);
+        const middleList = filteredDocs.map((doc) => ({
+            ...doc,
+            displayIcon: doc.iconOverride || TemplateComponents.getAsset("icon", doc.type),
+        }));
+
+        context.treeHtml = this._renderTreeHtml(rootNodes);
+        context.items = middleList;
+        context.cloudTags = cloudTags;
+        context.resultCount = middleList.length;
+        context.hasContent = docs.length > 0;
+        context.hasActiveFilters = this.#tagSelection.size > 0 || this.#selectedFolderNode !== "all";
+        return context;
+    }
+
+    async _preparePartContext(partId, context) {
+        return context;
+    }
+
+    /** @inheritDoc */
+    async _onFirstRender(context, options) {
+        await super._onFirstRender(context, options);
+        this._createContextMenus();
+        this.element.addEventListener("dragover", this._onDragOver.bind(this));
+        this.element.addEventListener("drop", this._onDrop.bind(this));
+    }
+
+    _createContextMenus() {
+        this._createContextMenu(this._getJournalContextOptions, this.constructor.SELECTORS.JOURNAL_CARD, {
+            fixed: true,
+            hookName: "getCampaignCodexTOCContextOptions",
+            parentClassHooks: false,
+        });
+    }
+
+    _getJournalContextOptions() {
+        return [
+            this._getJumpToPinContextOption(),
+            this._getConfigureOwnershipContextOption(),
+            this._getShowFolderContextOption(),
+        ];
+    }
+
+    _getContextDocument(target) {
+        const element = target?.dataset ? target : (target?.[0] || target?.currentTarget || null);
+        const uuid = element?.dataset?.uuid;
+        if (!uuid) return null;
+        return fromUuidSync(uuid) || null;
+    }
+
+    _getJumpToPinContextOption() {
+        return {
+            name: "SIDEBAR.JumpPin",
+            icon: '<i class="fa-solid fa-crosshairs"></i>',
+            condition: (target) => !!this._getContextDocument(target)?.sceneNote,
+            callback: async (target) => {
+                const entry = this._getContextDocument(target) || await fromUuid(target?.dataset?.uuid || "");
+                entry?.panToNote?.();
+            },
+        };
+    }
+
+    _getConfigureOwnershipContextOption() {
+        return {
+            name: "OWNERSHIP.Configure",
+            icon: '<i class="fa-solid fa-lock"></i>',
+            condition: () => game.user.isGM,
+            callback: async (target) => {
+                const document = this._getContextDocument(target) || await fromUuid(target?.dataset?.uuid || "");
+                if (!document) return;
+                const OwnershipConfig = foundry.applications?.apps?.DocumentOwnershipConfig;
+                if (!OwnershipConfig) return;
+                new OwnershipConfig({
+                    document,
+                }).render({ force: true });
+            },
+        };
+    }
+
+    _getShowFolderContextOption() {
+        return {
+            name: localize("context.showInDirectory"),
+            icon: '<i class="fa-solid fa-folder-tree"></i>',
+            condition: (target) => !!this._getContextDocument(target),
+            callback: async (target) => this._openJournalFolderFromContext(target),
+        };
+    }
+
+    async _openJournalFolderFromContext(target) {
+        const element = target?.dataset ? target : (target?.[0] || target?.currentTarget || null);
+        const uuid = element?.dataset?.uuid || "";
+        const journalDoc = this._getContextDocument(target) || await fromUuid(uuid);
+        if (!journalDoc) return;
+        const folderKeys = [];
+        let currentFolder = journalDoc.folder;
+        while (currentFolder) {
+            folderKeys.push(`folder:${currentFolder.id}`);
+            currentFolder = currentFolder.folder;
+        }
+
+        if (folderKeys.length) {
+            for (const key of folderKeys) this.#expandedFolderNodes.add(key);
+            this.#selectedFolderNode = folderKeys[0];
+        } else {
+            this.#selectedFolderNode = "folder:unfiled";
+        }
+        this.render();
+    }
 
     static async #toggleTagFilter(event, target) {
         event.preventDefault();
         const tagId = target.dataset.tagId;
         const current = this.#tagSelection.get(tagId) || 0;
         let next = 0;
-
-        if (event.button === 2) {
-            if (current === -1) next = 0;
-            else if (current === 0) next = -1;
-            else next = 0; 
-        } else {
-            if (current === 0) next = 1;
-            else if (current === 1) next = 0;
-            else next = 0;
-        }
-
+        if (event.button === 2) next = current === -1 ? 0 : -1;
+        else next = current === 1 ? 0 : 1;
         if (next === 0) this.#tagSelection.delete(tagId);
         else this.#tagSelection.set(tagId, next);
+        this.render();
+    }
 
+    static async #toggleFilterMode(event, target) {
+        event.preventDefault();
+        this.#includeMode = this.#includeMode === "and" ? "or" : "and";
+        this.render();
+    }
+
+    static async #toggleSearchScope(event, target) {
+        event.preventDefault();
+        this.#searchScope = this.#searchScope === "title" ? "content" : "title";
+        this.#persistStateDebounced();
+        this.render();
+    }
+
+    static async #setViewMode(event, target) {
+        event.preventDefault();
+        const mode = String(target.dataset.viewMode || "");
+        if (!["list", "tile"].includes(mode)) return;
+        if (this.#viewMode === mode) return;
+        this.#viewMode = mode;
+        this.#persistStateDebounced();
+        this.render();
+    }
+
+    static async #selectFolderNode(event, target) {
+        event.preventDefault();
+        const nodeKey = target.dataset.nodeKey;
+        if (!nodeKey) return;
+        this.#selectedFolderNode = nodeKey;
+        this.render();
+    }
+
+    static async #toggleFolderNode(event, target) {
+        event.preventDefault();
+        const nodeKey = target.dataset.nodeKey;
+        if (!nodeKey) return;
+        if (this.#expandedFolderNodes.has(nodeKey)) this.#expandedFolderNodes.delete(nodeKey);
+        else this.#expandedFolderNodes.add(nodeKey);
         this.render();
     }
 
     static async #clearTagFilters(event, target) {
         this.#tagSelection.clear();
+        this.#selectedFolderNode = "all";
         this.render();
     }
-    
 
-
-static async #changeDefaultOwnership(event, target) {
-    event.preventDefault();
-    const uuid = target.dataset.uuid;
-    const currentOwnership = target.dataset.ownership;
-    let newOwnership = 0;
-    if (currentOwnership > 0){newOwnership = 0;}else{newOwnership = 2;}
-    const journal = await fromUuid(uuid);
-    if (!journal) return;
-    const update = { ownership: { "default" : newOwnership } };
-    await journal.update(update);
-    this.render(true);
-}
+    static async #changeDefaultOwnership(event, target) {
+        event.preventDefault();
+        const uuid = target.dataset.uuid;
+        const currentOwnership = Number(target.dataset.ownership || 0);
+        const journal = await fromUuid(uuid);
+        if (!journal) return;
+        await journal.update({ ownership: { default: currentOwnership > 0 ? 0 : 2 } });
+        this.render(true);
+    }
 
     static async #openDocument(event, target) {
         event.preventDefault();
@@ -627,231 +600,184 @@ static async #changeDefaultOwnership(event, target) {
         doc?.sheet.render(true);
     }
 
-  /** @inheritDoc */
-async _onRender(context, options) {
-    await super._onRender(context, options);
-    const form = this.element;
-
-
-    const content = form.querySelector("section");
-    if (content) {
-      this.#filterableItems = []; 
-      for (const element of content.querySelectorAll("li, .toc-quest-item, div.tag-pill")) {
-        const name = element.dataset.name;
-        if (name) {
-          this.#filterableItems.push({
-            element: element,
-            name: SearchFilter.cleanQuery(name)
-          });
+    async _onRender(context, options) {
+        await super._onRender(context, options);
+        const form = this.element;
+        const searchInput = form.querySelector("#toc-filter");
+        if (searchInput) {
+            searchInput.addEventListener("input", (ev) => {
+                const input = ev.currentTarget;
+                this._commitSearchQuery(input?.value ?? "", {
+                    selectionStart: input?.selectionStart,
+                    selectionEnd: input?.selectionEnd,
+                    selectionDirection: input?.selectionDirection,
+                });
+            });
+            searchInput.addEventListener("change", (ev) => {
+                const input = ev.currentTarget;
+                this._commitSearchQuery(input?.value ?? "", {
+                    selectionStart: input?.selectionStart,
+                    selectionEnd: input?.selectionEnd,
+                    selectionDirection: input?.selectionDirection,
+                });
+            });
+            if (this.#pendingSearchSelection) {
+                const max = searchInput.value?.length ?? 0;
+                const start = Math.max(0, Math.min(this.#pendingSearchSelection.start, max));
+                const end = Math.max(start, Math.min(this.#pendingSearchSelection.end, max));
+                searchInput.focus({ preventScroll: true });
+                searchInput.setSelectionRange(start, end, this.#pendingSearchSelection.direction);
+                this.#pendingSearchSelection = null;
+            }
         }
-      }
-    }
-
-
-    this.#search.bind(form);
-
-    const tagTab = form.querySelector('[data-tab="tags"].active');
-    if (tagTab) {
-        const firstTag = tagTab.querySelector('.toc-tags-left-col li.toc-tag-item');
-        if (firstTag) {
-            setTimeout(() => {
-                if (!tagTab.querySelector('.toc-tag-item.active')) {
-                     firstTag.click();
+        const tagSearchInput = form.querySelector("#toc-tag-filter");
+        if (tagSearchInput) {
+            const applyTagFilter = (rawValue) => {
+                const query = SearchFilter.cleanQuery(rawValue || "").toLowerCase();
+                const pills = form.querySelectorAll(".cc-toc-tag-panel .tag-cloud .tag-pill");
+                for (const pill of pills) {
+                    const tagName = SearchFilter.cleanQuery(
+                        pill.querySelector(".tag-name")?.textContent || "",
+                    ).toLowerCase();
+                    pill.style.display = !query || tagName.includes(query) ? "" : "none";
                 }
-            }, 0);
+            };
+            applyTagFilter(tagSearchInput.value);
+            tagSearchInput.addEventListener("input", (ev) => applyTagFilter(ev.currentTarget?.value ?? ""));
+            tagSearchInput.addEventListener("change", (ev) => applyTagFilter(ev.currentTarget?.value ?? ""));
         }
-    }
-
+        form.querySelectorAll('[data-action="toggleTagFilter"]').forEach((el) => {
+            el.addEventListener("contextmenu", (ev) => ev.preventDefault());
+        });
 
         this._resizeObserver?.disconnect();
         const debouncedSave = foundry.utils.debounce((width, height) => {
-            game.settings.set("campaign-codex", "tocSheetDimensions", {width, height });
+            game.settings.set("campaign-codex", "tocSheetDimensions", { width, height });
         }, 300);
-
-        this._resizeObserver = new ResizeObserver(entries => {
+        this._resizeObserver = new ResizeObserver((entries) => {
             for (const entry of entries) {
                 const { width, height } = entry.contentRect;
                 debouncedSave(width, height);
             }
         });
-
         this._resizeObserver.observe(this.element);
-      new foundry.applications.ux.DragDrop.implementation({
-        dragSelector: ".directory-item",
-        permissions: {
-          dragstart: true,
-        },
-        callbacks: {
-          dragstart: this._onDragStart.bind(this),
-        }
-      }).bind(this.element);
-  }
 
+        new foundry.applications.ux.DragDrop.implementation({
+            dragSelector: ".directory-item",
+            permissions: { dragstart: true },
+            callbacks: { dragstart: this._onDragStart.bind(this) },
+        }).bind(this.element);
+    }
 
     async close(options) {
         this._resizeObserver?.disconnect();
         return super.close(options);
     }
 
-static async #collapseQuests(event, target) {
-    event.preventDefault();
-    const questItem = target.closest(".toc-quest-item");
-    if (!questItem) return;
-    questItem.classList.toggle("is-collapsed");
-    target.classList.toggle("fa-caret-up");
-    target.classList.toggle("fa-caret-down");
-  }
-
-    _getOpenStates() {
-        return game.settings.get("campaign-codex", "collapsedFolderStates") || [];
+    static async #createSheet(event, target) {
+        event.preventDefault();
+        const createType = await foundry.applications.api.DialogV2.prompt({
+            window: { title: "Create Campaign Codex Sheet" },
+            content: `
+                <div class="form-group">
+                  <label>Sheet Type</label>
+                  <select name="sheetType">
+                    <option value="group">Group</option>
+                    <option value="region">Region</option>
+                    <option value="location">Location</option>
+                    <option value="shop">Entry</option>
+                    <option value="npc">NPC</option>
+                    <option value="tag">Faction</option>
+                    <option value="quest">Quest</option>
+                  </select>
+                </div>
+            `,
+            ok: {
+                icon: '<i class="fas fa-check"></i>',
+                label: "Create",
+                callback: (event, button) => button.form.elements.sheetType.value,
+            },
+            cancel: {
+                icon: '<i class="fas fa-times"></i>',
+                label: localize("dialog.cancel"),
+            },
+            rejectClose: false,
+        }).catch(() => null);
+        if (!createType) return;
+        createFromScene(createType);
     }
 
-    async _setOpenStates(states) {
-        return game.settings.set("campaign-codex", "collapsedFolderStates", states);
-    }
-
-
-static async #toggleCollapse(event, target) {
-    event.preventDefault();
-    event.stopPropagation();
-
-    const sectionId = target.dataset.sectionId; 
-    if (!sectionId) return;
-
-    const headerUl = target.closest("ul.cc-toc-header-list");
-    if (!headerUl) return;
-
-    const itemsUl = headerUl.nextElementSibling;
-
-    if (!itemsUl || !itemsUl.classList.contains("toc-collapsable")) return;
-    
-    const isCurrentlyCollapsed = itemsUl.classList.contains("is-collapsed");
-
-    itemsUl.classList.toggle("is-collapsed");
-
-    const isNowCollapsed = itemsUl.classList.contains("is-collapsed");
-
-    const icon = headerUl.querySelector(".collapse-icon");
-    if (icon) {
-        icon.classList.toggle("fa-folder", isNowCollapsed); 
-        icon.classList.toggle("fa-folder-open", !isNowCollapsed); 
-    }
-    let states = this._getOpenStates();
-    if (!isNowCollapsed) {
-        if (!states.includes(sectionId)) {
-            states.push(sectionId);
-        }
-    } else {
-        states = states.filter(id => id !== sectionId);
-    }
-    await this._setOpenStates(states)
-}
-
-
-static async #sendToPlayer(event, target) {
-    event.stopPropagation();
-    const itemUuid = event.target.dataset.uuid;
-
-    const item = (await fromUuid(itemUuid)) || game.items.get(itemUuid);
-    if (!item) {
-      ui.notifications.warn("Item not found");
-      return;
-    }
-
-    TemplateComponents.createPlayerSelectionDialog(item.name, async (targetActor) => {
-        try {
-          const itemData = item.toObject();
-          delete itemData._id;
-          await targetActor.createEmbeddedDocuments("Item", [itemData]);
-          ui.notifications.info(format("title.send.item.typetoplayer", { type: item.name, player: targetActor.name }));
-          const targetUser = game.users.find((u) => u.character?.id === targetActor.id);
-          if (targetUser && targetUser.active) {
-            ChatMessage.create({
-              content: `<p><strong>${game.user.name}</strong> sent you <strong>${item.name}</strong> from ${document.name}!</p>`,
-              whisper: [targetUser.id],
-            });
-          }
-        } catch (error) {
-          console.error("Error transferring item:", error);
-          ui.notifications.error(localize("error.faileditem"));
-        }
-    });
-  }
-
-static async #createSheet(event, target) {
-    event.preventDefault();
-    const activeTab = this.element.querySelector(".campaign-codex-toc-app.tab.active")
-    console.log(activeTab);
-    switch (activeTab.dataset.tab){
-        case 'groups':
-             createFromScene("group");
-            break;
-        case 'tags':
-             createFromScene("tag");
-            break;
-        case 'locations':
-             createFromScene("location");
-            break;
-        case 'regions':            
-             createFromScene("region");
-            break;
-        case 'npcs':
-             createFromScene("npc");
-            break;
-        case 'shops':
-             createFromScene("shop");
-            break;
-        default:
-        }
-      }
-
-  async _renderFrame(options) {
-    const frame = await super._renderFrame(options);
-    if ( !this.hasFrame || !game.user.isGM) return frame;
-    const copyId = `
+    async _renderFrame(options) {
+        const frame = await super._renderFrame(options);
+        if (!this.hasFrame) return frame;
+        const questId = `
+        <button type="button" class="header-control fa-solid fa-scroll icon" data-action="openQuestBoard"
+                data-tooltip="Open Quest Board" aria-label="Open Quest Board"></button>
+      `;
+        this.window.close.insertAdjacentHTML("beforebegin", questId);
+        if (!game.user.isGM) return frame;
+        const copyId = `
         <button type="button" class="header-control fa-solid fa-circle-plus icon" data-action="createSheet"
                 data-tooltip="Create Sheet" aria-label="Create Sheet"></button>
       `;
-      this.window.close.insertAdjacentHTML("beforebegin", copyId);
-    
-    return frame;
-  }
-
-
-static async #clickTag(event, target) {
-    const appElement = target.closest(".campaign-codex-toc-app");
-    if (!appElement) return;
-
-    const leftCol = appElement.querySelector('.toc-tags-left-col');
-    const rightCol = appElement.querySelector('.toc-tags-right-col');
-    const tagId = target.dataset.tagId;
-
-    if (!leftCol || !rightCol || !tagId) return;
-
-    leftCol.querySelectorAll('.toc-tag-item').forEach(el => el.classList.remove('active'));
-    target.classList.add('active');
-
-    rightCol.querySelectorAll('.tag-child-list').forEach(el => el.style.display = 'none');
-    const childList = rightCol.querySelector(`.tag-child-list[data-tag-id="${tagId}"]`);
-    if (childList) {
-        childList.style.display = 'grid';
+        this.window.close.insertAdjacentHTML("beforebegin", copyId);
+        return frame;
     }
-}
 
+    static async #openQuestBoard(event, target) {
+        event.preventDefault();
+        await game.campaignCodex.openQuestBoard();
+    }
 
-  /** @override */
- async _onDragStart(event) {
-    const el = event.currentTarget;
-    if ('link' in event.target.dataset) return;
-    // const journal = game.journal.get("6B6FiSvkaKlbDrW8");
-    let journalID = event.target.dataset.entryId;
-    let journalData = game.journal.get(journalID);
-    if (!journalData) return;
-    let dragDataB = journalData.toDragData();
-    if (!dragDataB) return;
-    event.dataTransfer.setData('text/plain', JSON.stringify(dragDataB));
-  }
+    async _onDragStart(event) {
+        if ("link" in event.target.dataset) return;
+        const journalID = event.target.dataset.entryId;
+        const journalData = game.journal.get(journalID);
+        if (!journalData) return;
+        const dragData = journalData.toDragData();
+        if (!dragData) return;
+        event.dataTransfer.setData("text/plain", JSON.stringify(dragData));
+    }
 
+    _onDragOver(event) {
+        event.preventDefault();
+        event.dataTransfer.dropEffect = "link";
+    }
 
+    async _onDrop(event) {
+        event.preventDefault();
+        event.stopPropagation();
 
+        let data;
+        try {
+            data = JSON.parse(event.dataTransfer.getData("text/plain"));
+        } catch (_error) {
+            return;
+        }
+        if (!data || data.type !== "Actor") return;
+        if (!game.user.isGM) {
+            ui.notifications.warn("GM only action.");
+            return;
+        }
+
+        const actor = await this._resolveDroppedActor(data);
+        if (!actor) {
+            ui.notifications.warn(localize("notify.actorNotFound"));
+            return;
+        }
+
+        const npcJournal = await game.campaignCodex.findOrCreateNPCJournalForActor(actor);
+        if (!npcJournal) return;
+        npcJournal.sheet?.render(true);
+        this.render();
+    }
+
+    async _resolveDroppedActor(data) {
+        if (data?.uuid) {
+            const actorByUuid = await fromUuid(data.uuid).catch(() => null);
+            if (actorByUuid?.documentName === "Actor") return actorByUuid;
+        }
+        if (data?.id) return game.actors.get(data.id) || null;
+        return null;
+    }
 }
