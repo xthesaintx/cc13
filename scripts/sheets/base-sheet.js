@@ -15,6 +15,7 @@ import {
 } from "../helper.js";
 import { widgetManager } from "../widgets/WidgetManager.js";
 import { tabPicker } from "../tab-picker.js";
+import { iconPicker } from "../ui/IconPicker.js";
 var SearchFilter = foundry.applications.ux.SearchFilter;
 
 const DragDrop = foundry.applications.ux.DragDrop.implementation;
@@ -1472,27 +1473,80 @@ const pendingRestorations = this._pendingScrollRestorations;
   _onWidgetTagDragStart(event) {
     const tag = event.currentTarget.closest(".widget-tag.active[data-widget-id]");
     if (!tag) return;
+    const widgetId = tag.dataset.widgetId;
+    const { typeKey, data: widgetData } = this._getWidgetStorageRecord(widgetId);
 
     const payload = {
       type: "cc-widget-reorder",
-      id: tag.dataset.widgetId,
+      id: widgetId,
       tab: tag.dataset.widgetTab || "widgets",
+      sourceDocumentUuid: this.document?.uuid || null,
+      sourceWidgetTypeKey: typeKey || null,
+      widgetData: widgetData ?? null,
     };
     this._draggingWidgetTag = payload;
     this._draggingWidgetTagElement = tag;
     this.element?.querySelectorAll(".widget-tray")?.forEach((tray) => tray.classList.add("widget-dragging"));
 
     tag.classList.add("dragging");
-    event.dataTransfer.effectAllowed = "move";
+    event.dataTransfer.effectAllowed = "copyMove";
+    event.dataTransfer.setData("application/x-cc-widget", JSON.stringify(payload));
     event.dataTransfer.setData("text/plain", JSON.stringify(payload));
+  }
+
+  _hasWidgetDragType(event) {
+    const types = Array.from(event?.dataTransfer?.types || []);
+    return types.includes("application/x-cc-widget");
+  }
+
+  _readWidgetDragPayload(event) {
+    if (this._draggingWidgetTag?.type === "cc-widget-reorder") return this._draggingWidgetTag;
+    try {
+      const raw =
+        event?.dataTransfer?.getData("application/x-cc-widget") ||
+        event?.dataTransfer?.getData("text/plain");
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      return parsed?.type === "cc-widget-reorder" ? parsed : null;
+    } catch (error) {
+      return null;
+    }
+  }
+
+  _isWidgetLocalDrag(payload) {
+    if (!payload) return false;
+    const sourceDocUuid = payload.sourceDocumentUuid;
+    if (!sourceDocUuid) return !!this._draggingWidgetTag && payload.id === this._draggingWidgetTag?.id;
+    return sourceDocUuid === this.document?.uuid;
+  }
+
+  _getWidgetStorageRecord(widgetId, sourceDoc = this.document) {
+    if (!widgetId || !sourceDoc) return { typeKey: null, data: null };
+    const widgetsByType = sourceDoc.getFlag("campaign-codex", "data.widgets") || {};
+    for (const [typeKey, typeMap] of Object.entries(widgetsByType)) {
+      if (!typeMap || typeof typeMap !== "object") continue;
+      if (Object.prototype.hasOwnProperty.call(typeMap, widgetId)) {
+        return {
+          typeKey,
+          data: foundry.utils.deepClone(typeMap[widgetId]),
+        };
+      }
+    }
+    return { typeKey: null, data: null };
   }
 
   _onWidgetSlotDragEnter(event) {
     const slot = event.currentTarget.closest(".widget-drop-slot[data-widget-tab]");
     if (!slot) return;
-    const payload = this._draggingWidgetTag || null;
-    if (payload?.type !== "cc-widget-reorder") return;
-    if ((payload.tab || "widgets") !== (slot.dataset.widgetTab || "widgets")) return;
+    const payload = this._readWidgetDragPayload(event);
+    if (payload?.type !== "cc-widget-reorder" && !this._hasWidgetDragType(event)) return;
+    if (!payload) {
+      event.preventDefault();
+      slot.classList.add("is-hover");
+      return;
+    }
+    const localDrag = this._isWidgetLocalDrag(payload);
+    if (localDrag && (payload.tab || "widgets") !== (slot.dataset.widgetTab || "widgets")) return;
     event.preventDefault();
     slot.classList.add("is-hover");
   }
@@ -1507,13 +1561,21 @@ const pendingRestorations = this._pendingScrollRestorations;
   _onWidgetSlotDragOver(event) {
     const slot = event.currentTarget.closest(".widget-drop-slot[data-widget-tab]");
     if (!slot) return;
-    const payload = this._draggingWidgetTag || null;
-    if (payload?.type !== "cc-widget-reorder") return;
-    if ((payload.tab || "widgets") !== (slot.dataset.widgetTab || "widgets")) return;
+    const payload = this._readWidgetDragPayload(event);
+    if (payload?.type !== "cc-widget-reorder" && !this._hasWidgetDragType(event)) return;
+    if (!payload) {
+      event.preventDefault();
+      event.stopPropagation();
+      slot.classList.add("is-hover");
+      if (event.dataTransfer) event.dataTransfer.dropEffect = "copy";
+      return;
+    }
+    const localDrag = this._isWidgetLocalDrag(payload);
+    if (localDrag && (payload.tab || "widgets") !== (slot.dataset.widgetTab || "widgets")) return;
     event.preventDefault();
     event.stopPropagation();
     slot.classList.add("is-hover");
-    if (event.dataTransfer) event.dataTransfer.dropEffect = "move";
+    if (event.dataTransfer) event.dataTransfer.dropEffect = localDrag ? "move" : "copy";
   }
 
   _getWidgetSlotInsertActiveIndex(slot) {
@@ -1522,23 +1584,29 @@ const pendingRestorations = this._pendingScrollRestorations;
     return null;
   }
 
-  _onWidgetSlotDrop(event) {
-    event.preventDefault();
-    event.stopPropagation();
+  _getWidgetActiveCount(tab = "widgets") {
+    const sheetWidgets = this.document.getFlag("campaign-codex", "sheet-widgets") || [];
+    return sheetWidgets.filter((w) => w?.active && (w.tab || "widgets") === tab).length;
+  }
 
-    const slot = event.currentTarget.closest(".widget-drop-slot[data-widget-tab]");
-    if (!slot) return;
-    slot.classList.remove("is-hover");
+  _resolveWidgetDropTab(event) {
+    const explicitTab = event.target?.closest?.("[data-widget-tab]")?.dataset?.widgetTab;
+    if (explicitTab) return explicitTab;
+    const tabPanel = event.target?.closest?.("[data-tab]");
+    const activeTab = tabPanel?.dataset?.tab || this._currentTab || "widgets";
+    return activeTab === "info" ? "info" : "widgets";
+  }
 
-    const payload = this._draggingWidgetTag || null;
-    if (payload?.type !== "cc-widget-reorder") return;
+  _resolveWidgetDropInsertPos(event, tab) {
+    const slot = event.target?.closest?.(".widget-drop-slot[data-widget-tab]");
+    if (slot) {
+      const slotPos = this._getWidgetSlotInsertActiveIndex(slot);
+      if (slotPos != null && !Number.isNaN(slotPos)) return Number(slotPos);
+    }
+    return this._getWidgetActiveCount(tab);
+  }
 
-    const draggedId = payload.id;
-    const tab = slot.dataset.widgetTab || "widgets";
-    const insertActivePosRaw = this._getWidgetSlotInsertActiveIndex(slot);
-    if (!draggedId || insertActivePosRaw == null || Number.isNaN(insertActivePosRaw)) return;
-    if ((payload.tab || "widgets") !== tab) return;
-
+  async _reorderWidgetInTab(draggedId, tab, insertActivePosRaw) {
     const sheetWidgets = [...(this.document.getFlag("campaign-codex", "sheet-widgets") || [])];
     const draggedIndex = sheetWidgets.findIndex((w) => w.id === draggedId);
     if (draggedIndex < 0) return;
@@ -1556,7 +1624,7 @@ const pendingRestorations = this._pendingScrollRestorations;
     const currentActivePos = sameTabActiveIndices.findIndex((i) => i === draggedIndex);
     if (currentActivePos < 0) return;
 
-    let insertActivePos = Math.max(0, Math.min(Number(insertActivePosRaw), sameTabActiveIndices.length));
+    const insertActivePos = Math.max(0, Math.min(Number(insertActivePosRaw), sameTabActiveIndices.length));
     if (insertActivePos === currentActivePos || insertActivePos === currentActivePos + 1) return;
 
     const [moved] = sheetWidgets.splice(draggedIndex, 1);
@@ -1574,9 +1642,109 @@ const pendingRestorations = this._pendingScrollRestorations;
     else insertIndex = remainingActiveIndices[insertActivePos];
 
     sheetWidgets.splice(insertIndex, 0, moved);
-    this.document.setFlag("campaign-codex", "sheet-widgets", sheetWidgets).catch((error) => {
+    await this.document.setFlag("campaign-codex", "sheet-widgets", sheetWidgets);
+  }
+
+  async _handleWidgetTrayDrop(payload, event) {
+    if (payload?.type !== "cc-widget-reorder") return false;
+    const draggedId = payload.id;
+    if (!draggedId) return false;
+
+    const targetTab = this._resolveWidgetDropTab(event);
+    const insertActivePos = this._resolveWidgetDropInsertPos(event, targetTab);
+    const localDrag = this._isWidgetLocalDrag(payload);
+
+    if (localDrag) {
+      if ((payload.tab || "widgets") !== targetTab) return true;
+      await this._reorderWidgetInTab(draggedId, targetTab, insertActivePos);
+      return true;
+    }
+
+    await this._copyWidgetToSlot(payload, targetTab, insertActivePos);
+    return true;
+  }
+
+  _onWidgetSlotDrop(event) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    const slot = event.currentTarget.closest(".widget-drop-slot[data-widget-tab]");
+    if (!slot) return;
+    slot.classList.remove("is-hover");
+
+    const payload = this._readWidgetDragPayload(event);
+    if (payload?.type !== "cc-widget-reorder") return;
+    const insertActivePos = this._getWidgetSlotInsertActiveIndex(slot);
+    if (insertActivePos == null || Number.isNaN(insertActivePos)) return;
+    const tab = slot.dataset.widgetTab || "widgets";
+    const localDrag = this._isWidgetLocalDrag(payload);
+    if (localDrag && (payload.tab || "widgets") !== tab) return;
+    if (!localDrag) {
+      void this._copyWidgetToSlot(payload, tab, Number(insertActivePos));
+      return;
+    }
+    this._reorderWidgetInTab(payload.id, tab, Number(insertActivePos)).catch((error) => {
       console.error("Campaign Codex | Failed to reorder widget", error);
     });
+  }
+
+  async _copyWidgetToSlot(payload, targetTab, insertActivePosRaw) {
+    const sourceDocUuid = payload?.sourceDocumentUuid;
+    const draggedId = payload?.id;
+    if (!sourceDocUuid || !draggedId) return;
+
+    const sourceRaw = await fromUuid(sourceDocUuid).catch(() => null);
+    const sourceDoc = sourceRaw?.documentName === "JournalEntryPage" ? sourceRaw.parent : sourceRaw;
+    if (!sourceDoc || sourceDoc.documentName !== "JournalEntry") return;
+
+    const sourceWidgets = sourceDoc.getFlag("campaign-codex", "sheet-widgets") || [];
+    const sourceWidget = sourceWidgets.find((w) => w?.id === draggedId && w?.active);
+    if (!sourceWidget) return;
+
+    const sheetWidgets = [...(this.document.getFlag("campaign-codex", "sheet-widgets") || [])];
+    const existingCounters = sheetWidgets
+      .filter((w) => w?.widgetName === sourceWidget.widgetName)
+      .map((w) => Number(w?.counter || 0));
+    const nextCounter = (existingCounters.length ? Math.max(...existingCounters) : 0) + 1;
+    const newWidgetId = foundry.utils.randomID();
+    const copiedWidget = {
+      ...foundry.utils.deepClone(sourceWidget),
+      id: newWidgetId,
+      counter: nextCounter,
+      active: true,
+      tab: targetTab || "widgets",
+    };
+
+    const sameTabActiveIndices = [];
+    for (let i = 0; i < sheetWidgets.length; i++) {
+      const w = sheetWidgets[i];
+      if (w?.active && (w.tab || "widgets") === copiedWidget.tab) sameTabActiveIndices.push(i);
+    }
+
+    const insertActivePos = Math.max(0, Math.min(Number(insertActivePosRaw), sameTabActiveIndices.length));
+    let insertIndex;
+    if (sameTabActiveIndices.length === 0) insertIndex = sheetWidgets.length;
+    else if (insertActivePos <= 0) insertIndex = sameTabActiveIndices[0];
+    else if (insertActivePos >= sameTabActiveIndices.length) insertIndex = sameTabActiveIndices[sameTabActiveIndices.length - 1] + 1;
+    else insertIndex = sameTabActiveIndices[insertActivePos];
+
+    sheetWidgets.splice(insertIndex, 0, copiedWidget);
+
+    const typeKey = payload.sourceWidgetTypeKey || this._getWidgetStorageRecord(draggedId, sourceDoc).typeKey;
+    const sourceWidgetData = payload.widgetData ?? this._getWidgetStorageRecord(draggedId, sourceDoc).data;
+
+    const update = {
+      "flags.campaign-codex.sheet-widgets": sheetWidgets,
+    };
+    if (typeKey && sourceWidgetData !== undefined && sourceWidgetData !== null) {
+      update[`flags.campaign-codex.data.widgets.${typeKey}.${newWidgetId}`] = foundry.utils.deepClone(sourceWidgetData);
+    }
+
+    try {
+      await this.document.update(update);
+    } catch (error) {
+      console.error("Campaign Codex | Failed to copy widget between sheets", error);
+    }
   }
 
   _onWidgetTagDragEnd(event) {
@@ -1725,193 +1893,24 @@ const pendingRestorations = this._pendingScrollRestorations;
   }
 
   /**
-   * Opens a dialog to select an override icon for the document using a radio button grid.
+   * Opens a dialog to select an override icon for the document using presets and searchable icon lists.
    * This can be bound as a static action 'editIcon'.
    * @param {Event} event The triggering event.
    * @protected
    */
   static async #_onEditIcon(event) {
     event.preventDefault();
+    new iconPicker({}, this, { stat: { id: "icon-override" } }).render(true);
+  }
 
-    const ASSET_MAP = [
-      { key: "default", label: "Default", icon: "fas fa-map-pin" },
-      // --- Default Tags ---
-      { key: "region", label: "Region", icon: "fas fa-globe" },
-      { key: "atlas", label: "Atlas", icon: "fas fa-book-atlas" },
-      { key: "location", label: "Location", icon: "fas fa-map-marker-alt" },
-      { key: "shop", label: "Shop", icon: "fas fa-house" },
-      { key: "npc", label: "NPC", icon: "fas fa-user" },
-      { key: "item", label: "Item", icon: "fas fa-box" },
-      { key: "group", label: "Group", icon: "fas fa-sitemap" },
-      { key: "tag", label: "Tag", icon: "fas fa-tag" },
-      // --- Places & Structures ---
-      { key: "camp", label: "Camp", icon: "fas fa-campground" },
-      { key: "castle", label: "Castle", icon: "fas fa-chess-rook" },
-      { key: "dungeon", label: "Dungeon", icon: "fas fa-dungeon" },
-      { key: "gopuram", label: "Gopuram", icon: "fas fa-gopuram" },
-      { key: "landmark", label: "Landmark", icon: "fas fa-landmark" },
-      { key: "monument", label: "Monument", icon: "fas fa-monument" },
-      { key: "portal", label: "Portal", icon: "fas fa-portal-enter" },
-      { key: "store", label: "Store", icon: "fas fa-store" },
-      { key: "tavern", label: "Tavern", icon: "fas fa-beer" },
-      { key: "temple", label: "Temple", icon: "fas fa-place-of-worship" },
-      { key: "tents", label: "Tents", icon: "fas fa-tents" },
-      // --- Nature & Geography ---
-      { key: "forest", label: "Forest", icon: "fas fa-tree" },
-      { key: "mountain", label: "Mountain", icon: "fas fa-mountain" },
-      { key: "world", label: "World", icon: "fas fa-earth-africa" },
-      // --- Creatures & People ---
-      { key: "animal", label: "Animal", icon: "fas fa-paw" },
-      { key: "guard", label: "Guard", icon: "fas fa-user-shield" },
-      { key: "horse", label: "Horse", icon: "fas fa-horse" },
-      { key: "pet", label: "Pet", icon: "fas fa-shield-dog" },
-      { key: "spider", label: "Spider", icon: "fas fa-spider" },
-      { key: "users", label: "Users", icon: "fas fa-users-viewfinder" },
-      // --- Items & Objects ---
-      { key: "boat", label: "Boat", icon: "fas fa-sailboat" },
-      { key: "coins", label: "Coins", icon: "fas fa-coins" },
-      { key: "crown", label: "Crown", icon: "fas fa-crown" },
-      { key: "flask", label: "Flask", icon: "fas fa-flask" },
-      { key: "food", label: "Food", icon: "fas fa-utensils" },
-      { key: "quest", label: "Quest", icon: "fas fa-scroll" },
-      { key: "shield", label: "Shield", icon: "fas fa-shield" },
-      { key: "treasure", label: "Treasure", icon: "fas fa-gem" },
-      { key: "bed", label: "Bed", icon: "fas fa-bed" },
-      // --- Concepts & Symbols ---
-      { key: "danger", label: "Danger", icon: "fas fa-skull-crossbones" },
-      { key: "magic", label: "Magic", icon: "fas fa-magic" },
-      { key: "puzzle", label: "Puzzle", icon: "fas fa-puzzle-piece" },
-    ];
-
-    const currentIcon = this.document.getFlag("campaign-codex", "icon-override");
-    const isPresetIcon = ASSET_MAP.some((item) => item.icon === currentIcon);
-    const customIconValue = currentIcon && !isPresetIcon ? String(currentIcon) : "";
-    const customIconEscaped = foundry.utils.escapeHTML(customIconValue);
-    // --- HTML for the "Reset" radio button ---
-    const resetHtml = `
-      <div class="cc-icon-radio reset">
-        <input 
-          type="radio" 
-          id="cc-icon-reset" 
-          name="icon-override" 
-          value="reset" 
-          ${!currentIcon ? "checked" : ""}
-        >
-        <label for="cc-icon-reset" title="Reset to Default">
-          <i class="fas fa-ban fa-fw"></i>
-        </label>
-      </div>
-    `;
-
-    // --- HTML for the icon grid radio buttons ---
-    const iconGridHtml = ASSET_MAP.map((item) => {
-      const isChecked = currentIcon === item.icon;
-      return `
-        <div class="cc-icon-radio">
-          <input 
-            type="radio" 
-            id="cc-icon-${item.key}" 
-            name="icon-override" 
-            value="${item.icon}" 
-            ${isChecked ? "checked" : ""}
-          >
-          <label for="cc-icon-${item.key}" title="${item.label}">
-            <i class="${item.icon}"></i>
-          </label>
-        </div>
-      `;
-    }).join("");
-
-    const content = `
-      <div class="form-group cc-icon-picker">
-        <div class="form-fields" style="align-items:center; gap:8px;">
-          <i id="cc-icon-custom-preview" class="${customIconEscaped || "fas fa-map-pin"}" style="width:24px; flex:0; text-align:center;"></i>
-          <input
-            type="text"
-            id="cc-icon-custom-input"
-            name="icon-custom"
-            value="${customIconEscaped}"
-            placeholder="fas fa-dragon"
-          >
-        </div>
-        <p class="notes" style="margin:4px 0 8px;">Enter a full icon class string (example: <code>fas fa-dragon</code>).</p>
-      </div>      <div class="cc-icon-picker-grid">
-        ${resetHtml}
-        ${iconGridHtml}
-      </div>
-    `;
-
-    const dialog = foundry.applications.api.DialogV2.wait({
-      window: { title: "Choose Icon Override" },
-      id: this.document.id + "_iconPicker",
-      classes: ["cc-icon-picker-dialog campaign-codex"],
-      content,
-      form: {
-        closeOnSubmit: false,
-      },
-      buttons: [
-        {
-          action: "cancel",
-          label: "Cancel",
-          type: "button",
-          default: false,
-        },
-        {
-          action: "save",
-          label: "Save",
-          type: "submit",
-          default: true,
-          callback: (event, button) => Object.fromEntries(new FormData(button.form)),
-        },
-      ],
-      render: (dialog) => {
-        const form = dialog.target.element.querySelector("form");
-        if (!form) return;
-
-        const customInput = form.querySelector("#cc-icon-custom-input");
-        const preview = form.querySelector("#cc-icon-custom-preview");
-        const radios = form.querySelectorAll('input[name="icon-override"]');
-
-        const updatePreview = () => {
-          if (!preview || !customInput) return;
-          const value = String(customInput.value || "").trim();
-          preview.className = value || "fas fa-map-pin";
-        };
-
-        customInput?.addEventListener("input", updatePreview);
-        customInput?.addEventListener("focus", () => {
-          const checked = form.querySelector('input[name="icon-override"]:checked');
-          if (checked?.value === "reset") checked.checked = false;
-        });
-
-        radios.forEach((radio) => {
-          radio.addEventListener("change", () => {
-            if (customInput) customInput.value = "";
-            updatePreview();
-          });
-        });
-
-        updatePreview();
-      },      
-      submit: async (result, dialog) => {
-        const customValue = String(result["icon-custom"] || "").trim();
-
-        const selectedValue = result["icon-override"];
-
-      if (customValue) {
-          await this.document.setFlag("campaign-codex", "icon-override", customValue);
-        } else if (selectedValue === "reset") {
-          await this.document.unsetFlag("campaign-codex", "icon-override");
-        } else if (selectedValue) {
-          await this.document.setFlag("campaign-codex", "icon-override", selectedValue);
-        }
-
-        dialog.close();
-      },
-      close: () => {
-        this.render();
-      },
-    });
+  async setIcon(_id, iconValue) {
+    const icon = String(iconValue || "").trim();
+    if (!icon) {
+      await this.document.unsetFlag("campaign-codex", "icon-override");
+    } else {
+      await this.document.setFlag("campaign-codex", "icon-override", `fa-solid ${icon}`);
+    }
+    this.render();
   }
 
   // =========================================================================
@@ -3294,6 +3293,10 @@ const pendingRestorations = this._pendingScrollRestorations;
 
   _onDragOver(event) {
     event.preventDefault();
+    if (this._hasWidgetDragType(event)) {
+      event.dataTransfer.dropEffect = "copy";
+      return;
+    }
     event.dataTransfer.dropEffect = "link";
   }
 
@@ -3310,6 +3313,10 @@ const pendingRestorations = this._pendingScrollRestorations;
       return;
     }
     try {
+      if (data?.type === "cc-widget-reorder") {
+        await this._handleWidgetTrayDrop(data, event);
+        return;
+      }
       await this._handleDrop(data, event);
     } catch (error) {
       console.error("Campaign Codex | Error handling drop:", error);

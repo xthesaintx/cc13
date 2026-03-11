@@ -49,7 +49,7 @@ export class MacroWidget extends CampaignCodexWidget {
                     <img src="${macro.img}" class="rt-img"/>
                     <span class="rt-name">${macro.name}</span>
                 </div>
-                ${data.isGM ? `<div class="rt-remove-wrapper"><i class="fas fa-trash rt-remove" data-action="remove" title="Remove Macro"></i></div>` : ''}
+                ${data.isGM ? `<div class="rt-remove-wrapper macro-actions-wrapper"><i class="fas fa-edit rt-remove rt-edit" data-action="edit" title="Edit Macro"></i><i class="fas fa-trash rt-remove" data-action="remove" title="Remove Macro"></i></div>` : ''}
             </div>
         `).join("");
 
@@ -92,16 +92,25 @@ export class MacroWidget extends CampaignCodexWidget {
 
         htmlElement.querySelectorAll('.macro-card').forEach(card => {
             card.addEventListener('click', async (e) => {
-                if (e.target.closest('[data-action="remove"]')) return;
+                if (e.target.closest('[data-action="remove"]') || e.target.closest('[data-action="edit"]')) return;
 
                 const uuid = card.dataset.uuid;
                 const macro = await fromUuid(uuid);
                 if (macro) {
-                    macro.execute();
+                    macro.execute({'parentUuid': this.document.uuid});
                     ui.notifications.info(format('notify.macroExecuted', { name: macro.name }));
                 } else {
                     ui.notifications.warn(localize('notify.macroNotFound'));
                 }
+            });
+        });
+
+        htmlElement.querySelectorAll('[data-action="edit"]').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const uuid = e.currentTarget.closest('.macro-card').dataset.uuid;
+                await this._editMacro(uuid);
             });
         });
 
@@ -127,6 +136,15 @@ export class MacroWidget extends CampaignCodexWidget {
             macros.push(uuid);
             await this.saveData({ macros: macros });
             this._refreshWidget(htmlElement);
+        }
+    }
+
+    async _editMacro(uuid) {
+        const macro = await fromUuid(uuid);
+        if (macro?.sheet) {
+            macro.sheet.render(true);
+        } else {
+            ui.notifications.warn(localize('notify.macroNotFound'));
         }
     }
 

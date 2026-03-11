@@ -320,7 +320,6 @@ body.theme-dark .campaign-codex {
   text-transform: uppercase;
   letter-spacing: 1px;
   color: var(--cc-accent80);
-  margin-bottom: 16px;
   cursor: text;
 }
 .campaign-codex .map-marker,
@@ -338,12 +337,18 @@ body.theme-dark .campaign-codex {
   color: var(--cc-accent);
 }
 
+.campaign-codex .sub-title i[data-action="editIcon"]{
+  width: 14px;
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--cc-sidebar-bg), var(--cc-sidebar-text) 5%);
+}
 
 .campaign-codex .sub-title {
     display: flex;
     flex-direction: row;
     gap: 16px;
     justify-content: center;
+    margin-bottom: 16px;
   }
 
 .campaign-codex .sidebar-tabs {
@@ -7413,6 +7418,11 @@ display: flex;
     padding-right: 15px; 
 }
 
+.cc-widget-rolltable .rt-card-content:hover{
+    padding-right: 48px; 
+
+}
+
 .cc-widget-rolltable .rt-img {
     width: 28px;
     height: 28px;
@@ -7436,10 +7446,10 @@ display: flex;
 }
 
 .cc-widget-rolltable .rt-remove-wrapper {
-    position: absolute;
+position: absolute;
     top: 0;
     right: 0;
-    width: 24px;
+    width: 48px;
     height: 100%;
     display: flex;
     align-items: center;
@@ -8989,4 +8999,16 @@ padding: 4px 8px;
 }
 
 
+#cc-iconpicker .font-picker {
+    overflow: hidden;
+}
 
+#cc-iconpicker .font-picker .icon-list {
+    flex-wrap: wrap;
+    display: flex;
+    flex-direction: row;
+    overflow-y: auto;
+}
+#cc-iconpicker .is-current-icon{
+  color: var(--cc-accent);
+}
