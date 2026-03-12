@@ -5070,6 +5070,7 @@ border: none;
     display: flex;
     gap: 8px;
     flex-direction: row;
+    justify-content: space-between;
 }
 .campaign-codex.quest-board .cc-quest-header {
     display: flex;

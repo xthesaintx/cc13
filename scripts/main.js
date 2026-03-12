@@ -600,8 +600,15 @@ function _isCodexSceneNoteVisibleToUser(noteDocument) {
     return !!noteData.visible;
 }
 
+function _isCodexWidgetSceneNote(noteDocument) {
+    const ccFlags = noteDocument?.flags?.["campaign-codex"];
+    return !!(ccFlags?.noteid && ccFlags?.widgetid);
+}
+
 function _applyCodexSceneNoteVisibility(note) {
     if (!note || game.user.isGM) return;
+    if (!_isCodexWidgetSceneNote(note.document)) return;
+    
     const shouldShow = _isCodexSceneNoteVisibleToUser(note.document);
 
     // Force the actual placeable state for player users based on the widget note visibility.
