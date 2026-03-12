@@ -1,3 +1,20 @@
+## 3.2.2
+- Quest Sheets
+- Quest Board
+- New Toc
+- Factions
+- Map note pins can link to text (drag drop)
+- Service widget
+- Factions displayed in group tree mode
+- tags are factions
+- tagging
+- table of contents
+- quests
+- player notes
+- drag folder of items to sheet
+- player visibility on header
+- drag image from asset librarian to sheet
+
 ## 2.4.0
 - group sheet widget position fix
 - spelling error fix

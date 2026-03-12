@@ -795,24 +795,24 @@ export class CampaignCodexBaseSheet extends baseSheetApp {
   /** @inheritDoc */
   _getEntityContextOptions() {
     return [
-      {
-        name: "Edit Card Note",
-        icon: '<i class="fa-solid fa-note-sticky"></i>',
-        condition: (span) =>
-          !this._suppressSelectedSheetCardContextMenu() &&
-          !this._suppressGroupNPCPanelContextMenu(span) &&
-          game.user.isGM &&
-          !!span.dataset.uuid,
-        callback: (span) => {
-          const syntheticEvent = {
-            currentTarget: span,
-            target: span,
-            preventDefault: () => { },
-            stopPropagation: () => { },
-          };
-          this.editLinkCardNote(syntheticEvent);
-        },
-      },
+      // {
+      //   name: "Edit Card Note",
+      //   icon: '<i class="fa-solid fa-note-sticky"></i>',
+      //   condition: (span) =>
+      //     !this._suppressSelectedSheetCardContextMenu() &&
+      //     !this._suppressGroupNPCPanelContextMenu(span) &&
+      //     game.user.isGM &&
+      //     !!span.dataset.uuid,
+      //   callback: (span) => {
+      //     const syntheticEvent = {
+      //       currentTarget: span,
+      //       target: span,
+      //       preventDefault: () => { },
+      //       stopPropagation: () => { },
+      //     };
+      //     this.editLinkCardNote(syntheticEvent);
+      //   },
+      // },
       {
         name: localize("context.removeLink"),
         icon: '<i class="fa-solid fa-link-slash"></i>',
@@ -3305,14 +3305,23 @@ const pendingRestorations = this._pendingScrollRestorations;
     event.preventDefault();
     if (this._dropping) return;
     this._dropping = true;
-    let data;
+    const rawDropData = event.dataTransfer?.getData("text/plain") || "";
+    let data = null;
     try {
-      data = JSON.parse(event.dataTransfer.getData("text/plain"));
+      data = rawDropData ? JSON.parse(rawDropData) : null;
     } catch (err) {
-      this._dropping = false;
-      return;
+      data = null;
     }
     try {
+      const handledImageDrop = await this._handleImageDrop(event, data, rawDropData);
+      if (handledImageDrop) {
+        return;
+      }
+
+      if (!data) {
+        return;
+      }
+
       if (data?.type === "cc-widget-reorder") {
         await this._handleWidgetTrayDrop(data, event);
         return;
@@ -3326,6 +3335,70 @@ const pendingRestorations = this._pendingScrollRestorations;
     if (foundry.applications.instances.get("campaign-codex-toc-sheet")) {
       foundry.applications.instances.get("campaign-codex-toc-sheet").render();
     }
+  }
+
+  _isImageDropTarget(event) {
+    return !!event.target?.closest?.(".sheet-image");
+  }
+
+  _looksLikeImagePath(value) {
+    if (typeof value !== "string") return false;
+    const path = value.trim();
+    if (!path) return false;
+    return /\.(apng|avif|bmp|gif|jpe?g|jfif|png|svg|webp)(\?.*)?$/i.test(path);
+  }
+
+  async _extractDroppedImagePath(data, rawDropData) {
+    if (this._looksLikeImagePath(rawDropData)) return rawDropData.trim();
+    if (!data || typeof data !== "object") return null;
+
+    const candidates = [
+      data.path,
+      data.img,
+      data.src,
+      data.url,
+      data.file,
+      data.image,
+      data.imagePath,
+      data?.texture?.src,
+    ];
+
+    for (const candidate of candidates) {
+      if (this._looksLikeImagePath(candidate)) return candidate.trim();
+    }
+
+    if (data.uuid) {
+      const droppedDoc = await fromUuid(data.uuid).catch(() => null);
+      if (!droppedDoc) return null;
+
+      const uuidCandidates = [
+        droppedDoc?.src,
+        droppedDoc?.img,
+        droppedDoc?.image?.src,
+        droppedDoc?.texture?.src,
+      ];
+      for (const candidate of uuidCandidates) {
+        if (this._looksLikeImagePath(candidate)) return candidate.trim();
+      }
+    }
+
+    return null;
+  }
+
+  async _handleImageDrop(event, data, rawDropData) {
+    if (!this._isImageDropTarget(event)) return false;
+    const imagePath = await this._extractDroppedImagePath(data, rawDropData);
+    if (!imagePath) return false;
+
+    const existingImage = this.document.getFlag("campaign-codex", "image");
+    if (existingImage && existingImage !== imagePath) {
+      const replace = await confirmationDialog("This sheet already has an image. Replace it?");
+      if (!replace) return true;
+    }
+
+    await this.document.setFlag("campaign-codex", "image", imagePath);
+    this.render(false);
+    return true;
   }
 
   async _handleItemDrop(data, event) {
