@@ -96,6 +96,14 @@ export default async function campaigncodexSettings() {
         type: Boolean,
         default: false,
     });
+    game.settings.register("campaign-codex", "runonlyonce300", {
+        name: localize("runonlyonce.name"),
+        hint: localize("runonlyonce.hint"),
+        scope: "world",
+        requiresReload: true,
+        type: Boolean,
+        default: false,
+    });
 
     game.settings.register("campaign-codex", "runonlyonce185", {
         name: localize("runonlyonce.name"),
@@ -191,7 +199,7 @@ export default async function campaigncodexSettings() {
         name: localize("showOnlyPinned.name"),
         hint: localize("showOnlyPinned.hint"),
     scope: "world", 
-    config: true,   
+    config: false,   
     type: Boolean,
     default: false,
 });
@@ -225,6 +233,21 @@ export default async function campaigncodexSettings() {
         type: Boolean,
         default: true,
     });
+
+    game.settings.register("campaign-codex", "mapMarkersHoverDelay", {
+        name: localize("mapMarkersHoverDelay.name"),
+        hint: localize("mapMarkersHoverDelay.hint"),
+        scope: "world",
+        config: true,
+        type: Number,
+        range: {
+            min: 0,
+            max: 1500,
+            step: 50
+        },
+        default: 0
+    });
+    
     game.settings.register("campaign-codex", "mapMarkersHover", {
         name: localize("mapMarkersHover.name"),
         hint: localize("mapMarkersHover.hint"),

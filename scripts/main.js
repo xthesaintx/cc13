@@ -41,6 +41,7 @@ import { CampaignCodexMapMarker, _getCampaignCodexIcon } from "./codex-map-marke
 import { CampaignCodexTOCSheet } from "./campaign-codex-toc.js";
 import { registerMapNoteTextEnricher, registerMapNoteLinkClickHandler } from "./map-note-links.js";
 // let tocSheetInstance = null;
+const hoverNoteTimers = new Map();
 
 Hooks.once("init", async function () {
     console.log("Campaign Codex | Initializing");
@@ -246,6 +247,18 @@ Hooks.once("ready", async function () {
                 {},
             );
             await game.settings.set(MODULE_NAME, "runonlyonce185", true);
+        }
+        if (game.settings.get(MODULE_NAME, "runonlyonce300") === false) {
+            game.packs.find(i => i.metadata.id === "campaign-codex.macros").render(true)
+            await ChatMessage.create(
+                {
+                    user: game.user.id,
+                    speaker: ChatMessage.getSpeaker(),
+                    content: localize("updateQUESTS"),
+                },
+                {},
+            );
+            await game.settings.set(MODULE_NAME, "runonlyonce300", true);
         }
     }
     console.log("Campaign Codex | Resuming relationship updates");
@@ -643,17 +656,38 @@ Hooks.on("updateJournalEntry", (journal) => {
 
 Hooks.on("hoverNote", async (note, hovered) => {
     if (!_isCodexSceneNoteVisibleToUser(note.document)) return;
-    if (game.settings.get("campaign-codex", "mapMarkersHover"))
-     {
+    if (game.settings.get("campaign-codex", "mapMarkersHover")) {
         const ccFlags = note.document.flags?.["campaign-codex"];
         if (!ccFlags?.noteid || !ccFlags?.widgetid) return;
         const notePosition = note.worldTransform;
-        const entryId = note.document.entryId; 
-        if (hovered) {
-            await hoverCodexNote(entryId, ccFlags.widgetid, ccFlags.noteid, notePosition);
+        const entryId = note.document.entryId;
+        const noteKey = note.id ?? note.document?.id;
+        if (!noteKey) return;
+
+        const pendingTimer = hoverNoteTimers.get(noteKey);
+        if (pendingTimer) {
+            clearTimeout(pendingTimer);
+            hoverNoteTimers.delete(noteKey);
         }
+
+        if (!hovered) return;
+
+        const hoverDelay = Math.clamp(
+            Number(game.settings.get("campaign-codex", "mapMarkersHoverDelay")) || 0,
+            0,
+            1500
+        );
+
+        const timer = setTimeout(async () => {
+            hoverNoteTimers.delete(noteKey);
+            if (!note.hover) return;
+            await hoverCodexNote(entryId, ccFlags.widgetid, ccFlags.noteid, notePosition);
+        }, hoverDelay);
+
+        hoverNoteTimers.set(noteKey, timer);
     }
 });
+
 
 Hooks.on("activateNote", (note, options) => {
     if (!_isCodexSceneNoteVisibleToUser(note.document)) return false;
