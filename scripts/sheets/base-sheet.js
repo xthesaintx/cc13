@@ -4212,12 +4212,12 @@ const pendingRestorations = this._pendingScrollRestorations;
     const data = questDoc.getFlag("campaign-codex", "data") || {};
     const list = Array.isArray(data.quests) ? data.quests : [];
     const firstQuest = list[0];
-    const tabOverrides = questDoc.getFlag("campaign-codex", "tab-overrides") || [];
-    const imageAreaOverride = tabOverrides?.find(override => override.key === "imageArea");
-    const imageData = questDoc.getFlag("campaign-codex", "image") || TemplateComponents.getAsset("image", "quest");
-    console.log(imageData);
-    firstQuest.showImage =  imageAreaOverride?.visible ?? true;
-    firstQuest.img = imageData ;
+    // const tabOverrides = questDoc.getFlag("campaign-codex", "tab-overrides") || [];
+    // const imageAreaOverride = tabOverrides?.find(override => override.key === "imageArea");
+    // const imageData = questDoc.getFlag("campaign-codex", "image") || TemplateComponents.getAsset("image", "quest");
+    // firstQuest.showImage =  imageAreaOverride?.visible ?? true;
+    // firstQuest.img = imageData ;
+    if (!firstQuest || typeof firstQuest !== "object") return {};
     return foundry.utils.deepClone(firstQuest);
     }
 
