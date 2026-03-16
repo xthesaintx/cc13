@@ -77,6 +77,37 @@ export class CampaignManager {
   // Document Creation
   // =========================================================================
 
+  createDefaultQuestData(name = "New Quest") {
+    return {
+      id: foundry.utils.randomID(),
+      title: name,
+      description: "",
+      inactive: true,
+      completed: false,
+      failed: false,
+      visible: false,
+      pinned: false,
+      hideRewards: false,
+      notifyPlayers: false,
+      messageOnCompleted: false,
+      urgency: "medium",
+      boardColumn: "active",
+      questGiverUuid: "",
+      relatedUuids: [],
+      dependencies: [],
+      unlocks: [],
+      checkIns: [],
+      linkedMacros: [],
+      rewardXP: 0,
+      rewardCurrency: 0,
+      rewardReputation: 0,
+      rewardClaimed: false,
+      updatedAt: Date.now(),
+      objectives: [],
+      inventory: [],
+    };
+  }
+
   /**
    * Opens the Campaign Codex Table of Contents sheet.
    * If the sheet is already open, it brings it to the front.
@@ -299,31 +330,7 @@ export class CampaignManager {
     if (this._creationQueue.has(creationKey)) return;
     this._creationQueue.add(creationKey);
     try {
-      const defaultQuest = {
-        id: foundry.utils.randomID(),
-        title: name,
-        description: "",
-        completed: false,
-        failed: false,
-        visible: false,
-        pinned: false,
-        hideRewards: false,
-        notifyPlayers: false,
-        urgency: "medium",
-        boardColumn: "active",
-        questGiverUuid: "",
-        relatedUuids: [],
-        dependencies: [],
-        unlocks: [],
-        checkIns: [],
-        rewardXP: 0,
-        rewardCurrency: 0,
-        rewardReputation: 0,
-        rewardClaimed: false,
-        updatedAt: Date.now(),
-        objectives: [],
-        inventory: [],
-      };
+      const defaultQuest = this.createDefaultQuestData(name);
       const journalData = {
         name,
         flags: {
@@ -339,7 +346,12 @@ export class CampaignManager {
         },
         pages: [{ name: "Overview", type: "text", text: { content: `<h1>${name}</h1><p>Quest details...</p>` } }],
       };
-      return await JournalEntry.create(journalData);
+      const created = await JournalEntry.create(journalData);
+      const createdData = created?.getFlag("campaign-codex", "data") || {};
+      if (!Array.isArray(createdData.quests) || createdData.quests.length === 0) {
+        await created.setFlag("campaign-codex", "data.quests", [foundry.utils.deepClone(defaultQuest)]);
+      }
+      return created;
     } finally {
       this._creationQueue.delete(creationKey);
     }

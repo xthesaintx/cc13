@@ -118,6 +118,10 @@
         "name": "Allow players to puchase from Inventories",
         "hint": "If enabled players can send items to themselves from an inventory"
       },
+      "allowPlayerLooting": {
+        "name": "Allow players to take from Loot Inventories",
+        "hint": "If enabled players can send items to themselves from a loot inventory"
+      },
       "mapMarkerOverride": {
         "name": "Map Marker Scale",
         "hint": "Size of the Campaign Codex Map marker. Default 1"

@@ -150,6 +150,16 @@ export default async function campaigncodexSettings() {
         requiresReload: true,
         type: Boolean,
         default: true,
+    });  
+
+      game.settings.register("campaign-codex", "allowPlayerLooting", {
+        name: localize("allowPlayerLooting.name"),
+        hint: localize("allowPlayerLooting.hint"),
+        scope: "world",
+        config: true,
+        requiresReload: true,
+        type: Boolean,
+        default: true,
     });
     game.settings.register("campaign-codex", "roundFinalPrice", {
         name: localize("roundFinalPrice.name"),

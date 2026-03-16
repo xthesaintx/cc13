@@ -1,3 +1,7 @@
+## 3.3.2
+- refactor of quests
+- allow players to loot option
+
 ## 3.2.2
 - Quest Sheets
 - Quest Board

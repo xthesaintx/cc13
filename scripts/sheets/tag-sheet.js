@@ -708,6 +708,7 @@ export class TagSheet extends CampaignCodexBaseSheet {
     const hideByPermission = game.settings.get("campaign-codex", "hideInventoryByPermission");
     const currency = CampaignCodexLinkers.getCurrency();
     const rawInventory = await CampaignCodexLinkers.getInventory(selectedDoc, selectedData.inventory || []) || [];
+    const allowPlayerLooting = game.settings.get("campaign-codex", "allowPlayerLooting") || false;
     const allowPlayerPurchasing = game.settings.get("campaign-codex", "allowPlayerPurchasing") || false;
 
     const groups = rawInventory.reduce((acc, item) => {
@@ -731,6 +732,7 @@ export class TagSheet extends CampaignCodexBaseSheet {
     return await renderTemplate("modules/campaign-codex/templates/partials/selected-tab-inventory.hbs", {
 
       labelOverride: labelOverride,
+      allowPlayerLooting:allowPlayerLooting,
       allowPlayerPurchasing: allowPlayerPurchasing,
       currency: currency,
       hideByPermission: hideByPermission,

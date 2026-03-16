@@ -69,6 +69,7 @@ export class CampaignCodexBaseSheet extends baseSheetApp {
       membersToMapButton: this.#_onDropMembersToMapClick,
       npcsToMapButton: this.#_onDropNPCsToMapClick,
       playerPurchase: this.#_playerPurchase,
+      playerLoot: this.#_playerLoot,
       sendToPlayer: this.#_onSendToPlayer,
       // ICON
       editIcon: this.#_onEditIcon,
@@ -501,6 +502,7 @@ export class CampaignCodexBaseSheet extends baseSheetApp {
       }
     }
     context.allowPlayerPurchasing = game.settings.get("campaign-codex", "allowPlayerPurchasing") || false;
+    context.allowPlayerLooting = game.settings.get("campaign-codex", "allowPlayerLooting") || false;
 
     return context;
   }
@@ -2370,6 +2372,38 @@ const pendingRestorations = this._pendingScrollRestorations;
     }
   }
 
+  static async #_playerLoot(event) {
+    event.stopPropagation();
+    const playerCharacter = game.user?.character;
+    if (!playerCharacter) return;
+
+    let sourceDoc = this.document;
+    if (["group", "tag"].includes(this.document.getFlag("campaign-codex", "type"))) {
+      const sourceUuid = event.target.closest("[data-doc-uuid]")?.dataset.docUuid;
+      if (!sourceUuid) {
+        ui.notifications.warn(localize('notify.noSourceDocument'));
+        return;
+      }
+      sourceDoc = await fromUuid(sourceUuid);
+    }
+
+    const target = event.target.closest("[data-uuid]");
+    const itemUuid = target.dataset.uuid;
+    const item = (await fromUuid(itemUuid)) || game.items.get(itemUuid);
+    if (!item) {
+      ui.notifications.warn(localize('notify.itemNotFound'));
+      return;
+    }
+    const currentData = sourceDoc.getFlag("campaign-codex", "data") || {};
+    const inventory = currentData.inventory || [];
+    const shopItem = inventory.find((i) => i.itemUuid === item.uuid);
+    const maxQuantity = shopItem?.infinite ? null : Math.max(Number(shopItem?.quantity || 0), 0);
+    const quantity = await this._promptForItemQuantity(item.name, maxQuantity);
+    if (!quantity) return;
+     await this._handlePurchase(item, playerCharacter, sourceDoc, quantity, true);
+  }
+
+
   static async #_playerPurchase(event) {
     event.stopPropagation();
     const playerCharacter = game.user?.character;
@@ -2404,8 +2438,9 @@ const pendingRestorations = this._pendingScrollRestorations;
   static async #_onSendToPlayer(event) {
     event.stopPropagation();
     const target = event.target.closest("[data-uuid]");
+    if (!target) return;
+
     const isQuestSend = target.dataset?.type === "quest";
-    const questId = isQuestSend && target.dataset.questId ? target.dataset.questId : null;
     const itemUuid = target.dataset.uuid;
     const item = (await fromUuid(itemUuid)) || game.items.get(itemUuid);
 
@@ -2425,26 +2460,17 @@ const pendingRestorations = this._pendingScrollRestorations;
 
     const sourceData = sourceDoc.getFlag("campaign-codex", "data") || {};
     let maxQuantity = null;
-    if (isQuestSend && !questId) {
-      const rewardItem = (sourceData.inventory || []).find((i) => i.itemUuid === item.uuid);
-      maxQuantity = rewardItem?.infinite ? null : Math.max(Number(rewardItem?.quantity || 0), 0);
-    } else if (questId) {
-      const quest = (sourceData.quests || []).find((q) => q.id === questId);
-      const questItem = (quest?.inventory || []).find((i) => i.itemUuid === item.uuid);
-      maxQuantity = Math.max(Number(questItem?.quantity || 0), 0);
-    } else {
       const shopItem = (sourceData.inventory || []).find((i) => i.itemUuid === item.uuid);
       maxQuantity = shopItem?.infinite ? null : Math.max(Number(shopItem?.quantity || 0), 0);
-    }
 
     const quantity = await this._promptForItemQuantity(item.name, maxQuantity);
     if (!quantity) return;
 
     TemplateComponents.createPlayerSelectionDialog(item.name, async (targetActor, deductFunds) => {
-      if (deductFunds) {
+      if (deductFunds && !isQuestSend) {
         await this._handlePurchase(item, targetActor, sourceDoc, quantity);
       } else {
-        await this._transferItemToActor(item, targetActor, sourceDoc, questId, quantity);
+        await this._transferItemToActor(item, targetActor, sourceDoc, null, quantity);
       }
     }, { showDeductFunds: !isQuestSend });
   }
@@ -2454,7 +2480,7 @@ const pendingRestorations = this._pendingScrollRestorations;
   // Player Purchasing
   // =========================================================================
 
-  async _handlePurchase(item, targetActor, document, quantity = 1) {
+  async _handlePurchase(item, targetActor, document, quantity = 1, lootMode=false) {
     try {
       const qtyToBuy = Math.max(1, Number(quantity || 1));
       const currentData = document.getFlag("campaign-codex", "data") || {};
@@ -2468,8 +2494,10 @@ const pendingRestorations = this._pendingScrollRestorations;
         ui.notifications.warn(localize('notify.outOfStock'));
         return;
       }
-      const hasPaid = await EconomyHelper.removeCost(item, targetActor, shopItem, markup, qtyToBuy);
-      if (!hasPaid) return;
+      if (!lootMode) {
+        const hasPaid = await EconomyHelper.removeCost(item, targetActor, shopItem, markup, qtyToBuy);
+        if (!hasPaid) return;
+      }
 
       const itemData = item.toObject();
       delete itemData._id;
@@ -2514,7 +2542,7 @@ const pendingRestorations = this._pendingScrollRestorations;
       const targetUser = game.users.find((u) => u.character?.id === targetActor.id);
       if (targetUser && targetUser.active) {
         ChatMessage.create({
-          content: `<p><strong>${game.user.name}</strong> purchased <strong>${qtyToBuy}x ${item.name}</strong> from ${this.document.name}!</p>`,
+          content: `<p><strong>${game.user.name}</strong> ${lootMode ? "took" : "purchased"} <strong>${qtyToBuy}x ${item.name}</strong> from ${this.document.name}!</p>`,
           whisper: game.users.activeGM?.id,
         });
       }
@@ -3199,32 +3227,19 @@ const pendingRestorations = this._pendingScrollRestorations;
       return;
     }
     const currentData = targetDoc.getFlag("campaign-codex", "data") || {};
-    const quests = currentData.quests || [];
-    quests.push({
-      id: foundry.utils.randomID(),
-      title: "New Quest",
-      description: "",
-      completed: false,
-      failed: false,
-      visible: false,
-      pinned: false,
-      hideRewards: false,
-      urgency: "medium",
-      boardColumn: "active",
-      questGiverUuid: "",
-      relatedUuids: [],
-      dependencies: [],
-      unlocks: [],
-      checkIns: [],
-      notifyPlayers: false,
-      rewardXP: 0,
-      rewardCurrency: 0,
-      rewardReputation: 0,
-      rewardClaimed: false,
-      updatedAt: Date.now(),
-      objectives: [],
-    });
-    await targetDoc.setFlag("campaign-codex", "data.quests", quests);
+    const quests = foundry.utils.deepClone(Array.isArray(currentData.quests) ? currentData.quests : []);
+    const createQuest = game.campaignCodex?.createDefaultQuestData;
+    if (typeof createQuest !== "function") {
+      console.error("Campaign Codex | createDefaultQuestData is unavailable.");
+      return;
+    }
+    if (quests[0]?.id) {
+      ui.notifications.warn("Quest sheets currently support one quest entry.");
+      return;
+    }
+    const newQuest = createQuest.call(game.campaignCodex, localize("names.quest") || "New Quest");
+    quests[0] = newQuest;
+    await targetDoc.setFlag("campaign-codex", "data.quests", quests.slice(0, 1));
     this.render(true);
   }
 
@@ -3416,7 +3431,7 @@ const pendingRestorations = this._pendingScrollRestorations;
       if (!questDoc) return;
       const currentData = questDoc.getFlag("campaign-codex", "data") || {};
       const quests = foundry.utils.deepClone(currentData.quests || []);
-      const quest = quests.find((q) => q.id === questId);
+        const quest = quests[0];
       if (quest) {
         quest.inventory = quest.inventory || [];
         for (const item of items) {
@@ -4036,7 +4051,7 @@ const pendingRestorations = this._pendingScrollRestorations;
 
       if (questId) {
         const quests = foundry.utils.deepClone(currentData.quests || []);
-        const quest = quests.find((q) => q.id === questId);
+        const quest = quests[0];
         if (!quest) return;
         quest.inventory = quest.inventory || [];
         const existingItem = quest.inventory.find((i) => i.itemUuid === item.uuid);
@@ -4212,11 +4227,6 @@ const pendingRestorations = this._pendingScrollRestorations;
     const data = questDoc.getFlag("campaign-codex", "data") || {};
     const list = Array.isArray(data.quests) ? data.quests : [];
     const firstQuest = list[0];
-    // const tabOverrides = questDoc.getFlag("campaign-codex", "tab-overrides") || [];
-    // const imageAreaOverride = tabOverrides?.find(override => override.key === "imageArea");
-    // const imageData = questDoc.getFlag("campaign-codex", "image") || TemplateComponents.getAsset("image", "quest");
-    // firstQuest.showImage =  imageAreaOverride?.visible ?? true;
-    // firstQuest.img = imageData ;
     if (!firstQuest || typeof firstQuest !== "object") return {};
     return foundry.utils.deepClone(firstQuest);
     }
@@ -4284,6 +4294,7 @@ const pendingRestorations = this._pendingScrollRestorations;
     const showHeaders = sections.length > 1;
     const templateData = {
       labelOverride: label,
+      allowPlayerLooting: data.allowPlayerLooting,
       allowPlayerPurchasing: data.allowPlayerPurchasing,
       currency: currency,
       hideByPermission: hideByPermission,

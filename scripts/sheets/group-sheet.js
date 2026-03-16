@@ -1287,6 +1287,7 @@ export class GroupSheet extends CampaignCodexBaseSheet {
     const currency = CampaignCodexLinkers.getCurrency();
     const rawInventory = await CampaignCodexLinkers.getInventory(selectedDoc, selectedData.inventory || []) || [];
     const allowPlayerPurchasing = game.settings.get("campaign-codex", "allowPlayerPurchasing") || false;
+    const allowPlayerLooting = game.settings.get("campaign-codex", "allowPlayerLooting") || false;
 
     const groups = rawInventory.reduce((acc, item) => {
       const rawType = item.type ? String(item.type) : "General";
@@ -1307,6 +1308,7 @@ export class GroupSheet extends CampaignCodexBaseSheet {
     const showHeaders = sections.length > 1;
     const templateData = {
       labelOverride: labelOverride,
+      allowPlayerLooting: allowPlayerLooting,
       allowPlayerPurchasing: allowPlayerPurchasing,
       currency: currency,
       hideByPermission: hideByPermission,

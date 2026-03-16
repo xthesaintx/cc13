@@ -47,24 +47,29 @@
                 {{#if quantity}}{{quantity}} <i class="fas fa-boxes"></i>{{else}} <i class="fas fa-ban"></i>{{/if}}
             </div>
             {{/unless}}
-            {{#if (or ../../isGM (not ../../isLoot))}}
             {{#if ../../isGM}}
-            <div class="item-actions" style="text-align:center">
-                <i class="fas fa-infinity inventory-button {{#if infinite}}enabled{{/if}}" data-uuid="{{itemUuid}}"
-                    data-action="infiniteToggle" title="{{ccLocalize 'title.infinite.item'}}"></i>
-                <i class="fas fa-paper-plane inventory-button send-to-player" data-type="inventory"
-                    data-action="sendToPlayer" data-uuid="{{itemUuid}}" data-sheet-uuid="{{../../selectedSheetUuid}}"
-                    data-doc-uuid="{{../../selectedSheetUuid}}" title="{{ccLocalize 'title.send.player'}}"></i>
-            </div>
+                <div class="item-actions" style="text-align:center">
+                    <i class="fas fa-infinity inventory-button {{#if infinite}}enabled{{/if}}" data-uuid="{{itemUuid}}"
+                        data-action="infiniteToggle" title="{{ccLocalize 'title.infinite.item'}}"></i>
+                    <i class="fas fa-paper-plane inventory-button send-to-player" data-type="inventory"
+                        data-action="sendToPlayer" data-uuid="{{itemUuid}}" data-sheet-uuid="{{../../selectedSheetUuid}}"
+                        data-doc-uuid="{{../../selectedSheetUuid}}" title="{{ccLocalize 'title.send.player'}}"></i>
+                </div>
             {{else}}
-            {{#if ../../allowPlayerPurchasing}}
-            <div class="item-actions" style="text-align:center">
-                <i class="fas fa-coins inventory-button send-to-player" data-type="inventory"
-                    data-action="playerPurchase" data-uuid="{{itemUuid}}" data-sheet-uuid="{{../../selectedSheetUuid}}"
-                    data-doc-uuid="{{../../selectedSheetUuid}}" title="{{ccLocalize 'title.send.purchase'}}"></i>
-            </div>
-            {{/if}}
-            {{/if}}
+                {{#if (and ../../allowPlayerPurchasing (not ../../isLoot))}}
+                <div class="item-actions" style="text-align:center">
+                    <i class="fas fa-coins inventory-button send-to-player" data-type="inventory"
+                        data-action="playerPurchase" data-uuid="{{itemUuid}}" data-sheet-uuid="{{../../selectedSheetUuid}}"
+                        data-doc-uuid="{{../../selectedSheetUuid}}" title="{{ccLocalize 'title.send.purchase'}}"></i>
+                </div>
+                {{/if}}
+                    {{#if (and ../../allowPlayerLooting ../../isLoot)}}
+                <div class="item-actions" style="text-align:center">
+                    <i class="fas fa-paper-plane inventory-button send-to-player" data-type="inventory"
+                        data-action="playerLoot" data-uuid="{{itemUuid}}" data-sheet-uuid="{{../../selectedSheetUuid}}"
+                        data-doc-uuid="{{../../selectedSheetUuid}}" title="{{ccLocalize 'title.send.purchase'}}"></i>
+                </div>
+                {{/if}}
             {{/if}}
 
         </div>

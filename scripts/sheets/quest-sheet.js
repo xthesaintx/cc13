@@ -29,71 +29,107 @@ export class QuestSheet extends CampaignCodexBaseSheet {
     },
   };
 
-  _getTabDefinitions() {
-    return [
-      { key: "info", label: localize("names.quest"), icon: "fas fa-scroll" },
-      { key: "inventory", label: localize("names.inventory"), icon: "fas fa-boxes" },
-      {
-        key: "notes",
-        label: localize("names.note"),
-      },
-      {
-        key: "journals",
-        label: localize("names.journals"),
-      },
-    ];
+  static PARTS = {
+    main: {
+      template: "modules/campaign-codex/templates/quest-sheet.html",
+      scrollable: [
+        "",
+        ".scrollable",
+        ".tab-panel.info",
+        ".tab-panel.locations",
+        ".tab-panel.shops",
+        ".tab-panel.associates",
+        ".tab-panel.inventory",
+        ".tab-panel.widgets",
+        ".tab-panel.quests",
+        ".tab-panel.journals",
+        ".tab-panel.notes",
+        ".tab-panel.npcs",
+        ".tab-panel.regions",
+      ],
+    },
+  };
+
+
+  _createDefaultQuestState(docName = this.document?.name || localize("names.quest")) {
+    return game.campaignCodex.createDefaultQuestData(docName);
   }
 
-  async _prepareContext(options) {
-    const context = await super._prepareContext(options);
-    context.sheetType = "quest";
-    context.sheetTypeLabel = localize("names.quest");
-    context.customImage = this.document.getFlag("campaign-codex", "image") || TemplateComponents.getAsset("image", "quest");
+  _normalizeQuestState(quest, docName = this.document?.name || localize("names.quest")) {
+    const base = this._createDefaultQuestState(docName);
+    const source = quest && typeof quest === "object" ? quest : {};
+    const normalized = { ...base, ...source };
+    normalized.id = String(source.id || base.id);
+    normalized.title = String(source.title || docName || base.title);
+    normalized.inactive = Boolean(normalized.inactive);
+    normalized.completed = Boolean(normalized.completed);
+    normalized.failed = Boolean(normalized.failed);
+    normalized.visible = Boolean(normalized.visible);
+    normalized.pinned = Boolean(normalized.pinned);
+    normalized.hideRewards = Boolean(normalized.hideRewards);
+    normalized.notifyPlayers = Boolean(normalized.notifyPlayers);
+    normalized.messageOnCompleted = Boolean(normalized.messageOnCompleted);
+    normalized.urgency = String(normalized.urgency || "medium");
+    normalized.boardColumn = String(normalized.boardColumn || "active");
+    normalized.questGiverUuid = String(normalized.questGiverUuid || "");
+    normalized.relatedUuids = Array.isArray(normalized.relatedUuids) ? normalized.relatedUuids : [];
+    normalized.dependencies = Array.isArray(normalized.dependencies) ? normalized.dependencies : [];
+    normalized.unlocks = Array.isArray(normalized.unlocks) ? normalized.unlocks : [];
+    normalized.checkIns = Array.isArray(normalized.checkIns) ? normalized.checkIns : [];
+    normalized.linkedMacros = Array.isArray(normalized.linkedMacros) ? normalized.linkedMacros : [];
+    normalized.objectives = Array.isArray(normalized.objectives) ? normalized.objectives : [];
+    normalized.inventory = Array.isArray(normalized.inventory) ? normalized.inventory : [];
+    normalized.rewardXP = Number.isFinite(Number(normalized.rewardXP)) ? Number(normalized.rewardXP) : 0;
+    normalized.rewardCurrency = Number.isFinite(Number(normalized.rewardCurrency)) ? Number(normalized.rewardCurrency) : 0;
+    normalized.rewardReputation = Number.isFinite(Number(normalized.rewardReputation)) ? Number(normalized.rewardReputation) : 0;
+    normalized.updatedAt = Number.isFinite(Number(normalized.updatedAt)) ? Number(normalized.updatedAt) : Date.now();
+    return normalized;
+  }
 
-    const data = this.document.getFlag("campaign-codex", "data") || {};
-    const quest = Array.isArray(data.quests) && data.quests.length > 0
-      ? foundry.utils.deepClone(data.quests[0])
-      : this._extractQuestFromDoc(this.document);
-    quest.title = this.document.name;
-    quest.inactive = Boolean(quest.inactive);
-    quest.completed = Boolean(quest.completed);
-    quest.failed = Boolean(quest.failed);
-    quest.statusClass = quest.failed ? "failed" : (quest.completed ? "completed" : (quest.inactive ? "inactive" : "active"));
-    quest.activityClass = quest.inactive ? "inactive" : "active";
-    quest.urgency = quest.urgency || "medium";
-    quest.rewardXP = Number.isFinite(Number(quest.rewardXP)) ? Number(quest.rewardXP) : 0;
-    quest.rewardCurrency = Number.isFinite(Number(quest.rewardCurrency)) ? Number(quest.rewardCurrency) : 0;
-    quest.rewardReputation = Number.isFinite(Number(quest.rewardReputation)) ? Number(quest.rewardReputation) : 0;
-    quest.messageOnCompleted = Boolean(quest.messageOnCompleted);
-    quest.linkedMacros = Array.isArray(quest.linkedMacros) ? quest.linkedMacros : [];
-    const sheetInventory = Array.isArray(data.inventory) ? foundry.utils.deepClone(data.inventory) : [];
-    const rewardInventorySource = sheetInventory;
-    quest.inventory = await CampaignCodexLinkers.getInventory(this.document, rewardInventorySource);
-    quest.dependencies = Array.isArray(quest.dependencies) ? quest.dependencies : [];
-    quest.unlocks = Array.isArray(quest.unlocks) ? quest.unlocks : [];
-    quest.relatedUuids = Array.isArray(quest.relatedUuids) ? quest.relatedUuids : [];
-    const hasVisibleObjectives = (objectives = []) => objectives.some((obj) => {
+  async _ensurePrimaryQuestRecord(doc = this.document) {
+    if (!doc?.getFlag || !doc?.setFlag) {
+      return this._normalizeQuestState({}, this.document?.name || localize("names.quest"));
+    }
+
+    const currentData = doc.getFlag("campaign-codex", "data") || {};
+    const questList = Array.isArray(currentData.quests) ? foundry.utils.deepClone(currentData.quests) : [];
+    const firstQuest = questList[0];
+    const hasValidId = typeof firstQuest?.id === "string" && firstQuest.id.trim().length > 0;
+    const needsQuestInitialization = !firstQuest || typeof firstQuest !== "object" || !hasValidId;
+
+    if (!needsQuestInitialization) {
+      return this._normalizeQuestState(firstQuest, doc.name);
+    }
+
+    const normalizedQuest = this._normalizeQuestState(firstQuest, doc.name);
+    if (questList.length > 0) questList[0] = normalizedQuest;
+    else questList.push(normalizedQuest);
+    await doc.setFlag("campaign-codex", "data.quests", questList);
+    return foundry.utils.deepClone(normalizedQuest);
+  }
+
+
+  _hasVisibleObjectives(objectives = []) {
+    return objectives.some((obj) => {
       if (obj?.visible) return true;
-      return Array.isArray(obj?.objectives) && hasVisibleObjectives(obj.objectives);
+      return Array.isArray(obj?.objectives) && this._hasVisibleObjectives(obj.objectives);
     });
-    quest.hasVisibleObjectives = hasVisibleObjectives(Array.isArray(quest.objectives) ? quest.objectives : []);
+  }
 
-    const resolveVisibleJournal = async (uuid) => {
-      if (!uuid) return null;
-      const raw = await fromUuid(uuid);
-      if (!raw) return null;
-      const doc = raw.documentName === "JournalEntryPage" ? raw.parent : raw;
-      if (!doc || doc.documentName !== "JournalEntry") return null;
-      if (!context.isGM && !doc.testUserPermission(game.user, CONST.DOCUMENT_OWNERSHIP_LEVELS.OBSERVER)) return null;
-      return {
-        uuid: raw.uuid,
-        name: raw.documentName === "JournalEntryPage" ? `${doc.name}: ${raw.name}` : doc.name,
-      };
+  async _resolveVisibleQuestJournal(uuid, isGM = false) {
+    if (!uuid) return null;
+    const raw = await fromUuid(uuid);
+    if (!raw) return null;
+    const doc = raw.documentName === "JournalEntryPage" ? raw.parent : raw;
+    if (!doc || doc.documentName !== "JournalEntry") return null;
+    if (!isGM && !doc.testUserPermission(game.user, CONST.DOCUMENT_OWNERSHIP_LEVELS.OBSERVER)) return null;
+    return {
+      uuid: raw.uuid,
+      name: raw.documentName === "JournalEntryPage" ? `${doc.name}: ${raw.name}` : doc.name,
     };
+  }
 
-    quest.questGiver = await resolveVisibleJournal(quest.questGiverUuid);
-    quest.relatedDocs = (await Promise.all(quest.relatedUuids.map((uuid) => resolveVisibleJournal(uuid)))).filter(Boolean);
-
+  _buildQuestIndex() {
     const questIndex = new Map();
     for (const questDoc of game.journal.filter((j) => j.getFlag("campaign-codex", "type") === "quest")) {
       const qData = questDoc.getFlag("campaign-codex", "data") || {};
@@ -109,6 +145,44 @@ export class QuestSheet extends CampaignCodexBaseSheet {
         unlocks: Array.isArray(q.unlocks) ? [...q.unlocks] : [],
       });
     }
+    return questIndex;
+  }
+
+  async _processQuestData() {
+    const data = this.document.getFlag("campaign-codex", "data") || {};
+    let quest = this._extractQuestFromDoc(this.document);
+
+    if (!quest?.id) {
+      quest = await this._ensurePrimaryQuestRecord(this.document);
+    } else {
+      quest = this._normalizeQuestState(quest, this.document.name);
+    }
+
+    quest.title = this.document.name;
+    quest.inactive = Boolean(quest.inactive);
+    quest.completed = Boolean(quest.completed);
+    quest.failed = Boolean(quest.failed);
+    quest.statusClass = quest.failed ? "failed" : (quest.completed ? "completed" : (quest.inactive ? "inactive" : "active"));
+    quest.activityClass = quest.inactive ? "inactive" : "active";
+    quest.urgency = quest.urgency || "medium";
+    quest.rewardXP = Number.isFinite(Number(quest.rewardXP)) ? Number(quest.rewardXP) : 0;
+    quest.rewardCurrency = Number.isFinite(Number(quest.rewardCurrency)) ? Number(quest.rewardCurrency) : 0;
+    quest.rewardReputation = Number.isFinite(Number(quest.rewardReputation)) ? Number(quest.rewardReputation) : 0;
+    quest.messageOnCompleted = Boolean(quest.messageOnCompleted);
+    quest.linkedMacros = Array.isArray(quest.linkedMacros) ? quest.linkedMacros : [];
+    quest.dependencies = Array.isArray(quest.dependencies) ? quest.dependencies : [];
+    quest.unlocks = Array.isArray(quest.unlocks) ? quest.unlocks : [];
+    quest.relatedUuids = Array.isArray(quest.relatedUuids) ? quest.relatedUuids : [];
+    quest.hasVisibleObjectives = this._hasVisibleObjectives(Array.isArray(quest.objectives) ? quest.objectives : []);
+    quest.inventory = await CampaignCodexLinkers.getInventory(this.document, data.inventory);
+
+
+    quest.questGiver = await this._resolveVisibleQuestJournal(quest.questGiverUuid, game.user.isGM);
+    quest.relatedDocs = (await Promise.all(
+      quest.relatedUuids.map((uuid) => this._resolveVisibleQuestJournal(uuid, game.user.isGM)),
+    )).filter(Boolean);
+
+    const questIndex = this._buildQuestIndex();
     quest.dependencyItems = quest.dependencies.map((key) => questIndex.get(key)).filter(Boolean);
     quest.unlockItems = quest.unlocks.map((key) => questIndex.get(key)).filter(Boolean);
     quest.macroItems = (await Promise.all(quest.linkedMacros.map(async (macroUuid) => {
@@ -126,27 +200,54 @@ export class QuestSheet extends CampaignCodexBaseSheet {
     quest.isLocked = unlockRequirements.some((entry) => !entry.completed);
     quest.isUnlocked = quest.hasUnlockRequirements && !quest.isLocked;
 
-    context.inventory = quest.inventory;
+    const awardSupport = QuestAwards.getSupport();
+    const hasAwardValues = Number(quest.rewardXP || 0) > 0 || Number(quest.rewardCurrency || 0) > 0;
+
+    return {
+      quest,
+      inventory: quest.inventory,
+      canDistributeAwards: Boolean(game.user.isGM && awardSupport.canDistribute && hasAwardValues),
+      linkedSheets: await this._getQuestLinkedSheets(game.user.isGM),
+    };
+  }
+
+
+  _getTabDefinitions() {
+    return [
+      { key: "info", label: localize("names.quest"), icon: "fas fa-scroll" },
+      { key: "inventory", label: localize("names.inventory"), icon: "fas fa-boxes" },
+      {
+        key: "notes",
+        label: localize("names.note"),
+      },
+      {
+        key: "journals",
+        label: localize("names.journals"),
+      },
+    ];
+  }
+
+  async _prepareContext(options) {
+    const context = await super._prepareContext(options);
+    let data = this.document.getFlag("campaign-codex", "data") || {};
+    context.sheetType = "quest";
+    context.customImage = this.document.getFlag("campaign-codex", "image") || TemplateComponents.getAsset("image", "quest");
+
+    if (context.sheetTypeLabelOverride !== undefined && context.sheetTypeLabelOverride !== "") {
+      context.sheetTypeLabel = context.sheetTypeLabelOverride;
+    } else {
+      context.sheetTypeLabel = localize("names.quest");
+    }
+    const processedQuestData = await this._processQuestData();
     context.isLoot = true;
     context.markup = 1;
     context.inventoryCash = Number(data.inventoryCash || 0);
-    context.questSheetQuest = quest;
-    const awardSupport = QuestAwards.getSupport();
-    const hasAwardValues = Number(quest.rewardXP || 0) > 0 || Number(quest.rewardCurrency || 0) > 0;
-    context.canDistributeAwards = Boolean(context.isGM && awardSupport.canDistribute && hasAwardValues);
-
-    context.customFooterContent = await renderTemplate(
-      "modules/campaign-codex/templates/partials/quest-sidebar-admin.hbs",
-      {
-        quest,
-        doc: this.document,
-        isGM: context.isGM,
-        currencyLabel: String(CampaignCodexLinkers.getCurrency() || "gp").toUpperCase(),
-        canDistributeAwards: context.canDistributeAwards,
-        linkedSheets: await this._getQuestLinkedSheets(context.isGM),
-      },
-    );
-
+    context.questSheetQuest = processedQuestData.quest;
+    context.canDistributeAwards = processedQuestData.canDistributeAwards;
+    context.linkedSheets = processedQuestData.linkedSheets;
+    context.thisDocUuid = this.document.uuid;
+    context.currencyLabel= String(CampaignCodexLinkers.getCurrency() || "gp").toUpperCase();
+    context.inventory = processedQuestData.inventory;
     const tabOverrides = this.document.getFlag("campaign-codex", "tab-overrides") || [];
     let defaultTabs = this._getTabDefinitions();
     const gmOnlyTabs = game.settings.get("campaign-codex", "allowPlayerNotes") ? [] : ["notes"];
@@ -200,7 +301,7 @@ export class QuestSheet extends CampaignCodexBaseSheet {
 
     context.tabs = defaultTabs
       .map((tab) => {
-        if (!game.user.isGM && tab.key === "inventory" && quest.hideRewards) return null;
+        if (!game.user.isGM && tab.key === "inventory" && context.questSheetQuest?.hideRewards) return null;
         const override = tabOverrides.find((o) => o.key === tab.key);
         const isVisibleByDefault = defaultTabVis[tab.key] ?? true;
         const isVisible = override?.visible ?? isVisibleByDefault;
@@ -293,16 +394,18 @@ _activateObjectiveListeners(html) {
     if (!game.user.isGM) return;
     const target = event.currentTarget;
     const field = target.dataset.field;
-    const questId = target.dataset.questId;
+    // const questId = target.dataset.questId;
     const docUuid = target.dataset.docUuid || this.document.uuid;
-    if (!field || !questId) return;
+    // if (!field || !questId) return;
+    if (!field) return;
+
 
     const currentDoc = docUuid === this.document.uuid ? this.document : await fromUuid(docUuid);
     if (!currentDoc) return;
 
     const currentData = currentDoc.getFlag("campaign-codex", "data") || {};
     const quests = foundry.utils.deepClone(currentData.quests || []);
-    const quest = quests.find((q) => q.id === questId);
+    const quest = quests[0];
     if (!quest) return;
 
     let value = target.value;
@@ -321,7 +424,7 @@ _activateObjectiveListeners(html) {
     const questId = target?.dataset?.questId;
     const currentData = this.document.getFlag("campaign-codex", "data") || {};
     const quests = Array.isArray(currentData.quests) ? currentData.quests : [];
-    const quest = questId ? quests.find((q) => q.id === questId) : quests[0];
+    const quest = quests[0];
     if (!quest) return;
 
     await QuestAwards.openDistributionDialog({
@@ -345,7 +448,7 @@ _activateObjectiveListeners(html) {
     if (!currentDoc) return;
     const currentData = currentDoc.getFlag("campaign-codex", "data") || {};
     const quests = foundry.utils.deepClone(currentData.quests || []);
-    const quest = quests.find((q) => q.id === questId);
+    const quest = quests[0];
     if (!quest) return;
 
     const newObjective = {
@@ -394,7 +497,7 @@ _activateObjectiveListeners(html) {
     if (!currentDoc) return;
     const currentData = currentDoc.getFlag("campaign-codex", "data") || {};
     const quests = foundry.utils.deepClone(currentData.quests || []);
-    const quest = quests.find((q) => q.id === questId);
+    const quest = quests[0];
     if (!quest || !quest.objectives) return;
 
     const findAndRemove = (objectives) => {
@@ -433,7 +536,7 @@ _activateObjectiveListeners(html) {
     currentData = currentDoc.getFlag("campaign-codex", "data") || {};
 
     const quests = foundry.utils.deepClone(currentData.quests || []);
-    const quest = quests.find((q) => q.id === questId);
+    const quest = quests[0];
     if (!quest || !quest.objectives) return;
 
     const findAndUpdate = (objectives) => {
@@ -512,7 +615,7 @@ _activateObjectiveListeners(html) {
     if (!currentDoc) return;
     const currentData = currentDoc.getFlag("campaign-codex", "data") || {};
     const quests = foundry.utils.deepClone(currentData.quests || []);
-    const quest = quests.find((q) => q.id === questId);
+    const quest = quests[0];
     if (!quest) return;
 
     const findAndUpdate = (objectives) => {
@@ -598,7 +701,7 @@ _activateObjectiveListeners(html) {
     if (!currentDoc) return;
     const currentData = currentDoc.getFlag("campaign-codex", "data") || {};
     const quests = foundry.utils.deepClone(currentData.quests || []);
-    const quest = quests.find((q) => q.id === questId);
+    const quest = quests[0];
     if (!quest) return;
 
     let draggedObjective = null;
@@ -669,9 +772,8 @@ _activateObjectiveListeners(html) {
     }
     if (!currentDoc) return;
     currentData = currentDoc.getFlag("campaign-codex", "data") || {};
-    const questId = target.dataset.questId;
     const quests = foundry.utils.deepClone(currentData.quests || []);
-    const quest = quests.find((q) => q.id === questId);
+    const quest = quests[0];
     if (!quest) return;
     const previousQuest = foundry.utils.deepClone(quest);
 
@@ -722,13 +824,13 @@ _activateObjectiveListeners(html) {
 
     // Journal
     if (((!journalType && data.type === "JournalEntry") || data.type === "JournalEntryPage")) {
-      const locationData = this.document.getFlag("campaign-codex", "data") || {};
-      locationData.linkedStandardJournals = locationData.linkedStandardJournals || [];
+      const journalData = this.document.getFlag("campaign-codex", "data") || {};
+      journalData.linkedStandardJournals = journalData.linkedStandardJournals || [];
 
       // Avoid adding duplicates
-      if (!locationData.linkedStandardJournals.includes(journal.uuid)) {
-        locationData.linkedStandardJournals.push(journal.uuid);
-        await this.document.setFlag("campaign-codex", "data", locationData);
+      if (!journalData.linkedStandardJournals.includes(journal.uuid)) {
+        journalData.linkedStandardJournals.push(journal.uuid);
+        await this.document.setFlag("campaign-codex", "data", journalData);
         ui.notifications.info(format('notify.linkedJournal', { name: journal.name }));
       } else {
         ui.notifications.warn(format('notify.journalAlreadyLinked', { name: journal.name }));
@@ -770,7 +872,13 @@ _activateObjectiveListeners(html) {
       const journal = dropped?.documentName === "JournalEntryPage" ? dropped.parent : dropped;
       const journalType = journal?.getFlag("campaign-codex", "type");
       if (journalType === "quest" && journal?.uuid !== this.document.uuid) {
-        await this._linkQuestJournal(journal);
+        const questId = dropped.getFlag("campaign-codex", "data")?.quests?.[0]?.id;
+        await this._handleQuestLinkDrop(data, {
+          dataset: {
+            linkRole: "related",
+            questId,
+          },
+        });
         return;
       }
       await this._handleJournalDrop(data, event);
@@ -783,11 +891,16 @@ _activateObjectiveListeners(html) {
     const role = zone.dataset.linkRole;
     const targetQuestId = zone.dataset.questId;
     if (!role || !targetQuestId) return;
+
     const currentData = this.document.getFlag("campaign-codex", "data") || {};
+
     const quests = foundry.utils.deepClone(currentData.quests || []);
-    const quest = quests.find((q) => q.id === targetQuestId);
+    const quest = quests[0];
+
+
     if (!quest) return;
     const previousQuest = foundry.utils.deepClone(quest);
+
 
     if (role === "macro") {
       if (data.type !== "Macro" || !data.uuid) {
@@ -819,7 +932,7 @@ _activateObjectiveListeners(html) {
         }
       }
       if (!refKey) return;
-      const targetRefKey = `${this.document.uuid}::${targetQuestId}`;
+      const targetRefKey = targetQuestId ? `${this.document.uuid}::${targetQuestId}` : null;
       if (refKey === targetRefKey) {
         ui.notifications.warn("A quest cannot depend on or unlock itself.");
         return;
@@ -858,6 +971,7 @@ _activateObjectiveListeners(html) {
       quest.relatedUuids = filteredRelated;
       quest.questGiverUuid = droppedDoc.uuid;
     } else if (role === "related") {
+
       if (droppedJournal.uuid === this.document.uuid) {
         ui.notifications.warn("A quest sheet cannot link to itself.");
         return;
@@ -1012,11 +1126,11 @@ _activateObjectiveListeners(html) {
     if (!game.user.isGM) return;
     const field = target?.dataset?.field;
     const value = target?.dataset?.value;
-    const questId = target?.dataset?.questId;
-    if (!field || !value || !questId) return;
+    // const questId = target?.dataset?.questId;
+    if (!field || !value) return;
     const currentData = this.document.getFlag("campaign-codex", "data") || {};
     const quests = foundry.utils.deepClone(currentData.quests || []);
-    const quest = quests.find((q) => q.id === questId);
+    const quest = quests[0];
     if (!quest) return;
     const previousQuest = foundry.utils.deepClone(quest);
     quest[field] = Array.isArray(quest[field]) ? quest[field].filter((v) => v !== value) : [];
@@ -1034,11 +1148,11 @@ _activateObjectiveListeners(html) {
   static async _onClearQuestGiver(event, target) {
     event.preventDefault();
     if (!game.user.isGM) return;
-    const questId = target?.dataset?.questId;
-    if (!questId) return;
+    // const questId = target?.dataset?.questId;
+    // if (!questId) return;
     const currentData = this.document.getFlag("campaign-codex", "data") || {};
     const quests = foundry.utils.deepClone(currentData.quests || []);
-    const quest = quests.find((q) => q.id === questId);
+    const quest = quests[0];
     if (!quest) return;
     const previousQuest = foundry.utils.deepClone(quest);
     quest.questGiverUuid = "";

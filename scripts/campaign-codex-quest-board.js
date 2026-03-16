@@ -645,7 +645,7 @@ export class CampaignCodexQuestBoard extends campaignCodexQuestBoard {
     }
     currentData.inventory = inventory;
     const quests = Array.isArray(currentData.quests) ? currentData.quests : [];
-    const quest = quests.find((q) => q.id === targetQuestId);
+    const quest = quests[0];
     if (quest) quest.updatedAt = Date.now();
     await doc.setFlag("campaign-codex", "data", currentData);
 
@@ -708,7 +708,7 @@ export class CampaignCodexQuestBoard extends campaignCodexQuestBoard {
     if (!doc) return;
     const currentData = doc.getFlag("campaign-codex", "data") || {};
     const quests = foundry.utils.deepClone(currentData.quests || []);
-    const quest = quests.find((q) => q.id === questId);
+    const quest = quests[0];
     if (!quest) return;
     updater(quest);
     if (touchUpdatedAt) quest.updatedAt = Date.now();
@@ -1000,7 +1000,7 @@ export class CampaignCodexQuestBoard extends campaignCodexQuestBoard {
     const doc = await fromUuid(docUuid);
     if (!doc) return;
     const currentData = doc.getFlag("campaign-codex", "data") || {};
-    const quest = (currentData.quests || []).find((q) => q.id === questId);
+    const quest = currentData.quests[0];
     if (!quest) return;
     await QuestAwards.openDistributionDialog({
       quest,

@@ -5217,6 +5217,12 @@ border: 1px solid var(--cc-slate);
     border: 1px solid var(--cc-slate);
     color: var(--cc-text-muted);
 }
+.campaign-codex.quest-board .cc-quest-status-chip:has(i.fas.fa-eye),
+.campaign-codex.quest-board .cc-quest-status-chip.active{
+    color: var(--cc-accent);
+    border-color: var(--cc-accent);
+  }
+
 .campaign-codex.quest-sheet .cc-quest-status-chip{
   flex:1 1 45%;
   align-items: center;
