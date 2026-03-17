@@ -8,6 +8,9 @@
         <button type="button" data-action="setViewMode" data-view-mode="tile" class="clear-filters {{#if (eq viewMode 'tile')}}active{{/if}}" title="Tile View" aria-label="Tile View">
           <i class="fas fa-table-cells-large"></i> Tiles
         </button>
+        <button type="button" data-action="toggleGroupByFolder" class="clear-filters {{#if groupByFolder}}active{{/if}}" title="Group by Folder" aria-label="Group by Folder">
+          <i class="fas fa-folder-tree"></i> Grouped
+        </button>
       </div>
       
       {{{treeHtml}}}
@@ -20,20 +23,44 @@
         <button type="button" data-action="toggleSearchScope" class="clear-filters" title="{{searchScopeTitle}}" aria-label="{{searchScopeTitle}}"><i class="fas {{searchScopeLabel}}"></i></button>
     </div>
       {{#if items.length}}
-        <ul class="cc-toc-journal-list {{#if (eq viewMode 'tile')}}is-tile{{else}}is-list{{/if}}">
-          {{#each items}}
-            <li class="document entry journalentry directory-item" draggable="true" data-drag="true" data-entry-id="{{this.id}}" data-uuid="{{this.uuid}}">
-              <i class="{{this.displayIcon}}"></i>
-              <a data-action="openDocument" data-uuid="{{this.uuid}}">{{this.name}}</a>
-              <span></span>
-              {{#if ../isGM}}
-                <i class="fa {{this.ownershipIcon}}" data-action="changeDefaultOwnership" data-uuid="{{this.uuid}}" data-ownership="{{this.ownershipLevel}}"></i>
-              {{else}}
+        {{#if groupByFolder}}
+          <div class="cc-toc-folder-groups">
+            {{#each groupedItems}}
+              <details class="cc-toc-folder-group" data-group-key="{{this.key}}" {{#if this.isOpen}}open{{/if}}>
+                <summary class="cc-toc-folder-heading">{{this.label}}</summary>
+                <ul class="cc-toc-journal-list {{#if (eq ../viewMode 'tile')}}is-tile{{else}}is-list{{/if}}">
+                  {{#each this.items}}
+                    <li class="document entry journalentry directory-item folder-group" draggable="true" data-drag="true" data-entry-id="{{this.id}}" data-uuid="{{this.uuid}}">
+                      <i class="{{this.displayIcon}}"></i>
+                      <a data-action="openDocument" data-uuid="{{this.uuid}}">{{this.name}}</a>
+                      <span></span>
+                      {{#if ../../isGM}}
+                        <i class="fa {{this.ownershipIcon}}" data-action="changeDefaultOwnership" data-uuid="{{this.uuid}}" data-ownership="{{this.ownershipLevel}}"></i>
+                      {{else}}
+                        <span></span>
+                      {{/if}}
+                    </li>
+                  {{/each}}
+                </ul>
+              </details>
+            {{/each}}
+          </div>
+        {{else}}
+          <ul class="cc-toc-journal-list {{#if (eq viewMode 'tile')}}is-tile{{else}}is-list{{/if}}">
+            {{#each items}}
+              <li class="document entry journalentry directory-item" draggable="true" data-drag="true" data-entry-id="{{this.id}}" data-uuid="{{this.uuid}}">
+                <i class="{{this.displayIcon}}"></i>
+                <a data-action="openDocument" data-uuid="{{this.uuid}}">{{this.name}}</a>
                 <span></span>
-              {{/if}}
-            </li>
-          {{/each}}
-        </ul>
+                {{#if ../isGM}}
+                  <i class="fa {{this.ownershipIcon}}" data-action="changeDefaultOwnership" data-uuid="{{this.uuid}}" data-ownership="{{this.ownershipLevel}}"></i>
+                {{else}}
+                  <span></span>
+                {{/if}}
+              </li>
+            {{/each}}
+          </ul>
+        {{/if}}
       {{else}}
         <p class="notes">{{#if hasContent}}{{ccLocalize "toc.filter"}}{{else}}No Campaign Codex sheets found.{{/if}}</p>
       {{/if}}

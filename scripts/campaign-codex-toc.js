@@ -33,13 +33,14 @@ export class CampaignCodexTOCSheet extends campaignCodexToc {
             toggleFilterMode: this.#toggleFilterMode,
             toggleSearchScope: this.#toggleSearchScope,
             setViewMode: this.#setViewMode,
+            toggleGroupByFolder: this.#toggleGroupByFolder,
             clearTagFilters: this.#clearTagFilters,
             openQuestBoard: this.#openQuestBoard,
         },
     };
 
     static PARTS = {
-        main: { template: "modules/campaign-codex/templates/codex-toc-content.hbs", scrollable: [""] },
+        main: { template: "modules/campaign-codex/templates/codex-toc-content.hbs", scrollable: ["",".cc-toc-results",".scrollable",".cc-toc-folders",".cc-toc-tag-panel"] },
     };
     static SELECTORS = {
         JOURNAL_CARD: ".cc-toc-journal-list .directory-item[data-uuid]",
@@ -50,6 +51,8 @@ export class CampaignCodexTOCSheet extends campaignCodexToc {
     #includeMode = "and";
     #searchScope = "title";
     #viewMode = "list";
+    #groupByFolder = false;
+    #collapsedGroupKeys = new Set();
     #selectedFolderNode = "all";
     #expandedFolderNodes = new Set();
     #pendingSearchSelection = null;
@@ -81,6 +84,14 @@ export class CampaignCodexTOCSheet extends campaignCodexToc {
         if (typeof saved.searchQuery === "string") this.#searchQuery = saved.searchQuery;
         if (saved.searchScope === "title" || saved.searchScope === "content") this.#searchScope = saved.searchScope;
         if (saved.viewMode === "list" || saved.viewMode === "tile") this.#viewMode = saved.viewMode;
+        if (typeof saved.groupByFolder === "boolean") this.#groupByFolder = saved.groupByFolder;
+        if (Array.isArray(saved.collapsedGroupKeys)) {
+            this.#collapsedGroupKeys = new Set(
+                saved.collapsedGroupKeys
+                    .map((key) => String(key || "").trim())
+                    .filter((key) => !!key),
+            );
+        }
     }
 
     async #persistState() {
@@ -89,6 +100,8 @@ export class CampaignCodexTOCSheet extends campaignCodexToc {
             searchQuery: this.#searchQuery,
             searchScope: this.#searchScope,
             viewMode: this.#viewMode,
+            groupByFolder: this.#groupByFolder,
+            collapsedGroupKeys: [...this.#collapsedGroupKeys],
         };
         await game.user.setFlag(this.constructor.SCOPE, this.constructor.TOC_STATE_FLAG, payload);
     }
@@ -270,6 +283,7 @@ export class CampaignCodexTOCSheet extends campaignCodexToc {
         context.searchQuery = this.#searchQuery;
         context.includeModeLabel = this.#includeMode.toUpperCase();
         context.viewMode = this.#viewMode;
+        context.groupByFolder = this.#groupByFolder;
 
         const codexJournals = game.journal.filter((j) => j.getFlag(this.constructor.SCOPE, this.constructor.TYPE_KEY));
         const seenDocIds = new Set();
@@ -336,16 +350,26 @@ export class CampaignCodexTOCSheet extends campaignCodexToc {
             }
             const canView = journal.testUserPermission(game.user, CONST.DOCUMENT_OWNERSHIP_LEVELS.OBSERVER);
             const folderNodeKeys = [];
+            let folderPathKey = "folder:unfiled";
+            let folderPathLabel = "Unfiled";
+            let folderPathSort = "zzzz_unfiled";
             let currentFolder = journal.folder;
             if (!currentFolder) {
                 hasUnfiledDocs = true;
                 folderNodeKeys.push("folder:unfiled");
             } else {
+                const folderPathNames = [];
+                const folderPathIds = [];
                 while (currentFolder) {
                     const node = ensureFolderNode(currentFolder);
                     if (node) folderNodeKeys.push(node.key);
+                    folderPathNames.unshift(currentFolder.name || "Folder");
+                    folderPathIds.unshift(currentFolder.id);
                     currentFolder = currentFolder.folder;
                 }
+                folderPathKey = `folder-path:${folderPathIds.join("/")}`;
+                folderPathLabel = folderPathNames.join("\\");
+                folderPathSort = folderPathLabel.toLowerCase();
             }
 
             docs.push({
@@ -361,6 +385,9 @@ export class CampaignCodexTOCSheet extends campaignCodexToc {
                 titleText,
                 contentText,
                 folderNodeKeys,
+                folderPathKey,
+                folderPathLabel,
+                folderPathSort,
             });
         }
         for (const cachedId of CampaignCodexTOCSheet.#docSearchCache.keys()) {
@@ -385,6 +412,14 @@ export class CampaignCodexTOCSheet extends campaignCodexToc {
             return haystack.includes(cleanedSearchQuery);
         };
         const visibleDocs = docs.filter((doc) => context.isGM || doc.canView);
+        const validGroupKeys = new Set(
+            visibleDocs.map((doc) => doc.folderPathKey || "folder:unfiled"),
+        );
+        if (this.#collapsedGroupKeys.size) {
+            this.#collapsedGroupKeys = new Set(
+                [...this.#collapsedGroupKeys].filter((key) => validGroupKeys.has(key)),
+            );
+        }
         const docsForCountsAndTree = visibleDocs
             .filter((doc) => this._matchesTagSelection(doc, includedKeys, excludedKeys))
             .filter(matchesSearch);
@@ -412,17 +447,39 @@ export class CampaignCodexTOCSheet extends campaignCodexToc {
         }
         this._ensureDefaultExpanded(rootNodes);
         const filteredDocs = docsForCountsAndTree
-            .filter((doc) => this._matchesFolderSelection(doc))
-            .sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+            .filter((doc) => this._matchesFolderSelection(doc));
 
         const cloudTags = this._buildCloudTags(visibleDocs, includedKeys, excludedKeys);
-        const middleList = filteredDocs.map((doc) => ({
+        const middleList = [...filteredDocs].sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true })).map((doc) => ({
             ...doc,
             displayIcon: doc.iconOverride || TemplateComponents.getAsset("icon", doc.type),
         }));
+        const groupedItems = this.#groupByFolder ? Array.from(
+            filteredDocs.reduce((map, doc) => {
+                const key = doc.folderPathKey || "folder:unfiled";
+                if (!map.has(key)) {
+                    map.set(key, {
+                        key,
+                        label: doc.folderPathLabel || "Unfiled",
+                        sortKey: doc.folderPathSort || "zzzz_unfiled",
+                        items: [],
+                    });
+                }
+                map.get(key).items.push({
+                    ...doc,
+                    displayIcon: doc.iconOverride || TemplateComponents.getAsset("icon", doc.type),
+                });
+                return map;
+            }, new Map()).values(),
+        ).sort((a, b) => a.sortKey.localeCompare(b.sortKey, undefined, { numeric: true })).map((group) => ({
+            ...group,
+            isOpen: !this.#collapsedGroupKeys.has(group.key),
+            items: group.items.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true })),
+        })) : [];
 
         context.treeHtml = this._renderTreeHtml(rootNodes);
         context.items = middleList;
+        context.groupedItems = groupedItems;
         context.cloudTags = cloudTags;
         context.resultCount = middleList.length;
         context.hasContent = docs.length > 0;
@@ -559,6 +616,13 @@ export class CampaignCodexTOCSheet extends campaignCodexToc {
         this.render();
     }
 
+    static async #toggleGroupByFolder(event, target) {
+        event.preventDefault();
+        this.#groupByFolder = !this.#groupByFolder;
+        this.#persistStateDebounced();
+        this.render();
+    }
+
     static async #selectFolderNode(event, target) {
         event.preventDefault();
         const nodeKey = target.dataset.nodeKey;
@@ -648,6 +712,16 @@ export class CampaignCodexTOCSheet extends campaignCodexToc {
         }
         form.querySelectorAll('[data-action="toggleTagFilter"]').forEach((el) => {
             el.addEventListener("contextmenu", (ev) => ev.preventDefault());
+        });
+        form.querySelectorAll(".cc-toc-folder-group[data-group-key]").forEach((el) => {
+            el.addEventListener("toggle", (ev) => {
+                const details = ev.currentTarget;
+                const groupKey = String(details?.dataset?.groupKey || "").trim();
+                if (!groupKey) return;
+                if (details.open) this.#collapsedGroupKeys.delete(groupKey);
+                else this.#collapsedGroupKeys.add(groupKey);
+                this.#persistStateDebounced();
+            });
         });
 
         this._resizeObserver?.disconnect();

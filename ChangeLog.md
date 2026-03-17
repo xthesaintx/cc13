@@ -1,4 +1,5 @@
 ## 3.3.2
+- folders in toc
 - refactor of quests
 - allow players to loot option
 

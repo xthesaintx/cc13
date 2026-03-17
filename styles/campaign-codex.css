@@ -5533,6 +5533,10 @@ border: 1px solid var(--cc-slate);
     flex-wrap: wrap;
 }
 
+.campaign-codex-toc-app .cc-toc-folder-group .cc-toc-journal-list:not(.is-tile) {
+    margin-left: 18px;
+}
+
 .campaign-codex-toc-app .cc-toc-view-toggle {
   display: flex;
   gap: 8px;
@@ -5612,6 +5616,27 @@ border: 1px solid var(--cc-slate);
     cursor: pointer;
     border: none;
 }
+
+.campaign-codex-toc-app .cc-toc-folder-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.campaign-codex-toc-app .cc-toc-folder-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.campaign-codex-toc-app .cc-toc-folder-heading {
+    margin: 0;
+    border-bottom: 1px solid var(--cc-accent);
+    font-size: 0.85rem;
+    padding-bottom: 4px;
+}
+
+
 
 .campaign-codex.codex-toc .window-content .campaign-codex-toc-app.scrollable.tab.active .cc-create:hover {
       color: var(--cc-main-text);
