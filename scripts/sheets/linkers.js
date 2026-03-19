@@ -259,7 +259,8 @@ export class CampaignCodexLinkers {
         canView: canView,
         permission: journal.permission,
         tags: linkedTags
-          .filter((tag) => !hideByPermission || tag.canView)
+          // .filter((tag) => !hideByPermission || tag.canView)
+          .filter((tag) => game.user.isGM || tag.canView)
           .map((tag) => tag.name)
           .sort(),
         img: imageData,
@@ -321,7 +322,8 @@ export class CampaignCodexLinkers {
         canView: canView,
         permission: journal.permission,
         tags: linkedTags
-          .filter((tag) => !hideByPermission || tag.canView)
+          // .filter((tag) => !hideByPermission || tag.canView)
+          .filter((tag) => game.user.isGM || tag.canView)
           .map((tag) => tag.name)
           .sort(),
         img: imageData,
@@ -422,7 +424,8 @@ export class CampaignCodexLinkers {
       linkCardNote: linkCardNotes.get(journal.uuid) || "",
       img: imageData,
       tags: (linkedTags || [])
-        .filter((tag) => !hideByPermission || tag.canView)
+        // .filter((tag) => !hideByPermission || tag.canView)
+        .filter((tag) => game.user.isGM || tag.canView)
         .map((tag) => tag.name)
         .sort(),
       source: "direct",
@@ -544,7 +547,8 @@ export class CampaignCodexLinkers {
         iconOverride: journal.getFlag("campaign-codex", "icon-override") || null,
         tag: isTagged,
         tags: (linkedTags || [])
-          .filter((tag) => !hideByPermission || tag.canView)
+          // .filter((tag) => !hideByPermission || tag.canView)
+        .filter((tag) => game.user.isGM || tag.canView)
           .map((tag) => tag.name)
           .sort(),
         actor: actor,
@@ -612,7 +616,8 @@ export class CampaignCodexLinkers {
         permission: journal.permission,
         tag: isTagged,
         tags: (linkedTags || [])
-          .filter((tag) => !hideByPermission || tag.canView)
+          // .filter((tag) => !hideByPermission || tag.canView)
+          .filter((tag) => game.user.isGM || tag.canView)
           .map((tag) => tag.name)
           .sort(),
         meta: game.campaignCodex?.getActorDisplayMeta(actor, npcData) || `<span class="entity-type">${localize("names.npc")}</span>`,
@@ -807,7 +812,8 @@ export class CampaignCodexLinkers {
       const tabOverrides = journal.getFlag("campaign-codex", "tab-overrides") || [];
       const imageAreaOverride = tabOverrides?.find(override => override.key === "imageArea");
       const filteredTags = (linkedTags || [])
-        .filter((tag) => !hideByPermission || tag.canView)
+        // .filter((tag) => !hideByPermission || tag.canView)
+        .filter((tag) => game.user.isGM || tag.canView)
         .map((tag) => tag.name)
         .sort();
 
@@ -956,7 +962,8 @@ export class CampaignCodexLinkers {
         showImage: imageAreaOverride?.visible ?? true,
         iconOverride: journal.getFlag("campaign-codex", "icon-override") || null,
         tags: (linkedTagsShop || [])
-          .filter((tag) => !hideByPermission || tag.canView)
+          // .filter((tag) => !hideByPermission || tag.canView)
+          .filter((tag) => game.user.isGM || tag.canView)
           .map((tag) => tag.name)
           .sort(),
         meta: `<span>${shopData.hideInventory ? "" : shopIcon}</span>`,
@@ -1014,7 +1021,8 @@ export class CampaignCodexLinkers {
         name: journal.name,
         linkCardNote: linkCardNotes.get(journal.uuid) || "",
         tags: (linkedTags || [])
-          .filter((tag) => !hideByPermission || tag.canView)
+          // .filter((tag) => !hideByPermission || tag.canView)
+          .filter((tag) => game.user.isGM || tag.canView)
           .map((tag) => tag.name)
           .sort(),
         canView: canView,

@@ -220,7 +220,8 @@ static async buildTagTree(nestedData) {
         ]);
 
         const filteredTags = (linkedTags || [])
-          .filter((tag) => !hideByPermission || tag.canView)
+        .filter((tag) => game.user.isGM || tag.canView)
+          // .filter((tag) => !hideByPermission || tag.canView)
           .map((tag) => tag.name)
           .sort();
           
@@ -368,7 +369,8 @@ static async buildTagTree(nestedData) {
           ]);
 
           const filteredTags = (linkedTags || [])
-            .filter((tag) => !hideByPermission || tag.canView)
+          .filter((tag) => game.user.isGM || tag.canView)
+            // .filter((tag) => !hideByPermission || tag.canView)
             .map((tag) => tag.name)
             .sort();
             const isTagged =  doc.getFlag("campaign-codex", "type") === "tag" || childData.tagMode ;
@@ -432,7 +434,8 @@ static async buildTagTree(nestedData) {
             ]);
 
             const filteredTags = (linkedTags || [])
-              .filter((tag) => !hideByPermission || tag.canView)
+            .filter((tag) => game.user.isGM || tag.canView)
+              // .filter((tag) => !hideByPermission || tag.canView)
               .map((tag) => tag.name)
               .sort();
             const isTagged =  doc.getFlag("campaign-codex", "type") === "tag" || childData.tagMode ;
@@ -482,7 +485,8 @@ static async buildTagTree(nestedData) {
       ]);
       
       shop.tags = linkedTags
-        .filter((tag) => !hideByPermission || tag.canView)
+      .filter((tag) => game.user.isGM || tag.canView)
+        // .filter((tag) => !hideByPermission || tag.canView)
         .map((tag) => tag.name)
         .sort();
       shop.canView = canView;
@@ -511,7 +515,8 @@ static async buildTagTree(nestedData) {
 
       const npcData = this._getCachedFlags(npcDoc, cache);
       const npcTags = (rawTags || [])
-        .filter((tag) => !hideByPermission || tag.canView)
+      .filter((tag) => game.user.isGM || tag.canView)
+        // .filter((tag) => !hideByPermission || tag.canView)
         .map((tag) => tag.name)
         .sort();
 
@@ -641,7 +646,8 @@ static async buildTagTree(nestedData) {
       type: "npc",
       quests: allQuests.length > 0 && (game.user.isGM || allQuests.some(q => q.visible)),
       tags: linkedTags
-        .filter((tag) => !hideByPermission || tag.canView)
+      .filter((tag) => game.user.isGM || tag.canView)
+        // .filter((tag) => !hideByPermission || tag.canView)
         .map((tag) => tag.name)
         .sort(),
       tag: isTagged,
@@ -682,7 +688,8 @@ static async buildTagTree(nestedData) {
     entity.permission = doc.permission;
     entity.shops = linkedShops.sort();
     entity.tags = linkedTags
-      .filter((tag) => !hideByPermission || tag.canView)
+    .filter((tag) => game.user.isGM || tag.canView)
+      // .filter((tag) => !hideByPermission || tag.canView)
       .map((tag) => tag.name)
       .sort();
     entity.npcs = npcs;

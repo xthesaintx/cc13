@@ -706,7 +706,8 @@ export class GroupSheet extends CampaignCodexBaseSheet {
     const uniqueUuids = [...new Set(allPossibleNpcs)];
     const linkedTags = await CampaignCodexLinkers.getTaggedNPCs(uniqueUuids);
 
-    const visibleTags = linkedTags.filter((tag) => !hideByPermission || tag.canView);
+    const visibleTags = linkedTags.filter((tag) => game.user.isGM || tag.canView);
+    // const visibleTags = linkedTags.filter((tag) => !hideByPermission || tag.canView);
 
     if (visibleTags.length === 0) {
       return "";

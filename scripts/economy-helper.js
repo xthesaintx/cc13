@@ -95,11 +95,8 @@ export class EconomyHelper {
 
   static async removeCost(item, targetActor, shopItemData, markup = 1.0, quantity = 1) {
     const customCurrencyPath = game.settings.get("campaign-codex", "playerCurrencyPath");
-    
     if (customCurrencyPath) {
-    console.log(customCurrencyPath);
       const priceDetails = this._calculateFinalPrice(item, shopItemData, markup, quantity);
-          console.log(priceDetails);
 
       if (!priceDetails || priceDetails.cost <= 0) return true;
 
@@ -109,18 +106,21 @@ export class EconomyHelper {
     const systemId = game.system.id;
     const config = CURRENCY_CONFIG[systemId];
 
+
     if (!config) {
       console.warn(`Campaign Codex | System '${systemId}' is not configured for payments.`);
       return true;
     }
 
     const priceDetails = this._calculateFinalPrice(item, shopItemData, markup, quantity);
+
     if (!priceDetails || priceDetails.cost <= 0) return true; 
 
     const { cost, currency } = priceDetails;
 
     try {
       if (systemId === "pf2e") {
+
         return await this._payPF2e(targetActor, cost, currency, config);
       }
 
@@ -413,10 +413,15 @@ static async _payPF2e(actor, cost, currency, config) {
     const actorCP = toNum(coins.cp ?? foundry.utils.getProperty(actor, "system.currency.cp"));
     const availableCopper = (actorPP * 1000) + (actorGP * 100) + (actorSP * 10) + actorCP;
 
+
+
+
     if (availableCopper < requiredCopper) {
       ui.notifications.warn(localize("warn.notEnoughCurrency") || "Not enough funds.");
       return false;
     }
+
+
 
     try {
         const result = await actor.inventory.removeCurrency(costObject);
@@ -440,15 +445,21 @@ static async _payPF2e(actor, cost, currency, config) {
     if (shopItemData?.customPrice !== null && shopItemData?.customPrice !== undefined) {
         finalPrice = Number(shopItemData.customPrice);
         currency = this._getItemCurrency(item);
+            console.log("here2");
     } 
     else {
         const baseInfo = this._getItemBasePrice(item);
         finalPrice = baseInfo.price * markup;
         currency = baseInfo.currency;
         const roundSetting = game.settings.get("campaign-codex", "roundFinalPrice");
-        finalPrice = roundSetting ? Math.round(finalPrice) : (Math.round(finalPrice * 100) / 100);
+        if (roundSetting === false || roundSetting === "false") {
+         (Math.round(finalPrice * 100) / 100);
+        }else{
+        Math.round(finalPrice);
+        }
     }
     finalPrice *= qty;
+
     if (finalPrice <= 0) return null;
     return { cost: finalPrice, currency };
   }
@@ -488,7 +499,6 @@ static async _payPF2e(actor, cost, currency, config) {
            return { price: goldValue, currency: "gp" };
         }
     }
-    
     if (sys === "demonlord") {
         const valStr = String(item.system.value || "0");
         const match = valStr.match(/([\d\.]+)\s*(gc|ss|cp|bits)?/i);

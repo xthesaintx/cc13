@@ -1,7 +1,11 @@
+## 3.3.6
+- entity card faction tag view permission fix
+- sp fix pf2e 
 ## 3.3.2
 - folders in toc
 - refactor of quests
 - allow players to loot option
+- 
 
 ## 3.2.2
 - Quest Sheets
