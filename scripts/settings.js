@@ -461,6 +461,23 @@ game.settings.registerMenu("campaign-codex", "themeColorPicker", {
       onDown: () => {game.campaignCodex.openTOCSheet();}
     });
 
+    game.keybindings.register("campaign-codex", "newCCSheet", {
+      name: "Create a new Camapign Codex sheet",
+      editable: [
+        {key: "KeyN", modifiers: [foundry.helpers.interaction.KeyboardManager.MODIFIER_KEYS.CONTROL, foundry.helpers.interaction.KeyboardManager.MODIFIER_KEYS.SHIFT]}
+      ],
+      onDown: () => {game.campaignCodex.newJournal();}
+    });
+
+    game.keybindings.register("campaign-codex", "questOpen", {
+      name: "Open the Camapign Codex Quest Board",
+      editable: [
+        {key: "KeyC", modifiers: [foundry.helpers.interaction.KeyboardManager.MODIFIER_KEYS.CONTROL, foundry.helpers.interaction.KeyboardManager.MODIFIER_KEYS.SHIFT]}
+      ],
+      onDown: () => {game.campaignCodex.openQuestBoard();}
+    });
+                
+
 
 }
 function getDefaultVisibilities() {

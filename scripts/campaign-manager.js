@@ -1,4 +1,4 @@
-import { localize, format, targetedRefresh } from "./helper.js";
+import { localize, format, targetedRefresh, promptForName } from "./helper.js";
 import { CampaignCodexLinkers } from "./sheets/linkers.js";
 import { CampaignCodexTOCSheet } from "./campaign-codex-toc.js";
 import { CampaignCodexQuestBoard } from "./campaign-codex-quest-board.js";
@@ -140,6 +140,101 @@ export class CampaignManager {
     });
     await game.campaignCodex.questBoardInstance.render(true);
   }
+
+
+
+  async newJournal(type = "") {
+    const creationConfig = {
+      group: {
+        prompt: "Group Overview",
+        create: (name) => this.createGroupJournal(name),
+      },
+      location: {
+        prompt: "Location",
+        create: (name) => this.createLocationJournal(name),
+      },
+      region: {
+        prompt: "Region",
+        create: (name) => this.createRegionJournal(name),
+      },
+      shop: {
+        prompt: "Entry",
+        create: (name) => this.createShopJournal(name),
+      },
+      npc: {
+        prompt: "NPC Journal",
+        create: (name) => this.createNPCJournal(null, name, false),
+      },
+      tag: {
+        prompt: "Faction",
+        create: (name) => this.createTagJournal(null, name),
+      },
+      quest: {
+        prompt: "Quest",
+        create: (name) => this.createQuestJournal(name),
+      },
+    };
+
+    const typeAliases = {
+      entry: "shop",
+      faction: "tag",
+    };
+
+    const promptForSheetType = async () =>
+      foundry.applications.api.DialogV2.prompt({
+        window: { title: "Create Campaign Codex Sheet" },
+        content: `
+          <div class="form-group">
+            <label>Sheet Type</label>
+            <select name="sheetType">
+              <option value="group">Group</option>
+              <option value="region">Region</option>
+              <option value="location">Location</option>
+              <option value="shop">Entry</option>
+              <option value="npc">NPC</option>
+              <option value="tag">Faction</option>
+              <option value="quest">Quest</option>
+            </select>
+          </div>
+        `,
+        ok: {
+          icon: '<i class="fas fa-check"></i>',
+          label: "Create",
+          callback: (event, button) => button.form.elements.sheetType.value,
+        },
+        cancel: {
+          icon: '<i class="fas fa-times"></i>',
+          label: localize("dialog.cancel"),
+        },
+        rejectClose: false,
+      }).catch(() => null);
+
+    let createType = String(type || "").trim().toLowerCase();
+    createType = typeAliases[createType] || createType;
+    if (!createType || !creationConfig[createType]) {
+      if (createType && !creationConfig[createType]) {
+        console.warn(`Campaign Codex | Unknown journal type "${createType}", showing type picker.`);
+      }
+      createType = await promptForSheetType();
+    }
+
+    if (!createType) return null;
+
+    createType = typeAliases[createType] || createType;
+    const config = creationConfig[createType];
+    if (!config) {
+      console.error(`Campaign Codex | Cannot create document of unknown type: "${createType}"`);
+      return null;
+    }
+
+    const name = await promptForName(config.prompt);
+    if (!name) return null;
+
+    const doc = await config.create(name);
+    doc?.sheet.render(true);
+    return doc;
+  }
+
 
   async createTagJournal(actor = null, name = null) {
     const journalName = name || (actor ? `${actor.name} - Faction` : "New Faction");

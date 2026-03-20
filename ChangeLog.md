@@ -1,6 +1,10 @@
-## 3.3.6
+## 3.3.8
 - entity card faction tag view permission fix
 - sp fix pf2e 
+- send items/purchase item quantity compatability fix
+- shortcut to new sheet (also example in macro)
+- shortcut to open quest board (also example in macro)
+
 ## 3.3.2
 - folders in toc
 - refactor of quests

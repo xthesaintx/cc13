@@ -32,6 +32,10 @@ const baseSheetApp = HandlebarsApplicationMixin(DocumentSheetV2);
 
 export class CampaignCodexBaseSheet extends baseSheetApp {
   static PLAYER_NOTES_FLAG = "playerNotesBySheet";
+  static ITEM_QUANTITY_PATHS = {
+    default: "system.quantity",
+    "custom-system-builder": "system.props.item_quantity",
+  };
   // =========================================================================
   // STATIC CONFIGURATION
   // =========================================================================
@@ -2499,22 +2503,7 @@ const pendingRestorations = this._pendingScrollRestorations;
         if (!hasPaid) return;
       }
 
-      const itemData = item.toObject();
-      delete itemData._id;
-
-      const existingItem = targetActor.items.find(
-        (i) =>
-          i.getFlag("core", "_stats.compendiumSource") === item.uuid ||
-          (i.name === item.name && i.type === item.type && i.img === item.img)
-      );
-
-      if (existingItem) {
-        const currentActorQty = existingItem.system.quantity || 0;
-        await existingItem.update({ "system.quantity": currentActorQty + qtyToBuy });
-      } else {
-        itemData.system.quantity = qtyToBuy;
-        await targetActor.createEmbeddedDocuments("Item", [itemData]);
-      }
+      await this._addItemToActorInventory(item, targetActor, qtyToBuy);
 
       if (!infinite) {
         const newQuantity = Math.max(currentQty - qtyToBuy, 0);
@@ -4042,11 +4031,42 @@ const pendingRestorations = this._pendingScrollRestorations;
     }
   }
 
+  _getItemQuantityPath(systemId = game.system?.id) {
+    const quantityPaths = this.constructor.ITEM_QUANTITY_PATHS || {};
+    return quantityPaths[systemId] || quantityPaths.default || "system.quantity";
+  }
+
+
+  async _addItemToActorInventory(item, targetActor, quantity = 1) {
+    const addQty = Math.max(0, Number(quantity || 0));
+    if (addQty <= 0) return;
+    const quantityPath = this._getItemQuantityPath();
+
+    const existingItem = targetActor.items.find(
+      (i) =>
+        i.getFlag("core", "_stats.compendiumSource") === item.uuid ||
+        (i.name === item.name && i.type === item.type && i.img === item.img),
+    );
+
+    const canStackExistingItem = existingItem && foundry.utils.hasProperty(existingItem, quantityPath);
+
+    if (canStackExistingItem) {
+      const currentQty = Number(foundry.utils.getProperty(existingItem, quantityPath) || 0);
+      await existingItem.update({ [quantityPath]: currentQty + addQty });
+      return;
+    }
+
+    const itemData = item.toObject();
+    delete itemData._id;
+    itemData.system = itemData.system || {};
+    itemData.system.quantity = addQty;
+    await targetActor.createEmbeddedDocuments("Item", [itemData]);
+  }
+
+
   async _transferItemToActor(item, targetActor, document, questId = "", quantity = 1) {
     try {
       const qtyToTransfer = Math.max(1, Number(quantity || 1));
-      const itemData = item.toObject();
-      delete itemData._id;
       const currentData = document.getFlag("campaign-codex", "data") || {};
 
       if (questId) {
@@ -4067,20 +4087,7 @@ const pendingRestorations = this._pendingScrollRestorations;
         existingItem.quantity -= addQty;
         quest.updatedAt = Date.now();
         await document.setFlag("campaign-codex", "data.quests", quests);
-
-        const actorExistingItem = targetActor.items.find(
-          (i) =>
-            i.getFlag("core", "_stats.compendiumSource") === item.uuid ||
-            (i.name === item.name && i.type === item.type && i.img === item.img),
-        );
-
-        if (actorExistingItem) {
-          const currentQty = actorExistingItem.system.quantity || 0;
-          await actorExistingItem.update({ "system.quantity": currentQty + addQty });
-        } else {
-          itemData.system.quantity = addQty;
-          await targetActor.createEmbeddedDocuments("Item", [itemData]);
-        }
+        await this._addItemToActorInventory(item, targetActor, addQty);
       } else {
         const inventory = currentData.inventory || [];
         const shopItem = inventory.find((i) => i.itemUuid === item.uuid);
@@ -4089,20 +4096,8 @@ const pendingRestorations = this._pendingScrollRestorations;
         const addQty = shopItem?.infinite ? qtyToTransfer : Math.min(quantityAvailable, qtyToTransfer);
 
 
-        if (addQty > 0 || shopItem.infinite) {
-          const existingItem = targetActor.items.find(
-            (i) =>
-              i.getFlag("core", "_stats.compendiumSource") === item.uuid ||
-              (i.name === item.name && i.type === item.type && i.img === item.img),
-          );
-
-          if (existingItem) {
-            const currentQty = existingItem.system.quantity || 0;
-            await existingItem.update({ "system.quantity": currentQty + addQty });
-          } else {
-            itemData.system.quantity = addQty;
-            await targetActor.createEmbeddedDocuments("Item", [itemData]);
-          }
+        if (addQty > 0 || shopItem?.infinite) {
+          await this._addItemToActorInventory(item, targetActor, addQty);
         }
 
         if (shopItem && shopItem.quantity > 0 && !shopItem.infinite) {
