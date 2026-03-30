@@ -40,6 +40,12 @@ function formatAmount(amount) {
     return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(2);
 }
 
+function roundFundsAmount(amount) {
+    const numeric = Number(amount || 0);
+    if (!Number.isFinite(numeric)) return 0;
+    return Math.round(numeric * 10000) / 10000;
+}
+
 function normalizeOperator(value) {
     const op = String(value || "eq").toLowerCase();
     return FLAG_OPERATORS.some((entry) => entry.value === op) ? op : "eq";
@@ -332,6 +338,8 @@ function evaluateItemAgainstFilters(item, settings) {
 function calculateOffer(item, settings, availableFunds, baseInfoOverride = null) {
     const baseInfo = baseInfoOverride || EconomyHelper._getItemBasePrice(item);
     const baseValue = Math.max(Number(baseInfo?.price || 0), 0);
+    const inventoryCurrency = CampaignCodexLinkers.getCurrency();
+    const offerCurrency = baseInfo?.currency || inventoryCurrency;
     const multiplier = clampNumber(settings?.payoutMultiplier ?? 1, 0, 1000);
     let offer = baseValue * multiplier;
 
@@ -342,17 +350,33 @@ function calculateOffer(item, settings, availableFunds, baseInfoOverride = null)
         offer = Math.round(offer * 100) / 100;
     }
 
-    const cappedFunds = Math.max(Number(availableFunds || 0), 0);
+    const cappedFunds = Math.max(
+        EconomyHelper.convertCurrencyAmount(
+            Number(availableFunds || 0),
+            inventoryCurrency,
+            offerCurrency,
+        ),
+        0,
+    );
     const wasCapped = !settings?.unlimitedFunds && offer > cappedFunds;
     if (!settings?.unlimitedFunds) {
         offer = Math.min(offer, cappedFunds);
     }
 
+    const normalizedOffer = Math.max(offer, 0);
+
     return {
-        offer: Math.max(offer, 0),
+        offer: normalizedOffer,
         baseValue,
         wasCapped,
-        currency: baseInfo?.currency || CampaignCodexLinkers.getCurrency(),
+        currency: offerCurrency,
+        offerInInventoryCurrency: roundFundsAmount(
+            EconomyHelper.convertCurrencyAmount(
+                normalizedOffer,
+                offerCurrency,
+                inventoryCurrency,
+            ),
+        ),
     };
 }
 
@@ -492,7 +516,11 @@ export async function processTradeInSocketRequest(data = {}) {
     };
 
     if (!settings.unlimitedFunds) {
-        updateData["flags.campaign-codex.data.inventoryCash"] = Math.max(0, availableFunds - offerData.offer);
+        const offerInInventoryCurrency = Number(offerData.offerInInventoryCurrency || 0);
+        updateData["flags.campaign-codex.data.inventoryCash"] = Math.max(
+            0,
+            roundFundsAmount(availableFunds - offerInInventoryCurrency),
+        );
     }
 
     try {

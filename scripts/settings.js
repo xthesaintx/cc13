@@ -493,7 +493,7 @@ game.settings.registerMenu("campaign-codex", "themeColorPicker", {
       ],
       onDown: () => {game.campaignCodex.openQuestBoard();}
     });
-
+    
 }
 function getDefaultVisibilities() {
   const TABS_BY_SHEET = {

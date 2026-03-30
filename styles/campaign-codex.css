@@ -7432,6 +7432,7 @@ display: flex;
     cursor: pointer;
     transition: all 0.2s ease;
     overflow: hidden;
+    align-content: center;
 }
 
 .cc-widget-rolltable .rt-card:hover {
@@ -7465,8 +7466,6 @@ display: flex;
 .cc-widget-rolltable .macro-card .rt-img {
   background: var(--cc-accent);
 }
-
-
 
 .cc-widget-rolltable .rt-name {
     font-weight: bold;
@@ -7546,6 +7545,36 @@ position: absolute;
     padding: 10px;
     border: 1px solid transparent;
 }
+.cc-widget-journal-sheet .cc-journal-card {
+    flex: 1 1 45%;
+}
+.cc-widget-journal-sheet .cc-journal-card.fa-eye  {
+  border:1px dotted var(--cc-accent80);
+}
+.cc-widget-journal-sheet .cc-journal-card.with-actions .rt-card-content {
+    padding-right: 72px;
+}
+
+.cc-widget-journal-sheet .cc-journal-card.with-actions.no-image .rt-card-content {
+    padding-left: 2px;
+}
+
+.cc-widget-journal-sheet .cc-journal-actions {
+    width: 72px;
+    justify-content: flex-end;
+    gap: 2px;
+    padding-right: 2px;
+}
+
+.cc-widget-journal-sheet .cc-journal-card.is-missing {
+    opacity: 0.45;
+    filter: grayscale(1);
+}
+
+.cc-widget-journal-sheet .cc-journal-card.is-missing .rt-name {
+    text-decoration: line-through;
+}
+
 /* =====================================================
    WIDGET: Transaction Viewer
    ===================================================== */
@@ -7574,7 +7603,7 @@ position: absolute;
 }
 
 .cc-widget-transaction-viewer .tv-clear-btn {
-    border: 1px solid var(--cc-accent30);
+    border: none;
     border-radius: 4px;
     background: var(--cc-card-bg);
     color: var(--cc-main-text);
@@ -7584,7 +7613,7 @@ position: absolute;
 }
 
 .cc-widget-transaction-viewer .tv-clear-btn:hover {
-    border-color: var(--cc-accent);
+    color: var(--cc-accent);
 }
 
 .cc-widget-transaction-viewer .tv-table-head,

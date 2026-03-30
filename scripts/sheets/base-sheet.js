@@ -2517,7 +2517,14 @@ const pendingRestorations = this._pendingScrollRestorations;
         const hasPaid = await EconomyHelper.removeCost(item, targetActor, shopItem, markup, qtyToBuy);
         if (!hasPaid) return;
         if (addFundsToHeldCurrency && purchaseCost > 0) {
-          await this._adjustInventoryCash(document, purchaseCost);
+          const inventoryCurrency = String(CampaignCodexLinkers.getCurrency() || purchaseCurrency || "gp").toLowerCase();
+          const purchaseCostForInventory = EconomyHelper.convertCurrencyAmount(
+            purchaseCost,
+            purchaseCurrency,
+            inventoryCurrency,
+          );
+          const roundedDelta = Math.round(Number(purchaseCostForInventory || 0) * 10000) / 10000;
+          await this._adjustInventoryCash(document, roundedDelta);
         }
       }
 

@@ -115,7 +115,7 @@
     },
     "settings": {
       "allowPlayerPurchasing": {
-        "name": "Allow players to puchase from Inventories",
+        "name": "Allow players to purchase from Inventories",
         "hint": "If enabled players can send items to themselves from an inventory"
       },
       "allowPlayerLooting": {

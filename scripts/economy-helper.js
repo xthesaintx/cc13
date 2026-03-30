@@ -65,6 +65,31 @@ export class EconomyHelper {
     return Boolean(CURRENCY_CONFIG[game.system.id]);
   }
 
+  static convertCurrencyAmount(amount = 0, fromCurrency = null, toCurrency = null, systemId = game.system.id) {
+    const value = Number(amount || 0);
+    if (!Number.isFinite(value) || value === 0) return 0;
+
+    const config = CURRENCY_CONFIG[systemId];
+    if (!Array.isArray(config) || !config.length) return value;
+
+    const fromKey = String(fromCurrency ?? "").toLowerCase();
+    const toKey = String(toCurrency ?? "").toLowerCase();
+
+    const fromDef = config.find((entry) => String(entry.key).toLowerCase() === fromKey)
+      || config.find((entry) => entry.rate === 1)
+      || config[0];
+    const toDef = config.find((entry) => String(entry.key).toLowerCase() === toKey)
+      || config.find((entry) => entry.rate === 1)
+      || config[0];
+
+    const fromRate = Number(fromDef?.rate || 0);
+    const toRate = Number(toDef?.rate || 0);
+    if (!Number.isFinite(fromRate) || !Number.isFinite(toRate) || toRate === 0) return value;
+
+    const converted = value * (fromRate / toRate);
+    return Number.isFinite(converted) ? converted : value;
+  }
+
   static async addCurrency(targetActor, amount = 0, currency = null) {
     const addAmount = Number(amount || 0);
     if (!Number.isFinite(addAmount) || addAmount <= 0) return false;

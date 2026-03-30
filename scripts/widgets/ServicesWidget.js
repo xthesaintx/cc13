@@ -3,6 +3,7 @@ import { CampaignCodexLinkers } from "../sheets/linkers.js";
 import { EconomyHelper } from "../economy-helper.js";
 import { localize } from "../helper.js";
 import { TemplateComponents } from "../sheets/template-components.js";
+import { appendTransaction, TRANSACTION_LOG_SOCKET_ACTION } from "../transaction-log.js";
 
 export class ServicesWidget extends CampaignCodexWidget {
     get isDnd5e() {
@@ -762,6 +763,37 @@ export class ServicesWidget extends CampaignCodexWidget {
 
         const serviceTitle = service.title || "Service";
         const currency = String(CampaignCodexLinkers.getCurrency() || "gp").toLowerCase();
+        const logTransaction = async (amount) => {
+            const numericAmount = Math.max(Number(amount || 0), 0);
+            if (!Number.isFinite(numericAmount) || numericAmount <= 0 || !shouldDeductFunds) return;
+
+            const transactionData = {
+                type: "buy",
+                itemName: serviceTitle,
+                amount: numericAmount,
+                currency,
+                actorName: targetActor?.name || game.user?.name || "",
+                actorUuid: targetActor?.uuid || null,
+                userId: game.user?.id || null,
+                userName: game.user?.name || "",
+                source: "Service Purchase",
+                sourceUuid: this.document?.uuid || null,
+            };
+
+            if (game.user.isGM) {
+                await appendTransaction(this.document, transactionData).catch((error) => {
+                    console.warn("Campaign Codex | Failed to append service transaction record:", error);
+                });
+            } else {
+                game.socket.emit("module.campaign-codex", {
+                    action: TRANSACTION_LOG_SOCKET_ACTION,
+                    data: {
+                        docUuid: this.document.uuid,
+                        transaction: transactionData,
+                    },
+                });
+            }
+        };
 
         if (["spellScroll", "spellScrollList", "pf2eSpellConsumable"].includes(service.serviceType)) {
             if (["spellScroll", "spellScrollList"].includes(service.serviceType) && !this.isDnd5e) {
@@ -825,6 +857,7 @@ export class ServicesWidget extends CampaignCodexWidget {
                 `,
                 speaker: ChatMessage.getSpeaker()
             });
+            await logTransaction(purchase.cost);
             return;
         }
 
@@ -866,6 +899,7 @@ export class ServicesWidget extends CampaignCodexWidget {
                 `,
                 speaker: ChatMessage.getSpeaker()
             });
+            await logTransaction(chargeCost);
             return;
         }
 
@@ -919,6 +953,7 @@ export class ServicesWidget extends CampaignCodexWidget {
             `,
             speaker: ChatMessage.getSpeaker()
         });
+        await logTransaction(chargeCost);
     }
 
     async _saveServices(mutator) {

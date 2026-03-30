@@ -1,3 +1,6 @@
+## 3.5.1
+- Journal Widget
+
 ## 3.4.8
 - added some icons (fort, castle, rook)
 - transaction widget
