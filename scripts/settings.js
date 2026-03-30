@@ -161,6 +161,23 @@ export default async function campaigncodexSettings() {
         type: Boolean,
         default: true,
     });
+    game.settings.register("campaign-codex", "addPurchaseFundsToInventoryCash", {
+        name: localize("addPurchaseFundsToInventoryCash.name"),
+        hint: localize("addPurchaseFundsToInventoryCash.hint"),
+        scope: "world",
+        config: true,
+        requiresReload: true,
+        type: Boolean,
+        default: false,
+    });
+    game.settings.register("campaign-codex", "enableTransactionLogging", {
+        name: localize("enableTransactionLogging.name"),
+        hint: localize("enableTransactionLogging.hint"),
+        scope: "world",
+        config: true,
+        type: Boolean,
+        default: false,
+    });
     game.settings.register("campaign-codex", "roundFinalPrice", {
         name: localize("roundFinalPrice.name"),
         hint: localize("roundFinalPrice.hint"),
@@ -476,8 +493,6 @@ game.settings.registerMenu("campaign-codex", "themeColorPicker", {
       ],
       onDown: () => {game.campaignCodex.openQuestBoard();}
     });
-                
-
 
 }
 function getDefaultVisibilities() {

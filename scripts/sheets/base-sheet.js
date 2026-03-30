@@ -1,4 +1,5 @@
 import { EconomyHelper } from "../economy-helper.js";
+import { appendTransaction, TRANSACTION_LOG_SOCKET_ACTION } from "../transaction-log.js";
 import { CampaignCodexLinkers } from "./linkers.js";
 import { TemplateComponents } from "./template-components.js";
 import {
@@ -340,8 +341,13 @@ export class CampaignCodexBaseSheet extends baseSheetApp {
     // IMAGE CONFIGURATION
     const allOverrides = this.document.getFlag("campaign-codex", "tab-overrides") || [];
     const mapMarkerOverride = allOverrides.find((override) => override.key === "mapMarker");
-    context.mapMarkerOverride =
-      !game.user.isGM && mapMarkerOverride?.hidden ? false : (mapMarkerOverride?.visible ?? true);
+    const defaultTabVis = getDefaultSheetTabs(this.getSheetType());
+    const defaultTabHidden = getDefaultSheetHidden(this.getSheetType());
+    const defaultMapMarkerVisible = defaultTabVis.mapMarker ?? true;
+    const defaultMapMarkerHidden = defaultTabHidden.mapMarker ?? false;
+    const mapMarkerVisible = mapMarkerOverride?.visible ?? defaultMapMarkerVisible;
+    const mapMarkerHidden = mapMarkerOverride?.hidden ?? defaultMapMarkerHidden;
+    context.mapMarkerOverride = !game.user.isGM && mapMarkerHidden ? false : mapMarkerVisible;
 
     const imageAreaOverride = allOverrides.find((override) => override.key === "imageArea");
     context.showImage = !game.user.isGM && imageAreaOverride?.hidden ? false : (imageAreaOverride?.visible ?? true);
@@ -1974,14 +1980,17 @@ const pendingRestorations = this._pendingScrollRestorations;
       defaultVisibility: true,
     });
     const mapMarkerOverride = currentOverrides.find((o) => o.key === "mapMarker");
+    const defaultMapMarkerVisibility = defaultTabVis.mapMarker ?? true;
+    const defaultMapMarkerHidden = defaultTabHidden.mapMarker ?? false;
     dialogTabs.push({
       key: "mapMarker",
       originalLabel: "Map Marker",
       overrideLabel: "",
       hideLabel: true,
-      hidden: mapMarkerOverride?.hidden || false,
-      visible: mapMarkerOverride?.visible ?? true,
-      defaultVisibility: true,
+      hidden: mapMarkerOverride?.hidden ?? defaultMapMarkerHidden,
+      visible: mapMarkerOverride?.visible ?? defaultMapMarkerVisibility,
+      defaultVisibility: defaultMapMarkerVisibility,
+      defaultHidden: defaultMapMarkerHidden,
     });
 
     const content = await renderTemplate("modules/campaign-codex/templates/partials/tab-config-dialog.hbs", {
@@ -2493,6 +2502,12 @@ const pendingRestorations = this._pendingScrollRestorations;
       const markup = currentData.markup || 1;
       const currentQty = shopItem ? shopItem.quantity : 0;
       const infinite = shopItem ? shopItem?.infinite : false;
+      const addFundsToHeldCurrency = game.settings.get("campaign-codex", "addPurchaseFundsToInventoryCash");
+      const purchaseDetails = EconomyHelper._calculateFinalPrice(item, shopItem, markup, qtyToBuy) || null;
+      const purchaseCost = Number(purchaseDetails?.cost || 0);
+      const purchaseCurrency = String(
+        purchaseDetails?.currency || CampaignCodexLinkers.getCurrency() || "gp",
+      ).toLowerCase();
 
       if ((currentQty <= 0 || currentQty < qtyToBuy) && !infinite) {
         ui.notifications.warn(localize('notify.outOfStock'));
@@ -2501,6 +2516,9 @@ const pendingRestorations = this._pendingScrollRestorations;
       if (!lootMode) {
         const hasPaid = await EconomyHelper.removeCost(item, targetActor, shopItem, markup, qtyToBuy);
         if (!hasPaid) return;
+        if (addFundsToHeldCurrency && purchaseCost > 0) {
+          await this._adjustInventoryCash(document, purchaseCost);
+        }
       }
 
       await this._addItemToActorInventory(item, targetActor, qtyToBuy);
@@ -2523,6 +2541,35 @@ const pendingRestorations = this._pendingScrollRestorations;
           }
           if (["group", "tag"].includes(this.document.getFlag("campaign-codex", "type")) && game.user.isGM)
             document.render();
+        }
+      }
+
+      if (!lootMode && purchaseCost > 0) {
+        const transactionData = {
+          type: "buy",
+          itemName: item.name,
+          amount: purchaseCost,
+          currency: purchaseCurrency,
+          actorName: targetActor.name,
+          actorUuid: targetActor.uuid,
+          userId: game.user.id,
+          userName: game.user.name,
+          source: "Inventory Purchase",
+          sourceUuid: document.uuid,
+        };
+
+        if (game.user.isGM) {
+          await appendTransaction(document, transactionData).catch((error) => {
+            console.warn("Campaign Codex | Failed to append transaction record:", error);
+          });
+        } else {
+          game.socket.emit("module.campaign-codex", {
+            action: TRANSACTION_LOG_SOCKET_ACTION,
+            data: {
+              docUuid: document.uuid,
+              transaction: transactionData,
+            },
+          });
         }
       }
 
@@ -3051,6 +3098,26 @@ const pendingRestorations = this._pendingScrollRestorations;
     currentData.inventoryCash = inventoryCash;
     await this.document.setFlag("campaign-codex", "data", currentData);
     this.render(true);
+  }
+
+  async _adjustInventoryCash(doc, amount = 0) {
+    const delta = Number(amount || 0);
+    if (!Number.isFinite(delta) || delta === 0) return;
+    const targetDoc = doc instanceof foundry.abstract.Document ? doc : this.document;
+    if (!targetDoc) return;
+
+    if (game.user.isGM) {
+      const currentData = targetDoc.getFlag("campaign-codex", "data") || {};
+      const currentCash = Number(currentData.inventoryCash || 0);
+      const nextCash = Math.max(0, currentCash + delta);
+      await targetDoc.setFlag("campaign-codex", "data.inventoryCash", nextCash);
+      return;
+    }
+
+    game.socket.emit("module.campaign-codex", {
+      action: "adjustInventoryCash",
+      data: { docUuid: targetDoc.uuid, amount: delta },
+    });
   }
 
   async _onMarkupChange(event) {
@@ -4036,7 +4103,6 @@ const pendingRestorations = this._pendingScrollRestorations;
     return quantityPaths[systemId] || quantityPaths.default || "system.quantity";
   }
 
-
   async _addItemToActorInventory(item, targetActor, quantity = 1) {
     const addQty = Math.max(0, Number(quantity || 0));
     if (addQty <= 0) return;
@@ -4047,7 +4113,6 @@ const pendingRestorations = this._pendingScrollRestorations;
         i.getFlag("core", "_stats.compendiumSource") === item.uuid ||
         (i.name === item.name && i.type === item.type && i.img === item.img),
     );
-
     const canStackExistingItem = existingItem && foundry.utils.hasProperty(existingItem, quantityPath);
 
     if (canStackExistingItem) {
@@ -4058,11 +4123,9 @@ const pendingRestorations = this._pendingScrollRestorations;
 
     const itemData = item.toObject();
     delete itemData._id;
-    itemData.system = itemData.system || {};
-    itemData.system.quantity = addQty;
+    foundry.utils.setProperty(itemData, quantityPath, addQty);
     await targetActor.createEmbeddedDocuments("Item", [itemData]);
   }
-
 
   async _transferItemToActor(item, targetActor, document, questId = "", quantity = 1) {
     try {

@@ -447,7 +447,7 @@ export class NPCDropper {
         `Campaign Codex | Importing actor ${originalActor.name} from compendium`,
       );
       const actorData = originalActor.toObject();
-      foundry.utils.setProperty(actorData, "flags.core.sourceId", originalActor.uuid);
+      foundry.utils.setProperty(actorData, "_stats.compendiumSource", originalActor.uuid);
       const importedActors = await Actor.createDocuments([
         actorData,
       ]);
@@ -480,12 +480,11 @@ export class NPCDropper {
 
     const matches = game.actors.filter((actor) => {
       if (!actor || actor.pack) return false;
-      const sourceId = foundry.utils.getProperty(actor, "flags.core.sourceId");
       const compendiumSource = foundry.utils.getProperty(
         actor,
         "_stats.compendiumSource",
       );
-      return sourceId === sourceUuid || compendiumSource === sourceUuid;
+      return compendiumSource === sourceUuid;
     });
 
     return matches[0] || null;

@@ -252,8 +252,8 @@ export class ServicesWidget extends CampaignCodexWidget {
                         <span class="cc-service-type-badge">${foundry.utils.escapeHTML(typeLabel)}</span>
                     </div>
                     <div class="cc-service-actions">
-                        ${context.canPurchase ? `<button type="button" data-action="purchase-service" title="Purchase"><i class="fas fa-paper-plane"></i></button>` : ""}
-                        ${context.isGM ? `<button type="button" data-action="send-service-player" title="Send to Player"><i class="fas fa-user-plus"></i></button>` : ""}
+                        ${context.canPurchase ? `<button type="button" data-action="purchase-service" title="Purchase"><i class="fas fa-coins"></i></button>` : ""}
+                        ${context.isGM ? `<button type="button" data-action="send-service-player" title="Send to Player"><i class="fas fa-paper-plane"></i></button>` : ""}
                         ${context.isGM ? `<button type="button" data-action="edit-service" title="Edit"><i class="fas fa-pen"></i></button>` : ""}
                         ${context.isGM ? `<button type="button" data-action="delete-service" title="Delete"><i class="fas fa-trash"></i></button>` : ""}
                     </div>
@@ -671,11 +671,10 @@ export class ServicesWidget extends CampaignCodexWidget {
         }
 
         let spellInput = spellItem;
-        if (spellItem?.pack) {
-            spellInput = foundry.utils.deepClone(spellItem.toObject());
-            delete spellInput.pack;
-        }
-
+        // if (spellItem?.pack) {
+        //     spellInput = foundry.utils.deepClone(spellItem.toObject());
+        //     delete spellInput.pack;
+        // }
         const scroll = await Item5eClass.createScrollFromSpell(spellInput, {}, { dialog: false, explanation: "reference", level: targetLevel }).catch(() => null);
         const scrollData = scroll?.toObject?.();
         if (!scrollData) return { success: false, itemDoc: null };

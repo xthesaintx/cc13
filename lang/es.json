@@ -135,6 +135,10 @@
         "name": "Ocultar objetos del inventario por permisos",
         "hint": "Oculta objetos en inventarios si el usuario no tiene permiso de observador o superior sobre el ítem."
       },
+      "addPurchaseFundsToInventoryCash": {
+        "name": "Agregar fondos de compras a la moneda retenida del inventario",
+        "hint": "Si está activado, las compras exitosas agregan el monto pagado al efectivo del inventario de esa hoja."
+      },
       "resetItemPathsButton": {
         "name": "Restablecer a valores predeterminados",
         "hint": "Activa esta opción y guarda para restablecer los ajustes por defecto."

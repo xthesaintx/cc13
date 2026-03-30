@@ -7547,6 +7547,378 @@ position: absolute;
     border: 1px solid transparent;
 }
 /* =====================================================
+   WIDGET: Transaction Viewer
+   ===================================================== */
+
+.cc-widget-transaction-viewer {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    background: var(--cc-card-bg);
+    box-shadow: var(--cc-shadow);
+    border-radius: 4px;
+    padding: 8px;
+}
+
+.cc-widget-transaction-viewer .tv-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.cc-widget-transaction-viewer .tv-header h4 {
+    margin: 0;
+    font-size: 0.95em;
+    color: var(--cc-main-text);
+}
+
+.cc-widget-transaction-viewer .tv-clear-btn {
+    border: 1px solid var(--cc-accent30);
+    border-radius: 4px;
+    background: var(--cc-card-bg);
+    color: var(--cc-main-text);
+    font-size: 0.8em;
+    padding: 2px 8px;
+    cursor: pointer;
+}
+
+.cc-widget-transaction-viewer .tv-clear-btn:hover {
+    border-color: var(--cc-accent);
+}
+
+.cc-widget-transaction-viewer .tv-table-head,
+.cc-widget-transaction-viewer .tv-row {
+    display: grid;
+    grid-template-columns: 52px 1.4fr 100px 1fr 132px;
+    gap: 8px;
+    align-items: center;
+    font-size: 0.8em;
+}
+
+.cc-widget-transaction-viewer .tv-table-head {
+    color: var(--cc-text-muted);
+    border-bottom: 1px solid var(--color-border-light-tertiary);
+    padding: 2px 0 4px 0;
+}
+
+.cc-widget-transaction-viewer .tv-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    max-height: 260px;
+    overflow-y: auto;
+}
+
+.cc-widget-transaction-viewer .tv-row {
+    background: var(--cc-card-bg);
+    border-radius: 4px;
+    padding: 4px 6px;
+}
+
+.cc-widget-transaction-viewer .tv-type {
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.cc-widget-transaction-viewer .tv-type.buy {
+    color: var(--cc-accent);
+}
+
+.cc-widget-transaction-viewer .tv-type.sell {
+    color: var(--cc-danger);
+}
+
+.cc-widget-transaction-viewer :is(.tv-item, .tv-actor, .tv-time) {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.cc-widget-transaction-viewer .tv-empty {
+    text-align: center;
+    font-style: italic;
+    color: var(--cc-text-muted);
+    padding: 8px;
+}
+
+@media (max-width: 700px) {
+    .cc-widget-transaction-viewer .tv-table-head,
+    .cc-widget-transaction-viewer .tv-row {
+        grid-template-columns: 46px 1fr 88px;
+    }
+    .cc-widget-transaction-viewer .tv-table-head span:nth-child(4),
+    .cc-widget-transaction-viewer .tv-table-head span:nth-child(5),
+    .cc-widget-transaction-viewer .tv-row .tv-actor,
+    .cc-widget-transaction-viewer .tv-row .tv-time {
+        display: none;
+    }
+}
+
+/* =====================================================
+   WIDGET: Trade-In Counter
+   ===================================================== */
+
+.cc-widget-trade-in {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    background: var(--cc-card-bg);
+    box-shadow: var(--cc-shadow);
+    border-radius: 4px;
+    padding: 8px;
+}
+
+.cc-widget-trade-in .ti-admin-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.cc-widget-trade-in .ti-settings {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 12px;
+    justify-content: space-between;
+}
+
+.cc-widget-trade-in .ti-setting {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.85em;
+    color: var(--cc-main-text);
+}
+
+.cc-widget-trade-in .ti-setting.vertical {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+    flex: 1;
+}
+
+.cc-widget-trade-in .ti-setting input[type="number"] {
+    width: 40px;
+    text-align: right;
+    font-size: 10px;
+    height: 24px;
+    background: var(--cc-accent10);
+}
+
+.cc-widget-trade-in .ti-setting input[type="text"],
+.cc-widget-trade-in .ti-setting select {
+    min-width: 140px;
+        font-size: 10px;
+    height: 24px;
+    background: var(--cc-accent10);
+}
+
+.cc-widget-trade-in .ti-setting.ti-toggle {
+    cursor: pointer;
+}
+
+.cc-widget-trade-in .ti-funds {
+    margin-left: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.85em;
+    color: var(--cc-text-muted);
+}
+
+.cc-widget-trade-in .ti-filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding-top: 8px;
+    border-top: 1px dotted var(--color-border-light-tertiary);
+}
+
+.cc-widget-trade-in .ti-filter-group h5 {
+    margin: 0;
+}
+
+.cc-widget-trade-in .ti-filter-grid {
+    display: flex;
+    gap: 8px;
+    flex-direction: row;
+    flex-wrap: wrap;
+}
+
+.cc-widget-trade-in .ti-help {
+    margin: 0;
+    font-size: 0.75em;
+    color: var(--cc-text-muted);
+}
+
+.cc-widget-trade-in .ti-type-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+.cc-widget-trade-in .ti-type-pill {
+    display: inline-flex;
+    align-items: center;
+}
+
+.cc-widget-trade-in .ti-type-pill input {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+    pointer-events: none;
+}
+
+.cc-widget-trade-in .ti-type-pill span {
+border: 1px solid var(--cc-accent30);
+    border-radius: 999px;
+    padding: 4px 8px;
+    font-size: 0.75em;
+    color: var(--cc-main-text);
+    cursor: pointer;
+}
+
+.cc-widget-trade-in .ti-type-pill input:checked + span {
+    background: var(--cc-accent30);
+    border-color: var(--cc-accent);
+    color: var(--cc-main-text);
+}
+
+.cc-widget-trade-in .ti-filter-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+}
+
+.cc-widget-trade-in .ti-add-flag {
+    border: 1px solid var(--cc-accent30);
+    border-radius: 4px;
+    background: var(--cc-card-bg);
+    color: var(--cc-main-text);
+    font-size: 0.75em;
+    padding: 2px 8px;
+    cursor: pointer;
+}
+
+.cc-widget-trade-in .ti-add-flag:hover {
+    border-color: var(--cc-accent);
+}
+
+.cc-widget-trade-in .ti-flag-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.cc-widget-trade-in .ti-flag-row {
+    display: grid;
+    grid-template-columns: 1.4fr 88px 1fr 30px;
+    gap: 6px;
+    align-items: center;
+}
+
+.cc-widget-trade-in .ti-flag-row input,
+.cc-widget-trade-in .ti-flag-row select {
+    width: 100%;
+    min-width: 0;
+    font-size: 10px;
+    height: 24px;
+    background: var(--cc-accent10);
+}
+
+.cc-widget-trade-in .ti-remove-flag {
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--cc-text-muted);
+    border-radius: 4px;
+    cursor: pointer;
+    padding: 2px 0;
+}
+
+.cc-widget-trade-in .ti-remove-flag:hover {
+    color: var(--cc-danger);
+    border-color: var(--cc-danger);
+}
+
+.cc-widget-trade-in .ti-drop-zone {
+    width: 100%;
+    min-height: 90px;
+    border: 2px dashed var(--cc-accent30);
+    border-radius: 6px;
+    background: rgba(0, 0, 0, 0.02);
+    color: var(--cc-main-text);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    text-align: center;
+    transition: all 0.2s ease;
+}
+
+.cc-widget-trade-in .ti-drop-zone i {
+    font-size: 1.4em;
+}
+
+.cc-widget-trade-in .ti-drop-zone .ti-drop-title {
+    font-weight: 700;
+    font-size: 0.95em;
+}
+
+.cc-widget-trade-in .ti-drop-zone .ti-drop-subtitle {
+    font-size: 0.8em;
+    color: var(--cc-text-muted);
+}
+
+.cc-widget-trade-in .ti-drop-zone.is-hover {
+    border-color: var(--cc-accent);
+    background: var(--cc-accent30);
+}
+
+.cc-widget-trade-in .ti-drop-zone.is-disabled {
+    opacity: 0.65;
+}
+
+@media (max-width: 640px) {
+    .cc-widget-trade-in .ti-flag-row {
+        grid-template-columns: 1fr;
+    }
+
+    .cc-widget-trade-in .ti-remove-flag {
+        justify-self: end;
+        width: 28px;
+    }
+}
+
+.cc-widget-trade-in .ti-unlimited-toggle {
+    border: none;
+    border-radius: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--cc-text-muted);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    background: none;
+    outline: none;
+    box-shadow: none;
+}
+
+.cc-widget-trade-in .ti-unlimited-toggle:hover {
+    border-color: var(--cc-accent);
+    color: var(--cc-main-text);
+}
+
+.cc-widget-trade-in .ti-unlimited-toggle.active {
+color: var(--cc-accent);
+}
+
+/* =====================================================
    WIDGET: Merchant Counter
    ===================================================== */
 
@@ -7555,7 +7927,6 @@ position: absolute;
     display: flex;
     flex-direction: column;
     gap: 8px;
-    background: var(--cc-bg-light);
     border-radius: 4px;
 }
 
@@ -9044,3 +9415,9 @@ padding: 4px 8px;
 #cc-iconpicker .is-current-icon{
   color: var(--cc-accent);
 }
+
+
+.campaign-codex prose-mirror a.inline-check[data-pf2-traits*=secret], 
+.campaign-codex prose-mirror span[data-pf2-check][data-pf2-traits*=secret] {
+    background: var(--cc-accent30);
+  }

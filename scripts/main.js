@@ -1,6 +1,8 @@
 import { displayCodexNote, hoverCodexNote } from "./widgets/viewMapNote.js";
 import { widgetManager } from "./widgets/WidgetManager.js";
 import { CampaignCodexWidget} from "./widgets/CampaignCodexWidget.js";
+import { TRADE_IN_SOCKET_ACTION, processTradeInSocketRequest } from "./widgets/TradeInWidget.js";
+import { appendTransaction, TRANSACTION_LOG_SOCKET_ACTION } from "./transaction-log.js";
 import { TagSheet } from "./sheets/tag-sheet.js";
 import { templateManager } from "./journal-template-manager.js";
 import { SimpleCampaignCodexExporter } from "./campaign-codex-exporter.js";
@@ -204,6 +206,7 @@ Hooks.once("ready", async function () {
     game.modules.get('campaign-codex').api = {
       openTOCSheet: game.campaignCodex.openTOCSheet,
       openQuestBoard: game.campaignCodex.openQuestBoard,
+      newJournal: (type) => game.campaignCodex.newJournal(type),
       convertJournalToCCSheet: convertJournalToCCSheet,
       exportToObsidian:()=> SimpleCampaignCodexExporter.exportToObsidian(),
       migrateLegacyWidgets:(document)=> migrateLegacyWidgets(document),
@@ -473,6 +476,44 @@ Hooks.on("ready", () => {
             }
         }
     }
+    if (request.action === "adjustInventoryCash" && game.user.id === game.users.activeGM?.id) {
+        const { docUuid, amount } = request.data || {};
+        const doc = await fromUuid(docUuid);
+        const delta = Number(amount || 0);
+        if (!doc || !Number.isFinite(delta) || delta === 0) return;
+        const currentData = doc.getFlag("campaign-codex", "data") || {};
+        const currentCash = Number(currentData.inventoryCash || 0);
+        const nextCash = Math.max(0, currentCash + delta);
+        await doc.setFlag("campaign-codex", "data.inventoryCash", nextCash);
+    }
+
+    if (request.action === TRADE_IN_SOCKET_ACTION && game.user.id === game.users.activeGM?.id) {
+        const result = await processTradeInSocketRequest(request.data || {});
+        const targetUserId = request.data?.userId;
+
+        if (targetUserId) {
+            game.socket.emit("module.campaign-codex", {
+                action: "notification",
+                data: {
+                    type: result.ok ? "info" : "warning",
+                    message: result.message,
+                    push: [targetUserId],
+                },
+            });
+        }
+    }
+
+    if (request.action === TRANSACTION_LOG_SOCKET_ACTION && game.user.id === game.users.activeGM?.id) {
+        const docUuid = request.data?.docUuid;
+        const transaction = request.data?.transaction;
+        if (!docUuid || !transaction) return;
+
+        const doc = await fromUuid(docUuid).catch(() => null);
+        if (!doc) return;
+        await appendTransaction(doc, transaction).catch((error) => {
+            console.warn("Campaign Codex | Failed to append socket transaction:", error);
+        });
+    }
 
   });
 })
@@ -618,15 +659,36 @@ function _isCodexWidgetSceneNote(noteDocument) {
     return !!(ccFlags?.noteid && ccFlags?.widgetid);
 }
 
+function _isCodexSceneNoteVisibleByVision(note) {
+    if (game.user.isGM) return true;
+    const visibility = canvas?.effects?.visibility;
+    if (!visibility) return true;
+
+    // If token vision is disabled for the scene, LOS/walls do not limit visibility.
+    if (visibility.tokenVision === false) return true;
+
+    const point = note?.center ?? { x: note?.document?.x ?? 0, y: note?.document?.y ?? 0 };
+    const tolerance = Math.max(2, Number(note?.document?.iconSize ?? 40) / 4);
+
+    try {
+        return visibility.testVisibility(point, { tolerance, object: note });
+    } catch (err) {
+        console.warn("Campaign Codex | Failed map note vision visibility test", err);
+        return true;
+    }
+}
+
 function _applyCodexSceneNoteVisibility(note) {
     if (!note || game.user.isGM) return;
     if (!_isCodexWidgetSceneNote(note.document)) return;
     
     const shouldShow = _isCodexSceneNoteVisibleToUser(note.document);
+    const visionVisible = _isCodexSceneNoteVisibleByVision(note);
+    const finalVisible = shouldShow && visionVisible;
 
-    // Force the actual placeable state for player users based on the widget note visibility.
-    note.visible = shouldShow;
-    if (note.controlIcon) note.controlIcon.visible = shouldShow;
+    // Apply widget visibility as an additional filter without overriding Foundry wall/vision rules.
+    note.visible = finalVisible;
+    if (note.controlIcon) note.controlIcon.visible = finalVisible;
     if (note.tooltip) note.tooltip.visible = false;
 }
 

@@ -1,3 +1,14 @@
+## 3.4.8
+- added some icons (fort, castle, rook)
+- transaction widget
+- trade in widget
+- new experiment macros
+- map note fix
+- map maker on sheet visibility fix
+- small change to the workflow of scrolls from service for dnd5e
+- Synthetic Dream Machine compatability for quests and inventory
+
+
 ## 3.3.8
 - entity card faction tag view permission fix
 - sp fix pf2e 
@@ -8,6 +19,7 @@
 ## 3.3.2
 - folders in toc
 - refactor of quests
+- hover delay setting for map notes
 - allow players to loot option
 - 
 

@@ -1349,6 +1349,8 @@ export class CampaignCodexLinkers {
     }
 
     switch (systemId) {
+      case "sdm":
+        return { pricePath: "system.cost", denominationPath: null, currency: "€" };
       case "demonlord":
         return { pricePath: "system.value", denominationPath: null, currency: "gc" };
       case "wfrp4e":

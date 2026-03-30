@@ -48,6 +48,7 @@ const XP_SYSTEM_CONFIG = {
       }
     },
   },
+  sdm: { path: "system.player_experience", enabled: () => true },
   ds4: { path: "system.progression.experiencePoints", enabled: () => true },
   ose: { path: "system.details.xp.value", enabled: () => true },
   tormenta20: { path: "system.attributes.nivel.xp.value", enabled: () => true },

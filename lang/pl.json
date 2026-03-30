@@ -202,6 +202,10 @@
         "name": "Ukryj przedmioty w ekwipunku według własności",
         "hint": "Ukryj przedmioty w ekwipunku, jeśli użytkownik nie ma uprawnień obserwatora lub wyższych do przedmiotu"
       },
+      "addPurchaseFundsToInventoryCash": {
+        "name": "Dodaj środki z zakupów do przechowywanej waluty ekwipunku",
+        "hint": "Po włączeniu udane zakupy dodają zapłaconą kwotę do gotówki ekwipunku na tym arkuszu."
+      },
       "resetItemPathsButton": {
         "name": "Przywróć domyślne",
         "hint": "Włącz tę opcję i zapisz, aby przywrócić ustawienia domyślne"

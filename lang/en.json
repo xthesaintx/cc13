@@ -218,6 +218,14 @@
         "name": "Hide Inventory Items by ownership",
         "hint": "Hide Items in Inventories if the user does not have observer or higher ownership of the item"
       },
+      "addPurchaseFundsToInventoryCash": {
+        "name": "Add purchase funds to inventory held currency",
+        "hint": "If enabled, successful purchases add the paid amount to Inventory Cash on that sheet."
+      },
+      "enableTransactionLogging": {
+        "name": "Enable transaction logging",
+        "hint": "If enabled, purchases and sales are recorded in the transaction log."
+      },
       "resetItemPathsButton": {
         "name": "Reset to Defaults",
         "hint": "Enable this option and save to reset settings to default"

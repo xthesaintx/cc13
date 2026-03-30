@@ -201,6 +201,10 @@
         "name": "Esconder Itens do Inventário por permissão",
         "hint": "Esconde itens que estejam no inventário caso o usuário não tenha permissão de observador ou superior no item."
       },
+      "addPurchaseFundsToInventoryCash": {
+        "name": "Adicionar fundos de compras à moeda retida do inventário",
+        "hint": "Se habilitado, compras bem-sucedidas adicionam o valor pago ao caixa do inventário dessa ficha."
+      },
       "resetItemPathsButton": {
         "name": "Restaurar ao Padrão",
         "hint": "Habilite esta opção e salve para restaurar as configurações ao padrão."

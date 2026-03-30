@@ -51,6 +51,9 @@ const CURRENCY_CONFIG = {
     { key: "gp", label: "Gold",     rate: 1,    path: "gp" },
     { key: "sp", label: "Silver",   rate: 0.1,  path: "sp" },
     { key: "cp", label: "Copper",   rate: 0.01, path: "cp" }
+  ],
+  "sdm": [
+    { key: "€", label: "Cash", rate: 1, path: "actor-method" }
   ]
 };
 
@@ -66,12 +69,16 @@ export class EconomyHelper {
     const addAmount = Number(amount || 0);
     if (!Number.isFinite(addAmount) || addAmount <= 0) return false;
 
+    const systemId = game.system.id;
+    if (systemId === "sdm") {
+      return this._addSDM(targetActor, addAmount);
+    }
+
     const customCurrencyPath = game.settings.get("campaign-codex", "playerCurrencyPath");
     if (customCurrencyPath) {
       return this._addCustomPath(targetActor, addAmount, customCurrencyPath);
     }
 
-    const systemId = game.system.id;
     const config = CURRENCY_CONFIG[systemId];
     if (!config) return false;
 
@@ -88,22 +95,41 @@ export class EconomyHelper {
       || config[0];
     if (!def?.path || def.path === "transaction") return false;
 
-    const currentVal = Number(foundry.utils.getProperty(targetActor, def.path) || 0);
-    await targetActor.update({ [def.path]: currentVal + addAmount });
-    return true;
+    if (config.length === 1) {
+      const currentVal = Number(foundry.utils.getProperty(targetActor, def.path) || 0);
+      await targetActor.update({ [def.path]: currentVal + addAmount });
+      return true;
+    }
+
+    return await this._addWithWalletLogic(targetActor, addAmount, def.key, config, systemId);
   }
 
-  static async removeCost(item, targetActor, shopItemData, markup = 1.0, quantity = 1) {
+  static async removeCost(item, targetActor, shopItemData, markup = 1.0, quantity = 1, options = {}) {
+    const addFunds = !!options?.addFunds;
+    const currencyOverride = options?.currency ? String(options.currency).toLowerCase() : null;
+
+    const systemId = game.system.id;
+    if (systemId === "sdm") {
+      const priceDetails = this._calculateFinalPrice(item, shopItemData, markup, quantity);
+      if (!priceDetails || priceDetails.cost <= 0) return true;
+      if (addFunds) return await this._addSDM(targetActor, priceDetails.cost);
+      return await this._paySDM(targetActor, priceDetails.cost);
+    }
+
     const customCurrencyPath = game.settings.get("campaign-codex", "playerCurrencyPath");
     if (customCurrencyPath) {
       const priceDetails = this._calculateFinalPrice(item, shopItemData, markup, quantity);
 
       if (!priceDetails || priceDetails.cost <= 0) return true;
 
+      const payoutCurrency = currencyOverride || priceDetails.currency;
+      if (addFunds) {
+        return await this.addCurrency(targetActor, priceDetails.cost, payoutCurrency);
+      }
+
       return await this._payCustomPath(targetActor, priceDetails.cost, customCurrencyPath);
     }
 
-    const systemId = game.system.id;
     const config = CURRENCY_CONFIG[systemId];
 
 
@@ -116,7 +142,12 @@ export class EconomyHelper {
 
     if (!priceDetails || priceDetails.cost <= 0) return true; 
 
-    const { cost, currency } = priceDetails;
+    const { cost } = priceDetails;
+    const currency = currencyOverride || priceDetails.currency;
+
+    if (addFunds) {
+      return await this.addCurrency(targetActor, cost, currency);
+    }
 
     try {
       if (systemId === "pf2e") {
@@ -221,6 +252,69 @@ static async _payWithWalletLogic(actor, costAmount, costCurrencyKey, config) {
     return true;
   }
 
+static _getAdditionOrder(systemId, config) {
+    if (systemId === "dnd5e") {
+      const preferred = ["pp", "gp", "sp", "cp", "ep"];
+      const byKey = new Map(config.map((c) => [String(c.key).toLowerCase(), c]));
+      const ordered = preferred.map((key) => byKey.get(key)).filter(Boolean);
+      const leftovers = config.filter((c) => !ordered.includes(c)).sort((a, b) => b.rate - a.rate);
+      return [...ordered, ...leftovers];
+    }
+    return [...config].sort((a, b) => b.rate - a.rate);
+}
+
+static async _addWithWalletLogic(actor, addAmount, addCurrencyKey, config, systemId = game.system.id) {
+    const addableCurrencies = config.filter((curr) => curr?.path && curr.path !== "transaction");
+    if (!addableCurrencies.length) return false;
+
+    const sortedByRate = [...addableCurrencies].sort((a, b) => b.rate - a.rate);
+    const baseCurrency = sortedByRate[sortedByRate.length - 1];
+    const addDef = addableCurrencies.find((curr) => String(curr.key).toLowerCase() === String(addCurrencyKey).toLowerCase())
+      || addableCurrencies.find((curr) => curr.rate === 1)
+      || addableCurrencies[0];
+
+    const addInBase = Math.max(0, Math.round(addAmount * (addDef.rate / baseCurrency.rate)));
+    const addWholeInDef = Math.max(0, Math.trunc(addAmount));
+    const defUnitInBase = Math.max(1, Math.round(addDef.rate / baseCurrency.rate));
+    const wholeInBase = addWholeInDef * defUnitInBase;
+
+    let remainingToDistribute = Math.max(0, addInBase - wholeInBase);
+
+    const wallet = {};
+    for (const curr of addableCurrencies) {
+      const existing = Number(foundry.utils.getProperty(actor, curr.path) || 0);
+      wallet[curr.key] = Number.isFinite(existing) ? existing : 0;
+    }
+
+    if (addWholeInDef > 0) {
+      wallet[addDef.key] = (wallet[addDef.key] || 0) + addWholeInDef;
+    }
+
+    const ordered = this._getAdditionOrder(systemId, addableCurrencies);
+    const lowerDenominations = ordered.filter((curr) => curr.key !== addDef.key && curr.rate < addDef.rate);
+
+    for (const curr of lowerDenominations) {
+      if (remainingToDistribute <= 0) break;
+      const valueInBase = Math.max(1, Math.round(curr.rate / baseCurrency.rate));
+      const qty = Math.floor(remainingToDistribute / valueInBase);
+      if (qty <= 0) continue;
+      wallet[curr.key] = (wallet[curr.key] || 0) + qty;
+      remainingToDistribute -= qty * valueInBase;
+    }
+
+    if (remainingToDistribute > 0) {
+      wallet[baseCurrency.key] = (wallet[baseCurrency.key] || 0) + remainingToDistribute;
+      remainingToDistribute = 0;
+    }
+
+    const updates = {};
+    for (const curr of addableCurrencies) {
+      updates[curr.path] = Math.max(0, Math.floor(Number(wallet[curr.key] || 0)));
+    }
+    await actor.update(updates);
+    return true;
+}
+
 
 static async _paySimple(actor, cost, path) {
     const currentVal = foundry.utils.getProperty(actor, path) || 0;
@@ -310,6 +404,51 @@ static async _addWFRP4e(actor, amount, currency) {
     return true;
 }
 
+static async _addSDM(actor, amount) {
+    return await this._changeSDMCash(actor, amount, "add");
+}
+
+static _getSDMCashTotal(actor) {
+    if (!actor || typeof actor.getTotalCash !== "function") return 0;
+    const total = Number(actor.getTotalCash() || 0);
+    return Number.isFinite(total) ? total : 0;
+}
+
+static async _changeSDMCash(actor, amount, operation) {
+    const op = operation === "remove" ? "remove" : "add";
+    const normalizedAmount = Number.parseInt(String(amount ?? 0), 10);
+    if (!Number.isFinite(normalizedAmount) || normalizedAmount <= 0) return true;
+    if (!actor || typeof actor.getTotalCash !== "function") {
+      console.warn("Campaign Codex | SDM actor does not support getTotalCash.");
+      return false;
+    }
+    if (op === "add" && typeof actor.addCash !== "function") {
+      console.warn("Campaign Codex | SDM actor does not support addCash.");
+      return false;
+    }
+    if (op === "remove" && typeof actor.removeCash !== "function") {
+      console.warn("Campaign Codex | SDM actor does not support removeCash.");
+      return false;
+    }
+
+    const before = this._getSDMCashTotal(actor);
+
+    try {
+      if (op === "add") {
+        await actor.addCash(normalizedAmount);
+      } else {
+        await actor.removeCash(normalizedAmount);
+      }
+    } catch (error) {
+      console.error(`Campaign Codex | Error during SDM cash '${op}':`, error);
+      return false;
+    }
+
+    const refreshed = game.actors?.get(actor.id) ?? actor;
+    const after = this._getSDMCashTotal(refreshed);
+    return op === "add" ? after > before : after < before;
+}
+
 static async _payCustomPath(actor, cost, path) {
     try {
       const currentVal = foundry.utils.getProperty(actor, path);
@@ -333,6 +472,10 @@ static async _payCustomPath(actor, cost, path) {
       console.error("Campaign Codex | Error processing custom currency deduction:", error);
       return false;
     }
+  }
+
+static async _paySDM(actor, cost) {
+    return await this._changeSDMCash(actor, cost, "remove");
   }
 
 
@@ -445,7 +588,6 @@ static async _payPF2e(actor, cost, currency, config) {
     if (shopItemData?.customPrice !== null && shopItemData?.customPrice !== undefined) {
         finalPrice = Number(shopItemData.customPrice);
         currency = this._getItemCurrency(item);
-            console.log("here2");
     } 
     else {
         const baseInfo = this._getItemBasePrice(item);
@@ -523,12 +665,15 @@ static async _payPF2e(actor, cost, currency, config) {
     if (sys === "fallout") {
         return { price: clean(item.system.cost), currency: "caps" };
     }
-
+    if (sys === "sdm") {
+        return { price: clean(item.system.cost), currency: "cash" };
+    }    
     const val = item.system.price?.value ?? item.system.price ?? 0;
     let denom = item.system.price?.denomination || "gp";
     
     if (sys === "swade") denom = "currency";
-    
+
+
     return { price: clean(val), currency: denom };
   }
 
@@ -545,6 +690,7 @@ static async _payPF2e(actor, cost, currency, config) {
       if (sys === "sfrpg") return "credit";
       if (sys === "fallout") return "caps";
       if (sys === "swade") return "currency";
+      if (sys === "sdm") return "€";
       return item.system.price?.denomination || "gp";
   }
 }

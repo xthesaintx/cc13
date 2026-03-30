@@ -200,6 +200,10 @@
         "name": "Masquer l'inventaire selon la propriété",
         "hint": "Masquer les objets dans les inventaires si l'utilisateur n'a pas la permission Observateur ou supérieure sur l'objet."
       },
+      "addPurchaseFundsToInventoryCash": {
+        "name": "Ajouter les fonds d'achat à la monnaie détenue de l'inventaire",
+        "hint": "Si activé, les achats réussis ajoutent le montant payé à la trésorerie d'inventaire de cette fiche."
+      },
       "resetItemPathsButton": {
         "name": "Rétablir les valeurs par défaut",
         "hint": "Activez cette option et sauvegardez pour réinitialiser les paramètres par défaut."

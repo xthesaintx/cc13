@@ -9,6 +9,8 @@ import { ProgressClockWidget } from "./ProgressClockWidget.js";
 import { MacroWidget } from "./MacroWidget.js";
 import { RollTableWidget } from "./RollTableWidget.js";
 import { MerchantCounterWidget } from "./MerchantCounterWidget.js";
+import { TradeInWidget } from "./TradeInWidget.js";
+import { TransactionViewerWidget } from "./TransactionViewerWidget.js";
 import { CalendarForecastWidget } from "./CalendarForecastWidget.js";
 import { CalendarEventWidget } from "./CalendarEventWidget.js";
 import { CalendarTimelineWidget } from "./CalendarTimelineWidget.js";
@@ -45,6 +47,8 @@ class WidgetManager {
         this.registerWidget("Roll Table", RollTableWidget);
         this.registerWidget("Scenes", SceneWidget);
         this.registerWidget("Merchant Counter", MerchantCounterWidget);
+        this.registerWidget("Trade-In Counter", TradeInWidget);
+        this.registerWidget("Transaction Viewer", TransactionViewerWidget);
         if (this._miniCalendar?.active) {
             this.registerWidget("Mini Calendar Forecast", CalendarForecastWidget);
             this.registerWidget("Mini Calendar Events", CalendarEventWidget);
@@ -158,4 +162,3 @@ instantiateActiveWidgets(document, targetTab = "widgets") {
 
 // Create a singleton instance
 export const widgetManager = new WidgetManager();
-
