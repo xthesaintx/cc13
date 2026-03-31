@@ -1,3 +1,9 @@
+## 3.5.8
+- Trade in widget improvements
+- System flag path auto complete for trade in widget: DND5e, PF2e, Fallout, Daggerheart, SFRPG
+- Starwars FFG compatability
+
+
 ## 3.5.1
 - Journal Widget
 

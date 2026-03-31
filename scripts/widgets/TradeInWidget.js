@@ -1,15 +1,12 @@
 import { CampaignCodexWidget } from "./CampaignCodexWidget.js";
 import { CampaignCodexLinkers } from "../sheets/linkers.js";
 import { EconomyHelper } from "../economy-helper.js";
-import { localize } from "../helper.js";
+import { localize, getItemQuantityPath } from "../helper.js";
 import { appendTransaction } from "../transaction-log.js";
 
 export const TRADE_IN_SOCKET_ACTION = "tradeInWidgetTransaction";
 
-const ITEM_QUANTITY_PATHS = {
-    default: "system.quantity",
-    "custom-system-builder": "system.props.item_quantity",
-};
+
 
 const FLAG_OPERATORS = [
     { value: "eq", label: "=" },
@@ -18,7 +15,18 @@ const FLAG_OPERATORS = [
     { value: "lt", label: "<" },
 ];
 
+const ITEM_SYSTEM_PATH_DICTIONARY_FILES = {
+    dnd5e: "item-system-paths-by-type-dnd5e.json",
+    pf2e: "item-system-paths-by-type-pf2e.json",
+    fallout: "item-system-paths-by-type-fallout.json",
+    daggerheart: "item-system-paths-by-type-daggerheart.json",
+    sfrpg: "item-system-paths-by-type-sfrpg.json",
+};
+
 const EPSILON = 0.000001;
+const EMPTY_OBJECT = Object.freeze({});
+const ITEM_SYSTEM_PATHS_BY_SYSTEM_CACHE = new Map();
+const ITEM_SYSTEM_PATHS_BY_SYSTEM_PROMISES = new Map();
 
 function clampNumber(value, min, max) {
     const numeric = Number(value);
@@ -80,6 +88,205 @@ function getItemTypeOptions() {
         .sort((a, b) => a.label.localeCompare(b.label, undefined, { numeric: true, sensitivity: "base" }));
 }
 
+
+function normalizeLookupKey(value) {
+    return String(value ?? "")
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "");
+}
+
+function normalizeBracketSegments(path) {
+    const cleanPath = toSafeString(path);
+    if (!cleanPath) return "";
+    return cleanPath.replace(/\[[^\]]*\]/g, "[]");
+}
+
+function applyInputBracketSegments(templatePath, inputPath) {
+    const template = toSafeString(templatePath);
+    if (!template || !template.includes("[]")) return template;
+
+    const bracketTokens = toSafeString(inputPath).match(/\[[^\]]*\]/g) || [];
+    let tokenIndex = 0;
+
+    return template.replace(/\[\]/g, () => {
+        const token = bracketTokens[tokenIndex];
+        tokenIndex += 1;
+        return token || "[]";
+    });
+}
+
+function getPathSuggestionsForInput(paths, inputPath) {
+    const normalizedInput = normalizeBracketSegments(inputPath).toLowerCase();
+    const hasInput = !!normalizedInput;
+
+    const matched = (Array.isArray(paths) ? paths : []).filter((path) => {
+        if (!hasInput) return true;
+        return normalizeBracketSegments(path).toLowerCase().includes(normalizedInput);
+    });
+
+    return uniqueSortedPaths(matched.map((path) => applyInputBracketSegments(path, inputPath)));
+}
+
+function uniqueSortedPaths(paths) {
+    if (!Array.isArray(paths)) return [];
+    const unique = [...new Set(paths.map((path) => toSafeString(path)).filter(Boolean))];
+    return unique.sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: "base" }));
+}
+
+function normalizePathDictionary(rawDictionary) {
+    if (!rawDictionary || typeof rawDictionary !== "object") return {};
+
+    const normalized = {};
+    for (const [typeKey, rawPaths] of Object.entries(rawDictionary)) {
+        const cleanKey = toSafeString(typeKey);
+        if (!cleanKey || !Array.isArray(rawPaths)) continue;
+        normalized[cleanKey] = uniqueSortedPaths(rawPaths);
+    }
+    return normalized;
+}
+
+
+function getTypeLookupCandidates(type) {
+    const itemType = toSafeString(type);
+    if (!itemType) return [];
+
+    const typeLabelKey = CONFIG?.Item?.typeLabels?.[itemType] || "";
+    const localizedTypeLabel = typeLabelKey ? game.i18n.localize(typeLabelKey) : "";
+    return [...new Set([
+        itemType,
+        humanizeTypeLabel(itemType),
+        localizedTypeLabel,
+        typeLabelKey,
+    ].map((entry) => toSafeString(entry)).filter(Boolean))];
+}
+
+function collectTypePathsFromDictionary(itemType, dictionary) {
+    if (!itemType || !dictionary || typeof dictionary !== "object") return [];
+
+    const candidates = getTypeLookupCandidates(itemType);
+    if (!candidates.length) return [];
+
+    const exactCandidateSet = new Set(candidates);
+    const normalizedCandidateSet = new Set(candidates.map(normalizeLookupKey).filter(Boolean));
+
+    const paths = [];
+    for (const [rawKey, rawPaths] of Object.entries(dictionary)) {
+        if (!Array.isArray(rawPaths) || !rawPaths.length) continue;
+
+        const key = toSafeString(rawKey);
+        if (!key) continue;
+
+        const directMatch = exactCandidateSet.has(key);
+        const normalizedMatch = normalizedCandidateSet.has(normalizeLookupKey(key));
+        if (directMatch || normalizedMatch) {
+            paths.push(...rawPaths);
+        }
+    }
+
+    return uniqueSortedPaths(paths);
+}
+
+
+async function loadSystemItemPathDictionary(systemId = game.system?.id) {
+    const cleanSystemId = toSafeString(systemId).toLowerCase();
+    if (!cleanSystemId) return EMPTY_OBJECT;
+
+    if (ITEM_SYSTEM_PATHS_BY_SYSTEM_CACHE.has(cleanSystemId)) {
+        return ITEM_SYSTEM_PATHS_BY_SYSTEM_CACHE.get(cleanSystemId);
+    }
+    if (ITEM_SYSTEM_PATHS_BY_SYSTEM_PROMISES.has(cleanSystemId)) {
+        return ITEM_SYSTEM_PATHS_BY_SYSTEM_PROMISES.get(cleanSystemId);
+    }
+
+    const promise = (async () => {
+        const dictionaryFile = ITEM_SYSTEM_PATH_DICTIONARY_FILES[cleanSystemId];
+        if (!dictionaryFile) {
+            ITEM_SYSTEM_PATHS_BY_SYSTEM_CACHE.set(cleanSystemId, EMPTY_OBJECT);
+            return EMPTY_OBJECT;
+        }
+
+        const modulePath = game.modules?.get?.("campaign-codex")?.path || "modules/campaign-codex";
+        const dictionaryUrl = `${modulePath}/data/${dictionaryFile}`;
+
+        try {
+            const response = await fetch(dictionaryUrl);
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+
+            const json = await response.json();
+            const normalized = normalizePathDictionary(json);
+            ITEM_SYSTEM_PATHS_BY_SYSTEM_CACHE.set(cleanSystemId, normalized);
+            return normalized;
+        } catch (error) {
+            console.warn(`Campaign Codex | Failed to load item path dictionary for ${cleanSystemId}:`, error);
+            ITEM_SYSTEM_PATHS_BY_SYSTEM_CACHE.set(cleanSystemId, EMPTY_OBJECT);
+            return EMPTY_OBJECT;
+        } finally {
+            ITEM_SYSTEM_PATHS_BY_SYSTEM_PROMISES.delete(cleanSystemId);
+        }
+    })();
+
+    ITEM_SYSTEM_PATHS_BY_SYSTEM_PROMISES.set(cleanSystemId, promise);
+    return promise;
+}
+
+function collectAllPathsFromDictionary(dictionary) {
+    if (!dictionary || typeof dictionary !== "object") return [];
+    const all = [];
+    for (const paths of Object.values(dictionary)) {
+        if (Array.isArray(paths) && paths.length) {
+            all.push(...paths);
+        }
+    }
+    return uniqueSortedPaths(all);
+}
+
+async function getFlagPathSuggestionsByType(itemTypes = []) {
+    const systemDictionary = await loadSystemItemPathDictionary();
+    const mergedDictionary = systemDictionary;
+
+    const typeSet = new Set(itemTypes.map((type) => toSafeString(type)).filter(Boolean));
+    const byType = {};
+
+    for (const type of typeSet) {
+        byType[type] = collectTypePathsFromDictionary(type, mergedDictionary);
+    }
+
+    return {
+        byType,
+        all: collectAllPathsFromDictionary(mergedDictionary),
+    };
+}
+
+function getFlagPathSuggestionsForType(pathSuggestions, itemType = "") {
+    const cleanType = toSafeString(itemType);
+    if (!cleanType) return pathSuggestions?.all || [];
+
+    if (Array.isArray(pathSuggestions?.byType?.[cleanType])) {
+        return pathSuggestions.byType[cleanType];
+    }
+
+    const normalizedType = normalizeLookupKey(cleanType);
+    if (!normalizedType) return pathSuggestions?.all || [];
+
+    for (const [key, paths] of Object.entries(pathSuggestions?.byType || {})) {
+        if (normalizeLookupKey(key) === normalizedType) {
+            return Array.isArray(paths) ? paths : [];
+        }
+    }
+
+    return pathSuggestions?.all || [];
+}
+
+function makeFlagPathDatalistId(widgetId, filterId) {
+    const safeWidgetId = String(widgetId || "tradein").replace(/[^a-z0-9_-]+/gi, "-");
+    const safeFilterId = String(filterId || "filter").replace(/[^a-z0-9_-]+/gi, "-");
+    return `ti-flag-path-list-${safeWidgetId}-${safeFilterId}`;
+}
+
+
 function normalizeFlagFilters(rawFilters) {
     if (!Array.isArray(rawFilters)) return [];
 
@@ -87,6 +294,7 @@ function normalizeFlagFilters(rawFilters) {
         .map((entry) => ({
             id: toSafeString(entry?.id) || foundry.utils.randomID(),
             path: toSafeString(entry?.path),
+            itemType: toSafeString(entry?.itemType),
             operator: normalizeOperator(entry?.operator),
             value: toSafeString(entry?.value),
         }))
@@ -106,7 +314,6 @@ function getTradeInSettings(doc, widgetId) {
     const allowedTypes = Array.isArray(widgetData.allowedTypes)
         ? [...new Set(widgetData.allowedTypes.map((type) => String(type).trim()).filter(Boolean))]
         : [];
-
     const nameFilter = toSafeString(widgetData.nameFilter);
 
     const maxBaseValueRaw = toSafeString(widgetData.maxBaseValue);
@@ -127,7 +334,7 @@ function getTradeInSettings(doc, widgetId) {
 }
 
 function getQuantityPath(systemId = game.system?.id) {
-    return ITEM_QUANTITY_PATHS[systemId] || ITEM_QUANTITY_PATHS.default;
+    return getItemQuantityPath(systemId);
 }
 
 function getItemQuantityInfo(item) {
@@ -253,8 +460,58 @@ function buildSaleKey(item) {
     return `${safeName}::${safeType}::${safeImg}`;
 }
 
-function evaluateFlagFilter(item, filter) {
-    const itemValue = foundry.utils.getProperty(item, filter.path);
+
+function resolvePathFilterValues(source, path) {
+    const cleanPath = normalizeBracketSegments(path);
+    if (!cleanPath) return [];
+
+    if (!cleanPath.includes("[]")) {
+        const direct = foundry.utils.getProperty(source, cleanPath);
+        return direct === undefined ? [] : [direct];
+    }
+
+    const segments = cleanPath.split(".").map((segment) => toSafeString(segment)).filter(Boolean);
+    let currentValues = [source];
+
+    for (const segment of segments) {
+        const wildcardOnly = segment === "[]";
+        const wildcardSuffix = segment.endsWith("[]");
+        const propertyKey = wildcardOnly ? "" : (wildcardSuffix ? segment.slice(0, -2) : segment);
+        const nextValues = [];
+
+        for (const value of currentValues) {
+            if (value === null || value === undefined) continue;
+
+            let currentValue = value;
+            if (propertyKey) {
+                if (typeof currentValue !== "object") continue;
+                currentValue = currentValue[propertyKey];
+            }
+
+            if (currentValue === undefined) continue;
+
+            if (wildcardOnly || wildcardSuffix) {
+                if (Array.isArray(currentValue)) {
+                    nextValues.push(...currentValue);
+                } else if (currentValue && typeof currentValue === "object") {
+                    nextValues.push(...Object.values(currentValue));
+                } else {
+                    nextValues.push(currentValue);
+                }
+                continue;
+            }
+
+            nextValues.push(currentValue);
+        }
+
+        currentValues = nextValues;
+        if (!currentValues.length) break;
+    }
+
+    return currentValues;
+}
+
+function evaluateFlagFilterValue(itemValue, filter) {
     const compareRaw = filter.value;
 
     if (filter.operator === "contains") {
@@ -279,6 +536,12 @@ function evaluateFlagFilter(item, filter) {
     return String(itemValue ?? "").toLowerCase() === String(compareRaw).toLowerCase();
 }
 
+function evaluateFlagFilter(item, filter) {
+    const itemValues = resolvePathFilterValues(item, filter.path);
+    if (!itemValues.length) return false;
+    return itemValues.some((itemValue) => evaluateFlagFilterValue(itemValue, filter));
+}
+
 function getOperatorLabel(operator) {
     const entry = FLAG_OPERATORS.find((item) => item.value === operator);
     return entry?.label || "=";
@@ -287,12 +550,6 @@ function getOperatorLabel(operator) {
 function evaluateItemAgainstFilters(item, settings) {
     if (!item || item.documentName !== "Item") {
         return { ok: false, message: "Only items can be sold." };
-    }
-
-    if (Array.isArray(settings.allowedTypes) && settings.allowedTypes.length > 0) {
-        if (!settings.allowedTypes.includes(item.type)) {
-            return { ok: false, message: `This shop does not accept ${item.type} items.` };
-        }
     }
 
     const nameNeedle = String(settings.nameFilter || "").trim().toLowerCase();
@@ -315,14 +572,30 @@ function evaluateItemAgainstFilters(item, settings) {
         }
     }
 
-    for (const filter of settings.activeFlagFilters || []) {
-        const pass = evaluateFlagFilter(item, filter);
-        if (!pass) {
-            const opLabel = getOperatorLabel(filter.operator);
+    const allowedTypes = Array.isArray(settings.allowedTypes) ? settings.allowedTypes : [];
+    const hasAllowedTypeLimit = allowedTypes.length > 0;
+    const isTypeAllowedByPills = !hasAllowedTypeLimit || allowedTypes.includes(item.type);
+
+    const scopedFilters = (settings.activeFlagFilters || []).filter((filter) => toSafeString(filter.itemType) === item.type);
+    const globalFilters = (settings.activeFlagFilters || []).filter((filter) => !toSafeString(filter.itemType));
+    const applicableFilters = [
+        ...scopedFilters,
+        ...(isTypeAllowedByPills ? globalFilters : []),
+    ];
+
+    if (applicableFilters.length > 0) {
+        const firstPassed = applicableFilters.find((filter) => evaluateFlagFilter(item, filter));
+        if (!firstPassed) {
+            const firstFilter = applicableFilters[0];
+            const opLabel = getOperatorLabel(firstFilter.operator);
             return {
                 ok: false,
-                message: `Item failed filter: ${filter.path} ${opLabel} ${filter.value}`,
+                message: `Item failed filter: ${firstFilter.path} ${opLabel} ${firstFilter.value}`,
             };
+        }
+    } else {
+        if (hasAllowedTypeLimit && !allowedTypes.includes(item.type)) {
+            return { ok: false, message: `This shop does not accept ${item.type} items.` };
         }
     }
 
@@ -574,9 +847,15 @@ export class TradeInWidget extends CampaignCodexWidget {
         return clampNumber(value ?? 1, 0, 1000);
     }
 
+    _nextTypeFilterState(state) {
+        return state === "include" ? "any" : "include";
+
+    }
+
     _blankFlagFilter() {
         return {
             id: foundry.utils.randomID(),
+            itemType: "",
             path: "",
             operator: "eq",
             value: "",
@@ -599,12 +878,17 @@ export class TradeInWidget extends CampaignCodexWidget {
         const parsedMaxBase = maxBaseRaw === "" ? null : toNumberOrNull(maxBaseRaw);
         const maxBaseValue = parsedMaxBase === null ? null : Math.max(0, parsedMaxBase);
 
-        const allowedTypes = Array.from(htmlElement.querySelectorAll(".ti-type-pill-input:checked"))
-            .map((input) => String(input.value || "").trim())
-            .filter(Boolean);
+        const allowedTypes = [];
+        htmlElement.querySelectorAll(".ti-type-pill").forEach((pill) => {
+            const type = toSafeString(pill.dataset.type);
+            const state = toSafeString(pill.dataset.state || "any").toLowerCase();
+            if (!type) return;
+            if (state === "include") allowedTypes.push(type);
+        });
 
         const flagFilters = Array.from(htmlElement.querySelectorAll(".ti-flag-row")).map((row) => ({
             id: toSafeString(row.dataset.filterId) || foundry.utils.randomID(),
+            itemType: toSafeString(row.querySelector(".ti-flag-item-type")?.value || ""),
             path: toSafeString(row.querySelector(".ti-flag-path")?.value || ""),
             operator: normalizeOperator(row.querySelector(".ti-flag-op")?.value || "eq"),
             value: toSafeString(row.querySelector(".ti-flag-value")?.value || ""),
@@ -614,6 +898,7 @@ export class TradeInWidget extends CampaignCodexWidget {
             payoutMultiplier,
             unlimitedFunds,
             allowedTypes,
+            excludedTypes: [],
             nameFilter,
             maxBaseValue,
             flagFilters,
@@ -634,10 +919,15 @@ export class TradeInWidget extends CampaignCodexWidget {
 
         const typeOptions = getItemTypeOptions().map((type) => ({
             ...type,
-            selected: settings.allowedTypes.includes(type.value),
+            state: settings.allowedTypes.includes(type.value) ? "include" : "any",
         }));
 
         const flagFilters = settings.flagFilters.length ? settings.flagFilters : [this._blankFlagFilter()];
+        const suggestionItemTypes = [
+            ...typeOptions.map((type) => type.value),
+            ...flagFilters.map((filter) => filter.itemType),
+        ];
+        const pathSuggestions = await getFlagPathSuggestionsByType(suggestionItemTypes);
 
         return {
             id: this.widgetId,
@@ -652,6 +942,7 @@ export class TradeInWidget extends CampaignCodexWidget {
             nameFilter: settings.nameFilter,
             maxBaseValue: settings.maxBaseValue,
             flagFilters,
+            pathSuggestions,
             operatorOptions: FLAG_OPERATORS,
         };
     }
@@ -661,24 +952,54 @@ export class TradeInWidget extends CampaignCodexWidget {
             const opOptions = context.operatorOptions
                 .map((op) => `<option value="${op.value}" ${filter.operator === op.value ? "selected" : ""}>${op.label}</option>`)
                 .join("");
-
+            const typeOptions = [
+                `<option value="" ${!filter.itemType ? "selected" : ""}>-</option>`,
+                ...context.typeOptions.map((type) => `
+                    <option value="${foundry.utils.escapeHTML(type.value)}" ${filter.itemType === type.value ? "selected" : ""}>
+                        ${foundry.utils.escapeHTML(type.label)}
+                    </option>
+                `),
+            ].join("");
+            const basePathSuggestions = getFlagPathSuggestionsForType(context.pathSuggestions, filter.itemType);
+            const pathSuggestions = getPathSuggestionsForInput(basePathSuggestions, filter.path);
+            const pathSuggestionOptions = pathSuggestions
+                .map((path) => `<option value="${foundry.utils.escapeHTML(path)}"></option>`)
+                .join("");
+            const pathDatalistId = makeFlagPathDatalistId(context.id, filter.id);
             return `
                 <div class="ti-flag-row" data-filter-id="${filter.id}">
-                    <input type="text" class="ti-flag-path ti-config-input" placeholder="Path (e.g. system.rarity)" value="${foundry.utils.escapeHTML(filter.path)}">
+                    <select class="ti-flag-item-type ti-config-input">${typeOptions}</select>
+
+                    <input
+                        type="text"
+                        class="ti-flag-path ti-config-input"
+                        list="${pathDatalistId}"
+                        placeholder="Path (e.g. system.rarity)"
+                        value="${foundry.utils.escapeHTML(filter.path)}"
+                    >
+                    <datalist id="${pathDatalistId}">${pathSuggestionOptions}</datalist>
+
                     <select class="ti-flag-op ti-config-input">${opOptions}</select>
+
                     <input type="text" class="ti-flag-value ti-config-input" placeholder="Value" value="${foundry.utils.escapeHTML(filter.value)}">
                     <button type="button" class="ti-remove-flag" data-filter-id="${filter.id}" title="Remove filter"><i class="fas fa-times"></i></button>
                 </div>
             `;
         }).join("");
+
     }
 
     _renderTypePills(context) {
         return context.typeOptions.map((type) => `
-            <label class="ti-type-pill ${type.selected ? "selected" : ""}">
-                <input type="checkbox" class="ti-type-pill-input ti-config-input" value="${type.value}" ${type.selected ? "checked" : ""}>
-                <span>${foundry.utils.escapeHTML(type.label)}</span>
-            </label>
+            <button
+                type="button"
+                class="ti-type-pill ti-type-pill-${type.state}"
+                data-type="${foundry.utils.escapeHTML(type.value)}"
+                data-state="${type.state}"
+                title="Click to toggle include"
+            >
+                <span class="ti-type-pill-label">${foundry.utils.escapeHTML(type.label)}</span>
+            </button>
         `).join("");
     }
 
@@ -722,7 +1043,6 @@ export class TradeInWidget extends CampaignCodexWidget {
                         <div class="ti-filter-group">
                             <h5>Accepted Item Types</h5>
                             <div class="ti-type-pills">${this._renderTypePills(context)}</div>
-                            <p class="ti-help">No selection means all item types are accepted.</p>
                         </div>
 
                         <div class="ti-filter-group ti-filter-grid">
@@ -766,6 +1086,31 @@ export class TradeInWidget extends CampaignCodexWidget {
                 await this._saveConfigFromElement(htmlElement);
                 await this._refreshWidget(htmlElement);
             };
+            const suggestionItemTypes = [
+                ...Array.from(htmlElement.querySelectorAll(".ti-type-pill"), (pill) => toSafeString(pill.dataset.type)),
+                ...Array.from(htmlElement.querySelectorAll(".ti-flag-item-type"), (select) => toSafeString(select.value)),
+            ];
+            const pathSuggestions = await getFlagPathSuggestionsByType(suggestionItemTypes);
+
+            const refreshPathSuggestionsForRow = (row) => {
+                if (!row) return;
+
+                const input = row.querySelector(".ti-flag-path");
+                const itemType = toSafeString(row.querySelector(".ti-flag-item-type")?.value || "");
+                const listId = toSafeString(input?.getAttribute("list"));
+                if (!input || !listId) return;
+
+                const datalist = htmlElement.querySelector(`#${listId}`);
+                if (!datalist) return;
+
+                const baseSuggestions = getFlagPathSuggestionsForType(pathSuggestions, itemType);
+                const displaySuggestions = getPathSuggestionsForInput(baseSuggestions, input.value);
+                datalist.innerHTML = displaySuggestions
+                    .map((path) => `<option value="${foundry.utils.escapeHTML(path)}"></option>`)
+                    .join("");
+            };
+
+            htmlElement.querySelectorAll(".ti-flag-row").forEach((row) => refreshPathSuggestionsForRow(row));
 
             htmlElement.querySelectorAll(".ti-config-input").forEach((input) => {
                 input.addEventListener("change", onConfigChanged);
@@ -775,6 +1120,21 @@ export class TradeInWidget extends CampaignCodexWidget {
                 input.addEventListener("blur", onConfigChanged);
             });
 
+            htmlElement.querySelectorAll(".ti-flag-path").forEach((input) => {
+                input.addEventListener("input", (event) => {
+                    const row = event.currentTarget.closest(".ti-flag-row");
+                    refreshPathSuggestionsForRow(row);
+                });
+            });
+
+            htmlElement.querySelectorAll(".ti-flag-item-type").forEach((select) => {
+                select.addEventListener("change", (event) => {
+                    const row = event.currentTarget.closest(".ti-flag-row");
+                    refreshPathSuggestionsForRow(row);
+                });
+            });
+            
+
             htmlElement.querySelector(".ti-unlimited-toggle")?.addEventListener("click", async (event) => {
                 event.preventDefault();
                 const button = event.currentTarget;
@@ -783,6 +1143,19 @@ export class TradeInWidget extends CampaignCodexWidget {
                 button.classList.toggle("active", enabled);
                 button.setAttribute("aria-pressed", enabled ? "true" : "false");
                 await onConfigChanged();
+            });
+
+            htmlElement.querySelectorAll(".ti-type-pill").forEach((button) => {
+                button.addEventListener("click", async (event) => {
+                    event.preventDefault();
+                    const pill = event.currentTarget;
+                    const currentState = String(pill.dataset.state || "any").toLowerCase();
+                    const nextState = this._nextTypeFilterState(currentState);
+                    pill.dataset.state = nextState;
+                    pill.classList.remove("ti-type-pill-any", "ti-type-pill-include", "ti-type-pill-exclude");
+                    pill.classList.add(`ti-type-pill-${nextState}`);
+                    await onConfigChanged();
+                });
             });
 
             htmlElement.querySelector(".ti-add-flag")?.addEventListener("click", async (event) => {
@@ -835,6 +1208,16 @@ export class TradeInWidget extends CampaignCodexWidget {
                 dragData = JSON.parse(event.dataTransfer?.getData("text/plain") || "{}");
             } catch (error) {
                 dragData = null;
+            }
+
+            if (
+              game.system.id === "starwarsffg" &&
+              dragData?.nativeData?.type === "Item" &&
+              typeof dragData?.nativeData?.uuid === "string" &&
+              dragData.nativeData.uuid.trim()
+            ) {
+              dragData.uuid = dragData.nativeData.uuid;
+              dragData.type = dragData.nativeData.type;
             }
 
             if (!dragData?.uuid || dragData.type !== "Item") {
@@ -923,6 +1306,15 @@ export class TradeInWidget extends CampaignCodexWidget {
     async _refreshWidget(htmlElement) {
         if (!htmlElement) return;
         const freshHtml = await this.render();
+                const host = document.createElement("div");
+        host.innerHTML = freshHtml.trim();
+        const nextRoot = host.firstElementChild;
+
+        if (nextRoot && htmlElement.parentElement) {
+            htmlElement.replaceWith(nextRoot);
+            await this.activateListeners(nextRoot);
+            return;
+        }
         htmlElement.innerHTML = freshHtml;
         await this.activateListeners(htmlElement);
     }

@@ -54,6 +54,9 @@ const CURRENCY_CONFIG = {
   ],
   "sdm": [
     { key: "€", label: "Cash", rate: 1, path: "actor-method" }
+  ],
+  "starwarsffg": [
+    { key: "c", label: "Credits", rate: 1, path: "system.stats.credits.value" }
   ]
 };
 
@@ -693,6 +696,11 @@ static async _payPF2e(actor, cost, currency, config) {
     if (sys === "sdm") {
         return { price: clean(item.system.cost), currency: "cash" };
     }    
+
+    if (sys === "starwarsffg") {
+        return { price: clean(item.system.price.value), currency: "credits" };
+    }    
+
     const val = item.system.price?.value ?? item.system.price ?? 0;
     let denom = item.system.price?.denomination || "gp";
     
@@ -709,6 +717,7 @@ static async _payPF2e(actor, cost, currency, config) {
            const match = valStr.match(/[a-zA-Z]+/);
            return match ? match[0].toLowerCase() : "gc";
       }      
+      if (sys === "starwarsffg") return "credits";
       if (sys === "wfrp4e") return "gc";
       if (sys === "shadowrun6-eden") return "¥";
       if (sys === "pf2e") return "gp";

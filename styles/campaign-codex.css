@@ -7792,6 +7792,15 @@ position: absolute;
 .cc-widget-trade-in .ti-type-pill {
     display: inline-flex;
     align-items: center;
+    outline: none;
+    background: none;
+    padding: 0;   
+    border: 1px solid var(--cc-accent30);
+    border-radius: 999px;
+    padding: 4px 8px;
+    font-size: 0.75em;
+    color: var(--cc-main-text);
+    cursor: pointer; 
 }
 
 .cc-widget-trade-in .ti-type-pill input {
@@ -7802,20 +7811,19 @@ position: absolute;
     pointer-events: none;
 }
 
-.cc-widget-trade-in .ti-type-pill span {
-border: 1px solid var(--cc-accent30);
-    border-radius: 999px;
-    padding: 4px 8px;
-    font-size: 0.75em;
-    color: var(--cc-main-text);
-    cursor: pointer;
-}
-
-.cc-widget-trade-in .ti-type-pill input:checked + span {
+.cc-widget-trade-in .ti-type-pill-include {
     background: var(--cc-accent30);
     border-color: var(--cc-accent);
     color: var(--cc-main-text);
 }
+
+.cc-widget-trade-in .ti-type-pill-exclude {
+    background: rgb(from var(--cc-danger) r g b / 0.5);
+    border-color: var(--cc-danger);
+    color: var(--cc-main-text);
+}
+
+
 
 .cc-widget-trade-in .ti-filter-header-row {
     display: flex;
@@ -7844,9 +7852,13 @@ border: 1px solid var(--cc-accent30);
     gap: 6px;
 }
 
+.cc-widget-trade-in input.ti-config-input::-webkit-calendar-picker-indicator{
+align-self: flex-start;
+}
+
 .cc-widget-trade-in .ti-flag-row {
     display: grid;
-    grid-template-columns: 1.4fr 88px 1fr 30px;
+    grid-template-columns: 1fr 1.4fr 88px 1fr 30px;
     gap: 6px;
     align-items: center;
 }
@@ -7859,6 +7871,7 @@ border: 1px solid var(--cc-accent30);
     height: 24px;
     background: var(--cc-accent10);
 }
+
 
 .cc-widget-trade-in .ti-remove-flag {
     border: 1px solid transparent;

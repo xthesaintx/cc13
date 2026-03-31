@@ -13,6 +13,7 @@ import {
   getDefaultSheetHidden,
   journalSystemClass,
   isThemed,
+  getItemQuantityPath,
 } from "../helper.js";
 import { widgetManager } from "../widgets/WidgetManager.js";
 import { tabPicker } from "../tab-picker.js";
@@ -33,10 +34,11 @@ const baseSheetApp = HandlebarsApplicationMixin(DocumentSheetV2);
 
 export class CampaignCodexBaseSheet extends baseSheetApp {
   static PLAYER_NOTES_FLAG = "playerNotesBySheet";
-  static ITEM_QUANTITY_PATHS = {
-    default: "system.quantity",
-    "custom-system-builder": "system.props.item_quantity",
-  };
+  // static ITEM_QUANTITY_PATHS = {
+  //   default: "system.quantity",
+  //   "custom-system-builder": "system.props.item_quantity",
+  //   "starwarsffg": "system.quantity.value"
+  // };
   // =========================================================================
   // STATIC CONFIGURATION
   // =========================================================================
@@ -4106,8 +4108,9 @@ const pendingRestorations = this._pendingScrollRestorations;
   }
 
   _getItemQuantityPath(systemId = game.system?.id) {
-    const quantityPaths = this.constructor.ITEM_QUANTITY_PATHS || {};
-    return quantityPaths[systemId] || quantityPaths.default || "system.quantity";
+    // const quantityPaths = this.constructor.ITEM_QUANTITY_PATHS || {};
+    // return quantityPaths[systemId] || quantityPaths.default || "system.quantity";
+    return getItemQuantityPath(systemId);
   }
 
   async _addItemToActorInventory(item, targetActor, quantity = 1) {

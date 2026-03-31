@@ -19,6 +19,17 @@ export const format = (key, data) => game.i18n.format(`CAMPAIGN_CODEX.${key}`, d
 
 export const renderTemplate = foundry.applications.handlebars.renderTemplate;
 
+
+export const ITEM_QUANTITY_PATHS = {
+    default: "system.quantity",
+    "custom-system-builder": "system.props.item_quantity",
+    "starwarsffg": "system.quantity.value",
+};
+
+export function getItemQuantityPath(systemId = game.system?.id) {
+    return ITEM_QUANTITY_PATHS[systemId] || ITEM_QUANTITY_PATHS.default;
+}
+
 // export const gameSystemClass = (id) => (id === "dnd5e" ? " dnd5e2-journal" : "");
 // export const journalSystemClass = (id) => (id === "dnd5e" ? "dnd5e2-journal journal-page-content" : "journal-page-content"); 
 export const gameSystemClass = (id) => {
