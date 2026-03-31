@@ -7833,13 +7833,12 @@ position: absolute;
 }
 
 .cc-widget-trade-in .ti-add-flag {
-    border: 1px solid var(--cc-accent30);
+    border: none;
     border-radius: 4px;
-    background: var(--cc-card-bg);
-    color: var(--cc-main-text);
-    font-size: 0.75em;
+    background: none;
     padding: 2px 8px;
     cursor: pointer;
+    color: var(--cc-accent);
 }
 
 .cc-widget-trade-in .ti-add-flag:hover {
@@ -7858,7 +7857,7 @@ align-self: flex-start;
 
 .cc-widget-trade-in .ti-flag-row {
     display: grid;
-    grid-template-columns: 1fr 1.4fr 88px 1fr 30px;
+    grid-template-columns: 18px 1fr 1.4fr 88px 1fr  30px;
     gap: 6px;
     align-items: center;
 }
@@ -7872,19 +7871,55 @@ align-self: flex-start;
     background: var(--cc-accent10);
 }
 
+.cc-widget-trade-in .ti-remove-flag i,
+.cc-widget-trade-in .ti-flag-mode i{
+  cursor: pointer;
+}
+.cc-widget-trade-in .ti-flag-mode {
+    border-radius: 4px;
+    cursor: pointer;
+    height: 24px;
+    width: 18px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    outline: none;
+    border: none;
+    box-shadow: none;
+    background: none;
+    cursor: pointer;
+    color: var(--cc-text-muted);
+}
+
+.cc-widget-trade-in .ti-flag-mode.active {
+    color: var(--cc-accent);
+    border-color: var(--cc-accent);
+}
+
+.cc-widget-trade-in .ti-flag-mode:not(.active):hover {
+    color: var(--cc-main-text);
+    border-color: var(--cc-text-muted);
+}
+
 
 .cc-widget-trade-in .ti-remove-flag {
-    border: 1px solid transparent;
-    background: transparent;
     color: var(--cc-text-muted);
     border-radius: 4px;
     cursor: pointer;
     padding: 2px 0;
+    outline: none;
+    border: none;
+    box-shadow: none;
+    background: none;
 }
 
 .cc-widget-trade-in .ti-remove-flag:hover {
     color: var(--cc-danger);
-    border-color: var(--cc-danger);
+    outline: none;
+    border: none;
+    box-shadow: none;
+    background: none;
 }
 
 .cc-widget-trade-in .ti-drop-zone {

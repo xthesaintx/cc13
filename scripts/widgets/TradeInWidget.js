@@ -122,7 +122,7 @@ function getPathSuggestionsForInput(paths, inputPath) {
 
     const matched = (Array.isArray(paths) ? paths : []).filter((path) => {
         if (!hasInput) return true;
-        return normalizeBracketSegments(path).toLowerCase().includes(normalizedInput);
+        return normalizeBracketSegments(path).toLowerCase().startsWith(normalizedInput);
     });
 
     return uniqueSortedPaths(matched.map((path) => applyInputBracketSegments(path, inputPath)));
@@ -295,6 +295,7 @@ function normalizeFlagFilters(rawFilters) {
             id: toSafeString(entry?.id) || foundry.utils.randomID(),
             path: toSafeString(entry?.path),
             itemType: toSafeString(entry?.itemType),
+            filterEnabled: entry?.filterEnabled !== false,
             operator: normalizeOperator(entry?.operator),
             value: toSafeString(entry?.value),
         }))
@@ -576,26 +577,29 @@ function evaluateItemAgainstFilters(item, settings) {
     const hasAllowedTypeLimit = allowedTypes.length > 0;
     const isTypeAllowedByPills = !hasAllowedTypeLimit || allowedTypes.includes(item.type);
 
-    const scopedFilters = (settings.activeFlagFilters || []).filter((filter) => toSafeString(filter.itemType) === item.type);
-    const globalFilters = (settings.activeFlagFilters || []).filter((filter) => !toSafeString(filter.itemType));
-    const applicableFilters = [
-        ...scopedFilters,
-        ...(isTypeAllowedByPills ? globalFilters : []),
-    ];
+    const scopedFilters = (settings.activeFlagFilters || []).filter((filter) => {
+        const scopedType = toSafeString(filter.itemType);
+        return !scopedType || scopedType === item.type;
+    });
 
-    if (applicableFilters.length > 0) {
-        const firstPassed = applicableFilters.find((filter) => evaluateFlagFilter(item, filter));
+    const restrictiveFilters = scopedFilters.filter((filter) => filter.filterEnabled !== false);
+    const includeFilters = scopedFilters.filter((filter) => filter.filterEnabled === false);
+
+    const includeMatch = includeFilters.some((filter) => evaluateFlagFilter(item, filter));
+    const isAcceptedByTypeOrInclude = isTypeAllowedByPills || includeMatch;
+    if (!isAcceptedByTypeOrInclude) {
+        return { ok: false, message: `This shop does not accept ${item.type} items.` };
+    }
+
+    if (restrictiveFilters.length > 0) {
+        const firstPassed = restrictiveFilters.find((filter) => evaluateFlagFilter(item, filter));
         if (!firstPassed) {
-            const firstFilter = applicableFilters[0];
+            const firstFilter = restrictiveFilters[0];
             const opLabel = getOperatorLabel(firstFilter.operator);
             return {
                 ok: false,
                 message: `Item failed filter: ${firstFilter.path} ${opLabel} ${firstFilter.value}`,
             };
-        }
-    } else {
-        if (hasAllowedTypeLimit && !allowedTypes.includes(item.type)) {
-            return { ok: false, message: `This shop does not accept ${item.type} items.` };
         }
     }
 
@@ -855,6 +859,7 @@ export class TradeInWidget extends CampaignCodexWidget {
     _blankFlagFilter() {
         return {
             id: foundry.utils.randomID(),
+            filterEnabled: true,
             itemType: "",
             path: "",
             operator: "eq",
@@ -889,6 +894,7 @@ export class TradeInWidget extends CampaignCodexWidget {
         const flagFilters = Array.from(htmlElement.querySelectorAll(".ti-flag-row")).map((row) => ({
             id: toSafeString(row.dataset.filterId) || foundry.utils.randomID(),
             itemType: toSafeString(row.querySelector(".ti-flag-item-type")?.value || ""),
+            filterEnabled: row.querySelector(".ti-flag-mode")?.dataset.enabled !== "false",
             path: toSafeString(row.querySelector(".ti-flag-path")?.value || ""),
             operator: normalizeOperator(row.querySelector(".ti-flag-op")?.value || "eq"),
             value: toSafeString(row.querySelector(".ti-flag-value")?.value || ""),
@@ -960,14 +966,21 @@ export class TradeInWidget extends CampaignCodexWidget {
                     </option>
                 `),
             ].join("");
-            const basePathSuggestions = getFlagPathSuggestionsForType(context.pathSuggestions, filter.itemType);
-            const pathSuggestions = getPathSuggestionsForInput(basePathSuggestions, filter.path);
+            const pathSuggestions = getFlagPathSuggestionsForType(context.pathSuggestions, filter.itemType);
             const pathSuggestionOptions = pathSuggestions
                 .map((path) => `<option value="${foundry.utils.escapeHTML(path)}"></option>`)
                 .join("");
             const pathDatalistId = makeFlagPathDatalistId(context.id, filter.id);
+            const filterEnabled = filter.filterEnabled !== false;
+
             return `
                 <div class="ti-flag-row" data-filter-id="${filter.id}">
+                    <button
+                        type="button"
+                        class="ti-flag-mode ${filterEnabled ? "active" : ""}"
+                        data-enabled="${filterEnabled ? "true" : "false"}"
+                        title="${filterEnabled ? "Filter is ON (restrictive)" : "Filter is OFF (extends accepted items)"}"
+                    ><i class="fas fa-filter"></i></button>
                     <select class="ti-flag-item-type ti-config-input">${typeOptions}</select>
 
                     <input
@@ -982,7 +995,8 @@ export class TradeInWidget extends CampaignCodexWidget {
                     <select class="ti-flag-op ti-config-input">${opOptions}</select>
 
                     <input type="text" class="ti-flag-value ti-config-input" placeholder="Value" value="${foundry.utils.escapeHTML(filter.value)}">
-                    <button type="button" class="ti-remove-flag" data-filter-id="${filter.id}" title="Remove filter"><i class="fas fa-times"></i></button>
+
+                    <button type="button" class="ti-remove-flag" data-filter-id="${filter.id}" title="Remove filter"><i class="fas fa-times-circle"></i></button>
                 </div>
             `;
         }).join("");
@@ -1054,8 +1068,8 @@ export class TradeInWidget extends CampaignCodexWidget {
 
                         <div class="ti-filter-group">
                             <div class="ti-filter-header-row">
-                                <h5>Flag/Path Filters</h5>
-                                <button type="button" class="ti-add-flag"><i class="fas fa-plus"></i> Add</button>
+                                <h5>Path Filters</h5>
+                                <button type="button" class="ti-add-flag"><i class="fas fa-circle-plus"></i></button>
                             </div>
                             <div class="ti-flag-list">${this._renderFlagFilterRows(context)}</div>
                         </div>
@@ -1104,15 +1118,22 @@ export class TradeInWidget extends CampaignCodexWidget {
                 if (!datalist) return;
 
                 const baseSuggestions = getFlagPathSuggestionsForType(pathSuggestions, itemType);
-                const displaySuggestions = getPathSuggestionsForInput(baseSuggestions, input.value);
-                datalist.innerHTML = displaySuggestions
+                const hasBracketInput = /\[[^\]]*\]/.test(toSafeString(input.value));
+                const displaySuggestions = hasBracketInput
+                    ? getPathSuggestionsForInput(baseSuggestions, input.value)
+                    : baseSuggestions;
+                const nextHtml = displaySuggestions
                     .map((path) => `<option value="${foundry.utils.escapeHTML(path)}"></option>`)
                     .join("");
+                if (datalist.innerHTML === nextHtml) return;
+                datalist.innerHTML = nextHtml;                    
             };
 
-            htmlElement.querySelectorAll(".ti-flag-row").forEach((row) => refreshPathSuggestionsForRow(row));
-
+            htmlElement.querySelectorAll(".ti-flag-path").forEach((input) => {
+                input.dataset.ccBracketMode = /\[[^\]]*\]/.test(toSafeString(input.value)) ? "1" : "0";
+            });
             htmlElement.querySelectorAll(".ti-config-input").forEach((input) => {
+                if (input.classList.contains("ti-flag-path")) return;
                 input.addEventListener("change", onConfigChanged);
             });
 
@@ -1122,18 +1143,28 @@ export class TradeInWidget extends CampaignCodexWidget {
 
             htmlElement.querySelectorAll(".ti-flag-path").forEach((input) => {
                 input.addEventListener("input", (event) => {
+                    const hasBracketInput = /\[[^\]]*\]/.test(toSafeString(event.currentTarget?.value || ""));
+                    const hadBracketInput = event.currentTarget?.dataset?.ccBracketMode === "1";
+                    if (!hasBracketInput && !hadBracketInput) return;
+                    event.currentTarget.dataset.ccBracketMode = hasBracketInput ? "1" : "0";
                     const row = event.currentTarget.closest(".ti-flag-row");
                     refreshPathSuggestionsForRow(row);
                 });
             });
 
-            htmlElement.querySelectorAll(".ti-flag-item-type").forEach((select) => {
-                select.addEventListener("change", (event) => {
-                    const row = event.currentTarget.closest(".ti-flag-row");
-                    refreshPathSuggestionsForRow(row);
+            htmlElement.querySelectorAll(".ti-flag-mode").forEach((button) => {
+                button.addEventListener("click", async (event) => {
+                    event.preventDefault();
+                    const mode = event.currentTarget;
+                    const enabled = mode.dataset.enabled !== "true";
+                    mode.dataset.enabled = enabled ? "true" : "false";
+                    mode.classList.toggle("active", enabled);
+                    mode.title = enabled
+                        ? "Filter is ON (restrictive)"
+                        : "Filter is OFF (extends accepted items)";
+                    await onConfigChanged();
                 });
             });
-            
 
             htmlElement.querySelector(".ti-unlimited-toggle")?.addEventListener("click", async (event) => {
                 event.preventDefault();
@@ -1253,6 +1284,7 @@ export class TradeInWidget extends CampaignCodexWidget {
 
         if (!filterCheck.ok) {
             ui.notifications.warn(filterCheck.message || "This item does not match trade-in filters.");
+            // ui.notifications.warn(filterCheck.message || "This item does not match trade-in filters.");
             return;
         }
 
