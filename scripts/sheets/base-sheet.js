@@ -2753,9 +2753,9 @@ const pendingRestorations = this._pendingScrollRestorations;
     if (!uuid || !fieldName) return;
 
     const data = foundry.utils.deepClone(this.document.getFlag("campaign-codex", "data") || {});
-    data.linkCardNotes ||= {};
+    const linkCardNotes = data.linkCardNotes || {};
 
-    const rawEntries = data.linkCardNotes[fieldName];
+    const rawEntries = linkCardNotes[fieldName];
     const entries = Array.isArray(rawEntries)
       ? rawEntries.filter((entry) => entry?.uuid)
       : (rawEntries && typeof rawEntries === "object"
@@ -2787,13 +2787,16 @@ const pendingRestorations = this._pendingScrollRestorations;
     if (note) filtered.push({ uuid, note });
 
     if (filtered.length > 0) {
-      data.linkCardNotes[fieldName] = filtered;
+      await this.document.setFlag("campaign-codex", `data.linkCardNotes.${fieldName}`, filtered);
     } else {
-      delete data.linkCardNotes[fieldName];
-      if (Object.keys(data.linkCardNotes).length === 0) delete data.linkCardNotes;
+      await this.document.unsetFlag("campaign-codex", `data.linkCardNotes.${fieldName}`);
+      const remainingLinkCardNotes = this.document.getFlag("campaign-codex", "data.linkCardNotes");
+      if (remainingLinkCardNotes && Object.keys(remainingLinkCardNotes).length === 0) {
+        await this.document.unsetFlag("campaign-codex", "data.linkCardNotes");
+      }
     }
 
-    await this.document.setFlag("campaign-codex", "data", data);
+    // await this.document.setFlag("campaign-codex", "data", data);
     this.render(true);
   }
 

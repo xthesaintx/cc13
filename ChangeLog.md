@@ -1,3 +1,8 @@
+## 3.6.1
+- windows chrome list css fix
+- renaming of a setting
+- entity card notes can be removed by submitting a blank note
+
 ## 3.5.8
 - Trade in widget improvements
 - System flag path auto complete for trade in widget: DND5e, PF2e, Fallout, Daggerheart, SFRPG

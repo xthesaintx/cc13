@@ -7743,6 +7743,8 @@ position: absolute;
         font-size: 10px;
     height: 24px;
     background: var(--cc-accent10);
+    color: var(--cc-main-text);
+    -webkit-text-fill-color: var(--cc-main-text);
 }
 
 .cc-widget-trade-in .ti-setting.ti-toggle {
@@ -7869,6 +7871,17 @@ align-self: flex-start;
     font-size: 10px;
     height: 24px;
     background: var(--cc-accent10);
+    color: var(--cc-main-text);
+    -webkit-text-fill-color: var(--cc-main-text);
+}
+
+/* Chromium/Windows fallback: native select popups may render light backgrounds.
+   Force dark text for option rows to avoid white-on-white menus. */
+.cc-widget-trade-in .ti-setting select option,
+.cc-widget-trade-in .ti-flag-row select option {
+    color: var(--color-text-dark-primary, #191813);
+    -webkit-text-fill-color: var(--color-text-dark-primary, #191813);
+    background: var(--color-bg-option, #ffffff);
 }
 
 .cc-widget-trade-in .ti-remove-flag i,

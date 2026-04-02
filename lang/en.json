@@ -143,8 +143,8 @@
         "hint": "Delay before showing map note content on hover. Set from 0 to 1500 milliseconds."
       },      
       "hideCCbutton": {
-        "name": "Hide CC Scene Button",
-        "hint": "Hide the CC scene button from NON GM users."
+        "name": "Hide CC ToC Button",
+        "hint": "Hide CC Table of Contents Button from scene control panel from NON GM users."
       },
       "useStyledTocButton": {
         "name": "Styled TOC Button",
