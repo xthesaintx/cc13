@@ -1,0 +1,21 @@
+<div class="content-header">
+  <h2><i class="fas fa-info-circle"></i> {{#if labelOverride}}{{labelOverride}}{{else}}{{ccLocalize "names.information"
+    }}{{/if}}</h2>
+</div>
+{{#if widgetsToRender}}
+{{#unless widgetsPosition}}
+<article class="cc-widgets-render">
+  {{{this.widgetsToRender}}}
+</article>
+{{/unless}}
+{{/if}}
+
+{{{richTextDescription}}}
+
+{{#if widgetsToRender}}
+{{#if widgetsPosition}}
+<article class="cc-widgets-render">
+  {{{this.widgetsToRender}}}
+</article>
+{{/if}}
+{{/if}}

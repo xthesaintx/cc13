@@ -2,9 +2,21 @@
 
     <div class="add-actor-header">
         <input type="text" class="ad-title-input" value="{{title}}" placeholder="{{ccLocalize 'ui.widgetTitle'}}">
-        {{#if actors}} <button class="ad-drop-map-btn">
-            <i class="fas fa-street-view"></i>
-        </button>{{/if}}
+        <div class="ad-header-actions">
+            {{#if showEncounterTools}}
+            <span class="ad-total-xp">{{ccLocalize "ui.xpLabel"}}: {{encounterXp}}</span>
+            {{/if}}
+            {{#if actors}}
+            {{#if showEncounterTools}}
+            <button class="ad-balance-btn" title="{{ccLocalize 'ui.balanceEncounter'}}">
+                <i class="fas fa-scale-balanced"></i>
+            </button>
+            {{/if}}
+            <button class="ad-drop-map-btn" title="{{ccLocalize 'dialog.dropActorsToMap'}}">
+                <i class="fas fa-street-view"></i>
+            </button>
+            {{/if}}
+        </div>
     </div>
     {{#if actors}}
     {{#each actors}}
@@ -45,5 +57,4 @@
     </div>
     {{/if}}
 </div>
-
 

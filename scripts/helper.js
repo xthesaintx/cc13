@@ -26,6 +26,10 @@ export const ITEM_QUANTITY_PATHS = {
     "starwarsffg": "system.quantity.value",
 };
 
+export const ITEM_QUANTITY_NOPILES = [
+    "crucible",
+];
+
 export function getItemQuantityPath(systemId = game.system?.id) {
     return ITEM_QUANTITY_PATHS[systemId] || ITEM_QUANTITY_PATHS.default;
 }

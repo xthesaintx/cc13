@@ -57,6 +57,12 @@ const CURRENCY_CONFIG = {
   ],
   "starwarsffg": [
     { key: "c", label: "Credits", rate: 1, path: "system.stats.credits.value" }
+  ],
+  "crucible": [
+    { key: "pp", label: "Platinum", rate: 1000, path: "system.currency" },
+    { key: "gp", label: "Gold",     rate: 100,  path: "system.currency" },
+    { key: "sp", label: "Silver",   rate: 10,   path: "system.currency" },
+    { key: "cp", label: "Copper",   rate: 1,    path: "system.currency" }
   ]
 };
 
@@ -105,6 +111,10 @@ export class EconomyHelper {
     const customCurrencyPath = game.settings.get("campaign-codex", "playerCurrencyPath");
     if (customCurrencyPath) {
       return this._addCustomPath(targetActor, addAmount, customCurrencyPath);
+    }
+
+    if (systemId === "crucible") {
+      return this._addCrucible(targetActor, addAmount, currency);
     }
 
     const config = CURRENCY_CONFIG[systemId];
@@ -156,6 +166,13 @@ export class EconomyHelper {
       }
 
       return await this._payCustomPath(targetActor, priceDetails.cost, customCurrencyPath);
+    }
+
+    if (systemId === "crucible") {
+      const priceDetails = this._calculateFinalPrice(item, shopItemData, markup, quantity);
+      if (!priceDetails || priceDetails.cost <= 0) return true;
+      if (addFunds) return await this._addCrucible(targetActor, priceDetails.cost, currencyOverride || priceDetails.currency);
+      return await this._payCrucible(targetActor, priceDetails.cost, currencyOverride || priceDetails.currency);
     }
 
     const config = CURRENCY_CONFIG[systemId];
@@ -357,6 +374,37 @@ static async _paySimple(actor, cost, path) {
 static async _addCustomPath(actor, amount, path) {
     const currentVal = Number(foundry.utils.getProperty(actor, path) || 0);
     await actor.update({ [path]: currentVal + amount });
+    return true;
+}
+
+static _convertCrucibleToCp(amount, currency) {
+    const key = String(currency ?? "cp").toLowerCase();
+    const rates = { pp: 1000, gp: 100, sp: 10, cp: 1 };
+    const rate = Number(rates[key] ?? rates.cp);
+    const numericAmount = Number(amount || 0);
+    if (!Number.isFinite(numericAmount) || numericAmount <= 0) return 0;
+    return Math.round(numericAmount * rate);
+}
+
+static async _addCrucible(actor, amount, currency) {
+    const addCp = this._convertCrucibleToCp(amount, currency);
+    if (addCp <= 0) return false;
+    const path = "system.currency";
+    const currentVal = Number(foundry.utils.getProperty(actor, path) || 0);
+    await actor.update({ [path]: currentVal + addCp });
+    return true;
+}
+
+static async _payCrucible(actor, cost, currency) {
+    const costCp = this._convertCrucibleToCp(cost, currency);
+    if (costCp <= 0) return true;
+    const path = "system.currency";
+    const currentVal = Number(foundry.utils.getProperty(actor, path) || 0);
+    if (currentVal < costCp) {
+      ui.notifications.warn(localize("warn.notEnoughCurrency") || "Not enough funds.");
+      return false;
+    }
+    await actor.update({ [path]: currentVal - costCp });
     return true;
 }
 
@@ -701,6 +749,10 @@ static async _payPF2e(actor, cost, currency, config) {
         return { price: clean(item.system.price.value), currency: "credits" };
     }    
 
+    if (sys === "crucible") {
+        return { price: clean(item.system.price), currency: "cp" };
+    }
+
     const val = item.system.price?.value ?? item.system.price ?? 0;
     let denom = item.system.price?.denomination || "gp";
     
@@ -725,6 +777,7 @@ static async _payPF2e(actor, cost, currency, config) {
       if (sys === "fallout") return "caps";
       if (sys === "swade") return "currency";
       if (sys === "sdm") return "€";
+      if (sys === "crucible") return "cp";
       return item.system.price?.denomination || "gp";
   }
 }

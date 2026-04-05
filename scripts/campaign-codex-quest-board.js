@@ -256,7 +256,7 @@ export class CampaignCodexQuestBoard extends campaignCodexQuestBoard {
     const hideInventoryByPermission = game.settings.get("campaign-codex", "hideInventoryByPermission");
     const processedQuests = await Promise.all(allQuestsToProcess.map(async ({ quest, doc }) => {
       const canViewSource = doc.testUserPermission(game.user, CONST.DOCUMENT_OWNERSHIP_LEVELS.OBSERVER);
-      const sheetQuestTitle = doc.name || quest.title || localize("names.quest");
+      const sheetQuestTitle = doc.name || localize("names.quest");
       const data = doc.getFlag("campaign-codex", "data") || {};
       const questOverrides = doc.getFlag("campaign-codex", "tab-overrides") || [];
       const imageAreaOverride = questOverrides.find((override) => override.key === "imageArea");
@@ -419,13 +419,13 @@ export class CampaignCodexQuestBoard extends campaignCodexQuestBoard {
     const sourceSearchIndex = new Map(
       (context.questGroups || []).map((group) => [
         CampaignCodexQuestBoard._refKey(group?.quest?.journalUuid, group?.quest?.id),
-        SearchFilter.cleanQuery(group?.quest?.searchText || `${group?.name || ""} ${group?.quest?.title || ""}`),
+        SearchFilter.cleanQuery(group?.quest?.searchText || `${group?.name || ""} ${group?.quest?.journalName || ""}`),
       ]),
     );
     const boardSearchIndex = new Map(
       (context.boardQuests || []).map((quest) => [
         quest.refKey,
-        SearchFilter.cleanQuery(quest.searchText || `${quest.title || ""} ${quest.journalName || ""}`),
+        SearchFilter.cleanQuery(quest.searchText || `${quest.journalName || ""}`),
       ]),
     );
 
@@ -710,7 +710,7 @@ export class CampaignCodexQuestBoard extends campaignCodexQuestBoard {
     const quests = foundry.utils.deepClone(currentData.quests || []);
     const quest = quests[0];
     if (!quest) return;
-    updater(quest);
+    updater(quest, doc);
     if (touchUpdatedAt) quest.updatedAt = Date.now();
     await doc.setFlag("campaign-codex", "data.quests", quests);
   }
@@ -775,10 +775,10 @@ export class CampaignCodexQuestBoard extends campaignCodexQuestBoard {
     let previousQuest = null;
     let nextQuest = null;
     let questTitle = "";
-    await CampaignCodexQuestBoard.#updateQuest(docUuid, questId, (quest) => {
+    await CampaignCodexQuestBoard.#updateQuest(docUuid, questId, (quest, doc) => {
       previousQuest = foundry.utils.deepClone(quest);
       quest.inactive = !Boolean(quest.inactive);
-      questTitle = quest.title || localize("names.quest");
+      questTitle = doc?.name || localize("names.quest");
       quest.boardColumn = quest.completed ? "completed" : quest.failed ? "failed" : "active";
       nextQuest = foundry.utils.deepClone(quest);
     });
@@ -795,11 +795,11 @@ export class CampaignCodexQuestBoard extends campaignCodexQuestBoard {
     let previousQuest = null;
     let nextQuest = null;
     let questTitle = "";
-    await CampaignCodexQuestBoard.#updateQuest(docUuid, questId, (quest) => {
+    await CampaignCodexQuestBoard.#updateQuest(docUuid, questId, (quest, doc) => {
       previousQuest = foundry.utils.deepClone(quest);
       quest.completed = !Boolean(quest.completed);
       if (quest.completed) quest.failed = false;
-      questTitle = quest.title || localize("names.quest");
+      questTitle = doc?.name || localize("names.quest");
       quest.boardColumn = quest.completed ? "completed" : quest.failed ? "failed" : "active";
       nextQuest = foundry.utils.deepClone(quest);
     });
@@ -816,11 +816,11 @@ export class CampaignCodexQuestBoard extends campaignCodexQuestBoard {
     let previousQuest = null;
     let nextQuest = null;
     let questTitle = "";
-    await CampaignCodexQuestBoard.#updateQuest(docUuid, questId, (quest) => {
+    await CampaignCodexQuestBoard.#updateQuest(docUuid, questId, (quest, doc) => {
       previousQuest = foundry.utils.deepClone(quest);
       quest.failed = !Boolean(quest.failed);
       if (quest.failed) quest.completed = false;
-      questTitle = quest.title || localize("names.quest");
+      questTitle = doc?.name || localize("names.quest");
       quest.boardColumn = quest.completed ? "completed" : quest.failed ? "failed" : "active";
       nextQuest = foundry.utils.deepClone(quest);
     });

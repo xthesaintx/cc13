@@ -1,3 +1,9 @@
+## 3.6.8
+- Crucible support added
+- Group selected sheet note edit fix (disabled edit)
+- Quest name correction
+- Encounter adjustment for actor dropper
+
 ## 3.6.1
 - windows chrome list css fix
 - renaming of a setting

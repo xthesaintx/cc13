@@ -214,7 +214,6 @@ export class TemplateComponents {
     if (!quests || !Array.isArray(quests)) return;
     const linkedQuestUuids = quests || [];
     const showHeader = options.showHeader ?? true;
-    // let questEntries = [];
 
     if (!docIn && (linkedQuestUuids ?? []).length === 0) return;
 
@@ -241,6 +240,7 @@ export class TemplateComponents {
         q.showImage =  imageAreaOverride?.visible ?? true;
         q.img = imageData ;
         q.docUuid = questDoc.uuid;
+        q.name = questDoc.name || localize("names.quest");
         return{
           ...q,
         }
@@ -267,16 +267,12 @@ export class TemplateComponents {
 
     const processedQuests = await Promise.all(
       visibleQuests.map(async (quest) => {
-
-
-
         const statusClass = quest.inactive ? "inactive" : (quest.failed ? "failed" : (quest.completed ? "completed" : "active"));
         const statusLabel = statusClass === "inactive"
           ? (localize("quest.inactive") || "Inactive")
           : statusClass === "failed"
           ? localize("quest.failed")
           : (statusClass === "completed" ? localize("quest.completed") : localize("quest.active"));
-
         return {
           ...quest,
           docUuid: quest.docUuid || docIn?.uuid,
@@ -503,7 +499,7 @@ export class TemplateComponents {
 
   static async createPlayerSelectionDialog(itemName, onPlayerSelected, options = {}) {
     const showDeductFunds = options.showDeductFunds !== undefined ? !!options.showDeductFunds : true;
-    const allowedTypes = ["character", "player", "group"];
+    const allowedTypes = ["character", "player", "group", "hero"];
 
     const playerCharacters = game.actors
       .filter((actor) => actor.type && allowedTypes.includes(actor.type.toLowerCase()))

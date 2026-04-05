@@ -81,6 +81,7 @@ Hooks.once("init", async function () {
     "modules/campaign-codex/templates/partials/base-notes.hbs",
     "modules/campaign-codex/templates/partials/group-widgets.hbs",
     "modules/campaign-codex/templates/partials/tag-nodes.hbs",
+    "modules/campaign-codex/templates/partials/selected-info.hbs",
     ];
     foundry.applications.handlebars.loadTemplates(templatePaths);
 

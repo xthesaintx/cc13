@@ -9002,13 +9002,29 @@ body.system-gurps .application.sheet.campaign-codex .tab-item>span {
     border: none;
     background: none;
 }
+.campaign-codex .cc-widget-actor-dropper .ad-balance-btn{
+    outline: none;
+    border: none;
+    background: none;
+}
 
+.campaign-codex .cc-widget-actor-dropper .ad-balance-btn i{
+  color: var(--cc-accent);
+}
+
+.campaign-codex .cc-widget-actor-dropper .ad-balance-btn:hover i{
+  color: var(--cc-main-text);
+}
 
 .campaign-codex .cc-widget-actor-dropper .ad-drop-map-btn:focus,
-.campaign-codex .cc-widget-actor-dropper .ad-drop-map-btn:active{
+.campaign-codex .cc-widget-actor-dropper .ad-drop-map-btn:active,
+.campaign-codex .cc-widget-actor-dropper .ad-balance-btn:focus,
+.campaign-codex .cc-widget-actor-dropper .ad-balance-btn:active{
   outline: none;
   box-shadow: none;
 }
+
+
 
 .campaign-codex .cc-widget-actor-dropper.inventory-table.inventory{
   display: flex;
@@ -9041,6 +9057,20 @@ margin-bottom: 10px;
 flex: 1 0 100%;
 }
 
+
+.campaign-codex .cc-widget-actor-dropper .ad-header-actions{
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.campaign-codex .cc-widget-actor-dropper .ad-total-xp{
+  font-size: 12px;
+  color: var(--cc-main-text);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
 .campaign-codex .cc-widget-actor-dropper .inventory-item
 {
   display: flex;
@@ -9053,6 +9083,66 @@ flex: 1 0 100%;
   font-size: 12px;
   flex: 1 1 48%;
   margin: 0% 1%;
+}
+
+.campaign-codex.cc-actor-balance-dialog{
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.campaign-codex .cc-actor-balance-summary{
+  border: 1px solid var(--cc-accent80);
+  border-radius: 8px;
+  background: var(--cc-accent10);
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.campaign-codex .cc-actor-balance-status.is-over{
+  color: var(--color-level-error);
+}
+
+.campaign-codex .cc-actor-balance-status.is-under{
+  color: var(--color-level-warning);
+}
+
+.campaign-codex .cc-actor-balance-status.is-even{
+  color: var(--color-level-success);
+}
+
+.campaign-codex .cc-actor-balance-table tr{
+    background-color: transparent;
+}
+.campaign-codex .cc-actor-balance-table{
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.campaign-codex .cc-actor-balance-table th{
+  text-align: center;
+}
+.campaign-codex .cc-actor-balance-table th:first-child{
+  text-align: left;
+}
+
+.campaign-codex .cc-actor-balance-table th,
+.campaign-codex .cc-actor-balance-table td{
+  padding: 2px 4px;
+  border-bottom: 1px dotted var(--cc-accent80);
+}
+
+.campaign-codex .cc-actor-balance-flag{
+  margin-left: 6px;
+  color: var(--cc-accent);
+  font-size: 11px;
+}
+
+.campaign-codex .cc-actor-balance-flag-toggle{
+  cursor: pointer;
+  display: inline-block;
 }
 
 

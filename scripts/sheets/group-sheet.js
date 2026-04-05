@@ -991,13 +991,16 @@ export class GroupSheet extends CampaignCodexBaseSheet {
       async: true,
       secrets: selectedDoc.isOwner,
     });
-    const systemClass = gameSystemClass(game.system.id);
-    const journalClass = journalSystemClass(game.system.id);
+    let selectedNotes = selectedData.notes || "";
+    if (Array.isArray(selectedNotes)) {
+      selectedNotes = selectedNotes[0] || "";
+    }
 
-    const enrichedNotes = await foundry.applications.ux.TextEditor.implementation.enrichHTML(selectedData.notes || "", {
+    const enrichedNotes = await foundry.applications.ux.TextEditor.implementation.enrichHTML(selectedNotes, {
       async: true,
       secrets: selectedDoc.isOwner,
     });
+
 
     switch (activeTab) {
       case "members":
@@ -1051,6 +1054,7 @@ export class GroupSheet extends CampaignCodexBaseSheet {
           sheetData: { enrichedNotes: enrichedNotes || "" },
           isOwnerOrHigher: selectedDoc.testUserPermission(game.user, CONST.DOCUMENT_OWNERSHIP_LEVELS.OWNER),
         }, this._labelOverride(selectedDoc, "notes") || localize("names.note"));
+
 
       case "journals": {
         const journalsLabelOverride = this._labelOverride(selectedDoc, "journals") || localize("names.journals");
@@ -1234,18 +1238,28 @@ export class GroupSheet extends CampaignCodexBaseSheet {
     const widgetPosition = selectedDoc.getFlag("campaign-codex", "widgets-position") ?? false;
     const widgetHTML = `${infoWidgets ? `<div class="info-widgets">${infoWidgets}</div>` : ""}`
 
-    return `
-    ${TemplateComponents.contentHeader("fas fa-info-circle", labelOverride)}
-    ${!widgetPosition ? widgetHTML : ''}
-    <article class="cc-enriched cc-hidden-secrets themed ${isThemed()} ${systemClass}">
-        <section class="rich-text-content journal-entry-content ${journalClass}" name="cc.secret.content.notes">
-        ${enrichedDescription || ""}
-        </section>
-    </article>
-    ${widgetPosition ? widgetHTML : ''}
-  `;
+    const templateData = {
+      widgetsToRender: infoWidgets,
+      isGM: context.isGM,
+      labelOverride: labelOverride,
+      richTextDescription: TemplateComponents.richTextSection(selectedDoc, enrichedDescription, "description", selectedDoc.testUserPermission(game.user, CONST.DOCUMENT_OWNERSHIP_LEVELS.OWNER))
+    };
+
+    return await renderTemplate("modules/campaign-codex/templates/partials/selected-info.hbs", templateData);
+
+  //   return `
+  //   ${TemplateComponents.contentHeader("fas fa-info-circle", labelOverride)}
+  //   ${!widgetPosition ? widgetHTML : ''}
+  //   <article class="cc-enriched cc-hidden-secrets themed ${isThemed()} ${systemClass}">
+  //       <section class="rich-text-content journal-entry-content ${journalClass}" name="cc.secret.content.notes">
+  //       ${enrichedDescription || ""}
+  //       </section>
+  //   </article>
+  //   ${widgetPosition ? widgetHTML : ''}
+  // `;
   }
-  async _generateSelectedAssociatesContent(selectedDoc, selectedData) {
+
+async _generateSelectedAssociatesContent(selectedDoc, selectedData) {
     const labelOverride = this._labelOverride(selectedDoc, "associates");
     const allAssociates = await CampaignCodexLinkers.getAssociates(selectedDoc, selectedData.associates || []);
     const untaggedNPCs = allAssociates.filter(npc => !npc.tag);
@@ -1279,6 +1293,19 @@ export class GroupSheet extends CampaignCodexBaseSheet {
       ${TemplateComponents.contentHeader("fas fa-people-group", labelOverride)}
       ${TemplateComponents.entityGrid(factions, "associate", true, true)}
     `;
+  }
+
+  async _generateSelectedNoteContent(selectedDoc, selectedData, enrichedNotes) {
+    const labelOverride = this._labelOverride(selectedDoc, "notes") || localize("names.note");
+    return await CampaignCodexBaseSheet.generateNotesTab(
+      selectedDoc,
+      {
+        sheetType: this.getSheetType(),
+        sheetData: { enrichedNotes: enrichedNotes || "" },
+        isOwnerOrHigher: selectedDoc.testUserPermission(game.user, CONST.DOCUMENT_OWNERSHIP_LEVELS.OWNER),
+      },
+      labelOverride,
+    );
   }
 
   async _generateSelectedInventoryContent(selectedDoc, selectedData) {

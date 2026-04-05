@@ -14,6 +14,7 @@ import {
   journalSystemClass,
   isThemed,
   getItemQuantityPath,
+  ITEM_QUANTITY_NOPILES,
 } from "../helper.js";
 import { widgetManager } from "../widgets/WidgetManager.js";
 import { tabPicker } from "../tab-picker.js";
@@ -1197,6 +1198,14 @@ const pendingRestorations = this._pendingScrollRestorations;
    */
   static async generateNotesTab(doc, context, labelOverride = null) {
     const allowPlayerNotes = game.settings.get("campaign-codex", "allowPlayerNotes") === true;
+    const currentSheetType = typeof this?.getSheetType === "function"
+      ? String(this.getSheetType() || "").toLowerCase()
+      : "";
+    const contextSheetType = String(context?.sheetType || "").toLowerCase();
+    const docSheetType = String(doc?.getFlag?.("campaign-codex", "type") || "").toLowerCase();
+    const isGroupSheet = currentSheetType === "group" || contextSheetType === "group" || docSheetType === "group";
+    const canEditNotes = Boolean(context?.isOwnerOrHigher) && !isGroupSheet;
+
     const getUserNoteForSheet = (user, sheetUuid) => {
       if (!user || !sheetUuid) return "";
       const bySheet = user.getFlag("campaign-codex", CampaignCodexBaseSheet.PLAYER_NOTES_FLAG) || {};
@@ -1255,7 +1264,7 @@ const pendingRestorations = this._pendingScrollRestorations;
           doc,
           context.sheetData.enrichedNotes,
           "notes",
-          context.isOwnerOrHigher,
+          canEditNotes,
         )
         : playerNotesRichText,
       isGM: game.user.isGM,
@@ -1770,7 +1779,6 @@ const pendingRestorations = this._pendingScrollRestorations;
     this.element?.querySelectorAll(".widget-tag.active.dragging")?.forEach((el) => el.classList.remove("dragging"));
   }
 
-
   _activateEditorListeners(html) {
     html.querySelectorAll("prose-mirror").forEach((editor) => {
       if (editor.dataset.listenerAttached) return;
@@ -1782,9 +1790,22 @@ const pendingRestorations = this._pendingScrollRestorations;
 
         const target = event.currentTarget;
         let valueToSave = Array.isArray(target.value) ? target.value[0] : target.value;
+        const editorDocUuid = target.getAttribute("document-uuid") || target.dataset.documentUuid || "";
+        let targetDocument = this.document;
+
+        if (editorDocUuid && this.document?.uuid !== editorDocUuid) {
+          try {
+            const resolvedDocument = await fromUuid(editorDocUuid);
+            if (resolvedDocument) targetDocument = resolvedDocument;
+          } catch (error) {
+            console.warn("Campaign Codex | Failed to resolve prose-mirror document UUID for save:", editorDocUuid, error);
+          }
+        }
+
+        const targetSheetUuid = editorDocUuid || targetDocument?.uuid || this.document?.uuid;
 
         if (target.dataset.playerNoteEditor === "true") {
-          const sheetUuid = this.document?.uuid;
+          const sheetUuid = targetSheetUuid;
           if (!sheetUuid) return;
           const flagPath = `${CampaignCodexBaseSheet.PLAYER_NOTES_FLAG}.${sheetUuid}`;
           const trimmed = String(valueToSave || "").trim();
@@ -1798,17 +1819,17 @@ const pendingRestorations = this._pendingScrollRestorations;
         }
 
         const fieldName = target.name.split(".").pop();
+        if (!fieldName || !targetDocument) return;
 
-        const currentData = this.document.getFlag("campaign-codex", "data") || {};
+        const currentData = targetDocument.getFlag("campaign-codex", "data") || {};
         if (currentData[fieldName] !== valueToSave) {
           currentData[fieldName] = valueToSave;
-          await this.document.setFlag("campaign-codex", "data", currentData);
+          await targetDocument.setFlag("campaign-codex", "data", currentData);
         }
         this.render();
       });
     });
   }
-
   /**
    * Handle clicking an image to pop it out for fullscreen view.
    * @param {PointerEvent} event  The triggering click event.
@@ -3513,10 +3534,11 @@ const pendingRestorations = this._pendingScrollRestorations;
         quest.updatedAt = Date.now();
         await questDoc.setFlag("campaign-codex", "data.quests", quests);
         this.render();
+        const questName = questDoc.name || localize("names.quest");
         if (items.length === 1) {
-          ui.notifications.info(format('notify.addedToQuest', { item: items[0].name, quest: quest.title }));
+          ui.notifications.info(format('notify.addedToQuest', { item: items[0].name, quest: questName }));
         } else {
-          ui.notifications.info(`Added ${items.length} items to ${quest.title}.`);
+          ui.notifications.info(`Added ${items.length} items to ${questName}.`);
         }
       }
     } else {
@@ -4120,6 +4142,18 @@ const pendingRestorations = this._pendingScrollRestorations;
     const addQty = Math.max(0, Number(quantity || 0));
     if (addQty <= 0) return;
     const quantityPath = this._getItemQuantityPath();
+    const isNoPilesSystem = ITEM_QUANTITY_NOPILES.includes(game.system?.id);
+
+    if (isNoPilesSystem) {
+      const itemData = item.toObject();
+      delete itemData._id;
+      if (foundry.utils.hasProperty(itemData, quantityPath)) {
+        foundry.utils.setProperty(itemData, quantityPath, 1);
+      }
+      const docsToCreate = Array.from({ length: Math.max(1, Math.floor(addQty)) }, () => foundry.utils.deepClone(itemData));
+      await targetActor.createEmbeddedDocuments("Item", docsToCreate);
+      return;
+    }
 
     const existingItem = targetActor.items.find(
       (i) =>

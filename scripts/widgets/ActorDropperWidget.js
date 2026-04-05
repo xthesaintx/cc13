@@ -1,5 +1,6 @@
 import { CampaignCodexWidget } from "./CampaignCodexWidget.js";
 import { localize } from "../helper.js";
+import { ActorDropperBalanceDialogHelper } from "./ActorDropperBalanceDialogHelper.js";
 
 export class ActorDropperWidget extends CampaignCodexWidget {
     constructor(widgetId, widgetData, document) {
@@ -13,6 +14,7 @@ export class ActorDropperWidget extends CampaignCodexWidget {
         let actors = savedData.actors || [];
 
         const isGM = game.user.isGM;
+        const isDnd5e = game.system.id === "dnd5e";
 
         const resolvedActors = (await Promise.all(actors.map(async (entry) => {
             const actor = await fromUuid(entry.uuid);
@@ -30,24 +32,33 @@ export class ActorDropperWidget extends CampaignCodexWidget {
             if (this._pendingUpdates[entry.uuid] !== undefined) {
                 quantity = this._pendingUpdates[entry.uuid];
             }
+            const xp = Math.max(0, Number(actor.system?.details?.xp?.value || 0));
             return {
                 id: entry.id,
                 uuid: entry.uuid,
                 name: actor.name,
                 img: actor.img || "icons/svg/mystery-man.svg",
                 quantity: quantity,
+                xp: xp,
                 cr: cr,
-                showCr: game.system.id === "dnd5e"
+                showCr: isDnd5e
             };
         }))).filter(Boolean);
 
+        const encounterXp = resolvedActors.reduce((sum, entry) => {
+            const qty = Math.max(1, Number(entry.quantity || 1));
+            const xp = Math.max(0, Number(entry.xp || 0));
+            return sum + (qty * xp);
+        }, 0);
 
         return {
             id: this.widgetId,
             title: savedData.title || "Actor Dropper",
             actors: resolvedActors,
             isGM: this.isGM,
-            showCrColumn: game.system.id === "dnd5e"
+            showCrColumn: isDnd5e,
+            showEncounterTools: isDnd5e,
+            encounterXp: encounterXp.toLocaleString()
         };
     }
 
@@ -101,6 +112,11 @@ export class ActorDropperWidget extends CampaignCodexWidget {
         htmlElement.querySelector('.ad-drop-map-btn')?.addEventListener('click', async (e) => {
             e.preventDefault();
             await this._dropToMap();
+        });
+
+        htmlElement.querySelector('.ad-balance-btn')?.addEventListener('click', async (e) => {
+            e.preventDefault();
+            await this._openBalanceDialog(htmlElement);
         });
 
         htmlElement.addEventListener('drop', async (event) => {
@@ -279,6 +295,62 @@ export class ActorDropperWidget extends CampaignCodexWidget {
             console.error("Campaign Codex | Error in ActorDropperWidget drop:", error);
             ui.notifications.error(localize('notify.failedToDropActors'));
         }
+    }
+
+    async _openBalanceDialog(htmlElement) {
+        if (game.system.id !== "dnd5e") return;
+        await this._processPendingSaves();
+
+        const savedData = (await this.getData()) || {};
+        const actorsData = Array.isArray(savedData.actors) ? savedData.actors : [];
+        if (!actorsData.length) return ui.notifications.warn(localize('notify.noActorsToDrop'));
+
+        const rows = [];
+        const missing = [];
+
+        for (const entry of actorsData) {
+            const uuid = String(entry?.uuid || "");
+            if (!uuid) continue;
+
+            const actor = await fromUuid(uuid).catch(() => null);
+            if (!actor) {
+                missing.push(uuid);
+                continue;
+            }
+
+            rows.push({
+                uuid: uuid,
+                name: actor.name,
+                current: Math.max(1, Math.trunc(Number(entry?.quantity || 1))),
+                xp: Math.max(0, Number(actor.system?.details?.xp?.value || 0)),
+                cr: actor.system?.details?.cr ?? 0
+            });
+        }
+
+        if (!rows.length) {
+            return ui.notifications.warn(localize('notify.actorDataNotFound'));
+        }
+
+        const updatedByUuid = await ActorDropperBalanceDialogHelper.open({
+            rows: rows,
+            title: savedData.title || "Actor Dropper"
+        });
+        if (!updatedByUuid || typeof updatedByUuid !== "object" || Array.isArray(updatedByUuid)) return;
+
+        const updatedActors = actorsData.map((entry) => {
+            const uuid = String(entry?.uuid || "");
+            if (!uuid || !Object.prototype.hasOwnProperty.call(updatedByUuid, uuid)) return entry;
+            return {
+                ...entry,
+                quantity: Math.max(0, Math.trunc(Number(updatedByUuid[uuid] ?? entry.quantity ?? 1)))
+            };
+        }).filter((entry) => Math.max(0, Math.trunc(Number(entry?.quantity ?? 0))) > 0);
+
+        await this.saveData({ ...savedData, actors: updatedActors });
+        if (missing.length) {
+            ui.notifications.warn(`Actor Dropper balance skipped ${missing.length} missing actor entr${missing.length === 1 ? "y" : "ies"}.`);
+        }
+        this._refreshWidget(htmlElement);
     }
 
     async _refreshWidget(htmlElement) {

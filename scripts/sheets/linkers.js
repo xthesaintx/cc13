@@ -1179,6 +1179,26 @@ export class CampaignCodexLinkers {
       };
     }
 
+    // Crucible Strategy
+    else if (systemId === "crucible") {
+      calculateBasePrice = (item) => {
+        const cost = Number(this.getValue(item, "system.price") || 0);
+        if (!Number.isFinite(cost) || cost <= 0) return 0;
+        if (cost >= 1000) return parseFloat((cost / 1000).toFixed(3));
+        if (cost >= 100) return parseFloat((cost / 100).toFixed(2));
+        if (cost >= 10) return parseFloat((cost / 10).toFixed(2));
+        return cost;
+      };
+      getCurrency = (item) => {
+        if (denominationOverride) return finalCurrency;
+        const cost = Number(this.getValue(item, "system.price") || 0);
+        if (cost >= 1000) return "pp";
+        if (cost >= 100) return "gp";
+        if (cost >= 10) return "sp";
+        return "cp";
+      };
+    }
+
 
 
 
@@ -1254,6 +1274,12 @@ export class CampaignCodexLinkers {
 
       if (roundFinalPrice) {
         calculatedPrice = Math.round(calculatedPrice);
+      } else if (systemId === "crucible") {
+        const precisionByCurrency = { pp: 3, gp: 2, sp: 2, cp: 0 };
+        const precision = precisionByCurrency[String(currency || "").toLowerCase()] ?? 2;
+        calculatedPrice = precision > 0
+          ? Number(calculatedPrice.toFixed(precision))
+          : Math.round(calculatedPrice);
       } else {
         calculatedPrice = Math.round(calculatedPrice * 100) / 100;
       }
@@ -1355,6 +1381,8 @@ export class CampaignCodexLinkers {
         return { pricePath: "system.cost", denominationPath: null, currency: "€" };
       case "demonlord":
         return { pricePath: "system.value", denominationPath: null, currency: "gc" };
+      case "crucible":
+        return { pricePath: "system.price", denominationPath: null, currency: "gp" };
       case "wfrp4e":
         return { pricePath: "system.price", denominationPath: null, currency: "gc" };
       case "dnd5e":

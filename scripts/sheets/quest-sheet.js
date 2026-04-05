@@ -60,7 +60,7 @@ export class QuestSheet extends CampaignCodexBaseSheet {
     const source = quest && typeof quest === "object" ? quest : {};
     const normalized = { ...base, ...source };
     normalized.id = String(source.id || base.id);
-    normalized.title = String(source.title || docName || base.title);
+    normalized.title = String(docName || base.title);
     normalized.inactive = Boolean(normalized.inactive);
     normalized.completed = Boolean(normalized.completed);
     normalized.failed = Boolean(normalized.failed);
@@ -1260,7 +1260,7 @@ _activateObjectiveListeners(html) {
   }
 
   static async _postQuestStatusChat(previousQuest, nextQuest, questTitle = "", questDoc = null) {
-    const title = questTitle || nextQuest?.title || localize("names.quest");
+    const title = questTitle || questDoc?.name || localize("names.quest");
     const becameCompleted = !Boolean(previousQuest?.completed) && Boolean(nextQuest?.completed);
     if (becameCompleted && Boolean(nextQuest?.messageOnCompleted)) {
       const content = await buildQuestCompletionChatContent({

@@ -1,28 +1,12 @@
-<!-- <article class="cc-linked-quest-card {{quest.statusClass}}" data-action="openJournal" data-uuid="{{quest.docUuid}}" title="{{ccLocalize 'quest.openSource'}}">
-  <div class="cc-linked-quest-header">
-    <h4 data-action="openJournal" data-uuid="{{quest.docUuid}}" title="{{ccLocalize 'quest.openSource'}}">{{quest.title}}</h4>
-    <span class="cc-linked-quest-status {{quest.statusClass}}">
-      <i class="fas {{#if (eq quest.statusClass 'failed')}}fa-circle-xmark{{else}}{{#if (eq quest.statusClass 'completed')}}fa-circle-check{{else}}fa-circle{{/if}}{{/if}}"></i>
-      {{quest.statusLabel}}
-    </span>
-  </div>
-  {{#if isGM}}
-    <div class="cc-linked-quest-actions">
-      <i class="fas fa-book-open" data-action="openJournal" data-uuid="{{quest.docUuid}}" title="{{ccLocalize 'quest.openSource'}}"></i>
-      {{#if (not isGroupSheet)}}
-        <i class="fas fa-unlink remove-quest" data-quest-id="{{quest.id}}" data-doc-uuid="{{quest.docUuid}}" title="{{ccLocalize 'quest.removeQuest'}}"></i>
-      {{/if}}
-    </div>
-  {{/if}}
-</article> -->
 
 <div class="entity-card quest-card open-quest {{#unless showImage}}hide-entity-image{{/unless}} {{quest.hidden}}" data-action="openQuest" data-type="quest" data-uuid="{{quest.docUuid}}" style="cursor: pointer; position:relative;" >
         <div class="entity-image {{#unless showImage}}hide-entity-image{{/unless}}">
-          <img src="{{quest.img}}" alt="{{quest.title}}">
+          <img src="{{quest.img}}" alt="{{quest.name}}">
         </div>
         <div class="entity-content">
-          <h4 class="entity-name">{{quest.title}}</h4>
+          <h4 class="entity-name">{{quest.name}}</h4>
           <div class="entity-meta">
             <span class="entity-type {{quest.statusClass}}">{{quest.statusLabel}}</span>
           </div>
-        </div>        </div>
+        </div>        
+      </div>
