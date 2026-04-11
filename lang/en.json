@@ -130,6 +130,10 @@
         "name": "Use CC Accent colour for the map markers",
         "hint": "If enabled CC map markers will use the CC Accent colour for the background"
       },
+      "mapMarkerUseSheetIconFallback": {
+        "name": "Use Sheet Icon when Marker is Empty",
+        "hint": "If enabled and no Campaign Codex map marker is set, the note will use its normal sheet icon instead of generating a code marker from the name."
+      },
       "mapMarkers": {
         "name": "Enable Campaign Codex Map Markers",
         "hint": "If enabled CC sheets with a name that starts with an optional letter followed by up to three digits followd by an optional letter will create a custom map marker, ie A13"
@@ -523,12 +527,23 @@
       "target": "Target",
       "current": "Current",
       "suggested": "Suggested",
+      "currentBeforeEdits": "Current",
+      "suggestedAfterEdits": "After edits",
       "new": "New",
       "balanceProtected": "protected from auto-reduce",
      "balanceManualOnly": "manual only",
       "balanceClickToUnlock": "Click to unlock",
-      "balanceClickToLock": "Click to lock"
-      },
+      "balanceClickToLock": "Click to lock",
+      "partyLevel": "Party Level",
+      "level": "Level",
+      "threat": "Threat",
+      "threatTrivial": "Trivial",
+      "threatLow": "Low",
+      "threatModerate": "Moderate",
+      "threatSevere": "Severe",
+      "threatExtreme": "Extreme",
+      "balanceEncounterPf2eNote": "PF2e XP uses creature level versus party level, with threat budgets based on party size."
+    },
     "notify": {
       "journalNotFound": "Campaign Codex | Journal Entry not found.",
       "widgetDataMissing": "Campaign Codex | Widget data missing.",

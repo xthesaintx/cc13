@@ -20,6 +20,24 @@ export const format = (key, data) => game.i18n.format(`CAMPAIGN_CODEX.${key}`, d
 export const renderTemplate = foundry.applications.handlebars.renderTemplate;
 
 
+export function getCompatibleDropEffect(dataTransfer, preferred = "link") {
+    const allowed = String(dataTransfer?.effectAllowed || "all").toLowerCase();
+    const canUse = (effect) => {
+        if (allowed === "all" || allowed === "uninitialized") return true;
+        if (allowed === effect) return true;
+        if (effect === "copy") return allowed.includes("copy");
+        if (effect === "move") return allowed.includes("move");
+        if (effect === "link") return allowed.includes("link");
+        return false;
+    };
+
+    if (canUse(preferred)) return preferred;
+    if (canUse("copy")) return "copy";
+    if (canUse("move")) return "move";
+    if (canUse("link")) return "link";
+    return "copy";
+}
+
 export const ITEM_QUANTITY_PATHS = {
     default: "system.quantity",
     "custom-system-builder": "system.props.item_quantity",

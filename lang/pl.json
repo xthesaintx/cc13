@@ -122,6 +122,10 @@
         "name": "Użyj koloru akcentu CC dla znaczników mapy",
         "hint": "Jeśli włączone, znaczniki mapy CC będą używać koloru akcentu CC jako tła"
       },
+      "mapMarkerUseSheetIconFallback": {
+        "name": "Uzyj ikony arkusza, gdy znacznik jest pusty",
+        "hint": "Jesli wlaczone i nie ustawiono znacznika Campaign Codex, notatka uzyje normalnej ikony arkusza zamiast generowac znacznik z nazwy."
+      },
       "mapMarkers":{
         "name": "Włącz znaczniki mapy Campaign Codex",
         "hint": "Jeśli włączone, arkusze CC o nazwie zaczynającej się od opcjonalnej litery, po której następuje do trzech cyfr i opcjonalna litera, utworzą niestandardowy znacznik mapy, np. A13"

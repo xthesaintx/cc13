@@ -1,6 +1,6 @@
 import { CampaignCodexWidget } from "./CampaignCodexWidget.js";
 import { TemplateComponents } from "../sheets/template-components.js";
-import { localize, format } from "../helper.js";
+import { localize, format, getCompatibleDropEffect } from "../helper.js";
 
 export class WorldMapWidget extends CampaignCodexWidget {
     constructor(widgetId, initialData, document) {
@@ -674,7 +674,8 @@ export class WorldMapWidget extends CampaignCodexWidget {
     }
     _onDragOver(event) {
         event.preventDefault();
-        event.dataTransfer.dropEffect = "link";
+        if (!event.dataTransfer) return;
+        event.dataTransfer.dropEffect = getCompatibleDropEffect(event.dataTransfer, "link");
         event.currentTarget.classList.add("drag-over");
     }
 

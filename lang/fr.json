@@ -120,6 +120,10 @@
         "name": "Utiliser la couleur d'accentuation CC pour les marqueurs",
         "hint": "Si activé, les marqueurs de carte CC utiliseront la couleur d'accentuation CC pour l'arrière-plan."
       },
+      "mapMarkerUseSheetIconFallback": {
+        "name": "Utiliser l'icone de fiche si le marqueur est vide",
+        "hint": "Si active et qu'aucun marqueur Campaign Codex n'est defini, la note utilisera son icone de fiche normale au lieu de generer un marqueur depuis le nom."
+      },
       "mapMarkers": {
         "name": "Activer les marqueurs de carte Campaign Codex",
         "hint": "Si activé, les fiches CC dont le nom respecte le format (lettre optionnelle + 3 chiffres + lettre optionnelle) créeront un marqueur de carte personnalisé (ex: A13)."

@@ -13,6 +13,7 @@ import {
   getDefaultSheetHidden,
   journalSystemClass,
   isThemed,
+  getCompatibleDropEffect,
   getItemQuantityPath,
   ITEM_QUANTITY_NOPILES,
 } from "../helper.js";
@@ -3395,13 +3396,15 @@ const pendingRestorations = this._pendingScrollRestorations;
   // INSTANCE EVENT HANDLERS - DRAG & DROP
   // =========================================================================
 
+
   _onDragOver(event) {
     event.preventDefault();
+    if (!event.dataTransfer) return;
     if (this._hasWidgetDragType(event)) {
       event.dataTransfer.dropEffect = "copy";
       return;
     }
-    event.dataTransfer.dropEffect = "link";
+    event.dataTransfer.dropEffect = getCompatibleDropEffect(event.dataTransfer, "link");
   }
 
   async _onDrop(event) {

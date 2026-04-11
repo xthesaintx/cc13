@@ -5,6 +5,9 @@
         <div class="ad-header-actions">
             {{#if showEncounterTools}}
             <span class="ad-total-xp">{{ccLocalize "ui.xpLabel"}}: {{encounterXp}}</span>
+            {{#if showPf2ePartyMeta}}
+            <span class="ad-party-meta">{{ccLocalize "dialog.partyLevel"}} {{pf2ePartyLevel}} <i class="fas fa-user"></i>{{pf2ePartySize}}</span>
+            {{/if}}
             {{/if}}
             {{#if actors}}
             {{#if showEncounterTools}}
@@ -57,4 +60,3 @@
     </div>
     {{/if}}
 </div>
-

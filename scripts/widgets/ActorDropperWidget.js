@@ -2,6 +2,27 @@ import { CampaignCodexWidget } from "./CampaignCodexWidget.js";
 import { localize } from "../helper.js";
 import { ActorDropperBalanceDialogHelper } from "./ActorDropperBalanceDialogHelper.js";
 
+const PF2E_CREATURE_XP_DIFF = new Map([
+    [-4, 10], [-3, 15], [-2, 20], [-1, 30], [0, 40],
+    [1, 60], [2, 80], [3, 120], [4, 160]
+]);
+
+function getPf2eCreatureXp(partyLevel, creatureLevel) {
+    const difference = Math.trunc(Number(creatureLevel || 0)) - Math.trunc(Number(partyLevel || 0));
+    const range = Math.floor(PF2E_CREATURE_XP_DIFF.size / 2);
+    const bounded = Math.max(-range, Math.min(range, difference));
+    return PF2E_CREATURE_XP_DIFF.get(bounded) ?? 0;
+}
+
+function getDefaultPartyLevel() {
+    const pcs = game.actors.filter((a) => a?.type === "character" && a.hasPlayerOwner);
+    const levels = pcs
+        .map((a) => Number(a.system?.details?.level?.value ?? a.level))
+        .filter((lvl) => Number.isFinite(lvl));
+    if (!levels.length) return 1;
+    return Math.max(1, Math.min(20, Math.round(levels.reduce((sum, lvl) => sum + lvl, 0) / levels.length)));
+}
+
 export class ActorDropperWidget extends CampaignCodexWidget {
     constructor(widgetId, widgetData, document) {
         super(widgetId, widgetData, document);
@@ -15,6 +36,11 @@ export class ActorDropperWidget extends CampaignCodexWidget {
 
         const isGM = game.user.isGM;
         const isDnd5e = game.system.id === "dnd5e";
+        const isPf2e = game.system.id === "pf2e";
+        const defaultPartyLevel = isPf2e ? getDefaultPartyLevel() : null;
+        const defaultPartySize = isPf2e
+            ? Math.max(1, game.actors.filter((a) => a?.type === "character" && a.hasPlayerOwner).length || 4)
+            : null;
 
         const resolvedActors = (await Promise.all(actors.map(async (entry) => {
             const actor = await fromUuid(entry.uuid);
@@ -32,7 +58,10 @@ export class ActorDropperWidget extends CampaignCodexWidget {
             if (this._pendingUpdates[entry.uuid] !== undefined) {
                 quantity = this._pendingUpdates[entry.uuid];
             }
-            const xp = Math.max(0, Number(actor.system?.details?.xp?.value || 0));
+            const actorLevel = Math.trunc(Number(actor.system?.details?.level?.value ?? actor.system?.details?.level ?? 0));
+            const xp = isPf2e
+                ? Math.max(0, getPf2eCreatureXp(defaultPartyLevel, actorLevel))
+                : Math.max(0, Number(actor.system?.details?.xp?.value || 0));
             return {
                 id: entry.id,
                 uuid: entry.uuid,
@@ -40,6 +69,7 @@ export class ActorDropperWidget extends CampaignCodexWidget {
                 img: actor.img || "icons/svg/mystery-man.svg",
                 quantity: quantity,
                 xp: xp,
+                level: actorLevel,
                 cr: cr,
                 showCr: isDnd5e
             };
@@ -57,8 +87,11 @@ export class ActorDropperWidget extends CampaignCodexWidget {
             actors: resolvedActors,
             isGM: this.isGM,
             showCrColumn: isDnd5e,
-            showEncounterTools: isDnd5e,
-            encounterXp: encounterXp.toLocaleString()
+            showEncounterTools: isDnd5e || isPf2e,
+            encounterXp: encounterXp.toLocaleString(),
+            showPf2ePartyMeta: isPf2e,
+            pf2ePartyLevel: defaultPartyLevel,
+            pf2ePartySize: defaultPartySize
         };
     }
 
@@ -298,7 +331,9 @@ export class ActorDropperWidget extends CampaignCodexWidget {
     }
 
     async _openBalanceDialog(htmlElement) {
-        if (game.system.id !== "dnd5e") return;
+        const isDnd5e = game.system.id === "dnd5e";
+        const isPf2e = game.system.id === "pf2e";
+        if (!isDnd5e && !isPf2e) return;
         await this._processPendingSaves();
 
         const savedData = (await this.getData()) || {};
@@ -323,7 +358,8 @@ export class ActorDropperWidget extends CampaignCodexWidget {
                 name: actor.name,
                 current: Math.max(1, Math.trunc(Number(entry?.quantity || 1))),
                 xp: Math.max(0, Number(actor.system?.details?.xp?.value || 0)),
-                cr: actor.system?.details?.cr ?? 0
+                cr: actor.system?.details?.cr ?? 0,
+                level: Math.trunc(Number(actor.system?.details?.level?.value ?? actor.system?.details?.level ?? 0))
             });
         }
 
@@ -333,7 +369,8 @@ export class ActorDropperWidget extends CampaignCodexWidget {
 
         const updatedByUuid = await ActorDropperBalanceDialogHelper.open({
             rows: rows,
-            title: savedData.title || "Actor Dropper"
+            title: savedData.title || "Actor Dropper",
+            systemId: game.system.id
         });
         if (!updatedByUuid || typeof updatedByUuid !== "object" || Array.isArray(updatedByUuid)) return;
 

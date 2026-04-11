@@ -1,8 +1,13 @@
-## 3.6.8
+## 3.7.5
+- v14 compatability fixes
 - Crucible support added
 - Group selected sheet note edit fix (disabled edit)
 - Quest name correction
-- Encounter adjustment for actor dropper
+- Encounter adjustment for actor dropper (DND5e and pf2e)
+- Patching drag behaviour for linux chromium browsers
+- icon picker by name as well as dictionary
+- settings grouped
+
 
 ## 3.6.1
 - windows chrome list css fix
@@ -13,7 +18,7 @@
 - Trade in widget improvements
 - System flag path auto complete for trade in widget: DND5e, PF2e, Fallout, Daggerheart, SFRPG
 - Starwars FFG compatability
-
+ 
 
 ## 3.5.1
 - Journal Widget

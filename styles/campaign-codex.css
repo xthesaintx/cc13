@@ -3844,7 +3844,7 @@ color:var(--cc-slate);
   }
 
 .campaign-codex .selected-sheet-header .selected-header-image img {
-    height: 100%;
+    width: 100%;
     object-fit: cover;
     border-radius: 8px;
 }
@@ -7519,6 +7519,17 @@ position: absolute;
     transition: all 0.2s;
 }
 
+.campaign-codex .cc-widget-actor-dropper .ad-party-meta{
+  font-size: 12px;
+  color: var(--cc-main-text);
+  white-space: nowrap;
+}
+
+.campaign-codex .cc-widget-actor-dropper .ad-party-meta i{
+  margin-left: 4px;
+  margin-right: 3px;
+}
+
 .cc-widget-actor-dropper .cc-ad-drop-area.large,
 .cc-widget-rolltable .cc-rt-drop-area.large {
     height: 80px;
@@ -9119,6 +9130,7 @@ flex: 1 0 100%;
 .campaign-codex .cc-actor-balance-table{
   width: 100%;
   border-collapse: collapse;
+  margin: 0px;
 }
 
 .campaign-codex .cc-actor-balance-table th{
@@ -9132,6 +9144,7 @@ flex: 1 0 100%;
 .campaign-codex .cc-actor-balance-table td{
   padding: 2px 4px;
   border-bottom: 1px dotted var(--cc-accent80);
+  font-weight: normal;
 }
 
 .campaign-codex .cc-actor-balance-flag{
@@ -9601,3 +9614,46 @@ padding: 4px 8px;
 .campaign-codex prose-mirror span[data-pf2-check][data-pf2-traits*=secret] {
     background: var(--cc-accent30);
   }
+
+.campaign-codex-settings-submenu section.window-content.standard-form{
+  padding: 1rem !important
+}
+
+.campaign-codex-settings-submenu section.window-content.standard-form .form-group label {
+    flex: 2;
+}
+
+.campaign-codex-settings-submenu section.window-content.standard-form .form-group .hint {
+    flex: 1 0 100%;
+    margin-top: 0px;
+    margin-bottom: 0px;
+    font-size: 12px;
+}
+
+.campaign-codex-settings-submenu section.window-content.standard-form .form-group .range-value{
+    text-align: center;
+  }
+
+.campaign-codex-settings-submenu section.window-content.standard-form .form-group input[type=range]{
+      flex: 10;
+}
+
+.campaign-codex-settings-submenu section.window-content.standard-form .form-group .form-fields{
+      flex: 1;
+}
+
+.campaign-codex-settings-submenu section.window-content.standard-form .form-group {
+    border-bottom: 1px dotted var(--cc-accent80);
+    padding-bottom: 10px;
+    margin-bottom: 10px;
+  
+}
+.campaign-codex-settings-submenu section.window-content.standard-form .form-group:last-child {
+  border: none;
+    padding-bottom: 0px;
+    margin-bottom: 0px;
+}
+
+form.application.campaign-codex-settings-submenu:not(.minimized, .minimizing, .maximizing){
+  min-height: 400px;
+}

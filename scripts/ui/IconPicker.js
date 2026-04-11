@@ -17,9 +17,9 @@ const MAX_FILTER_RESULTS = 300;
 const RANDOM_UNFILTERED_COUNT = 50;
 
 export class iconPicker extends HandlebarsApplicationMixin(ApplicationV2) {
-  constructor(object, parent, options = {}) {
-    super(object, options);
-    this.parent = parent ?? options.parent ?? null;
+  constructor(_object, parent, options = {}) {
+    super(options);
+    this._parentSheet = parent ?? options.parent ?? null;
     this.stat = options.stat ?? null;
 
     this.defaultFonts = [...DEFAULT_ICONS];
@@ -77,6 +77,7 @@ export class iconPicker extends HandlebarsApplicationMixin(ApplicationV2) {
     const input = this.element.querySelector(".search-icons");
     if (input) {
       input.addEventListener("input", this.filterIcons.bind(this));
+      input.addEventListener("keydown", this._onSearchKeydown.bind(this));
     }
 
     this._renderIcons(this.fonts);
@@ -150,7 +151,9 @@ export class iconPicker extends HandlebarsApplicationMixin(ApplicationV2) {
   }
 
   filterIcons(event) {
-    const term = String(event.currentTarget?.value ?? "").trim().toLowerCase();
+    const rawTerm = String(event.currentTarget?.value ?? "").trim();
+    const term = rawTerm.toLowerCase();
+    const termWithoutPrefix = term.startsWith("fa-") ? term.slice(3) : term;
 
     if (!term) {
       this.fonts = [...this.unfilteredFonts];
@@ -159,7 +162,11 @@ export class iconPicker extends HandlebarsApplicationMixin(ApplicationV2) {
     }
 
     const matches = this.allFonts
-      .filter((icon) => icon.toLowerCase().includes(term))
+      .filter((icon) => {
+        const normalized = icon.toLowerCase();
+        const normalizedWithoutPrefix = normalized.startsWith("fa-") ? normalized.slice(3) : normalized;
+        return normalized.includes(term) || normalizedWithoutPrefix.includes(termWithoutPrefix);
+      })
       .slice(0, MAX_FILTER_RESULTS);
     if (this.currentIcon && matches.includes(this.currentIcon)) {
       this.fonts = [this.currentIcon, ...matches.filter((icon) => icon !== this.currentIcon)];
@@ -167,7 +174,24 @@ export class iconPicker extends HandlebarsApplicationMixin(ApplicationV2) {
       this.fonts = matches;
     }
 
+    if (!this.fonts.length) {
+      const manualIcon = this._normalizeIconName(rawTerm);
+      if (manualIcon) this.fonts = [manualIcon];
+    }
+
     this._renderIcons(this.fonts);
+  }
+
+  _onSearchKeydown(event) {
+    if (event.key !== "Enter") return;
+    event.preventDefault();
+    this._commitTypedIcon(event.currentTarget?.value);
+  }
+
+  _commitTypedIcon(value) {
+    const icon = this._normalizeIconName(value);
+    if (!icon) return;
+    this._selectIcon(icon);
   }
 
   _renderIcons(icons) {
@@ -202,11 +226,11 @@ export class iconPicker extends HandlebarsApplicationMixin(ApplicationV2) {
   }
 
   _getCurrentIcon() {
-    const fromFlag = this.parent?.document?.getFlag?.("campaign-codex", "icon-override");
+    const fromFlag = this._parentSheet?.document?.getFlag?.("campaign-codex", "icon-override");
     const iconFromFlag = this._extractIconToken(fromFlag);
     if (iconFromFlag) return iconFromFlag;
 
-    const iconButton = this.parent?.element?.querySelector?.(".icon button");
+    const iconButton = this._parentSheet?.element?.querySelector?.(".icon button");
     const iconFromButton = this._extractIconToken(iconButton?.className);
     if (iconFromButton) return iconFromButton;
 
@@ -235,7 +259,7 @@ export class iconPicker extends HandlebarsApplicationMixin(ApplicationV2) {
   }
 
   _selectIcon(icon) {
-    const parent = this.parent ?? this.options?.parent;
+    const parent = this._parentSheet ?? this.options?.parent;
     const statId = this.stat?.id ?? this.options?.stat?.id ?? "icon-override";
     if (!parent?.setIcon) return;
     parent.setIcon(statId, icon);

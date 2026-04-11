@@ -4,6 +4,12 @@ import { templateManager } from "./journal-template-manager.js";
 import { tabPicker } from "./tab-picker.js";
 import { TemplatePicker } from "./template-picker.js";
 import {
+    CorePermissionSettingsMenu,
+    CoreEconomySettingsMenu,
+    CoreGeneralSettingsMenu,
+    CoreMapMarkerSettingsMenu
+} from "./core-settings-submenu.js";
+import {
     applyTocButtonStyle,
     applyThemeColors
 } from "./helper.js";
@@ -32,12 +38,48 @@ export default async function campaigncodexSettings() {
 
     });
 
+    game.settings.registerMenu("campaign-codex", "coreGeneralSettingsMenu", {
+        name: "General Settings",
+        label: "General",
+        hint: "Core behavior, UI toggles, and general gameplay options.",
+        icon: "fa-solid fa-sliders",
+        type: CoreGeneralSettingsMenu,
+        restricted: true
+    });
+
+    game.settings.registerMenu("campaign-codex", "coreEconomySettingsMenu", {
+        name: "Economy Settings",
+        label: "Economy",
+        hint: "Currency paths, purchasing behavior, and inventory visibility controls.",
+        icon: "fa-solid fa-coins",
+        type: CoreEconomySettingsMenu,
+        restricted: true
+    });
+
+    game.settings.registerMenu("campaign-codex", "corePermissionSettingsMenu", {
+        name: "Permission Settings",
+        label: "Permissions",
+        hint: "Player visibility and permission controls.",
+        icon: "fa-solid fa-eye",
+        type: CorePermissionSettingsMenu,
+        restricted: true
+    });
+
+    game.settings.registerMenu("campaign-codex", "coreMapMarkerSettingsMenu", {
+        name: "Map Marker Settings",
+        label: "Map Markers",
+        hint: "Map marker visibility, hover behavior, and color controls.",
+        icon: "fa-solid fa-map-marker-alt",
+        type: CoreMapMarkerSettingsMenu,
+        restricted: true
+    });
+
 
     game.settings.register("campaign-codex", "playerCurrencyPath", {
         name: localize("playerCurrencyPath.name"),
         hint: localize("playerCurrencyPath.hint"),
         scope: "world",
-        config: true,
+        config: false,
         type: String,
         default: "",
     });
@@ -46,7 +88,7 @@ export default async function campaigncodexSettings() {
         name: localize("itemPricePath.name"),
         hint: localize("itemPricePath.hint"),
         scope: "world",
-        config: true,
+        config: false,
         type: String,
         default: "",
     });
@@ -55,7 +97,7 @@ export default async function campaigncodexSettings() {
         name: localize("itemDenominationPath.name"),
         hint: localize("itemDenominationPath.hint"),
         scope: "world",
-        config: true,
+        config: false,
         type: String,
         default: "",
     });
@@ -64,25 +106,15 @@ export default async function campaigncodexSettings() {
         name: localize("itemDenominationOverride.name"),
         hint: localize("itemDenominationOverride.hint"),
         scope: "world",
-        config: true,
+        config: false,
         type: String,
         default: "",
     });
-
-    // game.settings.register("campaign-codex", "hideBaseCost", {
-    //     name: localize("hideBaseCost.name"),
-    //     hint: localize("hideBaseCost.hint"),
-    //     scope: "world",
-    //     config: true,
-    //     type: Boolean,
-    //     default: false,
-    // });
-
     game.settings.register("campaign-codex", "sortCardsAlpha", {
         name: localize("sortCardsAlpha.name"),
         hint: localize("sortCardsAlpha.hint"),
         scope: "world",
-        config: true,
+        config: false,
         type: Boolean,
         default: true,
     });
@@ -118,7 +150,7 @@ export default async function campaigncodexSettings() {
         name: localize("useOrganizedFolders.name"),
         hint: localize("useOrganizedFolders.hint"),
         scope: "world",
-        config: true,
+        config: false,
         requiresReload: true,
         type: Boolean,
         default: true,
@@ -128,7 +160,7 @@ export default async function campaigncodexSettings() {
         name: localize("hideByPermission.name"),
         hint: localize("hideByPermission.hint"),
         scope: "world",
-        config: true,
+        config: false,
         requiresReload: true,
         type: Boolean,
         default: false,
@@ -137,7 +169,7 @@ export default async function campaigncodexSettings() {
         name: localize("hideInventoryByPermission.name"),
         hint: localize("hideInventoryByPermission.hint"),
         scope: "world",
-        config: true,
+        config: false,
         requiresReload: true,
         type: Boolean,
         default: false,
@@ -146,7 +178,7 @@ export default async function campaigncodexSettings() {
         name: localize("allowPlayerPurchasing.name"),
         hint: localize("allowPlayerPurchasing.hint"),
         scope: "world",
-        config: true,
+        config: false,
         requiresReload: true,
         type: Boolean,
         default: true,
@@ -156,7 +188,7 @@ export default async function campaigncodexSettings() {
         name: localize("allowPlayerLooting.name"),
         hint: localize("allowPlayerLooting.hint"),
         scope: "world",
-        config: true,
+        config: false,
         requiresReload: true,
         type: Boolean,
         default: true,
@@ -165,7 +197,7 @@ export default async function campaigncodexSettings() {
         name: localize("addPurchaseFundsToInventoryCash.name"),
         hint: localize("addPurchaseFundsToInventoryCash.hint"),
         scope: "world",
-        config: true,
+        config: false,
         requiresReload: true,
         type: Boolean,
         default: false,
@@ -174,7 +206,7 @@ export default async function campaigncodexSettings() {
         name: localize("enableTransactionLogging.name"),
         hint: localize("enableTransactionLogging.hint"),
         scope: "world",
-        config: true,
+        config: false,
         type: Boolean,
         default: false,
     });
@@ -182,7 +214,7 @@ export default async function campaigncodexSettings() {
         name: localize("roundFinalPrice.name"),
         hint: localize("roundFinalPrice.hint"),
         scope: "world",
-        config: true,
+        config: false,
         requiresReload: true,
         type: Boolean,
         default: true,
@@ -191,7 +223,7 @@ export default async function campaigncodexSettings() {
         name: localize("maxRegionDepth.name"),
         hint: localize("maxRegionDepth.hint"),
         scope: "world",
-        config: true,
+        config: false,
         requiresReload: true,
         type: new foundry.data.fields.NumberField({nullable: false, min: 1, max: 10, step: 1}),
         default: 5,
@@ -201,7 +233,7 @@ export default async function campaigncodexSettings() {
         name: localize("showStats.name"),
         hint: localize("showStats.hint"),
         scope: "world",
-        config: true,
+        config: false,
         requiresReload: true,
         type: Boolean,
         default: true,
@@ -210,7 +242,7 @@ export default async function campaigncodexSettings() {
         name: localize("showActorDropperDialog.name"),
         hint: localize("showActorDropperDialog.hint"),
         scope: "world",
-        config: true,
+        config: false,
         type: Boolean,
         default: true,
     });
@@ -218,7 +250,7 @@ export default async function campaigncodexSettings() {
         name: "Allow Player Notes",
         hint: "If enabled, players can access the Notes tab and save personal notes per sheet.",
         scope: "world",
-        config: true,
+        config: false,
         type: Boolean,
         default: false,
     });
@@ -236,7 +268,7 @@ export default async function campaigncodexSettings() {
         name: localize("hideCCbutton.name"),
         hint: localize("hideCCbutton.hint"),
         scope: "world",
-        config: true,
+        config: false,
         type: Boolean,
         default: true,
     });
@@ -245,7 +277,7 @@ export default async function campaigncodexSettings() {
         name: localize("useStyledTocButton.name"),
         hint: localize("useStyledTocButton.hint"),
         scope: "world",
-        config: true,
+        config: false,
         type: Boolean,
         default: true,
         onChange: (value) => applyTocButtonStyle(value),
@@ -255,7 +287,7 @@ export default async function campaigncodexSettings() {
         name: localize("mapMarkers.name"),
         hint: localize("mapMarkers.hint"),
         scope: "world",
-        config: true,
+        config: false,
         requiresReload: true,
         type: Boolean,
         default: true,
@@ -265,7 +297,7 @@ export default async function campaigncodexSettings() {
         name: localize("mapMarkersHoverDelay.name"),
         hint: localize("mapMarkersHoverDelay.hint"),
         scope: "world",
-        config: true,
+        config: false,
         type: Number,
         range: {
             min: 0,
@@ -279,7 +311,7 @@ export default async function campaigncodexSettings() {
         name: localize("mapMarkersHover.name"),
         hint: localize("mapMarkersHover.hint"),
         scope: "world",
-        config: true,
+        config: false,
         requiresReload: true,
         type: Boolean,
         default: false,
@@ -289,7 +321,7 @@ export default async function campaigncodexSettings() {
         name: localize("mapMarkerColor.name"),
         hint: localize("mapMarkerColor.hint"),
         scope: "world",
-        config: true,
+        config: false,
         requiresReload: true,
         type: Boolean,
         default: true,
@@ -299,7 +331,7 @@ game.settings.register("campaign-codex", "mapMarkerOverride", {
     name: localize("mapMarkerOverride.name"),
     hint: localize("mapMarkerOverride.hint"),
     scope: "world",
-    config: true,
+    config: false,
     requiresReload: true,
     type: new foundry.data.fields.NumberField({nullable: false, min: 0, max: 1, step: 0.5}),
     default: 1,
@@ -447,28 +479,6 @@ game.settings.registerMenu("campaign-codex", "themeColorPicker", {
         restricted: true
     });
 
-    game.settings.register("campaign-codex", "resetItemPathsButton", {
-        name: localize("resetItemPathsButton.name"),
-        hint: localize("resetItemPathsButton.hint"),
-        scope: "world",
-        config: true,
-        requiresReload: true,
-        type: Boolean,
-        default: false,
-        onChange: async (value) => {
-            if (value) {
-                await game.settings.set("campaign-codex", "itemPricePath", "");
-                await game.settings.set("campaign-codex", "itemDenominationPath", "");
-                await game.settings.set("campaign-codex", "itemDenominationOverride", "",);
-                await game.settings.set(
-                    "campaign-codex",
-                    "resetItemPathsButton",
-                    false,
-                );
-                ui.notifications.info(game.i18n.localize("CAMPAIGN_CODEX.notifications.itemPricePathsReset"));
-            }
-        },
-    });
 
     game.keybindings.register("campaign-codex", "tocOpen", {
       name: "Open the Camapign Codex Table of Contents",

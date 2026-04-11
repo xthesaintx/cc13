@@ -121,6 +121,10 @@
         "name": "Usar cor de Destaque do CC para os marcadores de mapa",
         "hint": "Se habilitado, os marcadores de mapa irão usar as cores de Destaque do CC na tela de fundo."
       },
+      "mapMarkerUseSheetIconFallback": {
+        "name": "Usar icone da ficha quando o marcador estiver vazio",
+        "hint": "Se habilitado e nenhum marcador de mapa do Campaign Codex estiver definido, a nota usa o icone normal da ficha em vez de gerar um marcador pelo nome."
+      },
       "mapMarkers": {
         "name": "Habilitar Marcadores de Mapa do Códice de Campanha",
         "hint": "Se habilitado, as fichas do CC cujo o nome inicie com uma Letra opcional, ou inicie por uma letra opcional seguida de até três digitos, irão criar um marcador de mapa customizado. Ex: A13"

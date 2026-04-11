@@ -1,5 +1,5 @@
 import { TemplateComponents } from "./sheets/template-components.js";
-import { localize, createFromScene } from "./helper.js";
+import { localize, createFromScene, getCompatibleDropEffect } from "./helper.js";
 
 var SearchFilter = foundry.applications.ux.SearchFilter;
 var ApplicationV2 = foundry.applications.api.ApplicationV2;
@@ -812,10 +812,11 @@ export class CampaignCodexTOCSheet extends campaignCodexToc {
         if (!dragData) return;
         event.dataTransfer.setData("text/plain", JSON.stringify(dragData));
     }
-
+    
     _onDragOver(event) {
         event.preventDefault();
-        event.dataTransfer.dropEffect = "link";
+        if (!event.dataTransfer) return;
+        event.dataTransfer.dropEffect = getCompatibleDropEffect(event.dataTransfer, "link");
     }
 
     async _onDrop(event) {

@@ -1,0 +1,42 @@
+<div class="form-body scrollable">
+    {{#if hasSettings}}
+    {{#each settings as |setting|}}
+    <div class="form-group">
+        <label for="{{setting.id}}">{{setting.name}}</label>
+        <div class="form-fields">
+            {{#if setting.isBoolean}}
+            <input id="{{setting.id}}" type="checkbox" name="{{setting.key}}" {{checked setting.value}}>
+            {{else}}
+                {{#if setting.isSelect}}
+                <select id="{{setting.id}}" name="{{setting.key}}">
+                    {{#each setting.choices as |choice|}}
+                    <option value="{{choice.value}}" {{#if choice.selected}}selected{{/if}}>{{choice.label}}</option>
+                    {{/each}}
+                </select>
+                {{else}}
+                    {{#if setting.isRange}}
+                    <input id="{{setting.id}}" type="range" name="{{setting.key}}" value="{{setting.value}}" min="{{setting.range.min}}"
+                        max="{{setting.range.max}}" step="{{setting.range.step}}" data-range-output="{{setting.range.outputId}}">
+                    <span id="{{setting.range.outputId}}" class="range-value">{{setting.value}}</span>
+                    {{else}}
+                        {{#if setting.isNumber}}
+                        <input id="{{setting.id}}" type="number" name="{{setting.key}}" value="{{setting.value}}"
+                            {{#if setting.number.hasMin}}min="{{setting.number.min}}"{{/if}}
+                            {{#if setting.number.hasMax}}max="{{setting.number.max}}"{{/if}}
+                            {{#if setting.number.hasStep}}step="{{setting.number.step}}"{{/if}}>
+                        {{else}}
+                        <input id="{{setting.id}}" type="text" name="{{setting.key}}" value="{{setting.value}}">
+                        {{/if}}
+                    {{/if}}
+                {{/if}}
+            {{/if}}
+        </div>
+        {{#if setting.hint}}
+        <p class="hint">{{{setting.hint}}}</p>
+        {{/if}}
+    </div>
+    {{/each}}
+    {{else}}
+    <p class="notes">No settings available.</p>
+    {{/if}}
+</div>
