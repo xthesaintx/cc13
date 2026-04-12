@@ -330,6 +330,17 @@ body.theme-dark .campaign-codex {
     justify-content: center;
 }
 
+.campaign-codex .map-marker .sheet-marker-icon-image {
+    width: 18px;
+    height: 18px;
+    object-fit: cover;
+    display: inline-block;
+}
+
+.campaign-codex .map-marker .sheet-marker-icon-image[data-action="editMarkerImage"] {
+  cursor: pointer;
+}
+
 
 
 .campaign-codex .sub-title i {
@@ -349,6 +360,7 @@ body.theme-dark .campaign-codex {
     gap: 16px;
     justify-content: center;
     margin-bottom: 16px;
+        align-items: center;
   }
 
 .campaign-codex .sidebar-tabs {
@@ -6344,7 +6356,51 @@ padding: 0px 8px 8px 8px;
 .campaign-codex .cc-icon-radio.reset input[type="radio"]:checked + label {
     color: var(--cc-primary);
   }
-      
+
+/*
+ * ---------------------------------------------
+ * Map Marker Image Picker
+ * ---------------------------------------------
+ */
+
+.cc-map-marker-image-form{
+      display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.cc-map-marker-image-form .cc-map-marker-image-fields {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 6px;
+  align-items: center;
+}
+
+.cc-map-marker-image-preview-wrap {
+  height: 150px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.cc-map-marker-image-preview {
+height: 50px;
+    flex: 1;
+    max-width: 50px;
+    object-fit: cover;
+    border: 1px solid var(--color-border);
+    border-radius: 4px;
+    margin-bottom: 4px;
+}
+
+.cc-map-marker-image-preview-state {
+  font-size: 10px;
+  text-align: center;
+  opacity: 0.75;
+  padding: 4px;
+}
+         
 /*
  * ---------------------------------------------
  * Group Sheet Experimental

@@ -1,4 +1,4 @@
-## 3.7.5
+## 3.8.1
 - v14 compatability fixes
 - Crucible support added
 - Group selected sheet note edit fix (disabled edit)
@@ -7,7 +7,8 @@
 - Patching drag behaviour for linux chromium browsers
 - icon picker by name as well as dictionary
 - settings grouped
-
+- MD to CC macro update
+- custom map marker image
 
 ## 3.6.1
 - windows chrome list css fix

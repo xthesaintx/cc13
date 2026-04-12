@@ -39,7 +39,11 @@ import {
     migrateLegacyWidgets,
     ExtraFunctions,
 } from "./helper.js";
-import { CampaignCodexMapMarker, _getCampaignCodexIcon } from "./codex-map-marker.js";
+import {
+    initializeCampaignCodexMapMarkerRendering,
+    refreshCampaignCodexMapMarkersForJournal,
+    getCampaignCodexMapMarkerPreCreateUpdate,
+} from "./map-marker-support.js";
 import { CampaignCodexTOCSheet } from "./campaign-codex-toc.js";
 import { registerMapNoteTextEnricher, registerMapNoteLinkClickHandler } from "./map-note-links.js";
 // let tocSheetInstance = null;
@@ -106,37 +110,7 @@ Hooks.once("init", async function () {
     });
 });
 Hooks.once("setup", async function () {
-    const uiColor = game.settings.get("campaign-codex", "color-accent");
-
-    if (game.settings.get("campaign-codex", "mapMarkers")){
-    console.log("Campaign Codex | Initializing custom map markers");
-    CONFIG.CampaignCodex = CONFIG.CampaignCodex || {};
-    CONFIG.CampaignCodex.mapLocationMarker = {
-      default: {
-        icon: CampaignCodexMapMarker, 
-        backgroundColor: uiColor,
-        borderColor: 0x2a2a2a,
-        borderHoverColor: 0xFF5500,
-        fontFamily: "Roboto Slab",
-        shadowColor: 0x000000,
-        textColor: 0x2a2a2a  
-      }
-    };
-    const customScale = (game.settings.get("campaign-codex", "mapMarkerOverride") * 18) - 18;
-    const NoteClass = CONFIG.Note.objectClass;
-    NoteClass.prototype._getCampaignCodexIcon = _getCampaignCodexIcon;
-    const originalDrawControlIcon = NoteClass.prototype._drawControlIcon;
-    NoteClass.prototype._drawControlIcon = function(...args) {
-      const codexIcon = this._getCampaignCodexIcon();
-      if (codexIcon) {
-        codexIcon.x -= ((this.document.iconSize+customScale) / 2);
-        codexIcon.y -= ((this.document.iconSize+customScale) / 2);
-        return codexIcon;
-      }
-      return originalDrawControlIcon.apply(this, args);
-    };
-    // === [END MAP MARKERS] ===
-}
+    initializeCampaignCodexMapMarkerRendering();
 });
 
 Hooks.once("i18nInit", async function () {
@@ -523,15 +497,7 @@ Hooks.on("ready", () => {
  
 Hooks.on("updateJournalEntry", async (document, changes, options, userId) => {
     refreshQuestBoardIfOpen(document);
-    if (canvas.ready){
-    const mapMarkerChanged = foundry.utils.hasProperty(changes, "flags.campaign-codex.data.mapMarker");
-    if (mapMarkerChanged) {
-        const linkedNotes = canvas.notes.placeables.filter(n => n.document.entryId === document.id);
-        for (const note of linkedNotes) {
-            note.draw(); 
-        }
-    }
-}
+    await refreshCampaignCodexMapMarkersForJournal(document, changes);
 
   if (
     document._skipRelationshipUpdates ||
@@ -765,15 +731,26 @@ Hooks.on("activateNote", (note, options) => {
 
 Hooks.on("preCreateNote", (document, data, options, userId) => {
     const pending = game.user._tempNoteDrop;
-    if (pending && pending.uuid.endsWith(document.entryId)) {
-        const updateData = {
-            text: pending.label, 
+    const entryId = document.entryId || data?.entryId;
+    const pendingMatchesEntry = !!(pending?.uuid && entryId && pending.uuid.endsWith(entryId));
+    const updateData = {};
+
+    if (pendingMatchesEntry) {
+        foundry.utils.mergeObject(updateData, {
+            text: pending.label,
             label: pending.label,
-            flags: pending.flags
-        };
-        document.updateSource(updateData);
-        delete game.user._tempNoteDrop;
+            flags: pending.flags,
+        });
     }
+
+    const markerUpdateData = getCampaignCodexMapMarkerPreCreateUpdate(document, data, pending);
+    foundry.utils.mergeObject(updateData, markerUpdateData);
+
+    if (Object.keys(updateData).length) {
+        document.updateSource(updateData);
+    }
+
+    if (pendingMatchesEntry) delete game.user._tempNoteDrop;
 });
 
 Hooks.on("getSceneControlButtons", (controls) => {

@@ -1,0 +1,26 @@
+<div class="cc-map-marker-image-form">
+  <div class="form-group">
+    <img class="cc-map-marker-image-preview" src="{{src}}" alt="Marker preview" {{#unless hasSrc}}hidden{{/unless}} />
+    <label class="checkbox">
+      <input type="checkbox" name="enabled" {{#if enabled}}checked{{/if}} />
+      Enable custom marker image
+    </label>
+  </div>
+  <div class="form-group">
+    <div class="form-fields cc-map-marker-image-fields">
+      <input type="text" name="src" value="{{src}}" placeholder="Select an image or SVG" />
+      <button type="button" class="icon" data-action="browseImage" title="Browse files">
+        <i class="fas fa-folder-open"></i>
+      </button>
+      <button type="button" class="icon" data-action="clearImage" title="Clear image">
+        <i class="fas fa-xmark"></i>
+      </button>
+    </div>
+  </div>
+  <div class="form-group">
+    <label>Icon Size</label>
+    <div class="form-fields">
+      <input type="number" name="size" value="{{size}}" min="8" max="512" step="1" />
+    </div>
+  </div>
+</div>

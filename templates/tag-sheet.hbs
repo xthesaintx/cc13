@@ -20,7 +20,11 @@
                     </div>
                     {{#if mapMarkerOverride}}
                     <div class="map-marker">
-                        <i class="fas fa-map-marker"></i>
+                        {{#if mapMarkerImageEnabled}}
+                        <img class="sheet-marker-icon-image nopopout" src="{{mapMarkerImageSrc}}" alt="Map marker image" data-action="editMarkerImage" />
+                        {{else}}
+                        <i class="fas fa-map-marker" data-action="editMarkerImage"></i>
+                        {{/if}}
                         <div class="sheet-marker">{{#if mapMarker}}{{mapMarker}}{{else}}-{{/if}}</div>
                     </div>
                     {{/if}}

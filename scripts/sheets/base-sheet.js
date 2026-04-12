@@ -20,6 +20,7 @@ import {
 import { widgetManager } from "../widgets/WidgetManager.js";
 import { tabPicker } from "../tab-picker.js";
 import { iconPicker } from "../ui/IconPicker.js";
+import { MapMarkerImagePicker } from "../ui/MapMarkerImagePicker.js";
 var SearchFilter = foundry.applications.ux.SearchFilter;
 
 const DragDrop = foundry.applications.ux.DragDrop.implementation;
@@ -82,6 +83,7 @@ export class CampaignCodexBaseSheet extends baseSheetApp {
       sendToPlayer: this.#_onSendToPlayer,
       // ICON
       editIcon: this.#_onEditIcon,
+      editMarkerImage: this.#_onEditMarkerImage,
       // CREATE
       createTag: this.#_onCreateTag,
       linkTag: this.#_onClickTag,
@@ -336,6 +338,11 @@ export class CampaignCodexBaseSheet extends baseSheetApp {
     context.showStats = game.settings.get("campaign-codex", "showStats");
     context.sheetTypeLabelOverride = sheetData.sheetTypeLabelOverride;
     context.mapMarker = sheetData.mapMarker || "";
+    const mapMarkerImageConfig =
+      sheetData.mapMarkerImage && typeof sheetData.mapMarkerImage === "object" ? sheetData.mapMarkerImage : {};
+    const mapMarkerImageSrc = String(mapMarkerImageConfig.src || "").trim();
+    context.mapMarkerImageEnabled = !!mapMarkerImageConfig.enabled && !!mapMarkerImageSrc;
+    context.mapMarkerImageSrc = context.mapMarkerImageEnabled ? mapMarkerImageSrc : "";
     // ICON OVERRIDE
     const iconOverride = this.document.getFlag("campaign-codex", "icon-override");
     if (iconOverride) {
@@ -1937,6 +1944,13 @@ const pendingRestorations = this._pendingScrollRestorations;
   static async #_onEditIcon(event) {
     event.preventDefault();
     new iconPicker({}, this, { stat: { id: "icon-override" } }).render(true);
+  }
+
+  static async #_onEditMarkerImage(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    if (!game.user.isGM) return;
+    await MapMarkerImagePicker.open(this);
   }
 
   async setIcon(_id, iconValue) {
