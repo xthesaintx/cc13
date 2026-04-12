@@ -6646,7 +6646,7 @@ height: 50px;
 .campaign-codex .tray-card .action-icon {
     margin-left: 8px;
     color: var(--cc-accent);
-    font-family: "Font Awesome 6 Pro";
+/*    font-family: "Font Awesome 6 Pro";*/
 }
 
 .campaign-codex .tray-card .action-icon:hover {
@@ -6705,7 +6705,7 @@ height: 50px;
 .campaign-codex .widget-tag .action-icon {
     cursor: pointer;
     font-size: 10px;
-    font-family: "Font Awesome 6 Pro";
+/*    font-family: "Font Awesome 6 Pro";*/
 }
 
 .campaign-codex .widget-tag:hover {
