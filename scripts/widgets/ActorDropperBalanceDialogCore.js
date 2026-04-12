@@ -151,7 +151,7 @@ export class ActorDropperBalanceDialogHelperCore {
         <div class="cc-actor-balance-summary">
           <div><strong>${localize("dialog.target") || "Target"}:</strong> ${escapeHtml(summary.targetDescriptor)} = ${summary.targetXp.toLocaleString()} XP</div>
           <div>
-            <strong>${localize("dialog.currentBeforeEdits") || "Current"}:</strong> ${summary.suggestedXp.toLocaleString()} XP
+            <strong>${localize("dialog.currentBeforeEdits") || "Current"}:</strong> <span data-balance-suggested>${summary.suggestedXp.toLocaleString()}</span> XP
           </div>
           <div class="cc-actor-balance-status ${overUnderClass}" data-balance-status>${overUnderText}</div>
         </div>
@@ -182,7 +182,8 @@ export class ActorDropperBalanceDialogHelperCore {
                     label: localize("dialog.save") || "Save",
                     default: true,
                     callback: (_event, button) => {
-                        const form = button.form;
+                        const form = button.form ?? button.closest("form");
+                        if (!form) return {};
                         const updatedByUuid = {};
                         for (let i = 0; i < rows.length; i++) {
                             const uuid = String(form.elements[`uuid-${i}`]?.value || "");
@@ -197,18 +198,22 @@ export class ActorDropperBalanceDialogHelperCore {
                 }
             ],
             render: (dialog) => {
-                const form = dialog?.target?.element?.querySelector("form");
-                if (!form) return;
+                const root = dialog?.target?.element;
+                const form = root?.querySelector("form");
+                const scope = form ?? root;
+                if (!scope) return;
 
-                const suggestedEl = form.querySelector("[data-balance-suggested]");
-                const statusEl = form.querySelector("[data-balance-status]");
-                if (!suggestedEl || !statusEl) return;
+                const suggestedEl = scope.querySelector("[data-balance-suggested]");
+                const statusEl = scope.querySelector("[data-balance-status]");
+                if (!statusEl) return;
+
+                const getField = (name) => form?.elements?.[name] ?? scope.querySelector(`[name="${name}"]`);
 
                 const updateSummary = () => {
                     let adjustedXp = 0;
                     for (let i = 0; i < rows.length; i++) {
-                        const input = form.elements[`new-${i}`];
-                        const isLocked = String(form.elements[`lock-${i}`]?.value || "0") === "1";
+                        const input = getField(`new-${i}`);
+                        const isLocked = String(getField(`lock-${i}`)?.value || "0") === "1";
                         const minQty = isLocked ? 1 : 0;
                         const qty = Math.max(minQty, Math.trunc(toNumber(input?.value, rows[i].current)));
                         if (input && String(input.value) !== String(qty)) input.value = String(qty);
@@ -224,26 +229,26 @@ export class ActorDropperBalanceDialogHelperCore {
                             : (localize("dialog.onBudget") || "On Budget"));
                     const cls = overBy > 0 ? "is-over" : (underBy > 0 ? "is-under" : "is-even");
 
-                    suggestedEl.textContent = adjustedXp.toLocaleString();
+                    if (suggestedEl) suggestedEl.textContent = adjustedXp.toLocaleString();
                     statusEl.textContent = text;
                     statusEl.classList.remove("is-over", "is-under", "is-even");
                     statusEl.classList.add(cls);
                 };
 
-                const qtyInputs = form.querySelectorAll('input[name^="new-"]');
+                const qtyInputs = scope.querySelectorAll('input[name^="new-"]');
                 qtyInputs.forEach((input) => {
                     input.addEventListener("input", updateSummary);
                     input.addEventListener("change", updateSummary);
                 });
 
-                const lockButtons = form.querySelectorAll("[data-lock-toggle]");
+                const lockButtons = scope.querySelectorAll("[data-lock-toggle]");
                 lockButtons.forEach((button) => {
                     button.addEventListener("click", () => {
                         const index = Number(button.dataset.lockToggle);
                         if (!Number.isFinite(index)) return;
-                        const lockField = form.elements[`lock-${index}`];
-                        const qtyInput = form.elements[`new-${index}`];
-                        const lockIcon = form.querySelector(`[data-lock-icon="${index}"]`);
+                        const lockField = getField(`lock-${index}`);
+                        const qtyInput = getField(`new-${index}`);
+                        const lockIcon = scope.querySelector(`[data-lock-icon="${index}"]`);
                         if (!lockField || !qtyInput || !lockIcon) return;
 
                         const currentlyLocked = String(lockField.value || "0") === "1";
