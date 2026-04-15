@@ -1859,7 +1859,7 @@ width: 300px;
 .campaign-codex .expand-toggle {
   cursor: pointer;
   padding: 10px;
-  padding-right: 18px;
+  padding-left: 4px;
   border-radius: 6px;
   transition: background-color 0.2s ease;
   z-index: 10;

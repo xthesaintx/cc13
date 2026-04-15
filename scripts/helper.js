@@ -79,10 +79,10 @@ export const isThemed = () => {
         if (themeOverride === "light") return "theme-light";
         if (themeOverride === "dark") return "theme-dark";
     }
-
-    const uiConfig = game.settings.get("core", "uiConfig") || {};
-    const colorScheme = uiConfig.colorScheme;
-    return colorScheme?.applications ? `theme-${colorScheme.applications}` : "";
+    return false;
+    // const uiConfig = game.settings.get("core", "uiConfig") || {};
+    // const colorScheme = uiConfig.colorScheme;
+    // return colorScheme?.applications ? `theme-${colorScheme.applications}` : "";
 }
 
 /**

@@ -689,6 +689,25 @@ function buildResult(ok, message, extra = {}) {
         ...extra,
     };
 }
+function getOwnerPermissionLevel() {
+    return CONST?.DOCUMENT_OWNERSHIP_LEVELS?.OWNER ?? 3;
+}
+
+function userCanSellFromActor(user, actor) {
+    if (!user || !actor || actor.documentName !== "Actor") return false;
+    if (user.isGM) return true;
+    if (user.character?.uuid === actor.uuid) return true;
+    return !!actor.testUserPermission?.(user, getOwnerPermissionLevel());
+}
+
+function userHasAnySellSource(user) {
+    if (!user) return false;
+    if (user.isGM) return true;
+    if (user.character) return true;
+
+    const actors = game.actors?.contents || [];
+    return actors.some((actor) => userCanSellFromActor(user, actor));
+}
 
 export async function processTradeInSocketRequest(data = {}) {
     const docUuid = String(data.docUuid || "").trim();
@@ -719,8 +738,8 @@ export async function processTradeInSocketRequest(data = {}) {
     }
 
     const requester = userId ? game.users.get(userId) : null;
-    if (requester && !requester.isGM && requester.character?.uuid !== actor.uuid) {
-        return buildResult(false, "You can only sell items from your assigned character.");
+    if (requester && !userCanSellFromActor(requester, actor)) {
+        return buildResult(false, "You can only sell items from your character or owned sheets.");
     }
 
     if (!EconomyHelper.canAddCurrency()) {
@@ -938,7 +957,7 @@ export class TradeInWidget extends CampaignCodexWidget {
         return {
             id: this.widgetId,
             isGM: this.isGM,
-            hasCharacter: !!game.user?.character,
+            canSellFromOwnedActor: userHasAnySellSource(game.user),
             payoutMultiplier: settings.payoutMultiplier,
             unlimitedFunds: settings.unlimitedFunds,
             funds,
@@ -1078,10 +1097,10 @@ export class TradeInWidget extends CampaignCodexWidget {
             `;
         }
 
-        const disabledClass = !context.hasCharacter ? "is-disabled" : "";
-        const subtitle = !context.hasCharacter
-            ? "Assign a player character to use this widget."
-            : "Drag an item from a character sheet to sell it.";
+        const disabledClass = !context.canSellFromOwnedActor ? "is-disabled" : "";
+        const subtitle = !context.canSellFromOwnedActor
+            ? "Assign a character or gain ownership of an actor sheet to use this widget."
+            : "Drag an item from a character or owned actor sheet to sell it.";
 
         return `
             <div class="cc-widget-trade-in" id="widget-${context.id}">
@@ -1264,13 +1283,12 @@ export class TradeInWidget extends CampaignCodexWidget {
 
             const actor = item.parent;
             if (!actor || actor.documentName !== "Actor") {
-                ui.notifications.warn("Only character-owned items can be sold.");
+                ui.notifications.warn("Only actor-owned items can be sold.");
                 return;
             }
 
-            const myActorUuid = game.user?.character?.uuid;
-            if (!myActorUuid || actor.uuid !== myActorUuid) {
-                ui.notifications.warn("You can only sell items from your assigned character.");
+            if (!userCanSellFromActor(game.user, actor)) {
+                ui.notifications.warn("You can only sell items from your character or owned sheets.");
                 return;
             }
 

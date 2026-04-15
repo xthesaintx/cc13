@@ -998,12 +998,22 @@ export class CampaignCodexBaseSheet extends baseSheetApp {
     }
   }
 
+
   async _onRender(context, options) {
     await super._onRender(context, options);
+
+    this.element.classList.remove("themed", "theme-light", "theme-dark");
     if (isThemed()) {
       this.element.classList.add("themed", isThemed());
-      this.element.classList.add(isThemed(), isThemed());
     }
+
+
+    // if (isThemed()) {
+    //   console.log(isThemed())
+    //   this.element.classList.add("themed", isThemed());
+    //   this.element.classList.add(isThemed(), isThemed());
+    // }
+
 
     const nativeHtml = this.element;
     if (this.dragDrop && Array.isArray(this.dragDrop)) {
